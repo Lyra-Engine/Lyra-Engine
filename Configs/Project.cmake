@@ -1,6 +1,6 @@
-set(PROJECT_NAME "Lyra")
+set(PROJECT_NAME "lyra")
 set(PROJECT_PREFIX "")
-set(PROJECT_COMMON_LIB "Lyra::Common")
+set(PROJECT_COMMON_LIB "lyra::common")
 
 # specify the binary directory
 set(LIBRARY_BIN_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -12,7 +12,7 @@ endif()
 
 # define a macro for shared library
 macro(lyra_shared NAME)
-    set(TARGET_NAME    "${PROJECT_NAME}${NAME}")
+    set(TARGET_NAME    "${PROJECT_NAME}-${NAME}")
     set(NAMESPACE_NAME "${PROJECT_NAME}::${NAME}")
 
     # add library target
@@ -33,7 +33,7 @@ endmacro()
 
 # define a macro for plugin registration
 macro(lyra_plugin NAME)
-    set(TARGET_NAME    "${PROJECT_NAME}${NAME}")
+    set(TARGET_NAME    "${PROJECT_NAME}-${NAME}")
     set(NAMESPACE_NAME "${PROJECT_NAME}::${NAME}")
 
     # add module target
@@ -55,7 +55,7 @@ endmacro()
 
 # define a macro for sample registration
 macro(lyra_sample NAME)
-    set(TARGET_NAME    "${PROJECT_NAME}${NAME}")
+    set(TARGET_NAME    "${PROJECT_NAME}-${NAME}")
     set(NAMESPACE_NAME "${PROJECT_NAME}::${NAME}")
 
     # add executable target

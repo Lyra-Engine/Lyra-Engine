@@ -22,21 +22,21 @@ namespace lyra::rhi
     {
         GPUSamplerHandle handle;
 
-        void destory();
+        void destroy();
     };
 
     struct GPUShaderModule : public GPUObjectBase
     {
         GPUShaderModuleHandle handle;
 
-        void destory();
+        void destroy();
     };
 
     struct GPUTextureView : public GPUObjectBase
     {
         GPUTextureViewHandle handle;
 
-        void destory();
+        void destroy();
     };
 
     struct GPUTexture : public GPUObjectBase
@@ -286,9 +286,12 @@ namespace lyra::rhi
             GPUExtent3D              size);
     };
 
-    struct GPUSwapchain : public GPUObjectBase
+    struct GPUSurfaceTexture : public GPUObjectBase
     {
-        GPUSwapchainHandle handle;
+        GPUTextureHandle handle;
+        bool             suboptimal;
+
+        void present();
     };
 
     struct GPUDevice : public GPUObjectBase
@@ -331,7 +334,7 @@ namespace lyra::rhi
 
         auto pop_error_scope() -> void;
 
-        auto destory() -> void;
+        auto destroy() -> void;
     };
 
     struct GPUAdapter : public GPUObjectBase
@@ -340,19 +343,33 @@ namespace lyra::rhi
         GPUSupportedFeatures features = {};
         GPUSupportedLimits   limits   = {};
 
-        GPUDeviceHandle request_device();
+        auto request_device(const GPUDeviceDescriptor& descriptor) -> GPUDevice;
     };
 
     struct GPUSurface : public GPUObjectBase
     {
         GPUSurfaceHandle handle;
+
+        auto destroy() -> void;
+
+        auto get_surface_capabilities() -> GPUSurfaceCapabilities;
+
+        auto get_current_texture() -> GPUTexture;
     };
 
     struct GPU
     {
-        auto request_adapter() -> GPUAdapterHandle;
+        GPUBackend   backend;
+        GPUFlags     flags  = 0;
+        WindowHandle window = {};
 
-        auto get_preferred_canvas_format() -> GPUTextureFormat;
+        explicit GPU(const GPUDescriptor& descriptor);
+
+        auto destroy() -> void;
+
+        auto request_adapter(const GPUAdapterDescriptor& descriptor = {}) -> GPUAdapter;
+
+        auto request_surface(const GPUDevice& device, const GPUSurfaceDescriptor& descriptor = {}) -> GPUSurface;
     };
 
 } // namespace lyra::rhi

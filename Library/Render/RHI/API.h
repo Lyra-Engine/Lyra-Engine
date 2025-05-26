@@ -14,6 +14,9 @@ namespace lyra::rhi
 {
     struct RenderAPI
     {
+        // api name
+        CString (*get_api_name)();
+
         // backend api
         GPUBackend (*get_backend)();
 
@@ -23,8 +26,8 @@ namespace lyra::rhi
         bool (*create_device)(GPUAdapterHandle adapter, GPUDeviceHandle& device, const GPUDeviceDescriptor& descriptor);
         void (*delete_device)(GPUDeviceHandle device);
 
-        bool (*create_swapchain)(GPUDeviceHandle device, GPUSwapchainHandle& buffer, const GPUSwapchainDescriptor& descriptor);
-        void (*delete_swapchain)(GPUDeviceHandle device, GPUSwapchainHandle buffer);
+        bool (*create_surface)(GPUDeviceHandle device, GPUSurfaceHandle& surface, const GPUSurfaceDescriptor& descriptor);
+        void (*delete_surface)(GPUDeviceHandle device, GPUSurfaceHandle surface);
 
         bool (*create_buffer)(GPUDeviceHandle device, GPUBufferHandle& buffer, const GPUBufferDescriptor& descriptor);
         void (*delete_buffer)(GPUDeviceHandle device, GPUBufferHandle buffer);
@@ -56,7 +59,18 @@ namespace lyra::rhi
         bool (*create_raytracing_pipeline)(GPUDeviceHandle device, GPURayTracingPipelineHandle& texture, const GPURayTracingPipelineDescriptor& descriptor);
         void (*delete_raytracing_pipeline)(GPUDeviceHandle device, GPURayTracingPipelineHandle texture);
 
-        bool (*create_command_buffer)();
+        bool (*create_command_buffer)(GPUDeviceHandle device, GPUQueueHandle queue, GPUCommandBufferHandle& cmdbuffer, const GPUCommandBufferDescriptor& descriptor);
+
+        void (*cmd_set_render_pipeline)(GPUCommandBufferHandle cmdbuffer, GPURenderPipelineHandle pipeline);
+        void (*cmd_set_compute_pipeline)(GPUCommandBufferHandle cmdbuffer, GPUComputePipelineHandle pipeline);
+        void (*cmd_set_raytracing_pipeline)(GPUCommandBufferHandle cmdbuffer, GPURayTracingPipelineHandle pipeline);
+        void (*cmd_set_bind_group)(GPUCommandBufferHandle cmdbuffer, GPUPipelineLayoutHandle layout, GPUIndex32 index, GPUBindGroupHandle bind_group, const Vector<GPUBufferDynamicOffset>& dynamic_offsets);
+        void (*cmd_set_index_buffer)(GPUCommandBufferHandle cmdbuffer, GPUBufferHandle buffer, GPUIndexFormat format, GPUSize64 offset, GPUSize64 size);
+        void (*cmd_set_vertex_buffer)(GPUCommandBufferHandle cmdbuffer, GPUIndex32 slot, GPUBufferHandle buffer, GPUSize64 offset, GPUSize64 size);
+        void (*cmd_draw)(GPUCommandBufferHandle cmdbuffer, GPUSize32 vertex_count, GPUSize32 instance_count, GPUSize32 first_vertex, GPUSize32 first_instance);
+        void (*cmd_draw_indexed)(GPUCommandBufferHandle cmdbuffer, GPUSize32 index_count, GPUSize32 instance_count, GPUSize32 first_index, GPUSignedOffset32 base_vertex, GPUSize32 first_instance);
+        void (*cmd_draw_indirect)(GPUCommandBufferHandle cmdbuffer, GPUBufferHandle indirect_buffer, GPUSize64 indirect_offset);
+        void (*cmd_draw_indexed_indirect)(GPUCommandBufferHandle cmdbuffer, GPUBufferHandle indirect_buffer, GPUSize64 indirect_offset);
     };
 
     // using RenderPlugin = Plugin<RenderAPI>;

@@ -1,6 +1,8 @@
 #ifndef LYRA_LIBRARY_RENDER_RHI_DESCS_H
 #define LYRA_LIBRARY_RENDER_RHI_DESCS_H
 
+#include <Window/API.h>
+
 #include <Render/RHI/Enums.h>
 #include <Render/RHI/Utils.h>
 
@@ -11,10 +13,16 @@ namespace lyra::rhi
         CString label = "";
     };
 
+    struct GPUDescriptor : public GPUObjectDescriptorBase
+    {
+        GPUBackend   backend;
+        GPUFlags     flags  = 0;
+        WindowHandle window = {};
+    };
+
     struct GPUAdapterDescriptor : public GPUObjectDescriptorBase
     {
-        GPUBackend       backend;
-        GPUInstanceFlags flags = 0;
+        // nothing here for now
     };
 
     struct GPUDeviceDescriptor : public GPUObjectDescriptorBase
@@ -22,12 +30,12 @@ namespace lyra::rhi
         Vector<GPUFeatureName> required_features = {};
     };
 
-    struct GPUQueueDescriptor : public GPUObjectDescriptorBase
+    struct GPUSurfaceDescriptor : public GPUObjectDescriptorBase
     {
-        // nothing for now
+        // nothing here for now
     };
 
-    struct GPUSwapchainDescriptor : public GPUObjectDescriptorBase
+    struct GPUQueueDescriptor : public GPUObjectDescriptorBase
     {
         // nothing here for now
     };

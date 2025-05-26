@@ -25,12 +25,12 @@ namespace lyra::rhi
             GPUBindGroupHandle                    bind_group,
             const Vector<GPUBufferDynamicOffset>& dynamic_offsets = {}) = 0;
 
-        virtual void set_bind_group(
-            GPUIndex32         index,
-            GPUBindGroupHandle bind_group,
-            const uint32_t*    dynamic_offsets_data,
-            GPUSize64          dynamic_offsets_data_start,
-            GPUSize32          dynamic_offsets_data_length) = 0;
+        // virtual void set_bind_group(
+        //     GPUIndex32         index,
+        //     GPUBindGroupHandle bind_group,
+        //     const uint32_t*    dynamic_offsets_data,
+        //     GPUSize64          dynamic_offsets_data_start,
+        //     GPUSize32          dynamic_offsets_data_length) = 0;
     };
 
     struct GPURenderCommandsMixin
@@ -55,7 +55,7 @@ namespace lyra::rhi
             GPUSize32 first_vertex   = 0,
             GPUSize32 first_instance = 0) = 0;
 
-        virtual void drawIndexed(
+        virtual void draw_indexed(
             GPUSize32         index_count,
             GPUSize32         instance_count = 1,
             GPUSize32         first_index    = 0,

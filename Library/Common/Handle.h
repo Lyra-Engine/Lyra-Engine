@@ -13,9 +13,11 @@ namespace lyra
 
         T value;
 
-        Handle() : value(T(0)) {}
+        Handle() : value(T(-1)) {}
 
         Handle(T value) : value(value) {}
+
+        bool valid() const { return value != T(-1); }
     };
 } // namespace lyra
 

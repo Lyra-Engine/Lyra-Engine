@@ -3,10 +3,25 @@
 
 #include <type_traits>
 
-template <typename T, typename = std::enable_if_t<std::is_enum_v<T>>>
+template <typename E>
+struct enable_bitflags : std::false_type
+{
+};
+
+#define ENABLE_BIT_FLAGS(E)                    \
+    template <>                                \
+    struct enable_bitflags<E> : std::true_type \
+    {                                          \
+    };
+
+template <typename E>
+constexpr bool enable_bitflags_v = enable_bitflags<E>::value;
+
+template <typename E, typename = std::enable_if_t<std::is_enum_v<E>>>
 struct BitFlags
 {
-    using U = std::underlying_type_t<T>;
+    using T = BitFlags<E>;
+    using U = std::underlying_type_t<E>;
 
     U value;
 
@@ -14,27 +29,55 @@ struct BitFlags
 
     BitFlags(U value) : value(value) {}
 
-    BitFlags(T value) : value(value) {}
+    BitFlags(E value) : value(static_cast<U>(value)) {}
 
-    friend BitFlags operator~(BitFlags lhs)
+    friend T operator~(T lhs)
     {
-        return BitFlags(~lhs.value);
+        return T(~lhs.value);
     }
 
-    friend BitFlags operator|(BitFlags lhs, BitFlags rhs)
+    friend T operator|(T lhs, T rhs)
     {
-        return BitFlags(lhs.value | rhs.value);
+        return T(lhs.value | rhs.value);
     }
 
-    friend BitFlags operator&(BitFlags lhs, BitFlags rhs)
+    friend T operator&(T lhs, T rhs)
     {
-        return BitFlags(lhs.value & rhs.value);
+        return T(lhs.value & rhs.value);
     }
 
-    friend BitFlags operator^(BitFlags lhs, BitFlags rhs)
+    friend T operator^(T lhs, T rhs)
     {
-        return BitFlags(lhs.value ^ rhs.value);
+        return T(lhs.value ^ rhs.value);
     }
 };
+
+template <typename E, typename = std::enable_if_t<std::is_enum_v<E> && enable_bitflags_v<E>>>
+BitFlags<E> operator~(E lhs)
+{
+    using U = std::underlying_type_t<E>;
+    return BitFlags<E>(~static_cast<U>(lhs));
+}
+
+template <typename E, typename = std::enable_if_t<std::is_enum_v<E> && enable_bitflags_v<E>>>
+BitFlags<E> operator|(E lhs, E rhs)
+{
+    using U = std::underlying_type_t<E>;
+    return BitFlags<E>(static_cast<U>(lhs) | static_cast<U>(rhs));
+}
+
+template <typename E, typename = std::enable_if_t<std::is_enum_v<E> && enable_bitflags_v<E>>>
+BitFlags<E> operator&(E lhs, E rhs)
+{
+    using U = std::underlying_type_t<E>;
+    return BitFlags<E>(static_cast<U>(lhs) & static_cast<U>(rhs));
+}
+
+template <typename E, typename = std::enable_if_t<std::is_enum_v<E> && enable_bitflags_v<E>>>
+BitFlags<E> operator^(E lhs, E rhs)
+{
+    using U = std::underlying_type_t<E>;
+    return BitFlags<E>(static_cast<U>(lhs) ^ static_cast<U>(rhs));
+}
 
 #endif // LYRA_LIBRARY_COMMON_BITFLAGS_H

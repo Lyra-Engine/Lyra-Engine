@@ -12,25 +12,24 @@ namespace lyra::rhi
         VULKAN,
     };
 
-    enum struct GPUInstanceFlag : uint
+    enum struct GPUFlag : uint
     {
-        DEBUG                = 0x1,
-        VALIDATION           = 0x2,
-        GPU_BASED_VALIDATION = 0x4,
+        DEBUG      = 0x1,
+        VALIDATION = 0x2,
     };
 
     enum struct GPUObjectType : uint
     {
+        INSTANCE,
         ADAPTER,
+        SURFACE,
         DEVICE,
         QUEUE,
-        SWAPCHAIN,
         BUFFER,
         SAMPLER,
         TEXTURE,
         TEXTURE_VIEW,
         SHADER_MODULE,
-        SURFACE,
         BINDGROUP,
         BINDGROUP_LAYOUT,
         PIPELINE_LAYOUT,
@@ -74,7 +73,22 @@ namespace lyra::rhi
         TEXTURE_FORMATS_TIER1,
     };
 
-    enum struct PredefinedColorSpace : uint
+    enum struct GPUPresentMode : uint
+    {
+        Fifo,
+        FifoRelaxed,
+        Immediate,
+        Mailbox,
+    };
+
+    enum struct GPUCompositeAlphaMode : uint
+    {
+        Opaque,
+        PreMultiplied,
+        PostMultiplied,
+    };
+
+    enum struct GPUColorSpace : uint
     {
         SRGB,
         DISPLAY_P3,

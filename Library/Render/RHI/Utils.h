@@ -8,6 +8,12 @@
 
 #include <Render/RHI/Enums.h>
 
+ENABLE_BIT_FLAGS(lyra::rhi::GPUFlag);
+ENABLE_BIT_FLAGS(lyra::rhi::GPUShaderStage);
+ENABLE_BIT_FLAGS(lyra::rhi::GPUBufferUsage);
+ENABLE_BIT_FLAGS(lyra::rhi::GPUTextureUsage);
+ENABLE_BIT_FLAGS(lyra::rhi::GPUColorWrite);
+
 namespace lyra::rhi
 {
 
@@ -26,7 +32,7 @@ namespace lyra::rhi
     using GPUFlagsConstant         = uint32_t;
     using GPUPipelineConstantValue = uint64_t;
     using GPUSubmissionIndex       = uint32_t;
-    using GPUInstanceFlags         = BitFlags<GPUInstanceFlag>;
+    using GPUFlags                 = BitFlags<GPUFlag>;
     using GPUShaderStageFlags      = BitFlags<GPUShaderStage>;
     using GPUBufferUsageFlags      = BitFlags<GPUBufferUsage>;
     using GPUTextureUsageFlags     = BitFlags<GPUTextureUsage>;
@@ -34,16 +40,16 @@ namespace lyra::rhi
     using BufferSource             = uint8_t*;
 
     // typed GPU handle
+    using GPUInstanceHandle           = Handle<GPUObjectType, GPUObjectType::INSTANCE>;
     using GPUAdapterHandle            = Handle<GPUObjectType, GPUObjectType::ADAPTER>;
+    using GPUSurfaceHandle            = Handle<GPUObjectType, GPUObjectType::SURFACE>;
     using GPUDeviceHandle             = Handle<GPUObjectType, GPUObjectType::DEVICE>;
     using GPUQueueHandle              = Handle<GPUObjectType, GPUObjectType::QUEUE>;
-    using GPUSwapchainHandle          = Handle<GPUObjectType, GPUObjectType::SWAPCHAIN>;
     using GPUCommandBufferHandle      = Handle<GPUObjectType, GPUObjectType::COMMAND_BUFFER>;
     using GPUBufferHandle             = Handle<GPUObjectType, GPUObjectType::BUFFER>;
     using GPUSamplerHandle            = Handle<GPUObjectType, GPUObjectType::SAMPLER>;
     using GPUTextureHandle            = Handle<GPUObjectType, GPUObjectType::TEXTURE>;
     using GPUTextureViewHandle        = Handle<GPUObjectType, GPUObjectType::TEXTURE_VIEW>;
-    using GPUSurfaceHandle            = Handle<GPUObjectType, GPUObjectType::SURFACE>;
     using GPUShaderModuleHandle       = Handle<GPUObjectType, GPUObjectType::SHADER_MODULE>;
     using GPUQuerySetHandle           = Handle<GPUObjectType, GPUObjectType::QUERY_SET>;
     using GPUTlasHandle               = Handle<GPUObjectType, GPUObjectType::TLAS>;
@@ -115,6 +121,14 @@ namespace lyra::rhi
         uint max_compute_workgroup_size_y                    = 256;
         uint max_compute_workgroup_size_z                    = 64;
         uint max_compute_workgroups_per_dimension            = 65535;
+    };
+
+    struct GPUSurfaceCapabilities
+    {
+        Vector<GPUTextureFormat>      formats;
+        Vector<GPUPresentMode>        present_modes;
+        Vector<GPUCompositeAlphaMode> alpha_modes;
+        GPUTextureUsageFlags          usages;
     };
 
     struct GPUAdapterInfo
