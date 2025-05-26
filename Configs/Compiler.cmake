@@ -1,0 +1,20 @@
+# export compilation database
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# enable C++ 17
+set(CMAKE_CXX_STANDARD 17)
+
+# For Visual Studio
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
+# For Visual Studio (export .lib for .dll)
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+
+# Enable ccache
+set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
+
+# Other settings
+if(MSVC)
+  # ignore the stupid warning from MSVC
+  add_compile_options("/wd4996")
+endif()
