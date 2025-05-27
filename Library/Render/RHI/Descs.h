@@ -147,18 +147,7 @@ namespace lyra::rhi
         GPUSize32                sample_count = 1;
     };
 
-    struct GPUCommandEncoderDescriptor : public GPUObjectDescriptorBase
-    {
-        // nothing here for now
-    };
-
-    struct GPURenderBundleEncoderDescriptor : public GPURenderPassLayout
-    {
-        bool depth_read_only   = false;
-        bool stencil_read_only = false;
-    };
-
-    struct GPURenderBundleDescriptor : public GPUObjectDescriptorBase
+    struct GPUCommandBundleDescriptor : public GPUObjectDescriptorBase
     {
         // nothing here for now
     };

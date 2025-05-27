@@ -6,7 +6,6 @@
 #include <Render/RHI/Enums.h>
 #include <Render/RHI/Utils.h>
 #include <Render/RHI/Descs.h>
-#include <Render/RHI/Mixin.h>
 #include <Render/RHI/Error.h>
 
 namespace lyra::rhi
@@ -18,11 +17,22 @@ namespace lyra::rhi
         GPUDeviceHandle device;
     };
 
+    struct GPUFence : public GPUObjectBase
+    {
+        GPUFenceHandle handle;
+
+        void destroy();
+
+        operator GPUFenceHandle() const { return handle; }
+    };
+
     struct GPUSampler : public GPUObjectBase
     {
         GPUSamplerHandle handle;
 
         void destroy();
+
+        operator GPUSamplerHandle() const { return handle; }
     };
 
     struct GPUShaderModule : public GPUObjectBase
@@ -30,6 +40,8 @@ namespace lyra::rhi
         GPUShaderModuleHandle handle;
 
         void destroy();
+
+        operator GPUShaderModuleHandle() const { return handle; }
     };
 
     struct GPUTextureView : public GPUObjectBase
@@ -37,6 +49,8 @@ namespace lyra::rhi
         GPUTextureViewHandle handle;
 
         void destroy();
+
+        operator GPUTextureViewHandle() const { return handle; }
     };
 
     struct GPUTexture : public GPUObjectBase
@@ -56,6 +70,8 @@ namespace lyra::rhi
         auto create_view(GPUTextureViewDescriptor descriptor) -> GPUTextureView;
 
         auto destroy() -> void;
+
+        operator GPUTextureHandle() const { return handle; }
     };
 
     struct GPUBuffer : public GPUObjectBase
@@ -73,6 +89,8 @@ namespace lyra::rhi
         auto unmap() -> void;
 
         auto destroy() -> void;
+
+        operator GPUBufferHandle() const { return handle; }
     };
 
     struct GPUQuerySet : public GPUObjectBase
@@ -83,6 +101,8 @@ namespace lyra::rhi
         GPUSize32Out count;
 
         auto destroy() -> void;
+
+        operator GPUQuerySetHandle() const { return handle; }
     };
 
     struct GPUTlas : public GPUObjectBase
@@ -90,6 +110,8 @@ namespace lyra::rhi
         GPUTlasHandle handle;
 
         auto destroy() -> void;
+
+        operator GPUTlasHandle() const { return handle; }
     };
 
     struct GPUBlas : public GPUObjectBase
@@ -97,6 +119,8 @@ namespace lyra::rhi
         GPUBlasHandle handle;
 
         auto destroy() -> void;
+
+        operator GPUBlasHandle() const { return handle; }
     };
 
     struct GPUBindGroup : public GPUObjectBase
@@ -105,83 +129,112 @@ namespace lyra::rhi
 
         // NOTE: no manual deletion of GPUBindGroup,
         // because these are automatically recycled by GC.
+
+        operator GPUBindGroupHandle() const { return handle; }
     };
 
     struct GPUBindGroupLayout : public GPUObjectBase
     {
-        GPUBindGroupHandle handle;
+        GPUBindGroupLayoutHandle handle;
 
-        // NOTE: no manual deletion of GPUBindGroupLayout,
-        // because it is cheap and shared and usually cause bad situations if managed manually.
+        void destroy();
+
+        operator GPUBindGroupLayoutHandle() const { return handle; }
     };
 
     struct GPUPipelineLayout : public GPUObjectBase
     {
         GPUPipelineLayoutHandle handle;
 
-        // NOTE: no manual deletion of GPUPipelineLayout,
-        // because it is cheap and shared and usually cause bad situations if managed manually.
+        void destroy();
+
+        operator GPUPipelineLayoutHandle() const { return handle; }
     };
 
     struct GPURenderPipeline : public GPUObjectBase
     {
         GPURenderPipelineHandle handle;
 
-        // NOTE: no manual deletion of GPURenderPipeline,
-        // because it is shared and usually cause bad situations if managed manually.
+        void destroy();
+
+        operator GPURenderPipelineHandle() const { return handle; }
     };
 
     struct GPUComputePipeline : public GPUObjectBase
     {
         GPUComputePipelineHandle handle;
 
-        // NOTE: no manual deletion of GPURenderPipeline,
-        // because it is shared and usually cause bad situations if managed manually.
+        void destroy();
+
+        operator GPUComputePipelineHandle() const { return handle; }
     };
 
     struct GPURayTracingPipeline : public GPUObjectBase
     {
         GPURayTracingPipelineHandle handle;
 
-        // NOTE: no manual deletion of GPURenderPipeline,
-        // because it is shared and usually cause bad situations if managed manually.
+        void destroy();
+
+        operator GPURayTracingPipelineHandle() const { return handle; }
     };
 
-    struct GPUComputePassEncoder : public GPUObjectBase,
-                                   public GPUCommandsMixin,
-                                   public GPUDebugCommandsMixin,
-                                   public GPUBindingCommandsMixin
+    struct GPUCommandEncoder : public GPUObjectBase
     {
+        GPUQueueType type = GPUQueueType::DEFAULT;
+
+        GPUCommandEncoderHandle handle;
+
+        void insert_debug_marker(CString marker_label);
+
+        void push_debug_group(CString group_label);
+
+        void pop_debug_group();
+
+        void set_pipeline(GPURenderPipeline pipeline);
+
         void set_pipeline(GPUComputePipeline pipeline);
 
-        void dispatch_workgroups(
-            GPUSize32 workgroup_count_x,
-            GPUSize32 workgroup_count_y = 1,
-            GPUSize32 workgroup_count_z = 1);
+        void set_pipeline(GPURayTracingPipeline pipeline);
 
-        void dispatch_Workgroups_indirect(
-            GPUBufferHandle indirect_buffer,
-            GPUSize64       indirect_offset);
+        void set_bind_group(GPUIndex32 index, GPUBindGroup bind_group, const Vector<GPUBufferDynamicOffset>& dynamic_offsets = {});
 
-        void end();
-    };
+        void dispatch_workgroups(GPUSize32 x, GPUSize32 y = 1, GPUSize32 z = 1);
 
-    struct GPURenderPassEncoder : public GPUObjectBase,
-                                  public GPUCommandsMixin,
-                                  public GPUDebugCommandsMixin,
-                                  public GPUBindingCommandsMixin,
-                                  public GPURenderCommandsMixin
-    {
-        void set_viewport(
-            float x, float y,
-            float width, float height,
-            float min_depth, float max_depth);
+        void dispatch_Workgroups_indirect(const GPUBuffer& indirect_buffer, GPUSize64 indirect_offset);
 
-        void set_scissor_rect(
-            GPUIntegerCoordinate x,
-            GPUIntegerCoordinate y,
-            GPUIntegerCoordinate width,
-            GPUIntegerCoordinate height);
+        void set_index_buffer(const GPUBuffer& buffer, GPUIndexFormat index_format, GPUSize64 offset = 0, GPUSize64 size = 0);
+
+        void set_vertex_buffer(GPUIndex32 slot, const GPUBuffer& buffer, GPUSize64 offset = 0, GPUSize64 size = 0);
+
+        void draw(GPUSize32 vertex_count, GPUSize32 instance_count = 1, GPUSize32 first_vertex = 0, GPUSize32 first_instance = 0);
+
+        void draw_indexed(GPUSize32 index_count, GPUSize32 instance_count = 1, GPUSize32 first_index = 0, GPUSignedOffset32 base_vertex = 0, GPUSize32 first_instance = 0);
+
+        void draw_indirect(const GPUBuffer& buffer, GPUSize64 indirect_offset);
+
+        void draw_indexed_indirect(const GPUBuffer& buffer, GPUSize64 indirect_offset);
+
+        void begin_render_pass(const GPURenderPassDescriptor& descriptor);
+
+        void begin_compute_pass(const GPUComputePassDescriptor& descriptor = {});
+
+        void copy_buffer_to_buffer(const GPUBuffer& source, const GPUBuffer& destination, GPUSize64 size);
+
+        void copy_buffer_to_buffer(const GPUBuffer& source, GPUSize64 source_offset, const GPUBuffer& destination, GPUSize64 destination_offset, GPUSize64 size);
+
+        void copy_buffer_to_texture(GPUTexelCopyBufferInfo source, GPUTexelCopyTextureInfo destination, GPUExtent3D copy_size);
+
+        void copy_texture_to_buffer(GPUTexelCopyTextureInfo source, GPUTexelCopyBufferInfo destination, GPUExtent3D copy_size);
+
+        void copy_texture_to_texture(GPUTexelCopyTextureInfo source, GPUTexelCopyTextureInfo destination, GPUExtent3D copy_size);
+
+        void clear_buffer(const GPUBuffer& buffer, GPUSize64 offset = 0, GPUSize64 size = 0);
+
+        void resolve_query_set(GPUQuerySet query_set, GPUSize32 first_query, GPUSize32 query_count, const GPUBuffer& destination, GPUSize64 destination_offset);
+
+        void set_viewport(float x, float y, float w, float h, float min_depth, float max_depth);
+
+        void set_scissor_rect(GPUIntegerCoordinate x, GPUIntegerCoordinate y, GPUIntegerCoordinate w, GPUIntegerCoordinate h);
 
         void set_blend_constant(GPUColor color);
 
@@ -191,107 +244,47 @@ namespace lyra::rhi
 
         void end_occlusion_query();
 
-        void execute_bundles(const Vector<GPURenderBundleHandle>& bundles);
+        void buffer_barrier(const Vector<BufferBarrier>& barriers);
 
-        void end();
+        void texture_barrier(const Vector<TextureBarrier>& barriers);
+
+        void finish();
     };
 
-    struct GPURenderBundleEncoder : public GPUObjectBase,
-                                    public GPUCommandsMixin,
-                                    public GPUDebugCommandsMixin,
-                                    public GPUBindingCommandsMixin,
-                                    public GPURenderCommandsMixin
+    struct GPUCommandBundle : public GPUCommandEncoder
     {
-        GPURenderBundleHandle finish(const GPURenderBundleDescriptor& descriptor = {});
+        operator GPUCommandEncoderHandle() const { return handle; }
     };
 
-    struct GPURenderBundle : public GPUObjectBase
+    struct GPUCommandBuffer : public GPUCommandEncoder
     {
-        GPURenderBundleHandle handle;
-    };
+        operator GPUCommandEncoderHandle() const { return handle; }
 
-    struct GPUCommandBuffer : public GPUObjectBase
-    {
-        GPUCommandBufferHandle handle;
-    };
-
-    struct GPUCommandEncoder : public GPUObjectBase
-    {
-        GPURenderPassEncoder begin_render_pass(const GPURenderPassDescriptor& descriptor);
-
-        GPUComputePassEncoder begin_compute_pass(const GPUComputePassDescriptor& descriptor = {});
-
-        void copy_buffer_to_buffer(
-            GPUBufferHandle source,
-            GPUBufferHandle destination,
-            GPUSize64       size);
-
-        void copy_buffer_to_buffer(
-            GPUBufferHandle source,
-            GPUSize64       source_offset,
-            GPUBufferHandle destination,
-            GPUSize64       destination_offset,
-            GPUSize64       size);
-
-        void copy_buffer_to_texture(
-            GPUTexelCopyBufferInfo  source,
-            GPUTexelCopyTextureInfo destination,
-            GPUExtent3D             copy_size);
-
-        void copy_texture_to_buffer(
-            GPUTexelCopyTextureInfo source,
-            GPUTexelCopyBufferInfo  destination,
-            GPUExtent3D             copy_size);
-
-        void copy_texture_to_texture(
-            GPUTexelCopyTextureInfo source,
-            GPUTexelCopyTextureInfo destination,
-            GPUExtent3D             copy_size);
-
-        void clear_buffer(
-            GPUBufferHandle buffer,
-            GPUSize64       offset = 0,
-            GPUSize64       size   = 0);
-
-        void resolve_query_set(
-            GPUQuerySet query_set,
-            GPUSize32   first_query,
-            GPUSize32   query_count,
-            GPUBuffer   destination,
-            GPUSize64   destination_offset);
-
-        GPUCommandBuffer finish(const GPUCommandBufferDescriptor& descriptor = {});
+        void execute_bundles(const Vector<GPUCommandBundle>& bundles);
     };
 
     struct GPUQueue : public GPUObjectBase
     {
         GPUQueueHandle handle;
 
-        auto submit(const Vector<GPUCommandBufferHandle>& command_buffers) -> GPUSubmissionIndex;
+        void submit(const Vector<GPUCommandBuffer>& command_buffers);
 
-        template <typename F>
-        void on_submitted_work_done(F&& f);
+        void write_buffer(const GPUBuffer& buffer, GPUSize64 buffer_offset, BufferSource data, GPUSize64 data_offset = 0, GPUSize64 size = 0);
 
-        void write_buffer(
-            GPUBufferHandle buffer,
-            GPUSize64       buffer_offset,
-            BufferSource    data,
-            GPUSize64       data_offset = 0,
-            GPUSize64       size        = 0);
+        void write_texture(GPUTexelCopyTextureInfo destination, BufferSource data, GPUTexelCopyBufferLayout dataLayout, GPUExtent3D size);
 
-        void write_texture(
-            GPUTexelCopyTextureInfo  destination,
-            BufferSource             data,
-            GPUTexelCopyBufferLayout dataLayout,
-            GPUExtent3D              size);
+        operator GPUQueueHandle() const { return handle; }
     };
 
     struct GPUSurfaceTexture : public GPUObjectBase
     {
         GPUTextureHandle handle;
+        GPUFenceHandle   ready;
         bool             suboptimal;
 
         void present();
+
+        operator GPUTextureHandle() const { return handle; }
     };
 
     struct GPUDevice : public GPUObjectBase
@@ -300,9 +293,11 @@ namespace lyra::rhi
 
         GPUAdapterInfo       adapter_info   = {};
         GPUSupportedFeatures features       = {};
+        GPUQueue             default_queue  = {};
         GPUQueue             compute_queue  = {};
-        GPUQueue             graphics_queue = {};
         GPUQueue             transfer_queue = {};
+
+        auto create_fence() -> GPUFence;
 
         auto create_buffer(const GPUBufferDescriptor& descriptor) -> GPUBuffer;
 
@@ -326,15 +321,21 @@ namespace lyra::rhi
 
         auto create_raytracing_pipeline(const GPURayTracingPipelineDescriptor& descriptor) -> GPURayTracingPipeline;
 
-        auto create_command_encoder(const GPUCommandEncoderDescriptor& descriptor) -> GPUCommandEncoder;
+        auto create_command_buffer(const GPUCommandBufferDescriptor& descriptor, GPUQueueType type = GPUQueueType::DEFAULT) -> GPUCommandBuffer;
 
-        auto create_render_bundle_encoder(const GPURenderBundleEncoderDescriptor& descriptor) -> GPURenderBundleEncoder;
+        auto create_command_bundle(const GPUCommandBundleDescriptor& descriptor, GPUQueueType type = GPUQueueType::DEFAULT) -> GPUCommandBundle;
 
         auto push_error_scope(GPUErrorFilter filter) -> void;
 
         auto pop_error_scope() -> void;
 
+        auto wait() -> void;
+
+        auto wait(GPUFence fence) -> void;
+
         auto destroy() -> void;
+
+        operator GPUDeviceHandle() const { return handle; }
     };
 
     struct GPUAdapter : public GPUObjectBase
@@ -352,18 +353,25 @@ namespace lyra::rhi
 
         auto destroy() -> void;
 
-        auto get_surface_capabilities() -> GPUSurfaceCapabilities;
-
         auto get_current_texture() -> GPUTexture;
+
+        auto get_surface_capabilities() -> GPUSurfaceCapabilities;
     };
 
     struct GPU
     {
+        static GPUDevice  DEVICE;
+        static GPUSurface SURFACE;
+
         GPUBackend   backend;
         GPUFlags     flags  = 0;
         WindowHandle window = {};
 
         explicit GPU(const GPUDescriptor& descriptor);
+
+        static GPUDevice& get_current_device() { return DEVICE; }
+
+        static GPUSurface& get_current_surface() { return SURFACE; }
 
         auto destroy() -> void;
 

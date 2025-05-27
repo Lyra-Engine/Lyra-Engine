@@ -13,9 +13,12 @@ ENABLE_BIT_FLAGS(lyra::rhi::GPUShaderStage);
 ENABLE_BIT_FLAGS(lyra::rhi::GPUBufferUsage);
 ENABLE_BIT_FLAGS(lyra::rhi::GPUTextureUsage);
 ENABLE_BIT_FLAGS(lyra::rhi::GPUColorWrite);
+ENABLE_BIT_FLAGS(lyra::rhi::GPUBarrierSync);
+ENABLE_BIT_FLAGS(lyra::rhi::GPUBarrierAccess);
 
 namespace lyra::rhi
 {
+    using BufferSource = uint8_t*;
 
     using GPUBufferDynamicOffset   = uint32_t;
     using GPUStencilValue          = uint32_t;
@@ -31,21 +34,22 @@ namespace lyra::rhi
     using GPUSize32Out             = uint32_t;
     using GPUFlagsConstant         = uint32_t;
     using GPUPipelineConstantValue = uint64_t;
-    using GPUSubmissionIndex       = uint32_t;
     using GPUFlags                 = BitFlags<GPUFlag>;
     using GPUShaderStageFlags      = BitFlags<GPUShaderStage>;
     using GPUBufferUsageFlags      = BitFlags<GPUBufferUsage>;
     using GPUTextureUsageFlags     = BitFlags<GPUTextureUsage>;
     using GPUColorWriteFlags       = BitFlags<GPUColorWrite>;
-    using BufferSource             = uint8_t*;
+    using GPUBarrierSyncFlags      = BitFlags<GPUBarrierSync>;
+    using GPUBarrierAccessFlags    = BitFlags<GPUBarrierAccess>;
 
     // typed GPU handle
     using GPUInstanceHandle           = Handle<GPUObjectType, GPUObjectType::INSTANCE>;
     using GPUAdapterHandle            = Handle<GPUObjectType, GPUObjectType::ADAPTER>;
     using GPUSurfaceHandle            = Handle<GPUObjectType, GPUObjectType::SURFACE>;
     using GPUDeviceHandle             = Handle<GPUObjectType, GPUObjectType::DEVICE>;
+    using GPUFenceHandle              = Handle<GPUObjectType, GPUObjectType::FENCE>;
     using GPUQueueHandle              = Handle<GPUObjectType, GPUObjectType::QUEUE>;
-    using GPUCommandBufferHandle      = Handle<GPUObjectType, GPUObjectType::COMMAND_BUFFER>;
+    using GPUCommandEncoderHandle     = Handle<GPUObjectType, GPUObjectType::COMMAND_ENCODER>;
     using GPUBufferHandle             = Handle<GPUObjectType, GPUObjectType::BUFFER>;
     using GPUSamplerHandle            = Handle<GPUObjectType, GPUObjectType::SAMPLER>;
     using GPUTextureHandle            = Handle<GPUObjectType, GPUObjectType::TEXTURE>;
@@ -54,12 +58,11 @@ namespace lyra::rhi
     using GPUQuerySetHandle           = Handle<GPUObjectType, GPUObjectType::QUERY_SET>;
     using GPUTlasHandle               = Handle<GPUObjectType, GPUObjectType::TLAS>;
     using GPUBlasHandle               = Handle<GPUObjectType, GPUObjectType::BLAS>;
-    using GPUBindGroupHandle          = Handle<GPUObjectType, GPUObjectType::BINDGROUP>;
-    using GPUBindGroupLayoutHandle    = Handle<GPUObjectType, GPUObjectType::BINDGROUP_LAYOUT>;
+    using GPUBindGroupHandle          = Handle<GPUObjectType, GPUObjectType::BIND_GROUP>;
+    using GPUBindGroupLayoutHandle    = Handle<GPUObjectType, GPUObjectType::BIND_GROUP_LAYOUT>;
     using GPUPipelineLayoutHandle     = Handle<GPUObjectType, GPUObjectType::PIPELINE_LAYOUT>;
     using GPURenderPipelineHandle     = Handle<GPUObjectType, GPUObjectType::RENDER_PIPELINE>;
     using GPUComputePipelineHandle    = Handle<GPUObjectType, GPUObjectType::COMPUTE_PIPELINE>;
-    using GPURenderBundleHandle       = Handle<GPUObjectType, GPUObjectType::RENDER_BUNDLE>;
     using GPURayTracingPipelineHandle = Handle<GPUObjectType, GPUObjectType::RAYTRACING_PIPELINE>;
 
     struct MappedBufferRange
@@ -184,9 +187,9 @@ namespace lyra::rhi
     struct GPUTexelCopyTextureInfo
     {
         GPUTextureHandle     texture;
-        GPUIntegerCoordinate mipLevel = 0;
-        GPUOrigin3D          origin   = {};
-        GPUTextureAspect     aspect   = GPUTextureAspect::ALL;
+        GPUIntegerCoordinate mip_level = 0;
+        GPUOrigin3D          origin    = {};
+        GPUTextureAspect     aspect    = GPUTextureAspect::ALL;
     };
 
     struct GPUBufferBindingLayout
@@ -374,6 +377,37 @@ namespace lyra::rhi
         GPUQuerySetHandle query_set;
         GPUSize32         beginning_of_pass_write_index;
         GPUSize32         end_of_pass_write_index;
+    };
+
+    struct GPUTextureSubresourceRange
+    {
+        GPUSize32 base_mip_level   = 0;
+        GPUSize32 level_count      = 0;
+        GPUSize32 base_array_layer = 0;
+        GPUSize32 layer_count      = 0;
+    };
+
+    struct BufferBarrier
+    {
+        GPUBarrierSync   src_sync;
+        GPUBarrierSync   dst_sync;
+        GPUBarrierAccess src_access;
+        GPUBarrierAccess dst_access;
+        GPUBufferHandle  buffer;
+        GPUSize64        offset;
+        GPUSize64        size;
+    };
+
+    struct TextureBarrier
+    {
+        GPUBarrierSync             src_sync;
+        GPUBarrierSync             dst_sync;
+        GPUBarrierAccess           src_access;
+        GPUBarrierAccess           dst_access;
+        GPUBarrierLayout           src_layout;
+        GPUBarrierLayout           dst_layout;
+        GPUTextureHandle           texture;
+        GPUTextureSubresourceRange subresources;
     };
 
 } // namespace lyra::rhi
