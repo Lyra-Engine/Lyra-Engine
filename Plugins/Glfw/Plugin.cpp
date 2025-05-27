@@ -25,7 +25,7 @@
 using namespace lyra;
 using namespace lyra::wsi;
 
-static Logger logger = init_stderr_logger("Window", LogLevel::trace);
+static Logger logger = init_stderr_logger("GLFW", LogLevel::trace);
 
 #ifdef USE_PLATFORM_WINDOWS
 void populate_window_handle(GLFWwindow* win, WindowHandle& window)

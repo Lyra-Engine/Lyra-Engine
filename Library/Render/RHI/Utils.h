@@ -8,7 +8,7 @@
 
 #include <Render/RHI/Enums.h>
 
-ENABLE_BIT_FLAGS(lyra::rhi::GPUFlag);
+ENABLE_BIT_FLAGS(lyra::rhi::RHIFlag);
 ENABLE_BIT_FLAGS(lyra::rhi::GPUShaderStage);
 ENABLE_BIT_FLAGS(lyra::rhi::GPUBufferUsage);
 ENABLE_BIT_FLAGS(lyra::rhi::GPUTextureUsage);
@@ -34,7 +34,7 @@ namespace lyra::rhi
     using GPUSize32Out             = uint32_t;
     using GPUFlagsConstant         = uint32_t;
     using GPUPipelineConstantValue = uint64_t;
-    using GPUFlags                 = BitFlags<GPUFlag>;
+    using RHIFlags                 = BitFlags<RHIFlag>;
     using GPUShaderStageFlags      = BitFlags<GPUShaderStage>;
     using GPUBufferUsageFlags      = BitFlags<GPUBufferUsage>;
     using GPUTextureUsageFlags     = BitFlags<GPUTextureUsage>;
@@ -43,7 +43,7 @@ namespace lyra::rhi
     using GPUBarrierAccessFlags    = BitFlags<GPUBarrierAccess>;
 
     // typed GPU handle
-    using GPUInstanceHandle           = Handle<GPUObjectType, GPUObjectType::INSTANCE>;
+    using RHIHandle                   = Handle<GPUObjectType, GPUObjectType::INSTANCE>;
     using GPUAdapterHandle            = Handle<GPUObjectType, GPUObjectType::ADAPTER>;
     using GPUSurfaceHandle            = Handle<GPUObjectType, GPUObjectType::SURFACE>;
     using GPUDeviceHandle             = Handle<GPUObjectType, GPUObjectType::DEVICE>;

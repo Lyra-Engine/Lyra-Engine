@@ -5,17 +5,17 @@
 
 namespace lyra::rhi
 {
-    enum struct GPUBackend : uint
+    enum struct RHIFlag : uint
+    {
+        DEBUG      = 0x1,
+        VALIDATION = 0x2,
+    };
+
+    enum struct RHIBackend : uint
     {
         METAL,
         D3D12,
         VULKAN,
-    };
-
-    enum struct GPUFlag : uint
-    {
-        DEBUG      = 0x1,
-        VALIDATION = 0x2,
     };
 
     enum struct GPUObjectType : uint
@@ -190,9 +190,13 @@ namespace lyra::rhi
 
     enum struct GPUShaderStage : uint
     {
-        VERTEX   = 0x1,
-        FRAGMENT = 0x2,
-        COMPUTE  = 0x4,
+        VERTEX    = 0x1,
+        FRAGMENT  = 0x2,
+        COMPUTE   = 0x4,
+        RAYGEN    = 0x8,
+        MISS      = 0x10,
+        HITGROUP  = 0x20,
+        INTERSECT = 0x40,
     };
 
     enum struct GPUBindingResourceType : uint

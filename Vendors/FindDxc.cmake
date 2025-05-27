@@ -20,6 +20,9 @@ endif()
 if(NOT TARGET dxc)
   include(${dxc_SOURCE_DIR}/cmake/caches/PredefinedParams.cmake)
   FetchContent_MakeAvailable(dxc)
+
+  add_library(dxc_inc INTERFACE)
+  target_include_directories(dxc_inc INTERFACE ${dxc_SOURCE_DIR}/include)
 endif()
 
 # mark dxc as found

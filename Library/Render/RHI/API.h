@@ -14,9 +14,6 @@ namespace lyra::rhi
         // api name
         CString (*get_api_name)();
 
-        // backend api
-        GPUBackend (*get_backend)();
-
         bool (*create_adapter)(GPUAdapterHandle& adapter, const GPUAdapterDescriptor& descriptor);
         void (*delete_adapter)(GPUAdapterHandle adapter);
 

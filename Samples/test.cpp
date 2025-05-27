@@ -85,17 +85,17 @@ int main()
         return Window::init(desc);
     });
 
-    // auto gpu = execute([&] {
+    // auto rhi = execute([&] {
     //     auto desc    = GPUDescriptor{};
     //     desc.backend = GPUBackend::VULKAN;
     //     desc.flags   = GPUFlag::DEBUG | GPUFlag::VALIDATION;
     //     desc.window  = win.handle;
-    //     return GPU::init(desc);
+    //     return RHI::init(desc);
     // });
     //
     // auto adapter = execute([&]() {
     //     GPUAdapterDescriptor desc = {};
-    //     return gpu.request_adapter(desc);
+    //     return rhi.request_adapter(desc);
     // });
     //
     // auto device = execute([&]() {
@@ -109,7 +109,8 @@ int main()
     // auto surface = execute([&]() {
     //     auto desc  = GPUSurfaceDescriptor{};
     //     desc.label = "main_surface";
-    //     return gpu.request_surface(device, desc);
+    //     desc.device = device;
+    //     return rhi.request_surface(desc);
     // });
 
     win.bind(WindowEvent::START, setup);

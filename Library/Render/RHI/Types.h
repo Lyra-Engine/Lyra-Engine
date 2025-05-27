@@ -358,16 +358,17 @@ namespace lyra::rhi
         auto get_surface_capabilities() -> GPUSurfaceCapabilities;
     };
 
-    struct GPU
+    struct RHI
     {
         static GPUDevice  DEVICE;
         static GPUSurface SURFACE;
 
-        GPUBackend   backend;
-        GPUFlags     flags  = 0;
+        RHIFlags     flags = 0;
+        RHIBackend   backend;
+        RHIHandle    handle;
         WindowHandle window = {};
 
-        static GPU init(const GPUDescriptor& descriptor);
+        static RHI init(const RHIDescriptor& descriptor);
 
         static GPUDevice& get_current_device() { return DEVICE; }
 

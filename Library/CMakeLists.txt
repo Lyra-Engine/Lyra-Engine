@@ -9,6 +9,7 @@ target_sources(lyra-common PRIVATE
 
     # render sources
     Render/RHI/Types.cpp
+    Render/SLC/Types.cpp
 )
 
 # link dependencies

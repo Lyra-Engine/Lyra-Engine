@@ -15,10 +15,10 @@ namespace lyra::rhi
         CString label = "";
     };
 
-    struct GPUDescriptor : public GPUObjectDescriptorBase
+    struct RHIDescriptor : public GPUObjectDescriptorBase
     {
-        GPUBackend   backend;
-        GPUFlags     flags  = 0;
+        RHIFlags     flags = 0;
+        RHIBackend   backend;
         WindowHandle window = {};
     };
 
@@ -34,7 +34,7 @@ namespace lyra::rhi
 
     struct GPUSurfaceDescriptor : public GPUObjectDescriptorBase
     {
-        // nothing here for now
+        GPUDeviceHandle device;
     };
 
     struct GPUQueueDescriptor : public GPUObjectDescriptorBase

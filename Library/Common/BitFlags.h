@@ -31,6 +31,11 @@ struct BitFlags
 
     BitFlags(E value) : value(static_cast<U>(value)) {}
 
+    bool contains(E flag) const
+    {
+        return value & static_cast<U>(flag);
+    }
+
     friend T operator~(T lhs)
     {
         return T(~lhs.value);

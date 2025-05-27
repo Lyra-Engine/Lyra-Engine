@@ -1,6 +1,6 @@
 #include <Common/Plugin.h>
-#include <Window/Types.h>
 #include <Window/API.h>
+#include <Window/Types.h>
 
 using namespace lyra;
 using namespace lyra::wsi;
