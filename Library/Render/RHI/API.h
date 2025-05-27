@@ -1,8 +1,6 @@
 #ifndef LYRA_LIBRARY_RENDER_RHI_API_H
 #define LYRA_LIBRARY_RENDER_RHI_API_H
 
-// #include <Common/Plugin.h>
-
 #include <Render/RHI/Enums.h>
 #include <Render/RHI/Utils.h>
 #include <Render/RHI/Descs.h>
@@ -49,6 +47,12 @@ namespace lyra::rhi
         bool (*create_tlas)(GPUDeviceHandle device, GPUTlasHandle& texture, const GPUTlasDescriptor& descriptor);
         void (*delete_tlas)(GPUDeviceHandle device, GPUTlasHandle texture);
 
+        bool (*create_bind_group_layout)(GPUDeviceHandle device, GPUBindGroupLayoutHandle& layout, const GPUBindGroupLayoutDescriptor& descriptor);
+        bool (*delete_bind_group_layout)(GPUDeviceHandle device, GPUBindGroupLayoutHandle layout);
+
+        bool (*create_pipeline_layout)(GPUDeviceHandle device, GPUPipelineLayoutHandle& layout, const GPUPipelineLayoutDescriptor& descriptor);
+        bool (*delete_pipeline_layout)(GPUDeviceHandle device, GPUBindGroupLayoutHandle layout);
+
         bool (*create_render_pipeline)(GPUDeviceHandle device, GPURenderPipelineHandle& texture, const GPURenderPipelineDescriptor& descriptor);
         void (*delete_render_pipeline)(GPUDeviceHandle device, GPURenderPipelineHandle texture);
 
@@ -71,8 +75,6 @@ namespace lyra::rhi
         void (*cmd_draw_indirect)(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle indirect_buffer, GPUSize64 indirect_offset);
         void (*cmd_draw_indexed_indirect)(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle indirect_buffer, GPUSize64 indirect_offset);
     };
-
-    // using RenderPlugin = Plugin<RenderAPI>;
 
 } // namespace lyra::rhi
 

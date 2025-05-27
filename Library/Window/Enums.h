@@ -3,7 +3,7 @@
 
 #include <Common/BitFlags.h>
 
-namespace lyra
+namespace lyra::wsi
 {
     enum struct WindowFlag
     {
@@ -23,6 +23,6 @@ namespace lyra
 
     using WindowFlags = BitFlags<WindowFlag>;
 
-} // namespace lyra
+} // namespace lyra::wsi
 
 #endif // LYRA_LIBRARY_WINDOW_ENUMS_H

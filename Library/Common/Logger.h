@@ -1,21 +1,20 @@
 #ifndef LYRA_LIBRARY_COMMON_LOGGER_H
 #define LYRA_LIBRARY_COMMON_LOGGER_H
 
-// library headers
+// vendor headers
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
-// local headers
+// library headers
 #include <Common/String.h>
 #include <Common/Pointer.h>
 
 namespace lyra
 {
-    using Logger = Ref<spdlog::logger>;
+    using Logger   = Ref<spdlog::logger>;
+    using LogLevel = spdlog::level::level_enum;
 
-    using LogLevel = spdlog::level;
-
-    inline Logger init_stdout_logger(const CString& name, LogLevel verbosity)
+    inline Logger init_stdout_logger(const String& name, LogLevel verbosity)
     {
         auto logger = spdlog::stdout_color_mt(name);
         logger->set_level(verbosity);
@@ -23,7 +22,7 @@ namespace lyra
         return logger;
     }
 
-    inline Logger init_stderr_logger(const CString& name, LogLevel verbosity)
+    inline Logger init_stderr_logger(const String& name, LogLevel verbosity)
     {
         auto logger = spdlog::stderr_color_mt(name);
         logger->set_level(verbosity);

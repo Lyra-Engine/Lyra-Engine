@@ -5,10 +5,10 @@
 
 namespace lyra
 {
-    template <class T, class Deleter = std::default_delete<T>>
+    template <typename T, class Deleter = std::default_delete<T>>
     using Own = std::unique_ptr<T, Deleter>;
 
-    template <class T>
+    template <typename T>
     using Ref = std::shared_ptr<T>;
 
 } // namespace lyra

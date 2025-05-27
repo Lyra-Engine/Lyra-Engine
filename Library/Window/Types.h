@@ -6,9 +6,9 @@
 #include <Common/Container.h>
 #include <Window/Enums.h>
 #include <Window/Descs.h>
-#include <Window/API.h>
+#include <Window/Utils.h>
 
-namespace lyra
+namespace lyra::wsi
 {
 
     struct Window
@@ -17,9 +17,11 @@ namespace lyra
 
         WindowHandle handle;
 
-        Array<Callback, 5> callbacks;
+        static auto init(const WindowDescriptor& descriptor) -> Window;
 
-        explicit Window(const WindowDescriptor& descriptor);
+        void destroy();
+
+        void loop();
 
         template <typename T, typename F>
         void bind(WindowEvent event, F&& f, T* user)
@@ -33,15 +35,10 @@ namespace lyra
             callbacks.at(static_cast<uint>(event)) = f;
         }
 
-        void loop()
-        {
-        }
-
-        void destroy()
-        {
-        }
+    private:
+        Array<Callback, 6> callbacks;
     };
 
-} // namespace lyra
+} // namespace lyra::wsi
 
 #endif // LYRA_LIBRARY_WINDOW_TYPES_H

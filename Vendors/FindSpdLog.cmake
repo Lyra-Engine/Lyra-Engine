@@ -4,7 +4,7 @@ include(FetchContent)
 FetchContent_Declare(
   spdlog
   GIT_REPOSITORY https://github.com/gabime/spdlog.git
-  GIT_TAG        v2.x
+  GIT_TAG        v1.15.3
 )
 
 # get properties
@@ -21,4 +21,3 @@ FetchContent_MakeAvailable(spdlog)
 set(spdlog_FOUND TRUE)
 
 set_target_properties(spdlog PROPERTIES FOLDER "Vendors")
-set_target_properties(fmt    PROPERTIES FOLDER "Vendors")

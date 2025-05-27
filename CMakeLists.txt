@@ -15,14 +15,9 @@ include(System)
 # project library
 add_subdirectory(Library)
 
-# # project plugins
-# add_subdirectory(Plugins/Window)
-# add_subdirectory(Plugins/Vulkan)
-# add_subdirectory(Plugins/Shader)
+# project plugins
+add_subdirectory(Plugins/Glfw)
 
-# # project samples
-# add_subdirectory(Samples/Editor)
-# add_subdirectory(Samples/Player)
-
+# project samples
 add_executable(test ./Samples/test.cpp)
 target_link_libraries(test PRIVATE lyra::common)

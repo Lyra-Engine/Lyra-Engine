@@ -1,13 +1,15 @@
 #ifndef LYRA_LIBRARY_RENDER_RHI_DESCS_H
 #define LYRA_LIBRARY_RENDER_RHI_DESCS_H
 
-#include <Window/API.h>
+#include <Window/Window.hpp>
 
 #include <Render/RHI/Enums.h>
 #include <Render/RHI/Utils.h>
 
 namespace lyra::rhi
 {
+    using namespace lyra::wsi;
+
     struct GPUObjectDescriptorBase
     {
         CString label = "";

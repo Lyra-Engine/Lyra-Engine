@@ -367,7 +367,7 @@ namespace lyra::rhi
         GPUFlags     flags  = 0;
         WindowHandle window = {};
 
-        explicit GPU(const GPUDescriptor& descriptor);
+        static GPU init(const GPUDescriptor& descriptor);
 
         static GPUDevice& get_current_device() { return DEVICE; }
 
