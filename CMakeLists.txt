@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.26)
+cmake_minimum_required(VERSION 2.8...3.26)
 
 # project name and version
 project(LyraEngine VERSION 0.1 LANGUAGES C CXX)
@@ -18,6 +18,7 @@ add_subdirectory(Library)
 # project plugins
 add_subdirectory(Plugins/Dxc)
 add_subdirectory(Plugins/Glfw)
+add_subdirectory(Plugins/Vulkan)
 
 # project samples
 add_executable(test ./Samples/test.cpp)

@@ -16,5 +16,6 @@ target_sources(lyra-common PRIVATE
 find_package(glm REQUIRED)
 find_package(boxer REQUIRED)
 find_package(spdlog REQUIRED)
-target_link_libraries(lyra-common PUBLIC glm boxer spdlog)
+find_package(magic_enum REQUIRED)
+target_link_libraries(lyra-common PUBLIC glm boxer spdlog magic_enum)
 target_include_directories(lyra-common PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

@@ -1,4 +1,3 @@
-cmake_policy(VERSION 3.6)
 include(FetchContent)
 
 # define external project

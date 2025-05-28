@@ -1,4 +1,3 @@
-cmake_policy(VERSION 3.6)
 include(FetchContent)
 
 # define external project
@@ -11,16 +10,9 @@ FetchContent_Declare(
 # get properties
 FetchContent_GetProperties(glm)
 
-# populate glm when needed
-if(NOT glm_POPULATED)
-    FetchContent_Populate(glm)
-endif()
-
 # add glm target (if not done so)
-if(NOT TARGET glm)
-  add_library(glm INTERFACE)
-  target_include_directories(glm INTERFACE ${glm_SOURCE_DIR})
-endif()
+add_library(glm INTERFACE)
+target_include_directories(glm INTERFACE ${glm_SOURCE_DIR})
 
 # mark glm as found
 set(glm_FOUND TRUE)
