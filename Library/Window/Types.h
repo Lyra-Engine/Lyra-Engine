@@ -4,6 +4,7 @@
 #include <functional>
 
 #include <Common/Container.h>
+#include <Common/Enums.h>
 #include <Window/Enums.h>
 #include <Window/Descs.h>
 #include <Window/Utils.h>
@@ -36,7 +37,9 @@ namespace lyra::wsi
         }
 
     private:
-        Array<Callback, 6> callbacks;
+        static constexpr size_t NUM_WINDOW_EVENTS = enum_count<WindowEvent>();
+
+        Array<Callback, NUM_WINDOW_EVENTS> callbacks;
     };
 
 } // namespace lyra::wsi

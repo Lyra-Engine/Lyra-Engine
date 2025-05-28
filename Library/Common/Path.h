@@ -1,5 +1,5 @@
-#ifndef LYRA_COMMON_PATH_H
-#define LYRA_COMMON_PATH_H
+#ifndef LYRA_LIBRARY_COMMON_PATH_H
+#define LYRA_LIBRARY_COMMON_PATH_H
 
 #include <string>
 #include <filesystem>
@@ -17,4 +17,4 @@ namespace lyra
     }
 } // end of namespace lyra
 
-#endif // LYRA_COMMON_PATH_H
+#endif // LYRA_LIBRARY_COMMON_PATH_H

@@ -158,7 +158,8 @@ void add_stage(DxcArguments& args, const CompileDescriptor& desc)
             break;
         case GPUShaderStage::RAYGEN:
         case GPUShaderStage::MISS:
-        case GPUShaderStage::HITGROUP:
+        case GPUShaderStage::CHIT:
+        case GPUShaderStage::AHIT:
         case GPUShaderStage::INTERSECT:
             args.push(L"lib_6_3");
             break;

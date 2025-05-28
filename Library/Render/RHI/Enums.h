@@ -195,8 +195,9 @@ namespace lyra::rhi
         COMPUTE   = 0x4,
         RAYGEN    = 0x8,
         MISS      = 0x10,
-        HITGROUP  = 0x20,
-        INTERSECT = 0x40,
+        CHIT      = 0x20,
+        AHIT      = 0x40,
+        INTERSECT = 0x80,
     };
 
     enum struct GPUBindingResourceType : uint
@@ -518,10 +519,6 @@ namespace lyra::rhi
         ASTC_12X10_UNORM_SRGB,
         ASTC_12X12_UNORM,
         ASTC_12X12_UNORM_SRGB,
-    };
-
-    enum struct TextureLayout : uint
-    {
     };
 
     enum struct GPUBarrierSync : uint
