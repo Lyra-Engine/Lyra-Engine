@@ -9,13 +9,19 @@ using WindowPlugin = Plugin<WindowAPI>;
 
 static Own<WindowPlugin> WINDOW_PLUGIN;
 
-Window Window::init(const WindowDescriptor& descriptor)
-{
-    if (!WINDOW_PLUGIN)
-        WINDOW_PLUGIN = std::make_unique<WindowPlugin>("lyra-glfw");
+#define WSIAPI (WINDOW_PLUGIN->get_api())
 
-    Window window;
-    WINDOW_PLUGIN->get_api()->create_window(descriptor, window.handle);
+OwnedResource<Window> Window::init(const WindowDescriptor& descriptor)
+{
+    if (WINDOW_PLUGIN.get()) {
+        show_error("WSI", "Call Window::init() exactly once!");
+        exit(1);
+    }
+
+    WINDOW_PLUGIN = std::make_unique<WindowPlugin>("lyra-glfw");
+
+    OwnedResource<Window> window(new Window());
+    WSIAPI->create_window(descriptor, window->handle);
     return window;
 }
 

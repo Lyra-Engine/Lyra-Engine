@@ -11,6 +11,18 @@ namespace lyra
     template <typename T>
     using Ref = std::shared_ptr<T>;
 
+    template <typename T>
+    struct Destroyer
+    {
+        void operator()(T* pointer)
+        {
+            pointer->destroy();
+        }
+    };
+
+    template <typename T>
+    using OwnedResource = std::unique_ptr<T, Destroyer<T>>;
+
 } // namespace lyra
 
 #endif // LYRA_LIBRARY_COMMON_POINTER_H

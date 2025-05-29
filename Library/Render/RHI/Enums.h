@@ -20,10 +20,6 @@ namespace lyra::rhi
 
     enum struct GPUObjectType : uint
     {
-        INSTANCE,
-        ADAPTER,
-        SURFACE,
-        DEVICE,
         QUEUE,
         FENCE,
         BUFFER,
@@ -71,6 +67,8 @@ namespace lyra::rhi
         DUAL_SOURCE_BLENDING,
         SUBGROUPS,
         TEXTURE_FORMATS_TIER1,
+        DESCRIPTOR_INDEXING,
+        RAYTRACING,
     };
 
     enum struct GPUQueueType : uint

@@ -43,10 +43,6 @@ namespace lyra::rhi
     using GPUBarrierAccessFlags    = BitFlags<GPUBarrierAccess>;
 
     // typed GPU handle
-    using RHIHandle                   = Handle<GPUObjectType, GPUObjectType::INSTANCE>;
-    using GPUAdapterHandle            = Handle<GPUObjectType, GPUObjectType::ADAPTER>;
-    using GPUSurfaceHandle            = Handle<GPUObjectType, GPUObjectType::SURFACE>;
-    using GPUDeviceHandle             = Handle<GPUObjectType, GPUObjectType::DEVICE>;
     using GPUFenceHandle              = Handle<GPUObjectType, GPUObjectType::FENCE>;
     using GPUQueueHandle              = Handle<GPUObjectType, GPUObjectType::QUEUE>;
     using GPUCommandEncoderHandle     = Handle<GPUObjectType, GPUObjectType::COMMAND_ENCODER>;
@@ -90,6 +86,8 @@ namespace lyra::rhi
         bool texture_compression_astc_sliced_3d = false;
         bool texture_compression_etc2           = false;
         bool timestamp_query                    = false;
+        bool descriptor_indexing                = false;
+        bool raytracing                         = false;
     };
 
     struct GPUSupportedLimits

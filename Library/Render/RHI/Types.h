@@ -3,6 +3,7 @@
 
 // reference: https://gpuweb.github.io/gpuweb/#
 
+#include <Common/Pointer.h>
 #include <Render/RHI/Enums.h>
 #include <Render/RHI/Utils.h>
 #include <Render/RHI/Descs.h>
@@ -13,8 +14,6 @@ namespace lyra::rhi
     struct GPUObjectBase
     {
         CString label = "";
-
-        GPUDeviceHandle device;
     };
 
     struct GPUFence : public GPUObjectBase
@@ -289,8 +288,6 @@ namespace lyra::rhi
 
     struct GPUDevice : public GPUObjectBase
     {
-        GPUDeviceHandle handle;
-
         GPUAdapterInfo       adapter_info   = {};
         GPUSupportedFeatures features       = {};
         GPUQueue             default_queue  = {};
@@ -334,8 +331,15 @@ namespace lyra::rhi
         auto wait(GPUFence fence) -> void;
 
         auto destroy() -> void;
+    };
 
-        operator GPUDeviceHandle() const { return handle; }
+    struct GPUSurface : public GPUObjectBase
+    {
+        GPUSurfaceCapabilities capabilities;
+
+        auto destroy() -> void;
+
+        auto get_current_texture() -> GPUTexture;
     };
 
     struct GPUAdapter : public GPUObjectBase
@@ -347,17 +351,6 @@ namespace lyra::rhi
         auto request_device(const GPUDeviceDescriptor& descriptor) -> GPUDevice;
     };
 
-    struct GPUSurface : public GPUObjectBase
-    {
-        GPUSurfaceHandle handle;
-
-        auto destroy() -> void;
-
-        auto get_current_texture() -> GPUTexture;
-
-        auto get_surface_capabilities() -> GPUSurfaceCapabilities;
-    };
-
     struct RHI
     {
         static GPUDevice  DEVICE;
@@ -365,20 +358,19 @@ namespace lyra::rhi
 
         RHIFlags     flags = 0;
         RHIBackend   backend;
-        RHIHandle    handle;
         WindowHandle window = {};
-
-        static RHI init(const RHIDescriptor& descriptor);
 
         static GPUDevice& get_current_device() { return DEVICE; }
 
         static GPUSurface& get_current_surface() { return SURFACE; }
 
+        static auto init(const RHIDescriptor& descriptor) -> OwnedResource<RHI>;
+
         auto destroy() -> void;
 
         auto request_adapter(const GPUAdapterDescriptor& descriptor = {}) -> GPUAdapter;
 
-        auto request_surface(const GPUDevice& device, const GPUSurfaceDescriptor& descriptor = {}) -> GPUSurface;
+        auto request_surface(const GPUSurfaceDescriptor& descriptor = {}) -> GPUSurface;
     };
 
 } // namespace lyra::rhi

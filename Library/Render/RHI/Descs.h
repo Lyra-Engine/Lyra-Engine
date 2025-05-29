@@ -34,7 +34,6 @@ namespace lyra::rhi
 
     struct GPUSurfaceDescriptor : public GPUObjectDescriptorBase
     {
-        GPUDeviceHandle device;
     };
 
     struct GPUQueueDescriptor : public GPUObjectDescriptorBase

@@ -14,52 +14,55 @@ namespace lyra::rhi
         // api name
         CString (*get_api_name)();
 
-        bool (*create_adapter)(GPUAdapterHandle& adapter, const GPUAdapterDescriptor& descriptor);
-        void (*delete_adapter)(GPUAdapterHandle adapter);
+        bool (*create_instance)(const RHIDescriptor& descriptor);
+        void (*delete_instance)();
 
-        bool (*create_device)(GPUAdapterHandle adapter, GPUDeviceHandle& device, const GPUDeviceDescriptor& descriptor);
-        void (*delete_device)(GPUDeviceHandle device);
+        bool (*create_adapter)(GPUAdapter& adapter, const GPUAdapterDescriptor& descriptor);
+        void (*delete_adapter)();
 
-        bool (*create_surface)(GPUDeviceHandle device, GPUSurfaceHandle& surface, const GPUSurfaceDescriptor& descriptor);
-        void (*delete_surface)(GPUDeviceHandle device, GPUSurfaceHandle surface);
+        bool (*create_surface)(GPUSurface& surface, const GPUSurfaceDescriptor& descriptor);
+        void (*delete_surface)();
 
-        bool (*create_buffer)(GPUDeviceHandle device, GPUBufferHandle& buffer, const GPUBufferDescriptor& descriptor);
-        void (*delete_buffer)(GPUDeviceHandle device, GPUBufferHandle buffer);
+        bool (*create_device)(const GPUDeviceDescriptor& descriptor);
+        void (*delete_device)();
 
-        bool (*create_sampler)(GPUDeviceHandle device, GPUSamplerHandle& sampler, const GPUSamplerDescriptor& descriptor);
-        void (*delete_sampler)(GPUDeviceHandle device, GPUSamplerHandle sampler);
+        bool (*create_buffer)(GPUBufferHandle& buffer, const GPUBufferDescriptor& descriptor);
+        void (*delete_buffer)(GPUBufferHandle buffer);
 
-        bool (*create_texture)(GPUDeviceHandle device, GPUTextureHandle& texture, const GPUTextureDescriptor& descriptor);
-        void (*delete_texture)(GPUDeviceHandle device, GPUTextureHandle texture);
+        bool (*create_sampler)(GPUSamplerHandle& sampler, const GPUSamplerDescriptor& descriptor);
+        void (*delete_sampler)(GPUSamplerHandle sampler);
 
-        bool (*create_texture_view)(GPUDeviceHandle device, GPUTextureHandle texture, GPUTextureViewHandle& view, const GPUTextureViewDescriptor& descriptor);
-        void (*delete_texture_view)(GPUDeviceHandle device, GPUTextureHandle texture, GPUTextureViewHandle view);
+        bool (*create_texture)(GPUTextureHandle& texture, const GPUTextureDescriptor& descriptor);
+        void (*delete_texture)(GPUTextureHandle texture);
 
-        bool (*create_shader_module)(GPUDeviceHandle device, GPUShaderModuleHandle& texture, const GPUShaderModuleDescriptor& descriptor);
-        void (*delete_shader_module)(GPUDeviceHandle device, GPUShaderModuleHandle texture);
+        bool (*create_texture_view)(GPUTextureHandle texture, GPUTextureViewHandle& view, const GPUTextureViewDescriptor& descriptor);
+        void (*delete_texture_view)(GPUTextureHandle texture, GPUTextureViewHandle view);
 
-        bool (*create_blas)(GPUDeviceHandle device, GPUBlasHandle& texture, const GPUBlasDescriptor& descriptor);
-        void (*delete_blas)(GPUDeviceHandle device, GPUBlasHandle texture);
+        bool (*create_shader_module)(GPUShaderModuleHandle& texture, const GPUShaderModuleDescriptor& descriptor);
+        void (*delete_shader_module)(GPUShaderModuleHandle texture);
 
-        bool (*create_tlas)(GPUDeviceHandle device, GPUTlasHandle& texture, const GPUTlasDescriptor& descriptor);
-        void (*delete_tlas)(GPUDeviceHandle device, GPUTlasHandle texture);
+        bool (*create_blas)(GPUBlasHandle& texture, const GPUBlasDescriptor& descriptor);
+        void (*delete_blas)(GPUBlasHandle texture);
 
-        bool (*create_bind_group_layout)(GPUDeviceHandle device, GPUBindGroupLayoutHandle& layout, const GPUBindGroupLayoutDescriptor& descriptor);
-        bool (*delete_bind_group_layout)(GPUDeviceHandle device, GPUBindGroupLayoutHandle layout);
+        bool (*create_tlas)(GPUTlasHandle& texture, const GPUTlasDescriptor& descriptor);
+        void (*delete_tlas)(GPUTlasHandle texture);
 
-        bool (*create_pipeline_layout)(GPUDeviceHandle device, GPUPipelineLayoutHandle& layout, const GPUPipelineLayoutDescriptor& descriptor);
-        bool (*delete_pipeline_layout)(GPUDeviceHandle device, GPUBindGroupLayoutHandle layout);
+        bool (*create_bind_group_layout)(GPUBindGroupLayoutHandle& layout, const GPUBindGroupLayoutDescriptor& descriptor);
+        bool (*delete_bind_group_layout)(GPUBindGroupLayoutHandle layout);
 
-        bool (*create_render_pipeline)(GPUDeviceHandle device, GPURenderPipelineHandle& texture, const GPURenderPipelineDescriptor& descriptor);
-        void (*delete_render_pipeline)(GPUDeviceHandle device, GPURenderPipelineHandle texture);
+        bool (*create_pipeline_layout)(GPUPipelineLayoutHandle& layout, const GPUPipelineLayoutDescriptor& descriptor);
+        bool (*delete_pipeline_layout)(GPUBindGroupLayoutHandle layout);
 
-        bool (*create_compute_pipeline)(GPUDeviceHandle device, GPUComputePipelineHandle& texture, const GPUComputePipelineDescriptor& descriptor);
-        void (*delete_compute_pipeline)(GPUDeviceHandle device, GPUComputePipelineHandle texture);
+        bool (*create_render_pipeline)(GPURenderPipelineHandle& texture, const GPURenderPipelineDescriptor& descriptor);
+        void (*delete_render_pipeline)(GPURenderPipelineHandle texture);
 
-        bool (*create_raytracing_pipeline)(GPUDeviceHandle device, GPURayTracingPipelineHandle& texture, const GPURayTracingPipelineDescriptor& descriptor);
-        void (*delete_raytracing_pipeline)(GPUDeviceHandle device, GPURayTracingPipelineHandle texture);
+        bool (*create_compute_pipeline)(GPUComputePipelineHandle& texture, const GPUComputePipelineDescriptor& descriptor);
+        void (*delete_compute_pipeline)(GPUComputePipelineHandle texture);
 
-        bool (*create_command_buffer)(GPUDeviceHandle device, GPUQueueHandle queue, GPUCommandEncoderHandle& cmdbuffer, const GPUCommandBufferDescriptor& descriptor);
+        bool (*create_raytracing_pipeline)(GPURayTracingPipelineHandle& texture, const GPURayTracingPipelineDescriptor& descriptor);
+        void (*delete_raytracing_pipeline)(GPURayTracingPipelineHandle texture);
+
+        bool (*create_command_buffer)(GPUQueueHandle queue, GPUCommandEncoderHandle& cmdbuffer, const GPUCommandBufferDescriptor& descriptor);
 
         void (*cmd_set_render_pipeline)(GPUCommandEncoderHandle cmdbuffer, GPURenderPipelineHandle pipeline);
         void (*cmd_set_compute_pipeline)(GPUCommandEncoderHandle cmdbuffer, GPUComputePipelineHandle pipeline);

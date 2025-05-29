@@ -3,6 +3,7 @@
 
 #include <functional>
 
+#include <Common/Pointer.h>
 #include <Common/Container.h>
 #include <Common/Enums.h>
 #include <Window/Enums.h>
@@ -18,7 +19,7 @@ namespace lyra::wsi
 
         WindowHandle handle;
 
-        static auto init(const WindowDescriptor& descriptor) -> Window;
+        static auto init(const WindowDescriptor& descriptor) -> OwnedResource<Window>;
 
         void destroy();
 
