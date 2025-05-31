@@ -6,14 +6,14 @@
 namespace lyra::rhi
 {
 
-    enum class CompileFlag : uint
+    enum struct CompileFlag : uint
     {
         NONE    = 0x0,
         DEBUG   = 0x1,
         REFLECT = 0x2,
     };
 
-    enum class CompileTarget : uint
+    enum struct CompileTarget : uint
     {
         DXIL,
         SPIRV,

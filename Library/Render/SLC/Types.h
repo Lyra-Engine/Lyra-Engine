@@ -1,7 +1,9 @@
 #ifndef LYRA_LIBRARY_RENDER_SLC_TYPES_H
 #define LYRA_LIBRARY_RENDER_SLC_TYPES_H
 
+#include <Common/Path.h>
 #include <Common/String.h>
+#include <Common/Handle.h>
 #include <Common/Pointer.h>
 #include <Render/RHI/Enums.h>
 #include <Render/RHI/Descs.h>
@@ -11,37 +13,38 @@
 
 namespace lyra::rhi
 {
+    struct ShaderAPI;
+
+    struct Compiler;
+    struct CompileResult;
+
+    using CompilerHandle      = TypedPointerHandle<Compiler>;
+    using CompileResultHandle = TypedPointerHandle<CompileResult>;
 
     struct CompileResult
     {
-        void*  res;
-        String name;
+        CompileResultHandle handle;
 
-        explicit CompileResult(void* res, CString entry);
         virtual ~CompileResult();
 
-        auto size() const -> size_t;
-        auto code() const -> ShaderBlob;
-        auto error() const -> ShaderError;
-        auto entry() const -> CString;
-
         void reflect(GPUPipelineLayoutDescriptor& desc) const;
+
+        auto get_shader_blob(CString entry) const -> OwnedShaderBlob;
     };
 
     struct Compiler
     {
-        CompileTarget  target = CompileTarget::SPIRV;
-        CompileFlags   flags  = CompileFlag::NONE;
-        Vector<String> defines;
-        Vector<String> includes;
+        CompilerHandle handle;
 
-        static Compiler init(const CompilerDescriptor& descriptor);
+        static auto init(const CompilerDescriptor& descriptor) -> Compiler;
 
-        void add_define(const String& macro);
+        static auto api() -> ShaderAPI*;
 
-        void add_include(const String& path);
+        virtual ~Compiler();
 
-        auto compile(GPUShaderStage stage, const String& entry, const String& source) -> Own<CompileResult>;
+        auto compile(const Path& path) -> Own<CompileResult>;
+
+        auto compile(const CompileDescriptor& descriptor) -> Own<CompileResult>;
     };
 
 } // namespace lyra::rhi

@@ -1,3 +1,5 @@
+#include <fstream>
+
 #include <Common/Plugin.h>
 #include <Render/SLC/API.h>
 #include <Render/SLC/Types.h>
@@ -9,90 +11,59 @@ using ShaderPlugin = Plugin<ShaderAPI>;
 
 static Own<ShaderPlugin> SHADER_PLUGIN;
 
-CompileResult::CompileResult(void* res, CString entry)
-    : res(res), name(entry) {}
-
-CompileResult::~CompileResult()
+ShaderAPI* Compiler::api()
 {
-    SHADER_PLUGIN->get_api()->cleanup(res);
-}
-
-auto CompileResult::entry() const -> CString
-{
-    return name.c_str();
-}
-
-auto CompileResult::size() const -> size_t
-{
-    ShaderBlob  blob;
-    ShaderError error;
-    return SHADER_PLUGIN->get_api()->compile(res, blob, error);
-}
-
-auto CompileResult::code() const -> ShaderBlob
-{
-    ShaderBlob  blob;
-    ShaderError error;
-    SHADER_PLUGIN->get_api()->compile(res, blob, error);
-    return blob;
-}
-
-auto CompileResult::error() const -> ShaderError
-{
-    ShaderBlob  blob;
-    ShaderError error;
-    SHADER_PLUGIN->get_api()->compile(res, blob, error);
-    return error;
-}
-
-void CompileResult::reflect(GPUPipelineLayoutDescriptor& desc) const
-{
-    SHADER_PLUGIN->get_api()->reflect(res, desc);
+    return SHADER_PLUGIN->get_api();
 }
 
 Compiler Compiler::init(const CompilerDescriptor& descriptor)
 {
     if (!SHADER_PLUGIN)
-        SHADER_PLUGIN = std::make_unique<ShaderPlugin>("lyra-dxc");
+        SHADER_PLUGIN = std::make_unique<ShaderPlugin>("lyra-slang");
 
     Compiler compiler;
-    compiler.flags  = descriptor.flags;
-    compiler.target = descriptor.target;
+    Compiler::api()->create_compiler(compiler.handle, descriptor);
     return compiler;
 }
 
-void Compiler::add_define(const String& macro)
+Compiler::~Compiler()
 {
-    defines.push_back(macro);
+    Compiler::api()->delete_compiler(handle);
 }
 
-void Compiler::add_include(const String& path)
+Own<CompileResult> Compiler::compile(const Path& path)
 {
-    includes.push_back(path);
+    std::ifstream file(path);
+    assert(file.good());
+
+    // read entire file into buffer
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    std::string source = buffer.str();
+
+    auto descriptor   = CompileDescriptor{};
+    descriptor.path   = path.c_str();
+    descriptor.module = path.stem().c_str();
+    descriptor.source = source.c_str();
+    return compile(descriptor);
 }
 
-auto Compiler::compile(GPUShaderStage stage, const String& entry, const String& source) -> Own<CompileResult>
+Own<CompileResult> Compiler::compile(const CompileDescriptor& descriptor)
 {
-    Vector<const char*> _defines(defines.size(), nullptr);
-    std::transform(defines.begin(), defines.end(), _defines.begin(), [](const auto& s) {
-        return s.c_str();
-    });
+    auto result = std::make_unique<CompileResult>();
+    Compiler::api()->compile(handle, descriptor, result->handle);
+    return result;
+}
 
-    Vector<const char*> _includes(includes.size(), nullptr);
-    std::transform(includes.begin(), includes.end(), _includes.begin(), [](const auto& s) {
-        return s.c_str();
-    });
+CompileResult::~CompileResult()
+{
+    Compiler::api()->cleanup(handle);
+}
 
-    CompileDescriptor desc;
-    desc.target   = target;
-    desc.flags    = flags;
-    desc.stage    = stage;
-    desc.entry    = entry.c_str();
-    desc.source   = source;
-    desc.defines  = _defines;
-    desc.includes = _includes;
-
-    void* res = nullptr;
-    SHADER_PLUGIN->get_api()->prepare(desc, res);
-    return std::make_unique<CompileResult>(res, desc.entry);
+OwnedShaderBlob CompileResult::get_shader_blob(CString entry) const
+{
+    OwnedShaderBlob blob;
+    blob.reset(new ShaderBlob{});
+    Compiler::api()->get_shader_blob(handle, entry, *blob.get());
+    return blob;
 }

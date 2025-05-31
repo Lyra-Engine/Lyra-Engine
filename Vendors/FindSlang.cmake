@@ -3,6 +3,7 @@
 # Set the Slang installation paths
 set(SHADER_SLANG_LIB_PATH "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/lib")
 set(SHADER_SLANG_BIN_PATH "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/bin")
+set(SHADER_SLANG_INC_PATH "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include")
 
 # Handle platform-specific library prefixes and extensions
 if (WIN32)
@@ -65,8 +66,9 @@ add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
 
 # Link dependencies
 target_link_libraries(${TARGET_NAME} PRIVATE ${SHADER_SLANG_LIBS})
+target_include_directories(${TARGET_NAME} PUBLIC ${SHADER_SLANG_INC_PATH})
 
 # Move to Vendors directory
-set_target_properties(gfx PROPERTIES FOLDER "Vendors")
-set_target_properties(slang PROPERTIES FOLDER "Vendors")
-set_target_properties(slang-rt PROPERTIES FOLDER "Vendors")
+set_target_properties(slang::gfx PROPERTIES FOLDER "Vendors")
+set_target_properties(slang::slang PROPERTIES FOLDER "Vendors")
+set_target_properties(slang::slang-rt PROPERTIES FOLDER "Vendors")

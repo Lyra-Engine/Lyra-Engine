@@ -16,8 +16,8 @@ include(System)
 add_subdirectory(Library)
 
 # project plugins
-# add_subdirectory(Plugins/Dxc)
 add_subdirectory(Plugins/Glfw)
+add_subdirectory(Plugins/Slang)
 add_subdirectory(Plugins/Vulkan)
 
 # project samples

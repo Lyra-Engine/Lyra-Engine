@@ -19,6 +19,19 @@ namespace lyra
 
         bool valid() const { return value != T(-1); }
     };
+
+    template <typename T>
+    struct TypedPointerHandle
+    {
+        void* handle = nullptr;
+
+        template <typename U>
+        U* astype() { return reinterpret_cast<U*>(handle); }
+
+        template <typename U>
+        U* astype() const { return reinterpret_cast<U*>(handle); }
+    };
+
 } // namespace lyra
 
 #endif // LYRA_LIBRARY_COMMON_HANDLE_H

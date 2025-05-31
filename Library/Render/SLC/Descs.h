@@ -11,17 +11,17 @@ namespace lyra::rhi
 
     struct CompilerDescriptor
     {
-        CompileFlags  flags;
-        CompileTarget target = CompileTarget::SPIRV;
+        CompileFlags              flags    = CompileFlag::NONE;
+        CompileTarget             target   = CompileTarget::SPIRV;
+        Vector<CString>           includes = {};
+        HashMap<CString, CString> defines  = {};
     };
 
-    struct CompileDescriptor : public CompilerDescriptor
+    struct CompileDescriptor
     {
-        GPUShaderStage  stage;
-        CString         entry;
-        String          source;
-        Vector<CString> defines;
-        Vector<CString> includes;
+        CString module;
+        CString path;
+        CString source;
     };
 
 } // namespace lyra::rhi

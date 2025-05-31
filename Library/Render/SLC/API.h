@@ -7,6 +7,7 @@
 #include <Render/SLC/Enums.h>
 #include <Render/SLC/Utils.h>
 #include <Render/SLC/Descs.h>
+#include <Render/SLC/Types.h>
 
 namespace lyra::rhi
 {
@@ -15,15 +16,18 @@ namespace lyra::rhi
         // backend api name for shader compiler
         CString (*get_api_name)();
 
-        // compile from source to SPIRV/DXIL
-        bool (*prepare)(const CompileDescriptor& desc, void*& result);
-        void (*cleanup)(void* result);
+        bool (*create_compiler)(CompilerHandle& compiler, const CompilerDescriptor& descriptor);
+        void (*delete_compiler)(CompilerHandle compiler);
 
-        // get the compile binary
-        uint (*compile)(void* result, ShaderBlob& blob, ShaderError& errors);
+        // compile from source
+        bool (*compile)(CompilerHandle compiler, const CompileDescriptor& desc, CompileResultHandle& result);
+        void (*cleanup)(CompileResultHandle result);
+
+        // retrieve shader blobs
+        bool (*get_shader_blob)(CompileResultHandle result, CString entry, ShaderBlob& blob);
 
         // reflect from compiled result
-        bool (*reflect)(void* result, GPUPipelineLayoutDescriptor& desc);
+        bool (*reflect)(CompileResultHandle result, GPUPipelineLayoutDescriptor& desc);
     };
 
 } // namespace lyra::rhi
