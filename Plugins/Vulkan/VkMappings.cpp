@@ -14,7 +14,7 @@ VkPresentModeKHR vkenum(GPUPresentMode mode)
     }
 }
 
-VkCompositeAlphaFlagsKHR vkenum(GPUCompositeAlphaMode mode)
+VkCompositeAlphaFlagBitsKHR vkenum(GPUCompositeAlphaMode mode)
 {
     switch (mode) {
         case GPUCompositeAlphaMode::Opaque:
@@ -551,6 +551,23 @@ VkFormat vkenum(GPUTextureFormat format)
 //     switch (layout) {
 //     }
 // }
+
+VkSampleCountFlagBits vkenum(GPUIntegerCoordinate samples)
+{
+    switch (samples) {
+        case 1:
+            return VK_SAMPLE_COUNT_1_BIT;
+        case 2:
+            return VK_SAMPLE_COUNT_2_BIT;
+        case 4:
+            return VK_SAMPLE_COUNT_4_BIT;
+        case 8:
+            return VK_SAMPLE_COUNT_8_BIT;
+        default:
+            assert(!!!"Non-supported MSAA sample count!");
+            return VK_SAMPLE_COUNT_1_BIT;
+    }
+}
 
 VkColorComponentFlags vkenum(GPUColorWriteFlags color)
 {

@@ -11,6 +11,8 @@
 
 namespace lyra::rhi
 {
+    struct RenderAPI;
+
     struct GPUObjectBase
     {
         CString label = "";
@@ -58,7 +60,8 @@ namespace lyra::rhi
 
         GPUIntegerCoordinateOut width;
         GPUIntegerCoordinateOut height;
-        GPUIntegerCoordinate    depth_or_array_layers;
+        GPUIntegerCoordinate    depth;
+        GPUIntegerCoordinate    array_layers;
         GPUSize32Out            sample_count;
         GPUTextureDimension     dimension;
         GPUTextureFormat        format;
@@ -335,8 +338,6 @@ namespace lyra::rhi
 
     struct GPUSurface : public GPUObjectBase
     {
-        GPUSurfaceCapabilities capabilities;
-
         auto destroy() -> void;
 
         auto get_current_texture() -> GPUTexture;
@@ -365,6 +366,8 @@ namespace lyra::rhi
         static GPUSurface& get_current_surface() { return SURFACE; }
 
         static auto init(const RHIDescriptor& descriptor) -> OwnedResource<RHI>;
+
+        static auto api() -> RenderAPI*;
 
         auto destroy() -> void;
 

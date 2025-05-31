@@ -94,7 +94,7 @@ int main()
     });
 
     auto adapter = execute([&]() {
-        GPUAdapterDescriptor desc = {};
+        auto desc = GPUAdapterDescriptor{};
         return rhi->request_adapter(desc);
     });
 
@@ -107,8 +107,9 @@ int main()
     });
 
     auto surface = execute([&]() {
-        auto desc  = GPUSurfaceDescriptor{};
-        desc.label = "main_surface";
+        auto desc   = GPUSurfaceDescriptor{};
+        desc.label  = "main_surface";
+        desc.window = win->handle;
         return rhi->request_surface(desc);
     });
 

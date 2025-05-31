@@ -69,9 +69,9 @@ bool create_device(const GPUDeviceDescriptor& desc)
     Vector<CString> debugger_extensions = {};
     Vector<CString> validation_layers   = {};
 
-    GPUSupportedFeatures required_features = {};
-    required_features.raytracing           = is_required(desc.required_features, GPUFeatureName::RAYTRACING);
-    required_features.descriptor_indexing  = is_required(desc.required_features, GPUFeatureName::DESCRIPTOR_INDEXING);
+    auto required_features       = GPUSupportedFeatures{};
+    required_features.bindless   = is_required(desc.required_features, GPUFeatureName::BINDLESS);
+    required_features.raytracing = is_required(desc.required_features, GPUFeatureName::RAYTRACING);
 
     // add validation layer
     if (rhi->rhiflags.contains(RHIFlag::VALIDATION)) {
@@ -88,14 +88,20 @@ bool create_device(const GPUDeviceDescriptor& desc)
         device_extensions.push_back(KHR_PORTABILITY_EXTENSION_NAME);
     }
 
-    // load extensions
+    // always loaded extensions
     device_extensions.push_back(VK_KHR_MAINTENANCE1_EXTENSION_NAME);
     device_extensions.push_back(VK_KHR_MAINTENANCE3_EXTENSION_NAME);
-    device_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
-    if (required_features.descriptor_indexing)
+    // load swapchain extensions
+    if (rhi->surface) {
+        device_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+    }
+
+    // load bindless extensions
+    if (required_features.bindless)
         device_extensions.push_back(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME);
 
+    // load raytracing extensions
     if (required_features.raytracing) {
         device_extensions.push_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
         device_extensions.push_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
@@ -127,7 +133,7 @@ bool create_device(const GPUDeviceDescriptor& desc)
     append_feature((VulkanBase*)&separate_depth_stencil_layouts);
 
     auto descriptor_indexing = VkPhysicalDeviceDescriptorIndexingFeatures{};
-    if (required_features.descriptor_indexing) {
+    if (required_features.bindless) {
         descriptor_indexing.sType                                     = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
         descriptor_indexing.pNext                                     = nullptr;
         descriptor_indexing.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
@@ -274,6 +280,19 @@ bool create_device(const GPUDeviceDescriptor& desc)
 void delete_device()
 {
     auto rhi = get_rhi();
+
+    // clean up remaining buffers
+    for (auto& buffer : rhi->buffers.data)
+        delete_buffer(buffer);
+
+    // clean up remaining textures
+    for (auto& texture : rhi->textures.data)
+        delete_texture(texture);
+
+    if (rhi->swapchain) {
+        rhi->vtable.vkDestroySwapchainKHR(rhi->device, rhi->swapchain, nullptr);
+        rhi->swapchain = VK_NULL_HANDLE;
+    }
 
     if (rhi->alloc) {
         vmaDestroyAllocator(rhi->alloc);

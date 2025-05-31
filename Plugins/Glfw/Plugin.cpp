@@ -19,8 +19,7 @@
 #include <Common/String.h>
 #include <Common/Logger.h>
 #include <Common/Plugin.h>
-#include <Render/Render.hpp>
-#include <Window/Window.hpp>
+#include <Window/API.h>
 
 using namespace lyra;
 using namespace lyra::wsi;
@@ -36,10 +35,12 @@ void populate_window_handle(GLFWwindow* win, WindowHandle& window)
 #endif
 
 #ifdef USE_PLATFORM_MACOS
+void* get_metal_layer(void* window);
+
 void populate_window_handle(GLFWwindow* win, WindowHandle& window)
 {
     window.window = win;
-    window.native = glfwGetCocoaWindow(win);
+    window.native = get_metal_layer(glfwGetCocoaWindow(win));
 }
 #endif
 
@@ -74,6 +75,11 @@ auto create_window(const WindowDescriptor& desc, WindowHandle& window) -> bool
         populate_window_handle(win, window);
     }
     return true;
+}
+
+void get_window_size(WindowHandle window, int& width, int& height)
+{
+    glfwGetWindowSize((GLFWwindow*)window.window, &width, &height);
 }
 
 auto delete_window(WindowHandle window) -> void
@@ -119,10 +125,11 @@ LYRA_EXPORT auto cleanup() -> void
 
 LYRA_EXPORT auto create() -> WindowAPI
 {
-    auto api          = WindowAPI{};
-    api.get_api_name  = get_api_name;
-    api.create_window = create_window;
-    api.delete_window = delete_window;
-    api.run_in_loop   = run_in_loop;
+    auto api            = WindowAPI{};
+    api.get_api_name    = get_api_name;
+    api.get_window_size = get_window_size;
+    api.create_window   = create_window;
+    api.delete_window   = delete_window;
+    api.run_in_loop     = run_in_loop;
     return api;
 }

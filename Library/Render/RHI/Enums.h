@@ -67,7 +67,7 @@ namespace lyra::rhi
         DUAL_SOURCE_BLENDING,
         SUBGROUPS,
         TEXTURE_FORMATS_TIER1,
-        DESCRIPTOR_INDEXING,
+        BINDLESS,
         RAYTRACING,
     };
 
@@ -609,6 +609,32 @@ namespace lyra::rhi
         COMPUTE_QUEUE_COPY_DEST,
         VIDEO_QUEUE_COMMON
     };
+
+    inline bool is_depth_format(GPUTextureFormat format)
+    {
+        switch (format) {
+            case GPUTextureFormat::DEPTH16UNORM:
+            case GPUTextureFormat::DEPTH24PLUS:
+            case GPUTextureFormat::DEPTH24PLUS_STENCIL8:
+            case GPUTextureFormat::DEPTH32FLOAT:
+            case GPUTextureFormat::DEPTH32FLOAT_STENCIL8:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    inline bool is_stencil_format(GPUTextureFormat format)
+    {
+        switch (format) {
+            case GPUTextureFormat::STENCIL8:
+            case GPUTextureFormat::DEPTH24PLUS_STENCIL8:
+            case GPUTextureFormat::DEPTH32FLOAT_STENCIL8:
+                return true;
+            default:
+                return false;
+        }
+    }
 
 } // namespace lyra::rhi
 

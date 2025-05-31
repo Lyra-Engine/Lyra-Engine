@@ -11,6 +11,11 @@ target_sources(lyra-vulkan PRIVATE
     VkSurface.cpp
     VkAdapter.cpp
     VkDevice.cpp
+    VkSwapchain.cpp
+    VkBuffer.cpp
+    VkImage.cpp
+    VkSampler.cpp
+    VkFence.cpp
 )
 
 # link dependencies

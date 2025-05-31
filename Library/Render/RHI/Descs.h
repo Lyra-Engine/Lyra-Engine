@@ -34,6 +34,12 @@ namespace lyra::rhi
 
     struct GPUSurfaceDescriptor : public GPUObjectDescriptorBase
     {
+        WindowHandle window = {};
+
+        GPUCompositeAlphaMode alpha_mode      = GPUCompositeAlphaMode::Opaque;
+        GPUPresentMode        present_mode    = GPUPresentMode::Fifo;
+        GPUColorSpace         color_space     = GPUColorSpace::SRGB;
+        uint                  frames_inflight = 3;
     };
 
     struct GPUQueueDescriptor : public GPUObjectDescriptorBase
@@ -60,17 +66,18 @@ namespace lyra::rhi
         float               lod_max_clamp  = 32;
         GPUCompareFunction  compare        = GPUCompareFunction::GREATER;
         unsigned short      max_anisotropy = 1;
+        bool                compare_enable = false;
     };
 
     struct GPUTextureDescriptor : public GPUObjectDescriptorBase
     {
-        GPUExtent3D              size;
-        GPUIntegerCoordinate     mip_level_count = 1;
-        GPUSize32                sample_count    = 1;
-        GPUTextureDimension      dimension       = GPUTextureDimension::x2D;
-        GPUTextureFormat         format          = GPUTextureFormat::RGBA8UNORM;
-        GPUTextureUsageFlags     usage           = 0;
-        Vector<GPUTextureFormat> view_formats    = {};
+        GPUExtent3D          size;
+        GPUIntegerCoordinate mip_level_count = 1;
+        GPUIntegerCoordinate array_layers    = 1;
+        GPUSize32            sample_count    = 1;
+        GPUTextureDimension  dimension       = GPUTextureDimension::x2D;
+        GPUTextureFormat     format          = GPUTextureFormat::RGBA8UNORM;
+        GPUTextureUsageFlags usage           = 0;
     };
 
     struct GPUTextureViewDescriptor : public GPUObjectDescriptorBase

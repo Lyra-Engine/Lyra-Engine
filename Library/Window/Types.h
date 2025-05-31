@@ -13,6 +13,8 @@
 namespace lyra::wsi
 {
 
+    struct WindowAPI;
+
     struct Window
     {
         using Callback = std::function<void()>;
@@ -20,6 +22,8 @@ namespace lyra::wsi
         WindowHandle handle;
 
         static auto init(const WindowDescriptor& descriptor) -> OwnedResource<Window>;
+
+        static auto api() -> WindowAPI*;
 
         void destroy();
 

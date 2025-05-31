@@ -26,6 +26,9 @@ namespace lyra::rhi
         bool (*create_device)(const GPUDeviceDescriptor& descriptor);
         void (*delete_device)();
 
+        bool (*create_fence)(GPUFenceHandle& fence);
+        void (*delete_fence)(GPUFenceHandle fence);
+
         bool (*create_buffer)(GPUBufferHandle& buffer, const GPUBufferDescriptor& descriptor);
         void (*delete_buffer)(GPUBufferHandle buffer);
 

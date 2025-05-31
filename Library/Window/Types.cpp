@@ -9,8 +9,6 @@ using WindowPlugin = Plugin<WindowAPI>;
 
 static Own<WindowPlugin> WINDOW_PLUGIN;
 
-#define WSIAPI (WINDOW_PLUGIN->get_api())
-
 OwnedResource<Window> Window::init(const WindowDescriptor& descriptor)
 {
     if (WINDOW_PLUGIN.get()) {
@@ -21,18 +19,23 @@ OwnedResource<Window> Window::init(const WindowDescriptor& descriptor)
     WINDOW_PLUGIN = std::make_unique<WindowPlugin>("lyra-glfw");
 
     OwnedResource<Window> window(new Window());
-    WSIAPI->create_window(descriptor, window->handle);
+    Window::api()->create_window(descriptor, window->handle);
     return window;
+}
+
+WindowAPI* Window::api()
+{
+    return WINDOW_PLUGIN->get_api();
 }
 
 void Window::destroy()
 {
-    WINDOW_PLUGIN->get_api()->delete_window(this->handle);
+    Window::api()->delete_window(this->handle);
 }
 
 void Window::loop()
 {
-    WINDOW_PLUGIN->get_api()->run_in_loop(handle, [&](WindowEvent event) {
+    Window::api()->run_in_loop(handle, [&](WindowEvent event) {
         size_t index = static_cast<size_t>(event);
         callbacks.at(index)();
     });

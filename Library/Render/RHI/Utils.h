@@ -86,7 +86,7 @@ namespace lyra::rhi
         bool texture_compression_astc_sliced_3d = false;
         bool texture_compression_etc2           = false;
         bool timestamp_query                    = false;
-        bool descriptor_indexing                = false;
+        bool bindless                           = false;
         bool raytracing                         = false;
     };
 
@@ -124,14 +124,6 @@ namespace lyra::rhi
         uint max_compute_workgroups_per_dimension            = 65535;
     };
 
-    struct GPUSurfaceCapabilities
-    {
-        Vector<GPUTextureFormat>      formats;
-        Vector<GPUPresentMode>        present_modes;
-        Vector<GPUCompositeAlphaMode> alpha_modes;
-        GPUTextureUsageFlags          usages;
-    };
-
     struct GPUAdapterInfo
     {
         String architecture      = "";
@@ -165,9 +157,9 @@ namespace lyra::rhi
 
     struct GPUExtent3D
     {
-        GPUIntegerCoordinate width                 = 0;
-        GPUIntegerCoordinate height                = 0;
-        GPUIntegerCoordinate depth_or_array_layers = 0;
+        GPUIntegerCoordinate width  = 0;
+        GPUIntegerCoordinate height = 0;
+        GPUIntegerCoordinate depth  = 0;
     };
 
     struct GPUTexelCopyBufferLayout

@@ -19,8 +19,9 @@
 
 #include <Common/Logger.h>
 #include <Common/Msgbox.h>
+#include <Common/Slotmap.h>
 #include <Common/Container.h>
-#include <Render/Render.hpp>
+#include <Render/RHI/API.h>
 
 using namespace lyra;
 using namespace lyra::rhi;
@@ -30,6 +31,18 @@ constexpr uint VKAPIVersion = VK_API_VERSION_1_2;
 
 static const char* KHR_PORTABILITY_EXTENSION_NAME = "VK_KHR_portability_subset";
 static const char* LUNARG_VALIDATION_LAYER_NAME   = "VK_LAYER_KHRONOS_validation";
+
+template <typename T>
+struct VulkanDestroyer
+{
+    void operator()(T& obj)
+    {
+        obj.destroy();
+    }
+};
+
+template <typename T>
+using VulkanResourceManager = Slotmap<T, VulkanDestroyer<T>>;
 
 struct QueueFamilyIndices
 {
@@ -52,6 +65,64 @@ struct VulkanBase
     void*           pNext;
 };
 
+struct VulkanBuffer
+{
+    VkBuffer          buffer = VK_NULL_HANDLE;
+    VmaAllocation     allocation;
+    VmaAllocationInfo alloc_info;
+
+    // implementation in VkBuffer.cpp
+    void destroy();
+};
+
+struct VulkanTexture
+{
+    VkImage            image = VK_NULL_HANDLE;
+    VmaAllocation      allocation;
+    VmaAllocationInfo  alloc_info;
+    VkImageAspectFlags aspects = 0;
+
+    // implementation in VkImage.cpp
+    void destroy();
+};
+
+struct VulkanSampler
+{
+    VkSampler sampler = VK_NULL_HANDLE;
+
+    // implementation in VkSampler.cpp
+    void destroy();
+};
+
+struct VulkanFence
+{
+    /**
+     * NOTE that this fence implementation is based on timeline semaphores.
+     * We simplified the fence concept here.
+     **/
+    VkSemaphore semaphore = VK_NULL_HANDLE;
+
+    // implementation in VkFence.cpp
+    void destroy();
+};
+
+struct VulkanQuery
+{
+    VkQueryPool pool = VK_NULL_HANDLE;
+
+    // implementation in VkQuery.cpp
+    void destroy() {}
+};
+
+struct VulkanPipeline
+{
+    VkPipeline       pipeline = VK_NULL_HANDLE;
+    VkPipelineLayout layout   = VK_NULL_HANDLE;
+
+    // implementation in VkPipeline.cpp
+    void destroy() {}
+};
+
 struct VulkanRHI
 {
     RHIFlags           rhiflags  = 0;
@@ -60,36 +131,20 @@ struct VulkanRHI
     VkPhysicalDevice   adapter   = VK_NULL_HANDLE;
     VkDevice           device    = VK_NULL_HANDLE;
     VkSwapchainKHR     swapchain = VK_NULL_HANDLE;
+    VkExtent2D         swapchain_dim;
     VkFormat           swapchain_format;
     VkColorSpaceKHR    swapchain_colorspace;
     VolkDeviceTable    vtable;
     VmaAllocator       alloc;
     QueueFamilyIndices queues;
-};
 
-struct VulkanBuffer
-{
-    VkBuffer          buffer = VK_NULL_HANDLE;
-    VmaAllocation     allocation;
-    VmaAllocationInfo alloc_info;
-};
-
-struct VulkanTexture
-{
-    VkImage           image = VK_NULL_HANDLE;
-    VmaAllocation     allocation;
-    VmaAllocationInfo alloc_info;
-};
-
-struct VulkanFence
-{
-    VkSemaphore semaphore = VK_NULL_HANDLE;
-};
-
-struct VulkanPipeline
-{
-    VkPipeline       pipeline = VK_NULL_HANDLE;
-    VkPipelineLayout layout;
+    // collection of objects
+    VulkanResourceManager<VulkanFence>    fences;
+    VulkanResourceManager<VulkanQuery>    queries;
+    VulkanResourceManager<VulkanBuffer>   buffers;
+    VulkanResourceManager<VulkanTexture>  textures;
+    VulkanResourceManager<VulkanSampler>  samplers;
+    VulkanResourceManager<VulkanPipeline> pipelines;
 };
 
 auto get_logger() -> Logger;
@@ -101,7 +156,7 @@ auto to_string(VkDebugUtilsMessageSeverityFlagBitsEXT severity) -> CString;
 
 // enum conversions
 auto vkenum(GPUPresentMode mode) -> VkPresentModeKHR;
-auto vkenum(GPUCompositeAlphaMode mode) -> VkCompositeAlphaFlagsKHR;
+auto vkenum(GPUCompositeAlphaMode mode) -> VkCompositeAlphaFlagBitsKHR;
 auto vkenum(GPUColorSpace space) -> VkColorSpaceKHR;
 auto vkenum(GPUBlendOperation op) -> VkBlendOp;
 auto vkenum(GPUBlendFactor factor) -> VkBlendFactor;
@@ -124,6 +179,7 @@ auto vkenum(GPUIndexFormat format) -> VkIndexType;
 auto vkenum(GPUVertexFormat format) -> VkFormat;
 auto vkenum(GPUTextureFormat format) -> VkFormat;
 auto vkenum(GPUBarrierLayout layout) -> VkImageLayout;
+auto vkenum(GPUIntegerCoordinate samples) -> VkSampleCountFlagBits;
 auto vkenum(GPUColorWriteFlags color) -> VkColorComponentFlags;
 auto vkenum(GPUBufferUsageFlags usages) -> VkBufferUsageFlags;
 auto vkenum(GPUTextureUsageFlags usages) -> VkImageUsageFlags;
@@ -154,22 +210,40 @@ bool create_device(const GPUDeviceDescriptor& desc);
 void delete_device();
 
 // vulkan buffer
+bool create_buffer(GPUBufferHandle& buffer, const GPUBufferDescriptor& desc);
+void delete_buffer(GPUBufferHandle buffer);
 auto create_buffer(const GPUBufferDescriptor& desc) -> VulkanBuffer;
 void delete_buffer(VulkanBuffer& buffer);
 
 // vulkan texture
+bool create_texture(GPUTextureHandle& texture, const GPUTextureDescriptor& desc);
+void delete_texture(GPUTextureHandle texture);
 auto create_texture(const GPUTextureDescriptor& desc) -> VulkanTexture;
 void delete_texture(VulkanTexture& buffer);
 
+// vulkan sampler
+bool create_sampler(GPUSamplerHandle& sampler, const GPUSamplerDescriptor& desc);
+void delete_sampler(GPUSamplerHandle sampler);
+auto create_sampler(const GPUSamplerDescriptor& desc) -> VulkanSampler;
+void delete_sampler(VulkanSampler& buffer);
+
 // vulkan fence
+bool create_fence(GPUFenceHandle& fence);
+void delete_fence(GPUFenceHandle fence);
 auto create_fence() -> VulkanFence;
 void delete_fence(VulkanFence& buffer);
 
-// utils
+// adapter/device utils
 bool has_portability_subset(VkPhysicalDevice physicalDevice);
 auto get_supported_instance_extensions() -> HashSet<String>;
 auto get_supported_device_extensions(VkPhysicalDevice device) -> HashSet<String>;
 auto find_queue_family_indices(VkPhysicalDevice device, VkSurfaceKHR surface) -> QueueFamilyIndices;
+
+// swaphain utils
+auto query_swapchain_support(VkPhysicalDevice adapter, VkSurfaceKHR surface) -> SwapchainSupportDetails;
+auto choose_swap_surface_format(const Vector<VkSurfaceFormatKHR>& availableFormats) -> VkSurfaceFormatKHR;
+auto choose_swap_present_mode(const Vector<VkPresentModeKHR>& availablePresentModes) -> VkPresentModeKHR;
+auto choose_swap_extent(const GPUSurfaceDescriptor& desc, const VkSurfaceCapabilitiesKHR& capabilities) -> VkExtent2D;
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_callback(
     VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,
