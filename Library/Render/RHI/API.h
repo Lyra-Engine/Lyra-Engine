@@ -51,10 +51,10 @@ namespace lyra::rhi
         void (*delete_tlas)(GPUTlasHandle texture);
 
         bool (*create_bind_group_layout)(GPUBindGroupLayoutHandle& layout, const GPUBindGroupLayoutDescriptor& descriptor);
-        bool (*delete_bind_group_layout)(GPUBindGroupLayoutHandle layout);
+        void (*delete_bind_group_layout)(GPUBindGroupLayoutHandle layout);
 
         bool (*create_pipeline_layout)(GPUPipelineLayoutHandle& layout, const GPUPipelineLayoutDescriptor& descriptor);
-        bool (*delete_pipeline_layout)(GPUBindGroupLayoutHandle layout);
+        void (*delete_pipeline_layout)(GPUBindGroupLayoutHandle layout);
 
         bool (*create_render_pipeline)(GPURenderPipelineHandle& texture, const GPURenderPipelineDescriptor& descriptor);
         void (*delete_render_pipeline)(GPURenderPipelineHandle texture);

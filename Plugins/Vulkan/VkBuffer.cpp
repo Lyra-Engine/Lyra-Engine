@@ -7,10 +7,9 @@ void VulkanBuffer::destroy()
 
 bool create_buffer(GPUBufferHandle& handle, const GPUBufferDescriptor& desc)
 {
-    auto object = create_buffer(desc);
-
+    auto obj = create_buffer(desc);
     auto rhi = get_rhi();
-    auto ind = rhi->buffers.add(object);
+    auto ind = rhi->buffers.add(obj);
 
     handle = GPUBufferHandle(ind);
     return true;

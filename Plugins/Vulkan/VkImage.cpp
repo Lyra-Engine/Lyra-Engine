@@ -7,10 +7,9 @@ void VulkanTexture::destroy()
 
 bool create_texture(GPUTextureHandle& handle, const GPUTextureDescriptor& desc)
 {
-    auto object = create_texture(desc);
-
+    auto obj = create_texture(desc);
     auto rhi = get_rhi();
-    auto ind = rhi->textures.add(object);
+    auto ind = rhi->textures.add(obj);
 
     handle = GPUTextureHandle(ind);
     return true;

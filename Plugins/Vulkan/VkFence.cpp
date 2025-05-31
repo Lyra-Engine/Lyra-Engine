@@ -7,10 +7,9 @@ void VulkanFence::destroy()
 
 bool create_fence(GPUFenceHandle& handle)
 {
-    auto object = create_fence();
-
+    auto obj = create_fence();
     auto rhi = get_rhi();
-    auto ind = rhi->fences.add(object);
+    auto ind = rhi->fences.add(obj);
 
     handle = GPUFenceHandle(ind);
     return true;

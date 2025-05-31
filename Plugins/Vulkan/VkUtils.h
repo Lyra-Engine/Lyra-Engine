@@ -114,13 +114,37 @@ struct VulkanQuery
     void destroy() {}
 };
 
+struct VulkanShader
+{
+    VkShaderModule module = VK_NULL_HANDLE;
+
+    // implementation in VkShader.cpp
+    void destroy();
+};
+
+struct VulkanBindGroupLayout
+{
+    VkDescriptorSetLayout layout = VK_NULL_HANDLE;
+
+    // implementation in VkLayout.cpp
+    void destroy();
+};
+
+struct VulkanPipelineLayout
+{
+    VkPipelineLayout layout = VK_NULL_HANDLE;
+
+    // implementation in VkLayout.cpp
+    void destroy();
+};
+
 struct VulkanPipeline
 {
-    VkPipeline       pipeline = VK_NULL_HANDLE;
-    VkPipelineLayout layout   = VK_NULL_HANDLE;
+    VkPipeline      pipeline = VK_NULL_HANDLE;
+    VkPipelineCache cache    = VK_NULL_HANDLE;
 
     // implementation in VkPipeline.cpp
-    void destroy() {}
+    void destroy();
 };
 
 struct VulkanRHI
@@ -139,12 +163,15 @@ struct VulkanRHI
     QueueFamilyIndices queues;
 
     // collection of objects
-    VulkanResourceManager<VulkanFence>    fences;
-    VulkanResourceManager<VulkanQuery>    queries;
-    VulkanResourceManager<VulkanBuffer>   buffers;
-    VulkanResourceManager<VulkanTexture>  textures;
-    VulkanResourceManager<VulkanSampler>  samplers;
-    VulkanResourceManager<VulkanPipeline> pipelines;
+    VulkanResourceManager<VulkanFence>           fences;
+    VulkanResourceManager<VulkanQuery>           queries;
+    VulkanResourceManager<VulkanBuffer>          buffers;
+    VulkanResourceManager<VulkanTexture>         textures;
+    VulkanResourceManager<VulkanSampler>         samplers;
+    VulkanResourceManager<VulkanShader>          shaders;
+    VulkanResourceManager<VulkanPipeline>        pipelines;
+    VulkanResourceManager<VulkanPipelineLayout>  pipeline_layouts;
+    VulkanResourceManager<VulkanBindGroupLayout> bind_group_layouts;
 };
 
 auto get_logger() -> Logger;
@@ -180,12 +207,15 @@ auto vkenum(GPUVertexFormat format) -> VkFormat;
 auto vkenum(GPUTextureFormat format) -> VkFormat;
 auto vkenum(GPUBarrierLayout layout) -> VkImageLayout;
 auto vkenum(GPUIntegerCoordinate samples) -> VkSampleCountFlagBits;
+auto vkenum(GPUBindingResourceType type) -> VkDescriptorType;
 auto vkenum(GPUColorWriteFlags color) -> VkColorComponentFlags;
 auto vkenum(GPUBufferUsageFlags usages) -> VkBufferUsageFlags;
 auto vkenum(GPUTextureUsageFlags usages) -> VkImageUsageFlags;
 auto vkenum(GPUShaderStageFlags stages) -> VkShaderStageFlags;
 auto vkenum(GPUBarrierSyncFlags flags) -> VkPipelineStageFlags;
 auto vkenum(GPUBarrierAccessFlags flags) -> VkAccessFlagBits;
+
+bool is_binding_array(GPUBindingResourceType type);
 
 // vulkan rhi
 void set_rhi(VulkanRHI* instance);
@@ -232,6 +262,24 @@ bool create_fence(GPUFenceHandle& fence);
 void delete_fence(GPUFenceHandle fence);
 auto create_fence() -> VulkanFence;
 void delete_fence(VulkanFence& buffer);
+
+// vulkan shader
+bool create_shader_module(GPUShaderModuleHandle& handle, const GPUShaderModuleDescriptor& desc);
+void delete_shader_module(GPUShaderModuleHandle handle);
+auto create_shader_module(const GPUShaderModuleDescriptor& desc) -> VulkanShader;
+void delete_shader_module(VulkanShader& shader);
+
+// vulkan bind group layouts
+bool create_bind_group_layout(GPUBindGroupLayoutHandle& handle, const GPUBindGroupLayoutDescriptor& desc);
+void delete_bind_group_layout(GPUBindGroupLayoutHandle handle);
+auto create_bind_group_layout(const GPUBindGroupLayoutDescriptor& desc) -> VulkanBindGroupLayout;
+void delete_bind_group_layout(VulkanBindGroupLayout& layout);
+
+// vulkan pipeline layouts
+bool create_pipeline_layout(GPUPipelineLayoutHandle& handle, const GPUPipelineLayoutDescriptor& desc);
+void delete_pipeline_layout(GPUPipelineLayoutHandle handle);
+auto create_pipeline_layout(const GPUPipelineLayoutDescriptor& desc) -> VulkanPipelineLayout;
+void delete_pipeline_layout(VulkanPipelineLayout& layout);
 
 // adapter/device utils
 bool has_portability_subset(VkPhysicalDevice physicalDevice);

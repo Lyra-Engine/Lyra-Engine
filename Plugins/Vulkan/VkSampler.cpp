@@ -11,10 +11,9 @@ void VulkanSampler::destroy()
 
 bool create_sampler(GPUSamplerHandle& handle, const GPUSamplerDescriptor& desc)
 {
-    auto object = create_sampler(desc);
-
+    auto obj = create_sampler(desc);
     auto rhi = get_rhi();
-    auto ind = rhi->samplers.add(object);
+    auto ind = rhi->samplers.add(obj);
 
     handle = GPUSamplerHandle(ind);
     return true;

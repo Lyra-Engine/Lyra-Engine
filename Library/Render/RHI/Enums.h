@@ -201,7 +201,7 @@ namespace lyra::rhi
     enum struct GPUBindingResourceType : uint
     {
         BUFFER,
-        BUFEFR_ARRAY,
+        BUFFER_ARRAY,
         SAMPLER,
         SAMPLER_ARRAY,
         TEXTURE,

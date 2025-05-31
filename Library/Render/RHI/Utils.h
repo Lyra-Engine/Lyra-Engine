@@ -279,6 +279,7 @@ namespace lyra::rhi
     struct GPUBindGroupLayoutEntry
     {
         GPUIndex32             binding;
+        GPUIndex32             count = 1;
         GPUShaderStageFlags    visibility;
         GPUBindingResourceType type;
         union
