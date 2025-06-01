@@ -26,6 +26,27 @@ void delete_pipeline(VulkanPipeline& pipeline)
     }
 }
 
+void delete_render_pipeline(GPURenderPipelineHandle handle)
+{
+    auto rhi = get_rhi();
+    delete_pipeline(fetch_resource(rhi->pipelines, handle));
+    rhi->pipelines.remove(handle.value);
+}
+
+void delete_compute_pipeline(GPUComputePipelineHandle handle)
+{
+    auto rhi = get_rhi();
+    delete_pipeline(fetch_resource(rhi->pipelines, handle));
+    rhi->pipelines.remove(handle.value);
+}
+
+void delete_raytracing_pipeline(GPURayTracingPipelineHandle handle)
+{
+    auto rhi = get_rhi();
+    delete_pipeline(fetch_resource(rhi->pipelines, handle));
+    rhi->pipelines.remove(handle.value);
+}
+
 bool create_render_pipeline(GPURenderPipelineHandle& handle, const GPURenderPipelineDescriptor& desc)
 {
     auto obj = create_render_pipeline(desc);
@@ -60,9 +81,9 @@ VulkanPipeline create_render_pipeline(const GPURenderPipelineDescriptor& desc)
 {
     auto rhi = get_rhi();
 
-    auto& layout  = rhi->pipeline_layouts.at(desc.layout.value);
-    auto& vshader = rhi->shaders.at(desc.vertex.module.value);
-    auto& fshader = rhi->shaders.at(desc.fragment.module.value);
+    auto& layout  = fetch_resource(rhi->pipeline_layouts, desc.layout);
+    auto& vshader = fetch_resource(rhi->shaders, desc.vertex.module);
+    auto& fshader = fetch_resource(rhi->shaders, desc.fragment.module);
 
     // shader stages
     Vector<VkPipelineShaderStageCreateInfo> stages;
@@ -238,8 +259,8 @@ VulkanPipeline create_compute_pipeline(const GPUComputePipelineDescriptor& desc)
 {
     auto rhi = get_rhi();
 
-    auto& layout = rhi->pipeline_layouts.at(desc.layout.value);
-    auto& shader = rhi->shaders.at(desc.compute.module.value);
+    auto& layout = fetch_resource(rhi->pipeline_layouts, desc.layout);
+    auto& shader = fetch_resource(rhi->shaders, desc.compute.module);
 
     auto create_info   = VkComputePipelineCreateInfo{};
     create_info.sType  = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;

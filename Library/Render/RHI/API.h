@@ -44,6 +44,9 @@ namespace lyra::rhi
         bool (*create_shader_module)(GPUShaderModuleHandle& texture, const GPUShaderModuleDescriptor& descriptor);
         void (*delete_shader_module)(GPUShaderModuleHandle texture);
 
+        bool (*create_query_set)(GPUQuerySetHandle& query, const GPUQuerySetDescriptor& descriptor);
+        void (*delete_query_set)(GPUQuerySetHandle query);
+
         bool (*create_blas)(GPUBlasHandle& texture, const GPUBlasDescriptor& descriptor);
         void (*delete_blas)(GPUBlasHandle texture);
 
@@ -54,7 +57,7 @@ namespace lyra::rhi
         void (*delete_bind_group_layout)(GPUBindGroupLayoutHandle layout);
 
         bool (*create_pipeline_layout)(GPUPipelineLayoutHandle& layout, const GPUPipelineLayoutDescriptor& descriptor);
-        void (*delete_pipeline_layout)(GPUBindGroupLayoutHandle layout);
+        void (*delete_pipeline_layout)(GPUPipelineLayoutHandle layout);
 
         bool (*create_render_pipeline)(GPURenderPipelineHandle& texture, const GPURenderPipelineDescriptor& descriptor);
         void (*delete_render_pipeline)(GPURenderPipelineHandle texture);

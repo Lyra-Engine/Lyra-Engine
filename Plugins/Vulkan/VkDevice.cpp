@@ -126,12 +126,49 @@ bool create_device(const GPUDeviceDescriptor& desc)
         features.pNext = feature;
     };
 
-    auto separate_depth_stencil_layouts                        = VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures{};
-    separate_depth_stencil_layouts.sType                       = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SEPARATE_DEPTH_STENCIL_LAYOUTS_FEATURES;
-    separate_depth_stencil_layouts.pNext                       = nullptr;
-    separate_depth_stencil_layouts.separateDepthStencilLayouts = VK_TRUE;
-    append_feature((VulkanBase*)&separate_depth_stencil_layouts);
+    // timeline semaphores (essential: used to support unified GPU/CPU fence)
+    auto timeline_semaphore = VkPhysicalDeviceTimelineSemaphoreFeatures{};
+    {
+        device_extensions.push_back(VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME);
+        timeline_semaphore.sType             = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES;
+        timeline_semaphore.pNext             = nullptr;
+        timeline_semaphore.timelineSemaphore = VK_TRUE;
+        append_feature((VulkanBase*)&timeline_semaphore);
+        if (!is_supported(device_extensions, VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME)) {
+            get_logger()->error("Device extension {} is not supported!", VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME);
+            exit(1);
+        }
+    }
 
+    // imageless framebuffer (essential: used to support detached framebuffer)
+    auto imageless_framebuffer = VkPhysicalDeviceImagelessFramebufferFeatures{};
+    {
+        device_extensions.push_back(VK_KHR_IMAGELESS_FRAMEBUFFER_EXTENSION_NAME);
+        imageless_framebuffer.sType                = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGELESS_FRAMEBUFFER_FEATURES;
+        imageless_framebuffer.pNext                = nullptr;
+        imageless_framebuffer.imagelessFramebuffer = VK_TRUE;
+        append_feature((VulkanBase*)&imageless_framebuffer);
+        if (!is_supported(device_extensions, VK_KHR_IMAGELESS_FRAMEBUFFER_EXTENSION_NAME)) {
+            get_logger()->error("Device extension {} is not supported!", VK_KHR_IMAGELESS_FRAMEBUFFER_EXTENSION_NAME);
+            exit(1);
+        }
+    }
+
+    // dynamic rendering (essential: used to support rendering without render pass)
+    auto dynamic_rendering = VkPhysicalDeviceDynamicRenderingFeatures{};
+    {
+        device_extensions.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+        dynamic_rendering.sType            = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES;
+        dynamic_rendering.pNext            = nullptr;
+        dynamic_rendering.dynamicRendering = VK_TRUE;
+        append_feature((VulkanBase*)&dynamic_rendering);
+        if (!is_supported(device_extensions, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME)) {
+            get_logger()->error("Device extension {} is not supported!", VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+            exit(1);
+        }
+    }
+
+    // optional: used to support bindless descriptors
     auto descriptor_indexing = VkPhysicalDeviceDescriptorIndexingFeatures{};
     if (required_features.bindless) {
         descriptor_indexing.sType                                     = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
@@ -141,32 +178,52 @@ bool create_device(const GPUDeviceDescriptor& desc)
         descriptor_indexing.descriptorBindingVariableDescriptorCount  = VK_TRUE;
         descriptor_indexing.descriptorBindingPartiallyBound           = VK_TRUE;
         append_feature((VulkanBase*)&descriptor_indexing);
+        if (!is_supported(device_extensions, VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME)) {
+            get_logger()->error("Device extension {} is not supported!", VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME);
+            exit(1);
+        }
     }
 
+    // optional: used to get device address for raytracing buffers
     auto buffer_device_address = VkPhysicalDeviceBufferDeviceAddressFeatures{};
     if (required_features.raytracing) {
         buffer_device_address.sType               = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
         buffer_device_address.pNext               = nullptr;
         buffer_device_address.bufferDeviceAddress = VK_TRUE;
         append_feature((VulkanBase*)&buffer_device_address);
+        if (!is_supported(device_extensions, VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME)) {
+            get_logger()->error("Device extension {} is not supported!", VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+            exit(1);
+        }
     }
 
+    // optional: used for host query reset in raytracing
     auto host_query_reset = VkPhysicalDeviceHostQueryResetFeatures{};
     if (required_features.raytracing) {
         host_query_reset.sType          = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES;
         host_query_reset.pNext          = nullptr;
         host_query_reset.hostQueryReset = VK_TRUE;
         append_feature((VulkanBase*)&host_query_reset);
+        if (!is_supported(device_extensions, VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME)) {
+            get_logger()->error("Device extension {} is not supported!", VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME);
+            exit(1);
+        }
     }
 
+    // optional: used to support bvh building
     auto acceleration_structure = VkPhysicalDeviceAccelerationStructureFeaturesKHR{};
     if (required_features.raytracing) {
         acceleration_structure.sType                 = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
         acceleration_structure.pNext                 = nullptr;
         acceleration_structure.accelerationStructure = VK_TRUE;
         append_feature((VulkanBase*)&acceleration_structure);
+        if (!is_supported(device_extensions, VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME)) {
+            get_logger()->error("Device extension {} is not supported!", VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
+            exit(1);
+        }
     }
 
+    // optional: used to raytracing pipelines
     auto raytracing_pipeline = VkPhysicalDeviceRayTracingPipelineFeaturesKHR{};
     if (required_features.raytracing) {
         raytracing_pipeline.sType                        = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
@@ -174,14 +231,23 @@ bool create_device(const GPUDeviceDescriptor& desc)
         raytracing_pipeline.rayTracingPipeline           = VK_TRUE;
         raytracing_pipeline.rayTraversalPrimitiveCulling = VK_TRUE;
         append_feature((VulkanBase*)&raytracing_pipeline);
+        if (!is_supported(device_extensions, VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME)) {
+            get_logger()->error("Device extension {} is not supported!", VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
+            exit(1);
+        }
     }
 
+    // optional: used to ray query in other shader types.
     auto ray_query = VkPhysicalDeviceRayQueryFeaturesKHR{};
     if (required_features.raytracing) {
         ray_query.sType    = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
         ray_query.pNext    = nullptr;
         ray_query.rayQuery = VK_TRUE;
         append_feature((VulkanBase*)&ray_query);
+        if (!is_supported(device_extensions, VK_KHR_RAY_QUERY_EXTENSION_NAME)) {
+            get_logger()->error("Device extension {} is not supported!", VK_KHR_RAY_QUERY_EXTENSION_NAME);
+            exit(1);
+        }
     }
 
     // logger
@@ -281,6 +347,10 @@ void delete_device()
 {
     auto rhi = get_rhi();
 
+    // clean up remaining fences
+    for (auto& fence : rhi->fences.data)
+        delete_fence(fence);
+
     // clean up remaining buffers
     for (auto& buffer : rhi->buffers.data)
         delete_buffer(buffer);
@@ -288,6 +358,30 @@ void delete_device()
     // clean up remaining textures
     for (auto& texture : rhi->textures.data)
         delete_texture(texture);
+
+    // clean up remaining samplers
+    for (auto& sampler : rhi->samplers.data)
+        delete_sampler(sampler);
+
+    // clean up remaining shaders
+    for (auto& shader : rhi->shaders.data)
+        delete_shader_module(shader);
+
+    // clean up remaining bind group layouts
+    for (auto& layout : rhi->bind_group_layouts.data)
+        delete_bind_group_layout(layout);
+
+    // clean up remaining pipeline layouts
+    for (auto& layout : rhi->pipeline_layouts.data)
+        delete_pipeline_layout(layout);
+
+    // clean up remaining pipelines
+    for (auto& pipeline : rhi->pipelines.data)
+        delete_pipeline(pipeline);
+
+    // // clean up remaining query sets
+    // for (auto& query : rhi->queries.data)
+    //     delete_query_set(query);
 
     if (rhi->swapchain) {
         rhi->vtable.vkDestroySwapchainKHR(rhi->device, rhi->swapchain, nullptr);

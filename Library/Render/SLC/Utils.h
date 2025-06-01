@@ -17,8 +17,8 @@ namespace lyra::rhi
 
     extern "C" struct ShaderBlob
     {
-        uint* data;
-        uint  size;
+        uint8_t* data;
+        uint     size;
     };
 
     struct ShaderBlobDeleter

@@ -6,59 +6,95 @@ using namespace lyra;
 using namespace lyra::wsi;
 using namespace lyra::rhi;
 
-GPUShaderModule   shader;
+GPUShaderModule   vshader;
+GPUShaderModule   fshader;
 GPURenderPipeline pipeline;
+GPUPipelineLayout playout;
 GPUBuffer         vbuffer;
 GPUBuffer         ibuffer;
 
 void setup()
 {
-    // auto& device = GPU::get_current_device();
-    //
-    // shader = execute([&]() {
-    //     auto desc  = GPUShaderModuleDescriptor{};
-    //     desc.label = "vertex/fragment shader";
-    //     desc.code  = {};
-    //     return device.create_shader_module(desc);
-    // });
-    //
-    // pipeline = execute([&]() {
-    //     auto attrib            = GPUVertexAttribute{};
-    //     attrib.format          = GPUVertexFormat::FLOAT32x3;
-    //     attrib.offset          = 0;
-    //     attrib.shader_location = 0;
-    //
-    //     auto layout         = GPUVertexBufferLayout{};
-    //     layout.attributes   = {attrib};
-    //     layout.array_stride = sizeof(float) * 3;
-    //     layout.step_mode    = GPUVertexStepMode::VERTEX;
-    //
-    //     auto target   = GPUColorTargetState{};
-    //     target.format = GPUTextureFormat::RGBA8UNORM;
-    //     target.blend  = {};
-    //
-    //     auto desc                                  = GPURenderPipelineDescriptor{};
-    //     desc.primitive.cull_mode                   = GPUCullMode::NONE;
-    //     desc.primitive.topology                    = GPUPrimitiveTopology::TRIANGLE_LIST;
-    //     desc.primitive.front_face                  = GPUFrontFace::CCW;
-    //     desc.primitive.strip_index_format          = GPUIndexFormat::UINT32;
-    //     desc.depth_stencil.depth_write_enabled     = false;
-    //     desc.multisample.alpha_to_coverage_enabled = false;
-    //     desc.multisample.count                     = 1;
-    //     desc.vertex.module                         = shader;
-    //     desc.vertex.entry_point                    = "vertex";
-    //     desc.fragment.module                       = shader;
-    //     desc.fragment.entry_point                  = "fragment";
-    //     desc.vertex.buffers.push_back(layout);
-    //     desc.fragment.targets.push_back(target);
-    //     return device.create_render_pipeline(desc);
-    // });
+    auto compiler = execute([&]() {
+        auto desc   = CompilerDescriptor{};
+        desc.target = CompileTarget::SPIRV;
+        desc.flags  = CompileFlag::DEBUG | CompileFlag::REFLECT;
+        return Compiler::init(desc);
+    });
+
+    auto module = compiler.compile("test.slang");
+    auto vsmain = module->get_shader_blob("vsmain");
+    auto fsmain = module->get_shader_blob("fsmain");
+
+    auto& device = RHI::get_current_device();
+
+    vshader = execute([&]() {
+        auto desc  = GPUShaderModuleDescriptor{};
+        desc.label = "vertex shader";
+        desc.data  = vsmain->data;
+        desc.size  = vsmain->size;
+        return device.create_shader_module(desc);
+    });
+
+    fshader = execute([&]() {
+        auto desc  = GPUShaderModuleDescriptor{};
+        desc.label = "fragment shader";
+        desc.data  = fsmain->data;
+        desc.size  = fsmain->size;
+        return device.create_shader_module(desc);
+    });
+
+    playout = execute([&]() {
+        GPUPipelineLayoutDescriptor desc = {};
+        return device.create_pipeline_layout(desc);
+    });
+
+    pipeline = execute([&]() {
+        auto position            = GPUVertexAttribute{};
+        position.format          = GPUVertexFormat::FLOAT32x3;
+        position.offset          = 0;
+        position.shader_location = 0;
+
+        auto color            = GPUVertexAttribute{};
+        color.format          = GPUVertexFormat::FLOAT32x3;
+        color.offset          = 0;
+        color.shader_location = 1;
+
+        auto layout         = GPUVertexBufferLayout{};
+        layout.attributes   = {position, color};
+        layout.array_stride = sizeof(float) * 6;
+        layout.step_mode    = GPUVertexStepMode::VERTEX;
+
+        auto target         = GPUColorTargetState{};
+        target.format       = GPUTextureFormat::RGBA8UNORM;
+        target.blend_enable = false;
+
+        auto desc                                  = GPURenderPipelineDescriptor{};
+        desc.layout                                = playout;
+        desc.primitive.cull_mode                   = GPUCullMode::NONE;
+        desc.primitive.topology                    = GPUPrimitiveTopology::TRIANGLE_LIST;
+        desc.primitive.front_face                  = GPUFrontFace::CCW;
+        desc.primitive.strip_index_format          = GPUIndexFormat::UINT32;
+        desc.depth_stencil.depth_compare           = GPUCompareFunction::ALWAYS;
+        desc.depth_stencil.depth_write_enabled     = false;
+        desc.multisample.alpha_to_coverage_enabled = false;
+        desc.multisample.count                     = 1;
+        desc.vertex.module                         = vshader;
+        desc.fragment.module                       = fshader;
+        desc.vertex.buffers.push_back(layout);
+        desc.fragment.targets.push_back(target);
+
+        return device.create_render_pipeline(desc);
+    });
 }
 
 void cleanup()
 {
-    // shader.destroy();
-    // pipeline.destroy();
+    // NOTE: these will be automatically destroyed by device destruction.
+    vshader.destroy();
+    fshader.destroy();
+    playout.destroy();
+    pipeline.destroy();
     // ibuffer.destroy();
     // vbuffer.destroy();
 }

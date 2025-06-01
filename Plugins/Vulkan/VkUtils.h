@@ -73,6 +73,8 @@ struct VulkanBuffer
 
     // implementation in VkBuffer.cpp
     void destroy();
+
+    bool valid() const { return buffer != VK_NULL_HANDLE; }
 };
 
 struct VulkanTexture
@@ -84,6 +86,8 @@ struct VulkanTexture
 
     // implementation in VkImage.cpp
     void destroy();
+
+    bool valid() const { return image != VK_NULL_HANDLE; }
 };
 
 struct VulkanSampler
@@ -92,6 +96,8 @@ struct VulkanSampler
 
     // implementation in VkSampler.cpp
     void destroy();
+
+    bool valid() const { return sampler != VK_NULL_HANDLE; }
 };
 
 struct VulkanFence
@@ -104,6 +110,8 @@ struct VulkanFence
 
     // implementation in VkFence.cpp
     void destroy();
+
+    bool valid() const { return semaphore != VK_NULL_HANDLE; }
 };
 
 struct VulkanQuery
@@ -112,6 +120,8 @@ struct VulkanQuery
 
     // implementation in VkQuery.cpp
     void destroy() {}
+
+    bool valid() const { return pool != VK_NULL_HANDLE; }
 };
 
 struct VulkanShader
@@ -120,6 +130,8 @@ struct VulkanShader
 
     // implementation in VkShader.cpp
     void destroy();
+
+    bool valid() const { return module != VK_NULL_HANDLE; }
 };
 
 struct VulkanBindGroupLayout
@@ -128,6 +140,8 @@ struct VulkanBindGroupLayout
 
     // implementation in VkLayout.cpp
     void destroy();
+
+    bool valid() const { return layout != VK_NULL_HANDLE; }
 };
 
 struct VulkanPipelineLayout
@@ -136,6 +150,8 @@ struct VulkanPipelineLayout
 
     // implementation in VkLayout.cpp
     void destroy();
+
+    bool valid() const { return layout != VK_NULL_HANDLE; }
 };
 
 struct VulkanPipeline
@@ -145,6 +161,8 @@ struct VulkanPipeline
 
     // implementation in VkPipeline.cpp
     void destroy();
+
+    bool valid() const { return pipeline != VK_NULL_HANDLE; }
 };
 
 struct VulkanRHI
@@ -294,7 +312,7 @@ auto create_raytracing_pipeline(const GPURayTracingPipelineDescriptor& desc) -> 
 // vulkan pipelines deletion
 void delete_render_pipeline(GPURenderPipelineHandle pipeline);
 void delete_compute_pipeline(GPUComputePipelineHandle pipeline);
-void delete_render_pipeline(GPURayTracingPipelineHandle pipeline);
+void delete_raytracing_pipeline(GPURayTracingPipelineHandle pipeline);
 void delete_pipeline(VulkanPipeline& pipeline);
 
 // adapter/device utils
@@ -308,6 +326,29 @@ auto query_swapchain_support(VkPhysicalDevice adapter, VkSurfaceKHR surface) -> 
 auto choose_swap_surface_format(const Vector<VkSurfaceFormatKHR>& availableFormats) -> VkSurfaceFormatKHR;
 auto choose_swap_present_mode(const Vector<VkPresentModeKHR>& availablePresentModes) -> VkPresentModeKHR;
 auto choose_swap_extent(const GPUSurfaceDescriptor& desc, const VkSurfaceCapabilitiesKHR& capabilities) -> VkExtent2D;
+
+template <typename T, typename Handle>
+T& fetch_resource(VulkanResourceManager<T>& manager, Handle handle)
+{
+    // check handle validity
+    if (!handle.valid()) {
+        get_logger()->error("Resource handle {} is invalid!", typeid(Handle).name());
+        exit(1);
+    }
+
+    // check resource range
+    if (handle.value >= manager.data.size()) {
+        get_logger()->error("Resource handle {} with value={} access out of range!", typeid(Handle).name(), handle.value);
+        exit(1);
+    }
+
+    T& resource = manager.data.at(handle.value);
+    if (!resource.valid()) {
+        get_logger()->error("Resource handle {} with value={} has invalid Vk object!", typeid(Handle).name(), handle.value);
+        exit(1);
+    }
+    return resource;
+}
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_callback(
     VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,

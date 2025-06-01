@@ -143,7 +143,7 @@ bool CompileResultInternal::get_shader_blob(CString entry, ShaderBlob& blob)
     }
 
     blob.size = spirvCode->getBufferSize();
-    blob.data = new uint[blob.size];
+    blob.data = new uint8_t[blob.size];
     std::memcpy((uint8_t*)blob.data, (uint8_t*)spirvCode->getBufferPointer(), blob.size);
     return true;
 }

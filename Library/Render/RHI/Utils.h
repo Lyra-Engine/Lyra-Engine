@@ -254,7 +254,7 @@ namespace lyra::rhi
     struct GPUProgrammableStage
     {
         GPUShaderModuleHandle                      module;
-        CString                                    entry_point = "";
+        CString                                    entry_point = "main";
         HashMap<CString, GPUPipelineConstantValue> constants   = {};
     };
 
@@ -317,7 +317,7 @@ namespace lyra::rhi
     {
         GPUTextureFormat    format;
         bool                depth_write_enabled;
-        GPUCompareFunction  depth_compare;
+        GPUCompareFunction  depth_compare          = GPUCompareFunction::ALWAYS;
         GPUStencilFaceState stencil_front          = {};
         GPUStencilFaceState stencil_back           = {};
         GPUStencilValue     stencil_read_mask      = 0xFFFFFFFF;

@@ -21,7 +21,9 @@ bool create_sampler(GPUSamplerHandle& handle, const GPUSamplerDescriptor& desc)
 
 void delete_sampler(GPUSamplerHandle handle)
 {
-    get_rhi()->samplers.remove(handle.value);
+    auto rhi = get_rhi();
+    delete_sampler(fetch_resource(rhi->samplers, handle));
+    rhi->samplers.remove(handle.value);
 }
 
 VulkanSampler create_sampler(const GPUSamplerDescriptor& desc)

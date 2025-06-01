@@ -17,7 +17,9 @@ bool create_texture(GPUTextureHandle& handle, const GPUTextureDescriptor& desc)
 
 void delete_texture(GPUTextureHandle handle)
 {
-    get_rhi()->textures.remove(handle.value);
+    auto rhi = get_rhi();
+    delete_texture(fetch_resource(rhi->textures, handle));
+    rhi->textures.remove(handle.value);
 }
 
 VulkanTexture create_texture(const GPUTextureDescriptor& desc)

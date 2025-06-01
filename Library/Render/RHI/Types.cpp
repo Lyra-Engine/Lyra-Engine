@@ -110,7 +110,109 @@ GPUSampler GPUDevice::create_sampler(const GPUSamplerDescriptor& desc)
     return sampler;
 }
 
+GPUShaderModule GPUDevice::create_shader_module(const GPUShaderModuleDescriptor& desc)
+{
+    GPUShaderModule module;
+    RHI::api()->create_shader_module(module.handle, desc);
+    return module;
+}
+
+GPUQuerySet GPUDevice::create_query_set(const GPUQuerySetDescriptor& desc)
+{
+    GPUQuerySet query;
+    RHI::api()->create_query_set(query.handle, desc);
+    return query;
+}
+
+GPUBindGroup GPUDevice::create_bind_group(const GPUBindGroupDescriptor& desc)
+{
+    assert(!!!"unimplemented");
+    return GPUBindGroup();
+}
+
+GPUBindGroupLayout GPUDevice::create_bind_group_layout(const GPUBindGroupLayoutDescriptor& desc)
+{
+    GPUBindGroupLayout layout;
+    RHI::api()->create_bind_group_layout(layout.handle, desc);
+    return layout;
+}
+
+GPUPipelineLayout GPUDevice::create_pipeline_layout(const GPUPipelineLayoutDescriptor& desc)
+{
+    GPUPipelineLayout layout;
+    RHI::api()->create_pipeline_layout(layout.handle, desc);
+    return layout;
+}
+
+GPURenderPipeline GPUDevice::create_render_pipeline(const GPURenderPipelineDescriptor& desc)
+{
+    GPURenderPipeline layout;
+    RHI::api()->create_render_pipeline(layout.handle, desc);
+    return layout;
+}
+
+GPUComputePipeline GPUDevice::create_compute_pipeline(const GPUComputePipelineDescriptor& desc)
+{
+    GPUComputePipeline layout;
+    RHI::api()->create_compute_pipeline(layout.handle, desc);
+    return layout;
+}
+
+GPURayTracingPipeline GPUDevice::create_raytracing_pipeline(const GPURayTracingPipelineDescriptor& desc)
+{
+    GPURayTracingPipeline layout;
+    RHI::api()->create_raytracing_pipeline(layout.handle, desc);
+    return layout;
+}
+
+GPUCommandBuffer GPUDevice::create_command_buffer(const GPUCommandBufferDescriptor& desc, GPUQueueType type)
+{
+    assert(!!!"unimplemented");
+    return GPUCommandBuffer();
+}
+
+GPUCommandBundle GPUDevice::create_command_bundle(const GPUCommandBundleDescriptor& desc, GPUQueueType type)
+{
+    assert(!!!"unimplemented");
+    return GPUCommandBundle();
+}
+
 void GPUDevice::destroy()
 {
     RHI::api()->delete_device();
+}
+
+void GPUBuffer::destroy()
+{
+    RHI::api()->delete_buffer(handle);
+}
+
+void GPUTexture::destroy()
+{
+    RHI::api()->delete_texture(handle);
+}
+
+void GPUShaderModule::destroy()
+{
+    RHI::api()->delete_shader_module(handle);
+}
+
+void GPURenderPipeline::destroy()
+{
+    RHI::api()->delete_render_pipeline(handle);
+}
+
+void GPUComputePipeline::destroy()
+{
+    RHI::api()->delete_compute_pipeline(handle);
+}
+
+void GPURayTracingPipeline::destroy()
+{
+    RHI::api()->delete_raytracing_pipeline(handle);
+}
+
+void GPUPipelineLayout::destroy()
+{
+    RHI::api()->delete_pipeline_layout(handle);
 }

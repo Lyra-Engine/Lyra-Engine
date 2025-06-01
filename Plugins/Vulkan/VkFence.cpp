@@ -1,5 +1,10 @@
 #include "VkUtils.h"
 
+/**
+ * TODO: Fences are actually reusable, we don't have to create and destroy all the times,
+ * we could reuse them instead.
+ **/
+
 void VulkanFence::destroy()
 {
     delete_fence(*this);
@@ -17,7 +22,9 @@ bool create_fence(GPUFenceHandle& handle)
 
 void delete_fence(GPUFenceHandle handle)
 {
-    get_rhi()->fences.remove(handle.value);
+    auto rhi = get_rhi();
+    delete_fence(fetch_resource(rhi->fences, handle));
+    rhi->fences.remove(handle.value);
 }
 
 VulkanFence create_fence()

@@ -17,7 +17,9 @@ bool create_shader_module(GPUShaderModuleHandle& handle, const GPUShaderModuleDe
 
 void delete_shader_module(GPUShaderModuleHandle handle)
 {
-    get_rhi()->shaders.remove(handle.value);
+    auto rhi = get_rhi();
+    delete_shader_module(fetch_resource(rhi->shaders, handle));
+    rhi->shaders.remove(handle.value);
 }
 
 VulkanShader create_shader_module(const GPUShaderModuleDescriptor& desc)
@@ -26,8 +28,8 @@ VulkanShader create_shader_module(const GPUShaderModuleDescriptor& desc)
 
     auto create_info     = VkShaderModuleCreateInfo{};
     create_info.sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    create_info.pCode    = (const uint32_t*)(desc.code.data());
-    create_info.codeSize = desc.code.size();
+    create_info.pCode    = (const uint32_t*)(desc.data);
+    create_info.codeSize = desc.size;
 
     VulkanShader object;
     vk_check(rhi->vtable.vkCreateShaderModule(rhi->device, &create_info, nullptr, &object.module));

@@ -17,7 +17,9 @@ bool create_buffer(GPUBufferHandle& handle, const GPUBufferDescriptor& desc)
 
 void delete_buffer(GPUBufferHandle handle)
 {
-    get_rhi()->buffers.remove(handle.value);
+    auto rhi = get_rhi();
+    delete_buffer(fetch_resource(rhi->buffers, handle));
+    rhi->buffers.remove(handle.value);
 }
 
 VulkanBuffer create_buffer(const GPUBufferDescriptor& desc)

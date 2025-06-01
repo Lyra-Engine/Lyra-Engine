@@ -94,7 +94,8 @@ namespace lyra::rhi
 
     struct GPUShaderModuleDescriptor : public GPUObjectDescriptorBase
     {
-        Vector<uint8_t> code;
+        uint8_t* data = nullptr;
+        uint     size = 0;
     };
 
     struct GPUQuerySetDescriptor : public GPUObjectDescriptorBase

@@ -25,7 +25,9 @@ bool create_bind_group_layout(GPUBindGroupLayoutHandle& handle, const GPUBindGro
 
 void delete_bind_group_layout(GPUBindGroupLayoutHandle handle)
 {
-    get_rhi()->bind_group_layouts.remove(handle.value);
+    auto rhi = get_rhi();
+    delete_bind_group_layout(fetch_resource(rhi->bind_group_layouts, handle));
+    rhi->bind_group_layouts.remove(handle.value);
 }
 
 VulkanBindGroupLayout create_bind_group_layout(const GPUBindGroupLayoutDescriptor& desc)
@@ -77,6 +79,7 @@ void delete_bind_group_layout(VulkanBindGroupLayout& layout)
 {
     auto rhi = get_rhi();
     rhi->vtable.vkDestroyDescriptorSetLayout(rhi->device, layout.layout, nullptr);
+    layout.layout = VK_NULL_HANDLE;
 }
 
 bool create_pipeline_layout(GPUPipelineLayoutHandle& handle, const GPUPipelineLayoutDescriptor& desc)
@@ -91,7 +94,9 @@ bool create_pipeline_layout(GPUPipelineLayoutHandle& handle, const GPUPipelineLa
 
 void delete_pipeline_layout(GPUPipelineLayoutHandle handle)
 {
-    get_rhi()->pipeline_layouts.remove(handle.value);
+    auto rhi = get_rhi();
+    delete_pipeline_layout(fetch_resource(rhi->pipeline_layouts, handle));
+    rhi->pipeline_layouts.remove(handle.value);
 }
 
 VulkanPipelineLayout create_pipeline_layout(const GPUPipelineLayoutDescriptor& desc)
@@ -121,4 +126,5 @@ void delete_pipeline_layout(VulkanPipelineLayout& layout)
 {
     auto rhi = get_rhi();
     rhi->vtable.vkDestroyPipelineLayout(rhi->device, layout.layout, nullptr);
+    layout.layout = VK_NULL_HANDLE;
 }

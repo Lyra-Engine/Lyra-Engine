@@ -26,8 +26,8 @@ void delete_compiler(CompilerHandle compiler)
 
 bool compile(CompilerHandle compiler, const CompileDescriptor& desc, CompileResultHandle& result)
 {
-    Own<CompileResultInternal> internal;
-    CompilerWrapper*           handle = compiler.astype<CompilerWrapper>();
+    auto internal = std::make_unique<CompileResultInternal>();
+    auto handle   = compiler.astype<CompilerWrapper>();
     handle->compile(desc, *internal);
     result = CompileResultHandle{internal.release()};
     return true;
