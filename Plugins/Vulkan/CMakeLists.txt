@@ -18,6 +18,7 @@ target_sources(lyra-vulkan PRIVATE
     VkImage.cpp
     VkSampler.cpp
     VkLayout.cpp
+    VkPipeline.cpp
 )
 
 # link dependencies

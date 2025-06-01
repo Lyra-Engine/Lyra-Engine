@@ -281,6 +281,22 @@ void delete_pipeline_layout(GPUPipelineLayoutHandle handle);
 auto create_pipeline_layout(const GPUPipelineLayoutDescriptor& desc) -> VulkanPipelineLayout;
 void delete_pipeline_layout(VulkanPipelineLayout& layout);
 
+// vulkan pipelines creation
+bool create_render_pipeline(GPURenderPipelineHandle& handle, const GPURenderPipelineDescriptor& desc);
+bool create_compute_pipeline(GPUComputePipelineHandle& handle, const GPUComputePipelineDescriptor& desc);
+bool create_raytracing_pipeline(GPURayTracingPipelineHandle& handle, const GPURayTracingPipelineDescriptor& desc);
+
+// vulkan pipelines creation
+auto create_render_pipeline(const GPURenderPipelineDescriptor& desc) -> VulkanPipeline;
+auto create_compute_pipeline(const GPUComputePipelineDescriptor& desc) -> VulkanPipeline;
+auto create_raytracing_pipeline(const GPURayTracingPipelineDescriptor& desc) -> VulkanPipeline;
+
+// vulkan pipelines deletion
+void delete_render_pipeline(GPURenderPipelineHandle pipeline);
+void delete_compute_pipeline(GPUComputePipelineHandle pipeline);
+void delete_render_pipeline(GPURayTracingPipelineHandle pipeline);
+void delete_pipeline(VulkanPipeline& pipeline);
+
 // adapter/device utils
 bool has_portability_subset(VkPhysicalDevice physicalDevice);
 auto get_supported_instance_extensions() -> HashSet<String>;

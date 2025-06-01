@@ -210,9 +210,9 @@ namespace lyra::rhi
 
     struct GPUBlendComponent
     {
-        GPUBlendOperation operation = GPUBlendOperation::ADD;
-        GPUBlendFactor    srcFactor = GPUBlendFactor::ONE;
-        GPUBlendFactor    dstFactor = GPUBlendFactor::ZERO;
+        GPUBlendOperation operation  = GPUBlendOperation::ADD;
+        GPUBlendFactor    src_factor = GPUBlendFactor::ONE;
+        GPUBlendFactor    dst_factor = GPUBlendFactor::ZERO;
     };
 
     struct GPUBlendState
@@ -237,17 +237,18 @@ namespace lyra::rhi
 
     struct GPUStencilFaceState
     {
-        GPUCompareFunction  compare     = GPUCompareFunction::ALWAYS;
-        GPUStencilOperation failOp      = GPUStencilOperation::KEEP;
-        GPUStencilOperation depthFailOp = GPUStencilOperation::KEEP;
-        GPUStencilOperation passOp      = GPUStencilOperation::KEEP;
+        GPUCompareFunction  compare       = GPUCompareFunction::ALWAYS;
+        GPUStencilOperation fail_op       = GPUStencilOperation::KEEP;
+        GPUStencilOperation depth_fail_op = GPUStencilOperation::KEEP;
+        GPUStencilOperation pass_op       = GPUStencilOperation::KEEP;
     };
 
     struct GPUColorTargetState
     {
         GPUTextureFormat   format;
         GPUBlendState      blend;
-        GPUColorWriteFlags writeMask = 0xF; // GPUColorWrite.ALL
+        GPUColorWriteFlags write_mask   = GPUColorWrite::ALL;
+        bool               blend_enable = false;
     };
 
     struct GPUProgrammableStage
@@ -322,6 +323,7 @@ namespace lyra::rhi
         GPUStencilValue     stencil_read_mask      = 0xFFFFFFFF;
         GPUStencilValue     stencil_write_mask     = 0xFFFFFFFF;
         GPUDepthBias        depth_bias             = 0;
+        int                 depth_bias_constant    = 0;
         float               depth_bias_slope_scale = 0;
         float               depth_bias_clamp       = 0;
     };
@@ -330,6 +332,7 @@ namespace lyra::rhi
     {
         GPUSize32     count                     = 1;
         GPUSampleMask mask                      = 0xFFFFFFFF;
+        bool          alpha_to_one_enabled      = false;
         bool          alpha_to_coverage_enabled = false;
     };
 

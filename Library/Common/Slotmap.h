@@ -28,6 +28,10 @@ namespace lyra
             free.push_back(index);
         }
 
+        auto at(I index) -> T& { return data.at(index); }
+
+        auto at(I index) const -> const T& { return data.at(index); }
+
     private:
         auto get_next_index() -> I
         {

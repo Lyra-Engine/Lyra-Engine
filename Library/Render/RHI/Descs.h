@@ -131,21 +131,24 @@ namespace lyra::rhi
 
     struct GPUComputePipelineDescriptor
     {
-        GPUProgrammableStage compute;
+        GPUPipelineLayoutHandle layout;
+        GPUProgrammableStage    compute;
     };
 
     struct GPURenderPipelineDescriptor
     {
-        GPUVertexState       vertex        = {};
-        GPUPrimitiveState    primitive     = {};
-        GPUDepthStencilState depth_stencil = {};
-        GPUMultisampleState  multisample   = {};
-        GPUFragmentState     fragment      = {};
+        GPUPipelineLayoutHandle layout;
+        GPUVertexState          vertex        = {};
+        GPUPrimitiveState       primitive     = {};
+        GPUDepthStencilState    depth_stencil = {};
+        GPUMultisampleState     multisample   = {};
+        GPUFragmentState        fragment      = {};
     };
 
     struct GPURayTracingPipelineDescriptor
     {
         // more stuff in here
+        GPUPipelineLayoutHandle layout;
     };
 
     struct GPURenderPassLayout : public GPUObjectDescriptorBase
