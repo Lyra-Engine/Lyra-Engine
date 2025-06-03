@@ -159,11 +159,6 @@ namespace lyra::rhi
         GPUSize32                sample_count = 1;
     };
 
-    struct GPUCommandBundleDescriptor : public GPUObjectDescriptorBase
-    {
-        // nothing here for now
-    };
-
     struct GPUComputePassDescriptor : public GPUObjectDescriptorBase
     {
         GPUComputePassTimestampWrites timestampWrites;
@@ -180,7 +175,12 @@ namespace lyra::rhi
 
     struct GPUCommandBufferDescriptor : public GPUObjectDescriptorBase
     {
-        // nothing here for now
+        GPUQueueType queue = GPUQueueType::DEFAULT;
+    };
+
+    struct GPUCommandBundleDescriptor : public GPUObjectDescriptorBase
+    {
+        GPUQueueType queue = GPUQueueType::DEFAULT;
     };
 
 } // namespace lyra::rhi

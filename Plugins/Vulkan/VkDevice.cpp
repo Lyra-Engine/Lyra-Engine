@@ -1,7 +1,10 @@
 #include "VkUtils.h"
 
-#define VK_LOAD(HANDLE, FUNC) \
-    (HANDLE)->vtable.FUNC = (PFN_##FUNC)vkGetDeviceProcAddr((HANDLE)->device, #FUNC);
+#define VK_LOAD(HANDLE, FUNC)                                                             \
+    {                                                                                     \
+        (HANDLE)->vtable.FUNC = (PFN_##FUNC)vkGetDeviceProcAddr((HANDLE)->device, #FUNC); \
+        assert((HANDLE)->vtable.FUNC && "Failed to load device function " #FUNC);         \
+    }
 
 bool is_supported(const Vector<CString>& extensions, CString name)
 {
@@ -90,7 +93,9 @@ bool create_device(const GPUDeviceDescriptor& desc)
 
     // always loaded extensions
     device_extensions.push_back(VK_KHR_MAINTENANCE1_EXTENSION_NAME);
+    device_extensions.push_back(VK_KHR_MAINTENANCE2_EXTENSION_NAME);
     device_extensions.push_back(VK_KHR_MAINTENANCE3_EXTENSION_NAME);
+    device_extensions.push_back(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
 
     // load swapchain extensions
     if (rhi->surface) {
@@ -125,6 +130,18 @@ bool create_device(const GPUDeviceDescriptor& desc)
         feature->pNext = features.pNext;
         features.pNext = feature;
     };
+
+    // synchronization2: support vkQueueSubmit2
+    auto synchronization2 = VkPhysicalDeviceSynchronization2Features{};
+    {
+        synchronization2.sType            = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES;
+        synchronization2.synchronization2 = VK_TRUE;
+        append_feature((VulkanBase*)&synchronization2);
+        if (!is_supported(device_extensions, VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME)) {
+            get_logger()->error("Device extension {} is not supported!", VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
+            exit(1);
+        }
+    }
 
     // timeline semaphores (essential: used to support unified GPU/CPU fence)
     auto timeline_semaphore = VkPhysicalDeviceTimelineSemaphoreFeatures{};
@@ -329,59 +346,117 @@ bool create_device(const GPUDeviceDescriptor& desc)
     // load necessary functions
     volkLoadDeviceTable(&rhi->vtable, rhi->device);
 
+    // load necessary functions
+    VK_LOAD(rhi, vkQueueSubmit2KHR);
+
     // load swapchain functions
+    // https://registry.khronos.org/vulkan/specs/latest/man/html/VK_KHR_swapchain.html
     if (is_supported(device_extensions, VK_KHR_SWAPCHAIN_EXTENSION_NAME)) {
         VK_LOAD(rhi, vkCreateSwapchainKHR);
         VK_LOAD(rhi, vkDestroySwapchainKHR);
         VK_LOAD(rhi, vkGetSwapchainImagesKHR);
+        VK_LOAD(rhi, vkAcquireNextImageKHR);
+        VK_LOAD(rhi, vkQueuePresentKHR);
+    }
+
+    // load dynamic rendering functions
+    // https://registry.khronos.org/vulkan/specs/latest/man/html/VK_KHR_dynamic_rendering.html
+    if (is_supported(device_extensions, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME)) {
+        VK_LOAD(rhi, vkCmdBeginRenderingKHR);
+        VK_LOAD(rhi, vkCmdEndRenderingKHR);
+    }
+
+    // load dynamic rendering functions
+    // https://registry.khronos.org/vulkan/specs/latest/man/html/VK_KHR_acceleration_structure.html
+    if (is_supported(device_extensions, VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME)) {
+        VK_LOAD(rhi, vkBuildAccelerationStructuresKHR);
+        VK_LOAD(rhi, vkCmdCopyAccelerationStructureKHR);
+        VK_LOAD(rhi, vkCmdBuildAccelerationStructuresKHR);
+        VK_LOAD(rhi, vkCmdBuildAccelerationStructuresIndirectKHR);
+    }
+
+    // load raytracing pipelines functions
+    // https://registry.khronos.org/vulkan/specs/latest/man/html/VK_KHR_ray_tracing_pipeline.html
+    if (is_supported(device_extensions, VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME)) {
+        VK_LOAD(rhi, vkCmdTraceRaysKHR);
+        VK_LOAD(rhi, vkCmdTraceRaysIndirectKHR);
+        VK_LOAD(rhi, vkCreateRayTracingPipelinesKHR);
+    }
+
+    // load ray query functions
+    // https://registry.khronos.org/vulkan/specs/latest/man/html/VK_KHR_ray_query.html
+    if (is_supported(device_extensions, VK_KHR_RAY_QUERY_EXTENSION_NAME)) {
+        // no additional functions
     }
 
     // create memory allocator
     bool enable_buffer_device_address = required_features.raytracing;
     create_allocator(rhi, enable_buffer_device_address);
 
+    // transfer queues
+    if (queue_family_indices.transfer.has_value())
+        rhi->vtable.vkGetDeviceQueue(rhi->device, queue_family_indices.transfer.value(), 0, &rhi->transfer_queue);
+
+    // compute queue
+    if (queue_family_indices.compute.has_value())
+        rhi->vtable.vkGetDeviceQueue(rhi->device, queue_family_indices.compute.value(), 0, &rhi->compute_queue);
+
+    // graphics queue
+    if (queue_family_indices.graphics.has_value())
+        rhi->vtable.vkGetDeviceQueue(rhi->device, queue_family_indices.graphics.value(), 0, &rhi->graphics_queue);
+
+    // present queue
+    if (queue_family_indices.present.has_value())
+        rhi->vtable.vkGetDeviceQueue(rhi->device, queue_family_indices.present.value(), 0, &rhi->present_queue);
+
     return true;
 }
 
 void delete_device()
 {
+    wait_idle();
+
     auto rhi = get_rhi();
 
     // clean up remaining fences
+    for (auto& frame : rhi->frames)
+        frame.destroy();
+
+    // clean up remaining fences
     for (auto& fence : rhi->fences.data)
-        delete_fence(fence);
+        fence.destroy();
 
     // clean up remaining buffers
     for (auto& buffer : rhi->buffers.data)
-        delete_buffer(buffer);
+        buffer.destroy();
 
     // clean up remaining textures
     for (auto& texture : rhi->textures.data)
-        delete_texture(texture);
+        texture.destroy();
 
     // clean up remaining samplers
     for (auto& sampler : rhi->samplers.data)
-        delete_sampler(sampler);
+        sampler.destroy();
 
     // clean up remaining shaders
     for (auto& shader : rhi->shaders.data)
-        delete_shader_module(shader);
+        shader.destroy();
 
     // clean up remaining bind group layouts
     for (auto& layout : rhi->bind_group_layouts.data)
-        delete_bind_group_layout(layout);
+        layout.destroy();
 
     // clean up remaining pipeline layouts
     for (auto& layout : rhi->pipeline_layouts.data)
-        delete_pipeline_layout(layout);
+        layout.destroy();
 
     // clean up remaining pipelines
     for (auto& pipeline : rhi->pipelines.data)
-        delete_pipeline(pipeline);
+        pipeline.destroy();
 
     // // clean up remaining query sets
     // for (auto& query : rhi->queries.data)
-    //     delete_query_set(query);
+    //     query.destroy();
 
     if (rhi->swapchain) {
         rhi->vtable.vkDestroySwapchainKHR(rhi->device, rhi->swapchain, nullptr);

@@ -77,9 +77,21 @@ GPUDevice GPUAdapter::request_device(const GPUDeviceDescriptor& descriptor)
     return RHI::DEVICE;
 }
 
+GPUSurfaceTexture GPUSurface::get_current_texture()
+{
+    GPUSurfaceTexture texture;
+    RHI::api()->acquire_next_frame(texture.handle, texture.available, texture.complete, texture.suboptimal);
+    return texture;
+}
+
 void GPUSurface::destroy()
 {
     RHI::api()->delete_surface();
+}
+
+void GPUSurfaceTexture::present()
+{
+    RHI::api()->present_curr_frame(handle);
 }
 
 GPUFence GPUDevice::create_fence()
@@ -165,16 +177,28 @@ GPURayTracingPipeline GPUDevice::create_raytracing_pipeline(const GPURayTracingP
     return layout;
 }
 
-GPUCommandBuffer GPUDevice::create_command_buffer(const GPUCommandBufferDescriptor& desc, GPUQueueType type)
+GPUCommandBuffer GPUDevice::create_command_buffer(const GPUCommandBufferDescriptor& desc)
 {
-    assert(!!!"unimplemented");
-    return GPUCommandBuffer();
+    GPUCommandBuffer command_buffer;
+    RHI::api()->create_command_buffer(command_buffer.handle, desc);
+    return command_buffer;
 }
 
-GPUCommandBundle GPUDevice::create_command_bundle(const GPUCommandBundleDescriptor& desc, GPUQueueType type)
+GPUCommandBundle GPUDevice::create_command_bundle(const GPUCommandBundleDescriptor& desc)
 {
-    assert(!!!"unimplemented");
-    return GPUCommandBundle();
+    GPUCommandBundle command_bundle;
+    RHI::api()->create_command_bundle(command_bundle.handle, desc);
+    return command_bundle;
+}
+
+void GPUDevice::wait()
+{
+    RHI::api()->wait_idle();
+}
+
+void wait(GPUFence fence)
+{
+    RHI::api()->wait_fence(fence.handle);
 }
 
 void GPUDevice::destroy()

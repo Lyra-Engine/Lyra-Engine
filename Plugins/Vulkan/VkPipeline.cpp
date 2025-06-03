@@ -129,14 +129,18 @@ VulkanPipeline create_render_pipeline(const GPURenderPipelineDescriptor& desc)
     }
 
     // dummy viewport (supposed to be replaced by vkCmdSetViewport)
-    Vector<VkViewport> viewports = {
-        VkViewport{0.0, 0.0, 640.0, 480.0, 0.0, 0.0},
-    };
+    auto viewport   = VkViewport{};
+    viewport.x      = 0;
+    viewport.y      = rhi->swapchain_dim.height;
+    viewport.width  = rhi->swapchain_dim.width;
+    viewport.height = -rhi->swapchain_dim.height;
 
     // dummy scissor (supposed to be replaced by vkCmdSetScissor)
-    Vector<VkRect2D> scissors = {
-        VkRect2D{VkOffset2D{0, 0}, VkExtent2D{640, 480}},
-    };
+    auto scissor          = VkRect2D{};
+    scissor.offset.x      = 0;
+    scissor.offset.y      = 0;
+    scissor.extent.width  = rhi->swapchain_dim.width;
+    scissor.extent.height = rhi->swapchain_dim.height;
 
     // allow viewport/scissor/etc to be reset at rendering time
     Vector<VkDynamicState> dynamics = {
@@ -166,10 +170,10 @@ VulkanPipeline create_render_pipeline(const GPURenderPipelineDescriptor& desc)
     auto viewport_state          = VkPipelineViewportStateCreateInfo{};
     viewport_state.sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
     viewport_state.pNext         = nullptr;
-    viewport_state.pViewports    = viewports.data();
-    viewport_state.viewportCount = static_cast<uint>(viewports.size());
-    viewport_state.pScissors     = scissors.data();
-    viewport_state.scissorCount  = static_cast<uint>(scissors.size());
+    viewport_state.pViewports    = &viewport;
+    viewport_state.viewportCount = 1;
+    viewport_state.pScissors     = &scissor;
+    viewport_state.scissorCount  = 1;
 
     auto rasterization_state                    = VkPipelineRasterizationStateCreateInfo{};
     rasterization_state.sType                   = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
@@ -226,8 +230,10 @@ VulkanPipeline create_render_pipeline(const GPURenderPipelineDescriptor& desc)
     pipeline_rendering_create_info.pColorAttachmentFormats = formats.data();
     pipeline_rendering_create_info.depthAttachmentFormat   = VK_FORMAT_UNDEFINED;
     pipeline_rendering_create_info.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
-    if (depth_stencil_state.depthWriteEnable)
-        pipeline_rendering_create_info.depthAttachmentFormat = vkenum(desc.depth_stencil.format);
+    if (depth_stencil_state.depthWriteEnable) {
+        pipeline_rendering_create_info.depthAttachmentFormat   = vkenum(desc.depth_stencil.format);
+        pipeline_rendering_create_info.stencilAttachmentFormat = vkenum(desc.depth_stencil.format);
+    }
 
     auto create_info                = VkGraphicsPipelineCreateInfo{};
     create_info.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;

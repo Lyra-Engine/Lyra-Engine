@@ -22,6 +22,8 @@ namespace lyra::rhi
     {
         GPUFenceHandle handle;
 
+        void signal();
+
         void destroy();
 
         operator GPUFenceHandle() const { return handle; }
@@ -182,8 +184,6 @@ namespace lyra::rhi
 
     struct GPUCommandEncoder : public GPUObjectBase
     {
-        GPUQueueType type = GPUQueueType::DEFAULT;
-
         GPUCommandEncoderHandle handle;
 
         void insert_debug_marker(CString marker_label);
@@ -265,23 +265,11 @@ namespace lyra::rhi
         void execute_bundles(const Vector<GPUCommandBundle>& bundles);
     };
 
-    struct GPUQueue : public GPUObjectBase
-    {
-        GPUQueueHandle handle;
-
-        void submit(const Vector<GPUCommandBuffer>& command_buffers);
-
-        void write_buffer(const GPUBuffer& buffer, GPUSize64 buffer_offset, BufferSource data, GPUSize64 data_offset = 0, GPUSize64 size = 0);
-
-        void write_texture(GPUTexelCopyTextureInfo destination, BufferSource data, GPUTexelCopyBufferLayout dataLayout, GPUExtent3D size);
-
-        operator GPUQueueHandle() const { return handle; }
-    };
-
     struct GPUSurfaceTexture : public GPUObjectBase
     {
         GPUTextureHandle handle;
-        GPUFenceHandle   ready;
+        GPUFenceHandle   complete;
+        GPUFenceHandle   available;
         bool             suboptimal;
 
         void present();
@@ -291,11 +279,8 @@ namespace lyra::rhi
 
     struct GPUDevice : public GPUObjectBase
     {
-        GPUAdapterInfo       adapter_info   = {};
-        GPUSupportedFeatures features       = {};
-        GPUQueue             default_queue  = {};
-        GPUQueue             compute_queue  = {};
-        GPUQueue             transfer_queue = {};
+        GPUAdapterInfo       adapter_info = {};
+        GPUSupportedFeatures features     = {};
 
         auto create_fence() -> GPUFence;
 
@@ -321,13 +306,9 @@ namespace lyra::rhi
 
         auto create_raytracing_pipeline(const GPURayTracingPipelineDescriptor& descriptor) -> GPURayTracingPipeline;
 
-        auto create_command_buffer(const GPUCommandBufferDescriptor& descriptor, GPUQueueType type = GPUQueueType::DEFAULT) -> GPUCommandBuffer;
+        auto create_command_buffer(const GPUCommandBufferDescriptor& descriptor) -> GPUCommandBuffer;
 
-        auto create_command_bundle(const GPUCommandBundleDescriptor& descriptor, GPUQueueType type = GPUQueueType::DEFAULT) -> GPUCommandBundle;
-
-        auto push_error_scope(GPUErrorFilter filter) -> void;
-
-        auto pop_error_scope() -> void;
+        auto create_command_bundle(const GPUCommandBundleDescriptor& descriptor) -> GPUCommandBundle;
 
         auto wait() -> void;
 
@@ -338,9 +319,9 @@ namespace lyra::rhi
 
     struct GPUSurface : public GPUObjectBase
     {
-        auto destroy() -> void;
+        auto get_current_texture() -> GPUSurfaceTexture;
 
-        auto get_current_texture() -> GPUTexture;
+        auto destroy() -> void;
     };
 
     struct GPUAdapter : public GPUObjectBase

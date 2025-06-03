@@ -72,7 +72,8 @@ VulkanTexture create_texture(const GPUTextureDescriptor& desc)
 
 void delete_texture(VulkanTexture& texture)
 {
-    if (texture.image != VK_NULL_HANDLE) {
+    // only delete the image and its memory when it is NOT externally managed.
+    if (texture.image != VK_NULL_HANDLE && texture.alloc_info.size != 0) {
         vmaDestroyImage(get_rhi()->alloc, texture.image, texture.allocation);
         texture.image = VK_NULL_HANDLE;
     }

@@ -17,7 +17,8 @@ namespace lyra::wsi
 
     struct Window
     {
-        using Callback = std::function<void()>;
+        using Callback  = std::function<void()>;
+        using Callbacks = Vector<Callback>;
 
         WindowHandle handle;
 
@@ -38,13 +39,13 @@ namespace lyra::wsi
         template <typename F>
         void bind(WindowEvent event, F&& f)
         {
-            callbacks.at(static_cast<uint>(event)) = f;
+            callbacks.at(static_cast<uint>(event)).push_back(f);
         }
 
     private:
         static constexpr size_t NUM_WINDOW_EVENTS = enum_count<WindowEvent>();
 
-        Array<Callback, NUM_WINDOW_EVENTS> callbacks;
+        Array<Callbacks, NUM_WINDOW_EVENTS> callbacks;
     };
 
 } // namespace lyra::wsi

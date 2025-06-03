@@ -11,6 +11,8 @@ target_sources(lyra-vulkan PRIVATE
     VkSurface.cpp
     VkAdapter.cpp
     VkDevice.cpp
+    VkQueue.cpp
+    VkFrame.cpp
     VkSwapchain.cpp
     VkFence.cpp
     VkShader.cpp
@@ -19,11 +21,13 @@ target_sources(lyra-vulkan PRIVATE
     VkSampler.cpp
     VkLayout.cpp
     VkPipeline.cpp
+    VkCommandPool.cpp
+    VkCommandBuffer.cpp
 )
 
 # link dependencies
 find_package(vma REQUIRED)
 find_package(volk REQUIRED)
 find_package(Vulkan REQUIRED)
-target_link_libraries(lyra-vulkan PRIVATE volk Vulkan::Vulkan Vulkan::Headers VulkanMemoryAllocator)
+target_link_libraries(lyra-vulkan PRIVATE Vulkan::Vulkan Vulkan::Headers volk VulkanMemoryAllocator)
 target_compile_options(lyra-vulkan PRIVATE -Wno-nullability-completeness) # added for VulkanMemoryAllocator

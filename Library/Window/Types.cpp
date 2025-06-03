@@ -37,6 +37,7 @@ void Window::loop()
 {
     Window::api()->run_in_loop(handle, [&](WindowEvent event) {
         size_t index = static_cast<size_t>(event);
-        callbacks.at(index)();
+        for (auto& callback : callbacks.at(index))
+            callback();
     });
 }

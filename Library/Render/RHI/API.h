@@ -68,7 +68,14 @@ namespace lyra::rhi
         bool (*create_raytracing_pipeline)(GPURayTracingPipelineHandle& texture, const GPURayTracingPipelineDescriptor& descriptor);
         void (*delete_raytracing_pipeline)(GPURayTracingPipelineHandle texture);
 
-        bool (*create_command_buffer)(GPUQueueHandle queue, GPUCommandEncoderHandle& cmdbuffer, const GPUCommandBufferDescriptor& descriptor);
+        bool (*acquire_next_frame)(GPUTextureHandle& texture, GPUFenceHandle& image_available, GPUFenceHandle& render_complete, bool& suboptimal);
+        bool (*present_curr_frame)(GPUTextureHandle texture);
+
+        void (*wait_idle)();
+        void (*wait_fence)(GPUFenceHandle fence);
+
+        bool (*create_command_buffer)(GPUCommandEncoderHandle& cmdbuffer, const GPUCommandBufferDescriptor& descriptor);
+        bool (*create_command_bundle)(GPUCommandEncoderHandle& cmdbuffer, const GPUCommandBundleDescriptor& descriptor);
 
         void (*cmd_set_render_pipeline)(GPUCommandEncoderHandle cmdbuffer, GPURenderPipelineHandle pipeline);
         void (*cmd_set_compute_pipeline)(GPUCommandEncoderHandle cmdbuffer, GPUComputePipelineHandle pipeline);

@@ -650,13 +650,41 @@ VkShaderStageFlags vkenum(GPUShaderStageFlags stages)
     return flags;
 }
 
-// VkPipelineStageFlags vkenum(GPUBarrierSyncFlags flags)
-// {
-// }
-//
-// VkAccessFlagBits vkenum(GPUBarrierAccessFlags flags)
-// {
-// }
+VkPipelineStageFlags2 vkenum(GPUBarrierSyncFlags sync)
+{
+    VkPipelineStageFlags flags = 0;
+
+    // clang-format off
+    if (sync.contains(GPUBarrierSync::NONE))             flags |= VK_PIPELINE_STAGE_2_NONE;
+    if (sync.contains(GPUBarrierSync::ALL))              flags |= VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+    if (sync.contains(GPUBarrierSync::DRAW))             flags |= VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT; // TODO: figure out the correct mapping for this.
+    if (sync.contains(GPUBarrierSync::INDEX_INPUT))      flags |= VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT;
+    if (sync.contains(GPUBarrierSync::VERTEX_SHADING))   flags |= VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
+    if (sync.contains(GPUBarrierSync::PIXEL_SHADING))    flags |= VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+    if (sync.contains(GPUBarrierSync::DEPTH_STENCIL))    flags |= VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
+    if (sync.contains(GPUBarrierSync::RENDER_TARGET))    flags |= VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+    if (sync.contains(GPUBarrierSync::COMPUTE))          flags |= VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+    if (sync.contains(GPUBarrierSync::RAYTRACING))       flags |= VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR;
+    if (sync.contains(GPUBarrierSync::COPY))             flags |= VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+    if (sync.contains(GPUBarrierSync::BLIT))             flags |= VK_PIPELINE_STAGE_2_BLIT_BIT;
+    if (sync.contains(GPUBarrierSync::CLEAR))            flags |= VK_PIPELINE_STAGE_2_CLEAR_BIT;
+    if (sync.contains(GPUBarrierSync::RESOLVE))          flags |= VK_PIPELINE_STAGE_2_RESOLVE_BIT;
+    if (sync.contains(GPUBarrierSync::EXECUTE_INDIRECT)) flags |= VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT;
+    if (sync.contains(GPUBarrierSync::ALL_SHADING))      flags |= VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT;
+    if (sync.contains(GPUBarrierSync::VIDEO_DECODE))     flags |= VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR;
+    if (sync.contains(GPUBarrierSync::VIDEO_ENCODE))     flags |= VK_PIPELINE_STAGE_2_VIDEO_ENCODE_BIT_KHR;
+    if (sync.contains(GPUBarrierSync::BVH_BUILD))        flags |= VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
+    if (sync.contains(GPUBarrierSync::BVH_COPY))         flags |= VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_COPY_BIT_KHR;
+    // clang-format on
+
+    return flags;
+}
+
+VkAccessFlagBits2 vkenum(GPUBarrierAccessFlags flags)
+{
+    assert(!!!"Unimplemented!");
+    return 0;
+}
 
 bool is_binding_array(GPUBindingResourceType type)
 {

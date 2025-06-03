@@ -20,7 +20,6 @@ namespace lyra::rhi
 
     enum struct GPUObjectType : uint
     {
-        QUEUE,
         FENCE,
         BUFFER,
         SAMPLER,
@@ -538,10 +537,9 @@ namespace lyra::rhi
         EXECUTE_INDIRECT = 0x1u << 15,
         ALL_SHADING      = 0x1u << 16,
         VIDEO_DECODE     = 0x1u << 17,
-        VIDEO_PROCESS    = 0x1u << 18,
-        VIDEO_ENCODE     = 0x1u << 19,
-        ACCEL_BUILD      = 0x1u << 20,
-        ACCEL_COPY       = 0x1u << 21,
+        VIDEO_ENCODE     = 0x1u << 18,
+        BVH_BUILD        = 0x1u << 19,
+        BVH_COPY         = 0x1u << 20,
     };
 
     enum struct GPUBarrierAccess : uint
@@ -561,8 +559,8 @@ namespace lyra::rhi
         COPY_SOURCE         = 0x1u << 13,
         RESOLVE_DEST        = 0x1u << 14,
         RESOLVE_SOURCE      = 0x1u << 15,
-        ACCEL_READ          = 0x1u << 16,
-        ACCEL_WRITE         = 0x1u << 17,
+        BVH_READ            = 0x1u << 16,
+        BVH_WRITE           = 0x1u << 17,
         SHADING_RATE_SOURCE = 0x1u << 18,
         VIDEO_DECODE_READ   = 0x1u << 19,
         VIDEO_DECODE_WRITE  = 0x1u << 20,

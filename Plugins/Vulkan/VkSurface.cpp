@@ -9,7 +9,7 @@ void add_surface_extension(Vector<const char*>& instance_extensions)
     instance_extensions.push_back("VK_KHR_win32_surface");
 }
 
-VkResult create_surface(VkInstance instance, const WindowHandle& window, VkSurfaceKHR* surface)
+VkResult create_surface(VkInstance instance, const WindowHandle& window, VkSurfaceKHR& surface)
 {
     static auto create = (PFN_vkCreateWin32SurfaceKHR)vkGetInstanceProcAddr(instance, "vkCreateWin32SurfaceKHR");
 
@@ -17,7 +17,7 @@ VkResult create_surface(VkInstance instance, const WindowHandle& window, VkSurfa
     createInfo.sType     = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
     createInfo.hwnd      = (HWND)window.native;
     createInfo.hinstance = GetModuleHandle(nullptr);
-    if (create(instance, &createInfo, nullptr, surface) != VK_SUCCESS) {
+    if (create(instance, &createInfo, nullptr, &surface) != VK_SUCCESS) {
         return VK_ERROR_INITIALIZATION_FAILED;
     }
     return VK_SUCCESS;
@@ -31,14 +31,14 @@ void add_surface_extension(Vector<const char*>& instance_extensions)
     instance_extensions.push_back("VK_KHR_xcb_surface");
 }
 
-VkResult create_surface(VkInstance instance, const WindowHandle& window, VkSurfaceKHR* surface)
+VkResult create_surface(VkInstance instance, const WindowHandle& window, VkSurfaceKHR& surface)
 {
     static auto create = (PFN_vkCreateXcbSurfaceKHR)vkGetInstanceProcAddr(instance, "vkCreateXcbSurfaceKHR");
 
     VkXcbSurfaceCreateInfoKHR createInfo{};
     createInfo.sType  = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
     createInfo.window = window.native;
-    if (create(instance, &createInfo, nullptr, surface) != VK_SUCCESS) {
+    if (create(instance, &createInfo, nullptr, &surface) != VK_SUCCESS) {
         return VK_ERROR_INITIALIZATION_FAILED;
     }
     return VK_SUCCESS;
@@ -53,14 +53,14 @@ void add_surface_extension(Vector<const char*>& instance_extensions)
     instance_extensions.push_back("VK_MVK_macos_surface");
 }
 
-VkResult create_surface(VkInstance instance, const WindowHandle& window, VkSurfaceKHR* surface)
+VkResult create_surface(VkInstance instance, const WindowHandle& window, VkSurfaceKHR& surface)
 {
     static auto create = (PFN_vkCreateMetalSurfaceEXT)vkGetInstanceProcAddr(instance, "vkCreateMetalSurfaceEXT");
 
     VkMetalSurfaceCreateInfoEXT metal_create_info{};
     metal_create_info.sType  = VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT;
     metal_create_info.pLayer = window.native;
-    if (create(instance, &metal_create_info, nullptr, surface) != VK_SUCCESS) {
+    if (create(instance, &metal_create_info, nullptr, &surface) != VK_SUCCESS) {
         return VK_ERROR_INITIALIZATION_FAILED;
     }
     return VK_SUCCESS;
@@ -73,7 +73,7 @@ VkSurfaceKHR create_surface(VkInstance instance, const WindowHandle& handle)
         return VK_NULL_HANDLE;
 
     VkSurfaceKHR surface = VK_NULL_HANDLE;
-    vk_check(create_surface(instance, handle, &surface));
+    vk_check(create_surface(instance, handle, surface));
     return surface;
 }
 
@@ -122,6 +122,35 @@ bool create_surface(GPUSurface& surface, const GPUSurfaceDescriptor& desc)
     rhi->swapchain_dim        = extent;
     vk_check(rhi->vtable.vkCreateSwapchainKHR(rhi->device, &create_info, nullptr, &rhi->swapchain));
 
+    // get swapchain images
+    uint count;
+    vk_check(rhi->vtable.vkGetSwapchainImagesKHR(rhi->device, rhi->swapchain, &count, nullptr));
+
+    Vector<VkImage> swapchain_images(count);
+    vk_check(rhi->vtable.vkGetSwapchainImagesKHR(rhi->device, rhi->swapchain, &count, swapchain_images.data()));
+
+    // create swapchain texture handles
+    if (rhi->images.empty()) {
+        rhi->images.resize(count);
+        for (uint i = 0; i < count; i++) {
+            auto& handle    = rhi->images.at(i);
+            auto  texture   = VulkanTexture{};
+            texture.image   = swapchain_images.at(i);
+            texture.aspects = VK_IMAGE_ASPECT_COLOR_BIT;
+            handle          = rhi->textures.add(texture);
+        }
+    }
+
+    // create frames in flight
+    if (rhi->frames.empty()) {
+        rhi->frames.resize(desc.frames_inflight);
+        for (auto& frame : rhi->frames)
+            frame.init();
+    }
+
+    // reset
+    rhi->current_frame_index = 0;
+    rhi->current_image_index = 0;
     return true;
 }
 

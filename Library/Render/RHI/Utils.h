@@ -44,7 +44,6 @@ namespace lyra::rhi
 
     // typed GPU handle
     using GPUFenceHandle              = Handle<GPUObjectType, GPUObjectType::FENCE>;
-    using GPUQueueHandle              = Handle<GPUObjectType, GPUObjectType::QUEUE>;
     using GPUCommandEncoderHandle     = Handle<GPUObjectType, GPUObjectType::COMMAND_ENCODER>;
     using GPUBufferHandle             = Handle<GPUObjectType, GPUObjectType::BUFFER>;
     using GPUSamplerHandle            = Handle<GPUObjectType, GPUObjectType::SAMPLER>;
