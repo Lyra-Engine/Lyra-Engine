@@ -10,7 +10,7 @@ void fill_vulkan_debug_messenger_create_info(VkDebugUtilsMessengerCreateInfoEXT&
     info.flags           = 0;
 }
 
-bool create_instance(const RHIDescriptor& desc)
+bool api::create_instance(const RHIDescriptor& desc)
 {
     auto logger = get_logger();
 
@@ -114,7 +114,7 @@ bool create_instance(const RHIDescriptor& desc)
     return true;
 }
 
-void delete_instance()
+void api::delete_instance()
 {
     auto rhi = get_rhi();
     if (!rhi) return;

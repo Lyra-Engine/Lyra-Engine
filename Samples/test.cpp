@@ -35,12 +35,19 @@ float4 fsmain(VertexOutput input) : SV_Target
 }
 )""";
 
-GPUShaderModule   vshader;
-GPUShaderModule   fshader;
-GPURenderPipeline pipeline;
-GPUPipelineLayout playout;
-GPUBuffer         vbuffer;
-GPUBuffer         ibuffer;
+struct Vertex
+{
+    Array<float, 3> position;
+    Array<float, 3> color;
+};
+
+GPUShaderModule    vshader;
+GPUShaderModule    fshader;
+GPUBindGroupLayout blayout;
+GPUPipelineLayout  playout;
+GPURenderPipeline  pipeline;
+GPUBuffer          vbuffer;
+GPUBuffer          ibuffer;
 
 void setup_pipeline()
 {
@@ -62,7 +69,7 @@ void setup_pipeline()
     vshader = execute([&]() {
         auto code  = module->get_shader_blob("vsmain");
         auto desc  = GPUShaderModuleDescriptor{};
-        desc.label = "vertex shader";
+        desc.label = "vertex_shader";
         desc.data  = code->data;
         desc.size  = code->size;
         return device.create_shader_module(desc);
@@ -71,14 +78,15 @@ void setup_pipeline()
     fshader = execute([&]() {
         auto code  = module->get_shader_blob("fsmain");
         auto desc  = GPUShaderModuleDescriptor{};
-        desc.label = "fragment shader";
+        desc.label = "fragment_shader";
         desc.data  = code->data;
         desc.size  = code->size;
         return device.create_shader_module(desc);
     });
 
     playout = execute([&]() {
-        GPUPipelineLayoutDescriptor desc = {};
+        auto desc               = GPUPipelineLayoutDescriptor{};
+        desc.bind_group_layouts = {};
         return device.create_pipeline_layout(desc);
     });
 
@@ -123,17 +131,54 @@ void setup_pipeline()
 
 void setup_buffers()
 {
+    auto& device = RHI::get_current_device();
+
+    vbuffer = execute([&]() {
+        auto desc               = GPUBufferDescriptor{};
+        desc.label              = "vertex_buffer";
+        desc.size               = sizeof(Vertex) * 3;
+        desc.usage              = GPUBufferUsage::VERTEX | GPUBufferUsage::MAP_WRITE;
+        desc.mapped_at_creation = true;
+        return device.create_buffer(desc);
+    });
+
+    ibuffer = execute([&]() {
+        auto desc               = GPUBufferDescriptor{};
+        desc.label              = "index_buffer";
+        desc.size               = sizeof(uint32_t) * 3;
+        desc.usage              = GPUBufferUsage::INDEX | GPUBufferUsage::MAP_READ;
+        desc.mapped_at_creation = true;
+        return device.create_buffer(desc);
+    });
+
+    auto vertices = vbuffer.get_mapped_range<Vertex>();
+
+    // positions
+    vertices.at(0).position = {0.0f, 0.0f, 0.0f};
+    vertices.at(1).position = {1.0f, 0.0f, 0.0f};
+    vertices.at(2).position = {0.0f, 1.0f, 0.0f};
+
+    // colors
+    vertices.at(0).color = {1.0f, 0.0f, 0.0f};
+    vertices.at(1).color = {0.0f, 1.0f, 0.0f};
+    vertices.at(2).color = {0.0f, 0.0f, 1.0f};
+
+    // indices
+    auto indices  = vbuffer.get_mapped_range<uint>();
+    indices.at(0) = 0;
+    indices.at(1) = 1;
+    indices.at(2) = 2;
 }
 
 void cleanup()
 {
     // NOTE: This is optional, because all resources will be automatically collected by device at destruction.
+    ibuffer.destroy();
+    vbuffer.destroy();
     vshader.destroy();
     fshader.destroy();
     playout.destroy();
     pipeline.destroy();
-    // ibuffer.destroy();
-    // vbuffer.destroy();
 }
 
 void update()
@@ -143,10 +188,37 @@ void update()
 
 void render()
 {
+    auto& device  = RHI::get_current_device();
     auto& surface = RHI::get_current_surface();
 
     // acquire next frame from swapchain
     auto texture = surface.get_current_texture();
+
+    // create command buffer
+    auto command = execute([&]() {
+        auto desc  = GPUCommandBufferDescriptor{};
+        desc.queue = GPUQueueType::DEFAULT;
+        return device.create_command_buffer(desc);
+    });
+
+    auto color_attachment        = GPURenderPassColorAttachment{};
+    color_attachment.clear_value = GPUColor{0.0f, 0.0f, 0.0f, 0.0f};
+    color_attachment.load_op     = GPULoadOp::CLEAR;
+    color_attachment.store_op    = GPUStoreOp::STORE;
+    color_attachment.view        = texture.view;
+
+    auto render_pass                     = GPURenderPassDescriptor{};
+    render_pass.color_attachments        = {color_attachment};
+    render_pass.depth_stencil_attachment = {};
+
+    command.wait(texture.available);
+    command.begin_render_pass(render_pass);
+    command.set_viewport(0, 0, 1920, 1080);
+    command.set_scissor_rect(0, 0, 1920, 1080);
+    command.set_pipeline(pipeline);
+    command.draw_indexed(3, 1, 0, 0, 0);
+    command.end_render_pass();
+    command.signal(texture.complete);
 
     // present this frame to swapchain
     texture.present();

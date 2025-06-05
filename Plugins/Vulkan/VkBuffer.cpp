@@ -1,28 +1,12 @@
 #include "VkUtils.h"
 
-void VulkanBuffer::destroy()
+VulkanBuffer::VulkanBuffer()
+    : buffer(VK_NULL_HANDLE), alloc_info({})
 {
-    delete_buffer(*this);
+    // do nothing
 }
 
-bool create_buffer(GPUBufferHandle& handle, const GPUBufferDescriptor& desc)
-{
-    auto obj = create_buffer(desc);
-    auto rhi = get_rhi();
-    auto ind = rhi->buffers.add(obj);
-
-    handle = GPUBufferHandle(ind);
-    return true;
-}
-
-void delete_buffer(GPUBufferHandle handle)
-{
-    auto rhi = get_rhi();
-    delete_buffer(fetch_resource(rhi->buffers, handle));
-    rhi->buffers.remove(handle.value);
-}
-
-VulkanBuffer create_buffer(const GPUBufferDescriptor& desc)
+VulkanBuffer::VulkanBuffer(const GPUBufferDescriptor& desc)
 {
     VkBufferCreateInfo      buffer_create_info = {};
     VmaAllocationCreateInfo alloc_create_info  = {};
@@ -66,17 +50,33 @@ VulkanBuffer create_buffer(const GPUBufferDescriptor& desc)
     }
 
     // create buffer
-    VulkanBuffer buffer;
     vk_check(vmaCreateBuffer(
         get_rhi()->alloc, &buffer_create_info, &alloc_create_info,
-        &buffer.buffer, &buffer.allocation, &buffer.alloc_info));
-    return buffer;
+        &buffer, &allocation, &alloc_info));
+
+    if (desc.mapped_at_creation) {
+        mapped_data = reinterpret_cast<uint8_t*>(alloc_info.pMappedData);
+        mapped_size = desc.size;
+    }
 }
 
-void delete_buffer(VulkanBuffer& buffer)
+void VulkanBuffer::map(GPUSize64 offset, GPUSize64 size)
 {
-    if (buffer.buffer != VK_NULL_HANDLE) {
-        vmaDestroyBuffer(get_rhi()->alloc, buffer.buffer, buffer.allocation);
-        buffer.buffer = VK_NULL_HANDLE;
+    void* data = nullptr;
+    vk_check(vmaMapMemory(get_rhi()->alloc, allocation, &data));
+    mapped_data = reinterpret_cast<uint8_t*>(data) + offset;
+    mapped_size = size;
+}
+
+void VulkanBuffer::unmap()
+{
+    vmaUnmapMemory(get_rhi()->alloc, allocation);
+}
+
+void VulkanBuffer::destroy()
+{
+    if (buffer != VK_NULL_HANDLE) {
+        vmaDestroyBuffer(get_rhi()->alloc, buffer, allocation);
+        buffer = VK_NULL_HANDLE;
     }
 }

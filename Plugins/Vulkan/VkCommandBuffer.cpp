@@ -1,6 +1,6 @@
 #include "VkUtils.h"
 
-void VulkanCommandBuffer::wait(const VulkanFence& fence, GPUBarrierSyncFlags sync)
+void VulkanCommandBuffer::wait(const VulkanSemaphore& fence, GPUBarrierSyncFlags sync)
 {
     auto rhi = get_rhi();
     wait_semaphores.push_back(VkSemaphoreSubmitInfo{});
@@ -14,7 +14,7 @@ void VulkanCommandBuffer::wait(const VulkanFence& fence, GPUBarrierSyncFlags syn
     submit_info.deviceIndex = 0;
 }
 
-void VulkanCommandBuffer::signal(const VulkanFence& fence, GPUBarrierSyncFlags sync)
+void VulkanCommandBuffer::signal(const VulkanSemaphore& fence, GPUBarrierSyncFlags sync)
 {
     auto rhi = get_rhi();
     signal_semaphores.push_back(VkSemaphoreSubmitInfo{});
@@ -55,36 +55,10 @@ void VulkanCommandBuffer::submit()
     submit_info.signalSemaphoreInfoCount = static_cast<uint32_t>(signal_semaphores.size());
     submit_info.pSignalSemaphoreInfos    = signal_semaphores.data();
 
-    vk_check(rhi->vtable.vkQueueSubmit2KHR(command_queue, 1, &submit_info, fence));
+    vk_check(rhi->vtable.vkQueueSubmit2KHR(command_queue, 1, &submit_info, fence.fence));
 }
 
 void VulkanCommandBuffer::begin()
-{
-    begin_command_buffer(command_buffer);
-}
-
-void VulkanCommandBuffer::end()
-{
-    end_command_buffer(command_buffer);
-}
-
-bool create_command_buffer(GPUCommandEncoderHandle& cmdbuffer, const GPUCommandBufferDescriptor& descriptor)
-{
-    auto  rhi   = get_rhi();
-    auto& frame = rhi->current_frame();
-    cmdbuffer   = frame.allocate(descriptor.queue, true);
-    return true;
-}
-
-bool create_command_bundle(GPUCommandEncoderHandle& cmdbuffer, const GPUCommandBufferDescriptor& descriptor)
-{
-    auto  rhi   = get_rhi();
-    auto& frame = rhi->current_frame();
-    cmdbuffer   = frame.allocate(descriptor.queue, false);
-    return true;
-}
-
-void begin_command_buffer(VkCommandBuffer cmdbuffer)
 {
     auto rhi = get_rhi();
 
@@ -94,13 +68,53 @@ void begin_command_buffer(VkCommandBuffer cmdbuffer)
     begin_info.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     begin_info.pInheritanceInfo = nullptr;
 
-    vk_check(rhi->vtable.vkBeginCommandBuffer(cmdbuffer, &begin_info));
+    vk_check(rhi->vtable.vkBeginCommandBuffer(command_buffer, &begin_info));
 }
 
-void end_command_buffer(VkCommandBuffer cmdbuffer)
+void VulkanCommandBuffer::end()
 {
     auto rhi = get_rhi();
-    vk_check(rhi->vtable.vkEndCommandBuffer(cmdbuffer));
+    vk_check(rhi->vtable.vkEndCommandBuffer(command_buffer));
+}
+
+void cmd::wait_fence(GPUCommandEncoderHandle cmdbuffer, GPUFenceHandle fence, GPUBarrierSyncFlags sync)
+{
+    auto  rhi = get_rhi();
+    auto& sem = fetch_resource(rhi->fences, fence);
+    auto& cmd = rhi->current_frame().cmd(cmdbuffer);
+
+    auto submit        = VkSemaphoreSubmitInfo{};
+    submit.sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR;
+    submit.pNext       = nullptr;
+    submit.semaphore   = sem.semaphore;
+    submit.value       = sem.type == VK_SEMAPHORE_TYPE_BINARY ? 0 : sem.target;
+    submit.stageMask   = vkenum(sync);
+    submit.deviceIndex = 0;
+    cmd.wait_semaphores.push_back(submit);
+}
+
+void cmd::signal_fence(GPUCommandEncoderHandle cmdbuffer, GPUFenceHandle fence, GPUBarrierSyncFlags sync)
+{
+    auto  rhi = get_rhi();
+    auto& sem = fetch_resource(rhi->fences, fence);
+    auto& cmd = rhi->current_frame().cmd(cmdbuffer);
+
+    auto submit        = VkSemaphoreSubmitInfo{};
+    submit.sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR;
+    submit.pNext       = nullptr;
+    submit.semaphore   = sem.semaphore;
+    submit.value       = sem.type == VK_SEMAPHORE_TYPE_BINARY ? 0 : sem.target;
+    submit.stageMask   = vkenum(sync);
+    submit.deviceIndex = 0;
+    cmd.signal_semaphores.push_back(submit);
+}
+
+void cmd::begin_render_pass(GPUCommandEncoderHandle cmdbuffer, const GPURenderPassDescriptor& descriptor)
+{
+}
+
+void cmd::end_render_pass(GPUCommandEncoderHandle cmdbuffer)
+{
 }
 
 void cmd::set_render_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURenderPipelineHandle pipeline)

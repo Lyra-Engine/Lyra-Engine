@@ -62,7 +62,7 @@ void create_allocator(VulkanRHI* rhi, bool enable_buffer_device_address)
     vk_check(vmaCreateAllocator(&allocator_info, &rhi->alloc));
 }
 
-bool create_device(const GPUDeviceDescriptor& desc)
+bool api::create_device(const GPUDeviceDescriptor& desc)
 {
     auto logger = get_logger();
 
@@ -412,7 +412,7 @@ bool create_device(const GPUDeviceDescriptor& desc)
     return true;
 }
 
-void delete_device()
+void api::delete_device()
 {
     wait_idle();
 
@@ -453,10 +453,6 @@ void delete_device()
     // clean up remaining pipelines
     for (auto& pipeline : rhi->pipelines.data)
         pipeline.destroy();
-
-    // // clean up remaining query sets
-    // for (auto& query : rhi->queries.data)
-    //     query.destroy();
 
     if (rhi->swapchain) {
         rhi->vtable.vkDestroySwapchainKHR(rhi->device, rhi->swapchain, nullptr);

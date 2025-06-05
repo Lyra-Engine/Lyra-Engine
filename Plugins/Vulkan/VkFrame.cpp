@@ -2,10 +2,10 @@
 
 void VulkanFrame::init()
 {
-    inflight_fence = create_vkfence(true);
+    inflight_fence = VulkanFence(true);
 
-    create_fence(image_available_semaphore, VK_SEMAPHORE_TYPE_BINARY);
-    create_fence(render_complete_semaphore, VK_SEMAPHORE_TYPE_BINARY);
+    api::create_fence(image_available_semaphore, VK_SEMAPHORE_TYPE_BINARY);
+    api::create_fence(render_complete_semaphore, VK_SEMAPHORE_TYPE_BINARY);
 
     auto rhi = get_rhi();
 
@@ -21,12 +21,12 @@ void VulkanFrame::init()
 
 void VulkanFrame::wait()
 {
-    wait_vkfence(inflight_fence);
+    inflight_fence.wait();
 }
 
 void VulkanFrame::reset()
 {
-    reset_vkfence(inflight_fence);
+    inflight_fence.reset();
 
     if (compute_command_pool != VK_NULL_HANDLE)
         reset_command_pool(compute_command_pool);
@@ -69,9 +69,9 @@ GPUCommandEncoderHandle VulkanFrame::allocate(GPUQueueType type, bool primary)
 
 void VulkanFrame::destroy()
 {
-    delete_vkfence(inflight_fence);
-    delete_fence(image_available_semaphore);
-    delete_fence(render_complete_semaphore);
+    inflight_fence.destroy();
+    api::delete_fence(image_available_semaphore);
+    api::delete_fence(render_complete_semaphore);
 
     if (compute_command_pool != VK_NULL_HANDLE) {
         reset_command_pool(compute_command_pool);

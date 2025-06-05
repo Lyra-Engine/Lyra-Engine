@@ -11,10 +11,10 @@ target_sources(lyra-vulkan PRIVATE
     VkSurface.cpp
     VkAdapter.cpp
     VkDevice.cpp
-    VkQueue.cpp
     VkFrame.cpp
     VkSwapchain.cpp
     VkFence.cpp
+    VkSemaphore.cpp
     VkShader.cpp
     VkBuffer.cpp
     VkImage.cpp
@@ -23,6 +23,7 @@ target_sources(lyra-vulkan PRIVATE
     VkPipeline.cpp
     VkCommandPool.cpp
     VkCommandBuffer.cpp
+    VkDescriptorPool.cpp
 )
 
 # link dependencies

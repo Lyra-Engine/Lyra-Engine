@@ -1,28 +1,11 @@
 #include "VkUtils.h"
 
-void VulkanShader::destroy()
+VulkanShader::VulkanShader() : module(VK_NULL_HANDLE)
 {
-    delete_shader_module(*this);
+    // do nothing
 }
 
-bool create_shader_module(GPUShaderModuleHandle& handle, const GPUShaderModuleDescriptor& desc)
-{
-    auto obj = create_shader_module(desc);
-    auto rhi = get_rhi();
-    auto ind = rhi->shaders.add(obj);
-
-    handle = GPUShaderModuleHandle(ind);
-    return true;
-}
-
-void delete_shader_module(GPUShaderModuleHandle handle)
-{
-    auto rhi = get_rhi();
-    delete_shader_module(fetch_resource(rhi->shaders, handle));
-    rhi->shaders.remove(handle.value);
-}
-
-VulkanShader create_shader_module(const GPUShaderModuleDescriptor& desc)
+VulkanShader::VulkanShader(const GPUShaderModuleDescriptor& desc)
 {
     auto rhi = get_rhi();
 
@@ -31,16 +14,14 @@ VulkanShader create_shader_module(const GPUShaderModuleDescriptor& desc)
     create_info.pCode    = (const uint32_t*)(desc.data);
     create_info.codeSize = desc.size;
 
-    VulkanShader object;
-    vk_check(rhi->vtable.vkCreateShaderModule(rhi->device, &create_info, nullptr, &object.module));
-    return object;
+    vk_check(rhi->vtable.vkCreateShaderModule(rhi->device, &create_info, nullptr, &module));
 }
 
-void delete_shader_module(VulkanShader& shader_module)
+void VulkanShader::destroy()
 {
-    if (shader_module.module != VK_NULL_HANDLE) {
+    if (module != VK_NULL_HANDLE) {
         auto rhi = get_rhi();
-        rhi->vtable.vkDestroyShaderModule(rhi->device, shader_module.module, nullptr);
-        shader_module.module = VK_NULL_HANDLE;
+        rhi->vtable.vkDestroyShaderModule(rhi->device, module, nullptr);
+        module = VK_NULL_HANDLE;
     }
 }

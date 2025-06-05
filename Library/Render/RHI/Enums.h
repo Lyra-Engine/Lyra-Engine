@@ -246,9 +246,10 @@ namespace lyra::rhi
 
     enum struct GPUTextureAspect : uint
     {
-        ALL,
-        STENCIL_ONLY,
-        DEPTH_ONLY,
+        ALL     = 0xFFFFFFFFu,
+        COLOR   = 0x1u,
+        DEPTH   = 0x2u,
+        STENCIL = 0x4u,
     };
 
     enum struct GPUTextureDimension : uint

@@ -64,41 +64,13 @@ VkExtent2D choose_swap_extent(const GPUSurfaceDescriptor& desc, const VkSurfaceC
     return actual_extent;
 }
 
-// vulkan swapchain utils
-bool acquire_next_frame(GPUTextureHandle& texture, GPUFenceHandle& image_available_fence, GPUFenceHandle& render_complete_fence, bool& suboptimal)
-{
-    auto rhi = get_rhi();
-
-    // query the current frame
-    auto& frame    = rhi->current_frame();
-    frame.frame_id = rhi->current_frame_index;
-
-    // wait for inflght frame to complete
-    frame.wait();
-    frame.reset();
-
-    // acquire next frame
-    auto semaphore = fetch_resource(rhi->fences, frame.image_available_semaphore);
-    auto result    = rhi->vtable.vkAcquireNextImageKHR(rhi->device, rhi->swapchain, UINT64_MAX, semaphore.semaphore, VK_NULL_HANDLE, &rhi->current_image_index);
-    if (result == VK_SUBOPTIMAL_KHR) {
-        suboptimal = true;
-    } else {
-        vk_check(result);
-    }
-
-    // update fences
-    image_available_fence = frame.image_available_semaphore;
-    render_complete_fence = frame.render_complete_semaphore;
-    return true;
-}
-
 // NOTE: This is only a temporary solution.
 // We will switch to regular pipeline barriers later.
 void temporary_solution_swapchain_image_barrier(VkCommandBuffer command_buffer)
 {
     auto rhi = get_rhi();
 
-    auto handle  = rhi->images.at(rhi->current_image_index);
+    auto handle  = rhi->swapchain_images.at(rhi->current_image_index);
     auto texture = fetch_resource(rhi->textures, handle);
 
     auto barrier                            = VkImageMemoryBarrier{};
@@ -127,7 +99,38 @@ void temporary_solution_swapchain_image_barrier(VkCommandBuffer command_buffer)
         1, &barrier);
 }
 
-bool present_curr_frame(GPUTextureHandle texture)
+// vulkan swapchain utils
+bool api::acquire_next_frame(GPUTextureViewHandle& view, GPUFenceHandle& image_available_fence, GPUFenceHandle& render_complete_fence, bool& suboptimal)
+{
+    auto rhi = get_rhi();
+
+    // query the current frame
+    auto& frame    = rhi->current_frame();
+    frame.frame_id = rhi->current_frame_index;
+
+    // wait for inflght frame to complete
+    frame.wait();
+    frame.reset();
+
+    // acquire next frame
+    auto semaphore = fetch_resource(rhi->fences, frame.image_available_semaphore);
+    auto result    = rhi->vtable.vkAcquireNextImageKHR(rhi->device, rhi->swapchain, UINT64_MAX, semaphore.semaphore, VK_NULL_HANDLE, &rhi->current_image_index);
+    if (result == VK_SUBOPTIMAL_KHR) {
+        suboptimal = true;
+    } else {
+        vk_check(result);
+    }
+
+    // update swapchain view
+    view = rhi->swapchain_views.at(rhi->current_image_index);
+
+    // update fences
+    image_available_fence = frame.image_available_semaphore;
+    render_complete_fence = frame.render_complete_semaphore;
+    return true;
+}
+
+bool api::present_curr_frame()
 {
     auto rhi = get_rhi();
 

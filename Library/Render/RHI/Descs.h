@@ -116,6 +116,7 @@ namespace lyra::rhi
 
     struct GPUBindGroupDescriptor : public GPUObjectDescriptorBase
     {
+        GPUSize32                 count = 0;
         GPUBindGroupLayoutHandle  layout;
         Vector<GPUBindGroupEntry> entries;
     };

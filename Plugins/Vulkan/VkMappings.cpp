@@ -127,9 +127,11 @@ VkImageAspectFlags vkenum(GPUTextureAspect aspect)
     switch (aspect) {
         case GPUTextureAspect::ALL:
             return VK_IMAGE_ASPECT_COLOR_BIT | VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-        case GPUTextureAspect::DEPTH_ONLY:
+        case GPUTextureAspect::COLOR:
+            return VK_IMAGE_ASPECT_COLOR_BIT;
+        case GPUTextureAspect::DEPTH:
             return VK_IMAGE_ASPECT_DEPTH_BIT;
-        case GPUTextureAspect::STENCIL_ONLY:
+        case GPUTextureAspect::STENCIL:
             return VK_IMAGE_ASPECT_STENCIL_BIT;
     }
 }
@@ -680,10 +682,39 @@ VkPipelineStageFlags2 vkenum(GPUBarrierSyncFlags sync)
     return flags;
 }
 
-VkAccessFlagBits2 vkenum(GPUBarrierAccessFlags flags)
+VkAccessFlags2 vkenum(GPUBarrierAccessFlags access)
 {
-    assert(!!!"Unimplemented!");
-    return 0;
+    VkAccessFlags2 flags = 0;
+
+    // clang-format off
+    if (access.contains(GPUBarrierAccess::COMMON))              flags |= VK_ACCESS_2_NONE; // TODO: figure out the correct mapping
+    if (access.contains(GPUBarrierAccess::VERTEX_BUFFER))       flags |= VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT;
+    if (access.contains(GPUBarrierAccess::UNIFORM_BUFFER))      flags |= VK_ACCESS_2_UNIFORM_READ_BIT;
+    if (access.contains(GPUBarrierAccess::INDEX_BUFFER))        flags |= VK_ACCESS_2_INDEX_READ_BIT;
+    if (access.contains(GPUBarrierAccess::RENDER_TARGET))       flags |= VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT;
+    if (access.contains(GPUBarrierAccess::UNORDERED_ACCESS))    flags |= VK_ACCESS_2_SHADER_SAMPLED_READ_BIT;
+    if (access.contains(GPUBarrierAccess::DEPTH_STENCIL_WRITE)) flags |= VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    if (access.contains(GPUBarrierAccess::DEPTH_STENCIL_READ))  flags |= VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+    if (access.contains(GPUBarrierAccess::SHADER_RESOURCE))     flags |= VK_ACCESS_2_SHADER_READ_BIT;
+    if (access.contains(GPUBarrierAccess::STREAM_OUTPUT))       flags |= VK_ACCESS_2_TRANSFORM_FEEDBACK_WRITE_BIT_EXT;
+    if (access.contains(GPUBarrierAccess::INDIRECT_ARGUMENT))   flags |= VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT;
+    if (access.contains(GPUBarrierAccess::COPY_DEST))           flags |= VK_ACCESS_2_TRANSFER_WRITE_BIT;
+    if (access.contains(GPUBarrierAccess::COPY_SOURCE))         flags |= VK_ACCESS_2_TRANSFER_READ_BIT;
+    if (access.contains(GPUBarrierAccess::RESOLVE_DEST))        flags |= VK_ACCESS_2_TRANSFER_WRITE_BIT;
+    if (access.contains(GPUBarrierAccess::RESOLVE_SOURCE))      flags |= VK_ACCESS_2_TRANSFER_READ_BIT;
+    if (access.contains(GPUBarrierAccess::BVH_READ))            flags |= VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR;
+    if (access.contains(GPUBarrierAccess::BVH_WRITE))           flags |= VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
+    if (access.contains(GPUBarrierAccess::SHADING_RATE_SOURCE)) flags |= VK_ACCESS_2_SHADING_RATE_IMAGE_READ_BIT_NV;
+    if (access.contains(GPUBarrierAccess::VIDEO_DECODE_READ))   flags |= VK_ACCESS_2_VIDEO_DECODE_READ_BIT_KHR;
+    if (access.contains(GPUBarrierAccess::VIDEO_DECODE_WRITE))  flags |= VK_ACCESS_2_VIDEO_DECODE_WRITE_BIT_KHR;
+    if (access.contains(GPUBarrierAccess::VIDEO_PROCESS_READ))  flags |= VK_ACCESS_2_VIDEO_DECODE_READ_BIT_KHR;
+    if (access.contains(GPUBarrierAccess::VIDEO_PROCESS_WRITE)) flags |= VK_ACCESS_2_VIDEO_DECODE_WRITE_BIT_KHR;
+    if (access.contains(GPUBarrierAccess::VIDEO_ENCODE_READ))   flags |= VK_ACCESS_2_VIDEO_ENCODE_READ_BIT_KHR;
+    if (access.contains(GPUBarrierAccess::VIDEO_ENCODE_WRITE))  flags |= VK_ACCESS_2_VIDEO_ENCODE_WRITE_BIT_KHR;
+    if (access.contains(GPUBarrierAccess::NO_ACCESS))           flags |= VK_ACCESS_2_NONE;
+    // clang-format on
+
+    return flags;
 }
 
 bool is_binding_array(GPUBindingResourceType type)

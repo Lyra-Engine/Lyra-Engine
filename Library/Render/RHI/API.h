@@ -37,9 +37,7 @@ namespace lyra::rhi
 
         bool (*create_texture)(GPUTextureHandle& texture, const GPUTextureDescriptor& descriptor);
         void (*delete_texture)(GPUTextureHandle texture);
-
-        bool (*create_texture_view)(GPUTextureHandle texture, GPUTextureViewHandle& view, const GPUTextureViewDescriptor& descriptor);
-        void (*delete_texture_view)(GPUTextureHandle texture, GPUTextureViewHandle view);
+        bool (*create_texture_view)(GPUTextureViewHandle& view, GPUTextureHandle texture, const GPUTextureViewDescriptor& descriptor);
 
         bool (*create_shader_module)(GPUShaderModuleHandle& texture, const GPUShaderModuleDescriptor& descriptor);
         void (*delete_shader_module)(GPUShaderModuleHandle texture);
@@ -53,9 +51,6 @@ namespace lyra::rhi
         bool (*create_tlas)(GPUTlasHandle& texture, const GPUTlasDescriptor& descriptor);
         void (*delete_tlas)(GPUTlasHandle texture);
 
-        bool (*create_bind_group_layout)(GPUBindGroupLayoutHandle& layout, const GPUBindGroupLayoutDescriptor& descriptor);
-        void (*delete_bind_group_layout)(GPUBindGroupLayoutHandle layout);
-
         bool (*create_pipeline_layout)(GPUPipelineLayoutHandle& layout, const GPUPipelineLayoutDescriptor& descriptor);
         void (*delete_pipeline_layout)(GPUPipelineLayoutHandle layout);
 
@@ -68,8 +63,16 @@ namespace lyra::rhi
         bool (*create_raytracing_pipeline)(GPURayTracingPipelineHandle& texture, const GPURayTracingPipelineDescriptor& descriptor);
         void (*delete_raytracing_pipeline)(GPURayTracingPipelineHandle texture);
 
-        bool (*acquire_next_frame)(GPUTextureHandle& texture, GPUFenceHandle& image_available, GPUFenceHandle& render_complete, bool& suboptimal);
-        bool (*present_curr_frame)(GPUTextureHandle texture);
+        bool (*create_bind_group)(GPUBindGroupHandle& layout, const GPUBindGroupDescriptor& descriptor);
+        bool (*create_bind_group_layout)(GPUBindGroupLayoutHandle& layout, const GPUBindGroupLayoutDescriptor& descriptor);
+        void (*delete_bind_group_layout)(GPUBindGroupLayoutHandle layout);
+
+        bool (*acquire_next_frame)(GPUTextureViewHandle& view, GPUFenceHandle& image_available, GPUFenceHandle& render_complete, bool& suboptimal);
+        bool (*present_curr_frame)();
+
+        void (*get_mapped_range)(GPUBufferHandle buffer, MappedBufferRange& range);
+        void (*map_buffer)(GPUBufferHandle buffer, GPUMapMode mode, GPUSize64 offset, GPUSize64 size);
+        void (*unmap_buffer)(GPUBufferHandle buffer);
 
         void (*wait_idle)();
         void (*wait_fence)(GPUFenceHandle fence);
@@ -77,6 +80,10 @@ namespace lyra::rhi
         bool (*create_command_buffer)(GPUCommandEncoderHandle& cmdbuffer, const GPUCommandBufferDescriptor& descriptor);
         bool (*create_command_bundle)(GPUCommandEncoderHandle& cmdbuffer, const GPUCommandBundleDescriptor& descriptor);
 
+        void (*cmd_wait_fence)(GPUCommandEncoderHandle cmdbuffer, GPUFenceHandle fence, GPUBarrierSyncFlags sync);
+        void (*cmd_signal_fence)(GPUCommandEncoderHandle cmdbuffer, GPUFenceHandle fence, GPUBarrierSyncFlags sync);
+        void (*cmd_begin_render_pass)(GPUCommandEncoderHandle cmdbuffer, const GPURenderPassDescriptor& descriptor);
+        void (*cmd_end_render_pass)(GPUCommandEncoderHandle cmdbuffer);
         void (*cmd_set_render_pipeline)(GPUCommandEncoderHandle cmdbuffer, GPURenderPipelineHandle pipeline);
         void (*cmd_set_compute_pipeline)(GPUCommandEncoderHandle cmdbuffer, GPUComputePipelineHandle pipeline);
         void (*cmd_set_raytracing_pipeline)(GPUCommandEncoderHandle cmdbuffer, GPURayTracingPipelineHandle pipeline);

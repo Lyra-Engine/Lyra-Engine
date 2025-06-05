@@ -1,6 +1,7 @@
 #ifndef LYRA_PLUGIN_VULKAN_VKINCLUDE_H
 #define LYRA_PLUGIN_VULKAN_VKINCLUDE_H
 
+#include "Render/RHI/Descs.h"
 #include <istream>
 #ifdef _WIN32
 #define VK_USE_PLATFORM_WIN32_KHR
@@ -69,12 +70,21 @@ struct VulkanBuffer
     VmaAllocation     allocation = {};
     VmaAllocationInfo alloc_info = {};
 
+    uint8_t* mapped_data = nullptr;
+    uint64_t mapped_size = 0ull;
+
     // implementation in VkBuffer.cpp
+    explicit VulkanBuffer();
+    explicit VulkanBuffer(const GPUBufferDescriptor& desc);
+
+    void map(GPUSize64 offset = 0, GPUSize64 size = 0);
+    void unmap();
     void destroy();
 
     bool valid() const { return buffer != VK_NULL_HANDLE; }
 };
 
+struct VulkanTextureView;
 struct VulkanTexture
 {
     VkImage            image = VK_NULL_HANDLE;
@@ -83,9 +93,25 @@ struct VulkanTexture
     VkImageAspectFlags aspects    = 0;
 
     // implementation in VkImage.cpp
+    explicit VulkanTexture();
+    explicit VulkanTexture(const GPUTextureDescriptor& desc);
+
     void destroy();
 
     bool valid() const { return image != VK_NULL_HANDLE; }
+};
+
+struct VulkanTextureView
+{
+    VkImageView view = VK_NULL_HANDLE;
+
+    // implementation in VkImage.cpp
+    explicit VulkanTextureView();
+    explicit VulkanTextureView(const VulkanTexture& texture, const GPUTextureViewDescriptor& desc);
+
+    void destroy();
+
+    bool valid() const { return view != VK_NULL_HANDLE; }
 };
 
 struct VulkanSampler
@@ -93,6 +119,9 @@ struct VulkanSampler
     VkSampler sampler = VK_NULL_HANDLE;
 
     // implementation in VkSampler.cpp
+    explicit VulkanSampler();
+    explicit VulkanSampler(const GPUSamplerDescriptor& desc);
+
     void destroy();
 
     bool valid() const { return sampler != VK_NULL_HANDLE; }
@@ -100,10 +129,21 @@ struct VulkanSampler
 
 struct VulkanFence
 {
-    /**
-     * NOTE that this fence implementation is based on timeline semaphores.
-     * We simplified the fence concept here.
-     **/
+    VkFence fence = VK_NULL_HANDLE;
+
+    explicit VulkanFence();
+    explicit VulkanFence(bool signaled);
+
+    // implementation in VkFence.cpp
+    void wait(uint64_t timeout = UINT64_MAX);
+    void reset();
+    void destroy();
+
+    bool valid() const { return fence != VK_NULL_HANDLE; }
+};
+
+struct VulkanSemaphore
+{
     VkSemaphore semaphore = VK_NULL_HANDLE;
 
     // we will have to support binary semaphores in some minimal cases
@@ -112,10 +152,14 @@ struct VulkanFence
     // keep track of target value
     uint64_t target = 0ull;
 
-    // implementation in VkFence.cpp
+    // implementation in VkSemaphore.cpp
+    explicit VulkanSemaphore();
+    explicit VulkanSemaphore(VkSemaphoreType type);
+
     void wait();
     void reset();
     bool ready();
+    void signal(uint64_t value);
     void destroy();
 
     bool valid() const { return semaphore != VK_NULL_HANDLE; }
@@ -136,6 +180,9 @@ struct VulkanShader
     VkShaderModule module = VK_NULL_HANDLE;
 
     // implementation in VkShader.cpp
+    explicit VulkanShader();
+    explicit VulkanShader(const GPUShaderModuleDescriptor& desc);
+
     void destroy();
 
     bool valid() const { return module != VK_NULL_HANDLE; }
@@ -146,6 +193,9 @@ struct VulkanBindGroupLayout
     VkDescriptorSetLayout layout = VK_NULL_HANDLE;
 
     // implementation in VkLayout.cpp
+    explicit VulkanBindGroupLayout();
+    explicit VulkanBindGroupLayout(const GPUBindGroupLayoutDescriptor& desc);
+
     void destroy();
 
     bool valid() const { return layout != VK_NULL_HANDLE; }
@@ -156,6 +206,9 @@ struct VulkanPipelineLayout
     VkPipelineLayout layout = VK_NULL_HANDLE;
 
     // implementation in VkLayout.cpp
+    explicit VulkanPipelineLayout();
+    explicit VulkanPipelineLayout(const GPUPipelineLayoutDescriptor& desc);
+
     void destroy();
 
     bool valid() const { return layout != VK_NULL_HANDLE; }
@@ -167,9 +220,35 @@ struct VulkanPipeline
     VkPipelineCache cache    = VK_NULL_HANDLE;
 
     // implementation in VkPipeline.cpp
+    explicit VulkanPipeline();
+    explicit VulkanPipeline(const GPURenderPipelineDescriptor& desc);
+    explicit VulkanPipeline(const GPUComputePipelineDescriptor& desc);
+    explicit VulkanPipeline(const GPURayTracingPipelineDescriptor& desc);
+
     void destroy();
 
     bool valid() const { return pipeline != VK_NULL_HANDLE; }
+};
+
+struct VulkanDescriptorPool
+{
+    Vector<VkDescriptorPool> pools     = {};
+    Vector<uint32_t>         counts    = {};
+    uint32_t                 poolindex = 0;
+    Vector<VkDescriptorSet>  allocated = {};
+
+    // implementation in VkDescriptorPool.cpp
+    void destroy();
+
+    void reset();
+
+    auto allocate(
+        VkDescriptorSet&      descriptor,
+        VkDescriptorSetLayout layout,
+        uint                  defined_count = 1,
+        uint                  varying_count = 0) -> GPUBindGroupHandle;
+
+    uint find_pool_index(uint index);
 };
 
 struct VulkanCommandBuffer
@@ -179,19 +258,19 @@ struct VulkanCommandBuffer
     // frame id must match VulkanFrame's id
     uint32_t frame_id = 0u;
 
+    // CPU/GPU synchronization
+    VulkanFence fence;
+
     VkQueue         command_queue  = VK_NULL_HANDLE;
     VkCommandBuffer command_buffer = VK_NULL_HANDLE;
-
-    // CPU/GPU synchronization
-    VkFence fence = VK_NULL_HANDLE;
 
     // GPU/GPU synchronization
     Vector<VkSemaphoreSubmitInfo> wait_semaphores   = {};
     Vector<VkSemaphoreSubmitInfo> signal_semaphores = {};
 
     // implementation in VkCommandBuffer.cpp
-    void wait(const VulkanFence& fence, GPUBarrierSyncFlags sync);
-    void signal(const VulkanFence& fence, GPUBarrierSyncFlags sync);
+    void wait(const VulkanSemaphore& fence, GPUBarrierSyncFlags sync);
+    void signal(const VulkanSemaphore& fence, GPUBarrierSyncFlags sync);
     void submit();
     void begin();
     void end();
@@ -204,15 +283,23 @@ struct VulkanFrame
     // frame id must match VulkanFrame's id
     uint32_t frame_id = 0u;
 
+    VulkanFence    inflight_fence;
     VkCommandPool  compute_command_pool  = VK_NULL_HANDLE;
     VkCommandPool  graphics_command_pool = VK_NULL_HANDLE;
     VkCommandPool  transfer_command_pool = VK_NULL_HANDLE;
-    VkFence        inflight_fence        = VK_NULL_HANDLE;
     GPUFenceHandle image_available_semaphore; // must be binary semaphores
     GPUFenceHandle render_complete_semaphore; // could be timeline semaphores
 
+    VulkanDescriptorPool descriptor_pool{};
+
     // allocate command buffers
     Vector<VulkanCommandBuffer> allocated_command_buffers;
+
+    // shortcut for cmd buffer
+    auto& cmd(GPUCommandEncoderHandle handle)
+    {
+        return allocated_command_buffers.at(handle.value);
+    }
 
     // implementation in VkFrame.cpp
     void init();
@@ -242,18 +329,20 @@ struct VulkanRHI
     QueueFamilyIndices queues;
 
     // frame objects
-    Vector<VulkanFrame>      frames = {};
-    Vector<GPUTextureHandle> images = {};
+    Vector<VulkanFrame>          frames           = {};
+    Vector<GPUTextureHandle>     swapchain_images = {};
+    Vector<GPUTextureViewHandle> swapchain_views  = {};
 
     // frame tracker
     uint current_frame_index = 0;
     uint current_image_index = 0;
 
     // collection of objects
-    VulkanResourceManager<VulkanFence>           fences;
+    VulkanResourceManager<VulkanSemaphore>       fences;
     VulkanResourceManager<VulkanQuery>           queries;
     VulkanResourceManager<VulkanBuffer>          buffers;
     VulkanResourceManager<VulkanTexture>         textures;
+    VulkanResourceManager<VulkanTextureView>     views;
     VulkanResourceManager<VulkanSampler>         samplers;
     VulkanResourceManager<VulkanShader>          shaders;
     VulkanResourceManager<VulkanPipeline>        pipelines;
@@ -262,6 +351,102 @@ struct VulkanRHI
 
     auto current_frame() -> VulkanFrame& { return frames.at(current_frame_index % frames.size()); }
 };
+
+// These are the functions that implements the plugin.
+namespace api
+{
+    // instance apis
+    bool create_instance(const RHIDescriptor& desc);
+    void delete_instance();
+
+    // surface apis
+    bool create_surface(GPUSurface& surface, const GPUSurfaceDescriptor& desc);
+    void delete_surface();
+
+    // adapter apis
+    bool create_adapter(GPUAdapter& adapter, const GPUAdapterDescriptor& descriptor);
+    void delete_adapter();
+
+    // device apis
+    bool create_device(const GPUDeviceDescriptor& desc);
+    void delete_device();
+
+    // fence apis
+    bool create_fence(GPUFenceHandle& fence);
+    bool create_fence(GPUFenceHandle& fence, VkSemaphoreType type); // NOTE: not an API, just placed here for convenience
+    void delete_fence(GPUFenceHandle fence);
+
+    // buffer apis
+    bool create_buffer(GPUBufferHandle& buffer, const GPUBufferDescriptor& desc);
+    void delete_buffer(GPUBufferHandle buffer);
+    void map_buffer(GPUBufferHandle buffer, GPUMapMode mode, GPUSize64 offset, GPUSize64 size);
+    void unmap_buffer(GPUBufferHandle buffer);
+    void get_mapped_range(GPUBufferHandle buffer, MappedBufferRange& range);
+
+    // sampler apis
+    bool create_sampler(GPUSamplerHandle& sampler, const GPUSamplerDescriptor& desc);
+    void delete_sampler(GPUSamplerHandle sampler);
+
+    // texture apis
+    bool create_texture(GPUTextureHandle& texture, const GPUTextureDescriptor& desc);
+    void delete_texture(GPUTextureHandle texture);
+    bool create_texture_view(GPUTextureViewHandle& view, GPUTextureHandle texture, const GPUTextureViewDescriptor& desc);
+
+    // shader apis
+    bool create_shader_module(GPUShaderModuleHandle& shader, const GPUShaderModuleDescriptor& desc);
+    void delete_shader_module(GPUShaderModuleHandle shader);
+
+    // bind group layout apis
+    bool create_bind_group_layout(GPUBindGroupLayoutHandle& handle, const GPUBindGroupLayoutDescriptor& desc);
+    void delete_bind_group_layout(GPUBindGroupLayoutHandle handle);
+
+    // pipeline layout apis
+    bool create_pipeline_layout(GPUPipelineLayoutHandle& layout, const GPUPipelineLayoutDescriptor& desc);
+    void delete_pipeline_layout(GPUPipelineLayoutHandle layout);
+
+    // pipeline apis
+    bool create_render_pipeline(GPURenderPipelineHandle& handle, const GPURenderPipelineDescriptor& desc);
+    void delete_render_pipeline(GPURenderPipelineHandle pipeline);
+    bool create_compute_pipeline(GPUComputePipelineHandle& handle, const GPUComputePipelineDescriptor& desc);
+    void delete_compute_pipeline(GPUComputePipelineHandle pipeline);
+    bool create_raytracing_pipeline(GPURayTracingPipelineHandle& handle, const GPURayTracingPipelineDescriptor& desc);
+    void delete_raytracing_pipeline(GPURayTracingPipelineHandle pipeline);
+
+    // vulkan swapchain
+    bool acquire_next_frame(GPUTextureViewHandle& view, GPUFenceHandle& image_available_fence, GPUFenceHandle& render_complete_fence, bool& suboptimal);
+    bool present_curr_frame();
+
+    // vulkan desciprtor
+    bool create_bind_group(GPUBindGroupHandle& bind_group, const GPUBindGroupDescriptor& desc);
+
+    // command buffer
+    bool create_command_buffer(GPUCommandEncoderHandle& cmdbuffer, const GPUCommandBufferDescriptor& descriptor);
+    bool create_command_bundle(GPUCommandEncoderHandle& cmdbuffer, const GPUCommandBundleDescriptor& descriptor);
+
+    // device/queue related
+    void wait_idle();
+    void wait_fence(GPUFenceHandle handle);
+
+} // namespace api
+
+// vulkan command buffer recording
+namespace cmd
+{
+    void wait_fence(GPUCommandEncoderHandle cmdbuffer, GPUFenceHandle fence, GPUBarrierSyncFlags sync);
+    void signal_fence(GPUCommandEncoderHandle cmdbuffer, GPUFenceHandle fence, GPUBarrierSyncFlags sync);
+    void begin_render_pass(GPUCommandEncoderHandle cmdbuffer, const GPURenderPassDescriptor& descriptor);
+    void end_render_pass(GPUCommandEncoderHandle cmdbuffer);
+    void set_render_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURenderPipelineHandle pipeline);
+    void set_compute_pipeline(GPUCommandEncoderHandle cmdbuffer, GPUComputePipelineHandle pipeline);
+    void set_raytracing_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURayTracingPipelineHandle pipeline);
+    void set_bind_group(GPUCommandEncoderHandle cmdbuffer, GPUPipelineLayoutHandle layout, GPUIndex32 index, GPUBindGroupHandle bind_group, const Vector<GPUBufferDynamicOffset>& dynamic_offsets);
+    void set_index_buffer(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle buffer, GPUIndexFormat format, GPUSize64 offset, GPUSize64 size);
+    void set_vertex_buffer(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 slot, GPUBufferHandle buffer, GPUSize64 offset, GPUSize64 size);
+    void draw(GPUCommandEncoderHandle cmdbuffer, GPUSize32 vertex_count, GPUSize32 instance_count, GPUSize32 first_vertex, GPUSize32 first_instance);
+    void draw_indexed(GPUCommandEncoderHandle cmdbuffer, GPUSize32 index_count, GPUSize32 instance_count, GPUSize32 first_index, GPUSignedOffset32 base_vertex, GPUSize32 first_instance);
+    void draw_indirect(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle indirect_buffer, GPUSize64 indirect_offset);
+    void draw_indexed_indirect(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle indirect_buffer, GPUSize64 indirect_offset);
+} // namespace cmd
 
 auto get_logger() -> Logger;
 
@@ -302,137 +487,29 @@ auto vkenum(GPUBufferUsageFlags usages) -> VkBufferUsageFlags;
 auto vkenum(GPUTextureUsageFlags usages) -> VkImageUsageFlags;
 auto vkenum(GPUShaderStageFlags stages) -> VkShaderStageFlags;
 auto vkenum(GPUBarrierSyncFlags flags) -> VkPipelineStageFlags2;
-auto vkenum(GPUBarrierAccessFlags flags) -> VkAccessFlagBits2;
-
-bool is_binding_array(GPUBindingResourceType type);
+auto vkenum(GPUBarrierAccessFlags flags) -> VkAccessFlags2;
 
 // vulkan rhi
 void set_rhi(VulkanRHI* instance);
 auto get_rhi() -> VulkanRHI*;
 
-// vulkan instance
-bool create_instance(const RHIDescriptor& desc);
-void delete_instance();
-
-// vulkan adapter
-bool create_adapter(GPUAdapter& adapter, const GPUAdapterDescriptor& descriptor);
-void delete_adapter();
-
-// vulkan surface
+// vulkan surface utils
 void add_surface_extension(Vector<const char*>& instance_extensions);
 auto create_surface(VkInstance instance, const WindowHandle& handle) -> VkSurfaceKHR;
-bool create_surface(GPUSurface& surface, const GPUSurfaceDescriptor& desc);
-void delete_surface();
 
-// vulkan device
-bool create_device(const GPUDeviceDescriptor& desc);
-void delete_device();
+// vulkan descriptor pool
+auto create_bind_group(const GPUBindGroupDescriptor& desc) -> GPUBindGroupHandle;
+auto create_descriptor_pool() -> VkDescriptorPool;
+void reset_descriptor_pool(VkDescriptorPool pool);
+void delete_descriptor_pool(VkDescriptorPool pool);
 
-// vulkan buffer
-bool create_buffer(GPUBufferHandle& buffer, const GPUBufferDescriptor& desc);
-void delete_buffer(GPUBufferHandle buffer);
-auto create_buffer(const GPUBufferDescriptor& desc) -> VulkanBuffer;
-void delete_buffer(VulkanBuffer& buffer);
-
-// vulkan texture
-bool create_texture(GPUTextureHandle& texture, const GPUTextureDescriptor& desc);
-void delete_texture(GPUTextureHandle texture);
-auto create_texture(const GPUTextureDescriptor& desc) -> VulkanTexture;
-void delete_texture(VulkanTexture& buffer);
-
-// vulkan sampler
-bool create_sampler(GPUSamplerHandle& sampler, const GPUSamplerDescriptor& desc);
-void delete_sampler(GPUSamplerHandle sampler);
-auto create_sampler(const GPUSamplerDescriptor& desc) -> VulkanSampler;
-void delete_sampler(VulkanSampler& buffer);
-
-// vulkan fence
-bool create_fence(GPUFenceHandle& fence);
-void delete_fence(GPUFenceHandle fence);
-auto create_fence(VkSemaphoreType type) -> VulkanFence;
-void delete_fence(VulkanFence& buffer);
-auto create_vkfence(bool signaled) -> VkFence;
-void delete_vkfence(VkFence vkfence);
-void reset_vkfence(VkFence vkfence);
-void wait_vkfence(VkFence vkfence, uint64_t timeout = UINT64_MAX);
-
-bool create_fence(GPUFenceHandle& fence, VkSemaphoreType type);
-auto create_binary_semaphore() -> VulkanFence;
-auto create_timeline_semaphore() -> VulkanFence;
-void reset_timeline_semaphore();
-void signal_timeline_semaphore(VulkanFence fence, uint64_t value);
-void wait_timeline_semaphore(VulkanFence fence, uint64_t timeout = UINT64_MAX);
-void reset_timeline_semaphore(VulkanFence& fence);
-bool is_timeline_semaphore_ready(VulkanFence& fence);
-
-// vulkan shader
-bool create_shader_module(GPUShaderModuleHandle& handle, const GPUShaderModuleDescriptor& desc);
-void delete_shader_module(GPUShaderModuleHandle handle);
-auto create_shader_module(const GPUShaderModuleDescriptor& desc) -> VulkanShader;
-void delete_shader_module(VulkanShader& shader);
-
-// vulkan bind group layouts
-bool create_bind_group_layout(GPUBindGroupLayoutHandle& handle, const GPUBindGroupLayoutDescriptor& desc);
-void delete_bind_group_layout(GPUBindGroupLayoutHandle handle);
-auto create_bind_group_layout(const GPUBindGroupLayoutDescriptor& desc) -> VulkanBindGroupLayout;
-void delete_bind_group_layout(VulkanBindGroupLayout& layout);
-
-// vulkan pipeline layouts
-bool create_pipeline_layout(GPUPipelineLayoutHandle& handle, const GPUPipelineLayoutDescriptor& desc);
-void delete_pipeline_layout(GPUPipelineLayoutHandle handle);
-auto create_pipeline_layout(const GPUPipelineLayoutDescriptor& desc) -> VulkanPipelineLayout;
-void delete_pipeline_layout(VulkanPipelineLayout& layout);
-
-// vulkan pipelines creation
-bool create_render_pipeline(GPURenderPipelineHandle& handle, const GPURenderPipelineDescriptor& desc);
-bool create_compute_pipeline(GPUComputePipelineHandle& handle, const GPUComputePipelineDescriptor& desc);
-bool create_raytracing_pipeline(GPURayTracingPipelineHandle& handle, const GPURayTracingPipelineDescriptor& desc);
-
-// vulkan pipelines creation
-auto create_render_pipeline(const GPURenderPipelineDescriptor& desc) -> VulkanPipeline;
-auto create_compute_pipeline(const GPUComputePipelineDescriptor& desc) -> VulkanPipeline;
-auto create_raytracing_pipeline(const GPURayTracingPipelineDescriptor& desc) -> VulkanPipeline;
-
-// vulkan pipelines deletion
-void delete_render_pipeline(GPURenderPipelineHandle pipeline);
-void delete_compute_pipeline(GPUComputePipelineHandle pipeline);
-void delete_raytracing_pipeline(GPURayTracingPipelineHandle pipeline);
-void delete_pipeline(VulkanPipeline& pipeline);
-
-// vulkan command pool
+// vulkan command pool utils
 auto create_command_pool(uint queue_family_index) -> VkCommandPool;
 void delete_command_pool(VkCommandPool pool);
 void reset_command_pool(VkCommandPool pool);
 
-// vulkan command buffer
+// vulkan command buffer utils
 auto allocate_command_buffer(VkCommandPool pool, bool primary = true) -> VkCommandBuffer;
-bool create_command_buffer(GPUCommandEncoderHandle& cmdbuffer, const GPUCommandBufferDescriptor& descriptor);
-bool create_command_bundle(GPUCommandEncoderHandle& cmdbuffer, const GPUCommandBufferDescriptor& descriptor);
-void begin_command_buffer(VkCommandBuffer cmdbuffer);
-void end_command_buffer(VkCommandBuffer cmdbuffer);
-
-// vulkan swapchain utils
-bool acquire_next_frame(GPUTextureHandle& texture, GPUFenceHandle& image_available_fence, GPUFenceHandle& render_complete_fence, bool& suboptimal);
-bool present_curr_frame(GPUTextureHandle texture);
-
-// device/queue related
-void wait_idle();
-void wait_fence(GPUFenceHandle handle);
-
-// vulkan command buffer recording
-namespace cmd
-{
-    void set_render_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURenderPipelineHandle pipeline);
-    void set_compute_pipeline(GPUCommandEncoderHandle cmdbuffer, GPUComputePipelineHandle pipeline);
-    void set_raytracing_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURayTracingPipelineHandle pipeline);
-    void set_bind_group(GPUCommandEncoderHandle cmdbuffer, GPUPipelineLayoutHandle layout, GPUIndex32 index, GPUBindGroupHandle bind_group, const Vector<GPUBufferDynamicOffset>& dynamic_offsets);
-    void set_index_buffer(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle buffer, GPUIndexFormat format, GPUSize64 offset, GPUSize64 size);
-    void set_vertex_buffer(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 slot, GPUBufferHandle buffer, GPUSize64 offset, GPUSize64 size);
-    void draw(GPUCommandEncoderHandle cmdbuffer, GPUSize32 vertex_count, GPUSize32 instance_count, GPUSize32 first_vertex, GPUSize32 first_instance);
-    void draw_indexed(GPUCommandEncoderHandle cmdbuffer, GPUSize32 index_count, GPUSize32 instance_count, GPUSize32 first_index, GPUSignedOffset32 base_vertex, GPUSize32 first_instance);
-    void draw_indirect(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle indirect_buffer, GPUSize64 indirect_offset);
-    void draw_indexed_indirect(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle indirect_buffer, GPUSize64 indirect_offset);
-} // namespace cmd
 
 // adapter/device utils
 bool has_portability_subset(VkPhysicalDevice physicalDevice);
@@ -445,6 +522,8 @@ auto query_swapchain_support(VkPhysicalDevice adapter, VkSurfaceKHR surface) -> 
 auto choose_swap_surface_format(const Vector<VkSurfaceFormatKHR>& availableFormats) -> VkSurfaceFormatKHR;
 auto choose_swap_present_mode(const Vector<VkPresentModeKHR>& availablePresentModes) -> VkPresentModeKHR;
 auto choose_swap_extent(const GPUSurfaceDescriptor& desc, const VkSurfaceCapabilitiesKHR& capabilities) -> VkExtent2D;
+
+bool is_binding_array(GPUBindingResourceType type);
 
 template <typename T, typename Handle>
 T& fetch_resource(VulkanResourceManager<T>& manager, Handle handle)

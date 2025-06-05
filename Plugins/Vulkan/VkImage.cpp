@@ -1,31 +1,15 @@
 #include "VkUtils.h"
 
-void VulkanTexture::destroy()
+VulkanTexture::VulkanTexture()
+    : image(VK_NULL_HANDLE), alloc_info({}), aspects(0)
 {
-    delete_texture(*this);
+    // do nothing
 }
 
-bool create_texture(GPUTextureHandle& handle, const GPUTextureDescriptor& desc)
+VulkanTexture::VulkanTexture(const GPUTextureDescriptor& desc) : aspects(0)
 {
-    auto obj = create_texture(desc);
-    auto rhi = get_rhi();
-    auto ind = rhi->textures.add(obj);
-
-    handle = GPUTextureHandle(ind);
-    return true;
-}
-
-void delete_texture(GPUTextureHandle handle)
-{
-    auto rhi = get_rhi();
-    delete_texture(fetch_resource(rhi->textures, handle));
-    rhi->textures.remove(handle.value);
-}
-
-VulkanTexture create_texture(const GPUTextureDescriptor& desc)
-{
-    VkImageCreateInfo       tex_create_info   = {};
-    VmaAllocationCreateInfo alloc_create_info = {};
+    auto tex_create_info   = VkImageCreateInfo{};
+    auto alloc_create_info = VmaAllocationCreateInfo{};
 
     // determine image type
     VkImageType image_type;
@@ -54,27 +38,60 @@ VulkanTexture create_texture(const GPUTextureDescriptor& desc)
     alloc_create_info.flags = 0;
 
     // create texture
-    VulkanTexture texture;
     vk_check(vmaCreateImage(get_rhi()->alloc,
         &tex_create_info, &alloc_create_info,
-        &texture.image, &texture.allocation, &texture.alloc_info));
+        &image, &allocation, &alloc_info));
 
     // initialize aspects
     if (is_depth_format(desc.format))
-        texture.aspects |= VK_IMAGE_ASPECT_DEPTH_BIT;
+        aspects |= VK_IMAGE_ASPECT_DEPTH_BIT;
     if (is_stencil_format(desc.format))
-        texture.aspects |= VK_IMAGE_ASPECT_STENCIL_BIT;
-    if (texture.aspects == 0)
-        texture.aspects |= VK_IMAGE_ASPECT_COLOR_BIT;
-
-    return texture;
+        aspects |= VK_IMAGE_ASPECT_STENCIL_BIT;
+    if (aspects == 0)
+        aspects |= VK_IMAGE_ASPECT_COLOR_BIT;
 }
 
-void delete_texture(VulkanTexture& texture)
+void VulkanTexture::destroy()
 {
     // only delete the image and its memory when it is NOT externally managed.
-    if (texture.image != VK_NULL_HANDLE && texture.alloc_info.size != 0) {
-        vmaDestroyImage(get_rhi()->alloc, texture.image, texture.allocation);
-        texture.image = VK_NULL_HANDLE;
+    if (image != VK_NULL_HANDLE && alloc_info.size != 0) {
+        vmaDestroyImage(get_rhi()->alloc, image, allocation);
+        image = VK_NULL_HANDLE;
     }
+}
+
+VulkanTextureView::VulkanTextureView()
+    : view(VK_NULL_HANDLE)
+{
+    // do nothing
+}
+
+VulkanTextureView::VulkanTextureView(const VulkanTexture& texture, const GPUTextureViewDescriptor& desc)
+{
+    auto rhi = get_rhi();
+
+    auto create_info = VkImageViewCreateInfo{};
+
+    create_info.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+    create_info.image                           = texture.image;
+    create_info.viewType                        = vkenum(desc.dimension);
+    create_info.format                          = vkenum(desc.format);
+    create_info.components.r                    = VK_COMPONENT_SWIZZLE_IDENTITY;
+    create_info.components.g                    = VK_COMPONENT_SWIZZLE_IDENTITY;
+    create_info.components.b                    = VK_COMPONENT_SWIZZLE_IDENTITY;
+    create_info.components.a                    = VK_COMPONENT_SWIZZLE_IDENTITY;
+    create_info.subresourceRange.aspectMask     = vkenum(desc.aspect);
+    create_info.subresourceRange.baseMipLevel   = desc.base_mip_level;
+    create_info.subresourceRange.levelCount     = desc.mip_level_count;
+    create_info.subresourceRange.baseArrayLayer = desc.base_array_layer;
+    create_info.subresourceRange.layerCount     = desc.array_layer_count;
+
+    vk_check(vkCreateImageView(rhi->device, &create_info, nullptr, &view));
+}
+
+void VulkanTextureView::destroy()
+{
+    auto rhi = get_rhi();
+    rhi->vtable.vkDestroyImageView(rhi->device, view, nullptr);
+    view = VK_NULL_HANDLE;
 }

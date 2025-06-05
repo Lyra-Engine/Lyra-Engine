@@ -1,6 +1,6 @@
 #include "VkUtils.h"
 
-bool create_adapter(GPUAdapter& adapter, const GPUAdapterDescriptor& descriptor)
+bool api::create_adapter(GPUAdapter& adapter, const GPUAdapterDescriptor& descriptor)
 {
     auto rhi = get_rhi();
 
@@ -17,7 +17,7 @@ bool create_adapter(GPUAdapter& adapter, const GPUAdapterDescriptor& descriptor)
     return true;
 }
 
-void delete_adapter()
+void api::delete_adapter()
 {
     // Vulkan Physical Device does not need to be deleted
 }

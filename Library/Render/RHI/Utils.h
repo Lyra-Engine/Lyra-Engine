@@ -1,6 +1,8 @@
 #ifndef LYRA_LIBRARY_RENDER_RHI_UTILS_H
 #define LYRA_LIBRARY_RENDER_RHI_UTILS_H
 
+#include <cassert>
+
 #include <Common/String.h>
 #include <Common/Handle.h>
 #include <Common/BitFlags.h>
@@ -64,6 +66,35 @@ namespace lyra::rhi
     {
         BufferSource data;
         size_t       size;
+    };
+
+    template <typename T>
+    struct TypedBufferRange
+    {
+        T*     data;
+        size_t count;
+
+        auto operator[](size_t i) -> T&
+        {
+            return data[i];
+        }
+
+        auto operator[](size_t i) const -> T&
+        {
+            return data[i];
+        }
+
+        auto at(size_t i) -> T&
+        {
+            assert(i < count);
+            return data[i];
+        }
+
+        auto at(size_t i) const -> T&
+        {
+            assert(i < count);
+            return data[i];
+        }
     };
 
     struct GPUSupportedFeatures
@@ -268,6 +299,8 @@ namespace lyra::rhi
     {
         GPUIndex32             binding;
         GPUBindingResourceType type;
+        GPUSize32              count = 1;
+        GPUSize32              index = 0;
         union
         {
             GPUBufferBinding     buffer;

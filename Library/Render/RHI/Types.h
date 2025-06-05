@@ -22,7 +22,7 @@ namespace lyra::rhi
     {
         GPUFenceHandle handle;
 
-        void signal();
+        void wait();
 
         void destroy();
 
@@ -73,7 +73,7 @@ namespace lyra::rhi
 
         auto create_view(GPUTextureViewDescriptor descriptor) -> GPUTextureView;
 
-        auto destroy() -> void;
+        void destroy();
 
         operator GPUTextureHandle() const { return handle; }
     };
@@ -86,13 +86,23 @@ namespace lyra::rhi
         GPUBufferUsage usage     = static_cast<GPUBufferUsage>(0);
         GPUMapState    map_state = GPUMapState::UNMAPPED;
 
-        auto get_mapped_range(GPUSize64 offset = 0, GPUSize64 size = 0) -> MappedBufferRange;
+        template <typename T>
+        auto get_mapped_range() -> TypedBufferRange<T>
+        {
+            auto range  = get_mapped_range();
+            auto typed  = TypedBufferRange<T>{};
+            typed.data  = reinterpret_cast<T*>(range.data);
+            typed.count = range.size / sizeof(T);
+            return typed;
+        }
 
-        auto map(GPUMapMode mode, GPUSize64 offset, GPUSize64 size) -> void;
+        auto get_mapped_range() -> MappedBufferRange;
 
-        auto unmap() -> void;
+        void map(GPUMapMode mode, GPUSize64 offset = 0, GPUSize64 size = 0);
 
-        auto destroy() -> void;
+        void unmap();
+
+        void destroy();
 
         operator GPUBufferHandle() const { return handle; }
     };
@@ -192,6 +202,10 @@ namespace lyra::rhi
 
         void pop_debug_group();
 
+        void wait(GPUFence fence, GPUBarrierSyncFlags sync);
+
+        void signal(GPUFence fence, GPUBarrierSyncFlags sync);
+
         void set_pipeline(GPURenderPipeline pipeline);
 
         void set_pipeline(GPUComputePipeline pipeline);
@@ -218,7 +232,7 @@ namespace lyra::rhi
 
         void begin_render_pass(const GPURenderPassDescriptor& descriptor);
 
-        void begin_compute_pass(const GPUComputePassDescriptor& descriptor = {});
+        void end_render_pass();
 
         void copy_buffer_to_buffer(const GPUBuffer& source, const GPUBuffer& destination, GPUSize64 size);
 
@@ -234,7 +248,7 @@ namespace lyra::rhi
 
         void resolve_query_set(GPUQuerySet query_set, GPUSize32 first_query, GPUSize32 query_count, const GPUBuffer& destination, GPUSize64 destination_offset);
 
-        void set_viewport(float x, float y, float w, float h, float min_depth, float max_depth);
+        void set_viewport(float x, float y, float w, float h, float min_depth = 0.0f, float max_depth = 1.0f);
 
         void set_scissor_rect(GPUIntegerCoordinate x, GPUIntegerCoordinate y, GPUIntegerCoordinate w, GPUIntegerCoordinate h);
 
@@ -267,14 +281,14 @@ namespace lyra::rhi
 
     struct GPUSurfaceTexture : public GPUObjectBase
     {
-        GPUTextureHandle handle;
-        GPUFenceHandle   complete;
-        GPUFenceHandle   available;
-        bool             suboptimal;
+        GPUTextureViewHandle view;
+        GPUFenceHandle       complete;
+        GPUFenceHandle       available;
+        bool                 suboptimal;
 
         void present();
 
-        operator GPUTextureHandle() const { return handle; }
+        operator GPUTextureViewHandle() const { return view; }
     };
 
     struct GPUDevice : public GPUObjectBase

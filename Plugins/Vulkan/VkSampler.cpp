@@ -4,29 +4,12 @@
 // to avoid creating identical samplers because many of the times the sampler
 // is the same.
 
-void VulkanSampler::destroy()
+VulkanSampler::VulkanSampler() : sampler(VK_NULL_HANDLE)
 {
-    delete_sampler(*this);
+    // do nothing
 }
 
-bool create_sampler(GPUSamplerHandle& handle, const GPUSamplerDescriptor& desc)
-{
-    auto obj = create_sampler(desc);
-    auto rhi = get_rhi();
-    auto ind = rhi->samplers.add(obj);
-
-    handle = GPUSamplerHandle(ind);
-    return true;
-}
-
-void delete_sampler(GPUSamplerHandle handle)
-{
-    auto rhi = get_rhi();
-    delete_sampler(fetch_resource(rhi->samplers, handle));
-    rhi->samplers.remove(handle.value);
-}
-
-VulkanSampler create_sampler(const GPUSamplerDescriptor& desc)
+VulkanSampler::VulkanSampler(const GPUSamplerDescriptor& desc)
 {
     auto rhi = get_rhi();
 
@@ -48,16 +31,14 @@ VulkanSampler create_sampler(const GPUSamplerDescriptor& desc)
     create_info.pNext                   = nullptr;
     create_info.flags                   = 0;
 
-    VulkanSampler object;
-    vk_check(rhi->vtable.vkCreateSampler(rhi->device, &create_info, nullptr, &object.sampler));
-    return object;
+    vk_check(rhi->vtable.vkCreateSampler(rhi->device, &create_info, nullptr, &sampler));
 }
 
-void delete_sampler(VulkanSampler& sampler)
+void VulkanSampler::destroy()
 {
-    if (sampler.sampler != VK_NULL_HANDLE) {
+    if (sampler != VK_NULL_HANDLE) {
         auto rhi = get_rhi();
-        rhi->vtable.vkDestroySampler(rhi->device, sampler.sampler, nullptr);
-        sampler.sampler = VK_NULL_HANDLE;
+        rhi->vtable.vkDestroySampler(rhi->device, sampler, nullptr);
+        sampler = VK_NULL_HANDLE;
     }
 }

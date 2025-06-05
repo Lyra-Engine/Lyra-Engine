@@ -12,72 +12,12 @@ VkPipelineShaderStageCreateInfo create_shader_stage(VulkanShader& shader, CStrin
     return create_info;
 }
 
-void VulkanPipeline::destroy()
+VulkanPipeline::VulkanPipeline() : pipeline(VK_NULL_HANDLE), cache(VK_NULL_HANDLE)
 {
-    delete_pipeline(*this);
+    // do nothing
 }
 
-void delete_pipeline(VulkanPipeline& pipeline)
-{
-    if (pipeline.pipeline != VK_NULL_HANDLE) {
-        auto rhi = get_rhi();
-        rhi->vtable.vkDestroyPipeline(rhi->device, pipeline.pipeline, nullptr);
-        pipeline.pipeline = VK_NULL_HANDLE;
-    }
-}
-
-void delete_render_pipeline(GPURenderPipelineHandle handle)
-{
-    auto rhi = get_rhi();
-    delete_pipeline(fetch_resource(rhi->pipelines, handle));
-    rhi->pipelines.remove(handle.value);
-}
-
-void delete_compute_pipeline(GPUComputePipelineHandle handle)
-{
-    auto rhi = get_rhi();
-    delete_pipeline(fetch_resource(rhi->pipelines, handle));
-    rhi->pipelines.remove(handle.value);
-}
-
-void delete_raytracing_pipeline(GPURayTracingPipelineHandle handle)
-{
-    auto rhi = get_rhi();
-    delete_pipeline(fetch_resource(rhi->pipelines, handle));
-    rhi->pipelines.remove(handle.value);
-}
-
-bool create_render_pipeline(GPURenderPipelineHandle& handle, const GPURenderPipelineDescriptor& desc)
-{
-    auto obj = create_render_pipeline(desc);
-    auto rhi = get_rhi();
-    auto ind = rhi->pipelines.add(obj);
-
-    handle = GPURenderPipelineHandle(ind);
-    return true;
-}
-
-bool create_compute_pipeline(GPUComputePipelineHandle& handle, const GPUComputePipelineDescriptor& desc)
-{
-    auto obj = create_compute_pipeline(desc);
-    auto rhi = get_rhi();
-    auto ind = rhi->pipelines.add(obj);
-
-    handle = GPUComputePipelineHandle(ind);
-    return true;
-}
-
-bool create_raytracing_pipeline(GPURayTracingPipelineHandle& handle, const GPURayTracingPipelineDescriptor& desc)
-{
-    auto obj = create_raytracing_pipeline(desc);
-    auto rhi = get_rhi();
-    auto ind = rhi->pipelines.add(obj);
-
-    handle = GPURayTracingPipelineHandle(ind);
-    return true;
-}
-
-VulkanPipeline create_render_pipeline(const GPURenderPipelineDescriptor& desc)
+VulkanPipeline::VulkanPipeline(const GPURenderPipelineDescriptor& desc)
 {
     auto rhi = get_rhi();
 
@@ -256,12 +196,10 @@ VulkanPipeline create_render_pipeline(const GPURenderPipelineDescriptor& desc)
                                                       //
     // TODO: support specialization constants
 
-    VulkanPipeline pipeline = {};
-    vk_check(rhi->vtable.vkCreateGraphicsPipelines(rhi->device, pipeline.cache, 1, &create_info, nullptr, &pipeline.pipeline));
-    return pipeline;
+    vk_check(rhi->vtable.vkCreateGraphicsPipelines(rhi->device, cache, 1, &create_info, nullptr, &pipeline));
 }
 
-VulkanPipeline create_compute_pipeline(const GPUComputePipelineDescriptor& desc)
+VulkanPipeline::VulkanPipeline(const GPUComputePipelineDescriptor& desc)
 {
     auto rhi = get_rhi();
 
@@ -276,13 +214,19 @@ VulkanPipeline create_compute_pipeline(const GPUComputePipelineDescriptor& desc)
 
     // TODO: support specialization constants
 
-    VulkanPipeline pipeline = {};
-    vk_check(rhi->vtable.vkCreateComputePipelines(rhi->device, pipeline.cache, 1, &create_info, nullptr, &pipeline.pipeline));
-    return pipeline;
+    vk_check(rhi->vtable.vkCreateComputePipelines(rhi->device, cache, 1, &create_info, nullptr, &pipeline));
 }
 
-VulkanPipeline create_raytracing_pipeline(const GPURayTracingPipelineDescriptor& desc)
+VulkanPipeline::VulkanPipeline(const GPURayTracingPipelineDescriptor& desc)
 {
     assert(!!!"Ray tracing pipeline is currently not supported!");
-    return VulkanPipeline{};
+}
+
+void VulkanPipeline::destroy()
+{
+    if (pipeline != VK_NULL_HANDLE) {
+        auto rhi = get_rhi();
+        rhi->vtable.vkDestroyPipeline(rhi->device, pipeline, nullptr);
+        pipeline = VK_NULL_HANDLE;
+    }
 }

@@ -77,7 +77,7 @@ VkSurfaceKHR create_surface(VkInstance instance, const WindowHandle& handle)
     return surface;
 }
 
-bool create_surface(GPUSurface& surface, const GPUSurfaceDescriptor& desc)
+bool api::create_surface(GPUSurface& surface, const GPUSurfaceDescriptor& desc)
 {
     auto rhi = get_rhi();
 
@@ -130,14 +130,48 @@ bool create_surface(GPUSurface& surface, const GPUSurfaceDescriptor& desc)
     vk_check(rhi->vtable.vkGetSwapchainImagesKHR(rhi->device, rhi->swapchain, &count, swapchain_images.data()));
 
     // create swapchain texture handles
-    if (rhi->images.empty()) {
-        rhi->images.resize(count);
+    if (rhi->swapchain_images.empty()) {
+        rhi->swapchain_images.resize(count);
         for (uint i = 0; i < count; i++) {
-            auto& handle    = rhi->images.at(i);
+            auto& handle    = rhi->swapchain_images.at(i);
             auto  texture   = VulkanTexture{};
             texture.image   = swapchain_images.at(i);
             texture.aspects = VK_IMAGE_ASPECT_COLOR_BIT;
             handle          = rhi->textures.add(texture);
+        }
+    }
+
+    // create swapchain texture view handles
+    if (rhi->swapchain_views.empty()) {
+        rhi->swapchain_views.resize(count);
+
+        // common view descriptor
+        auto create_info                            = VkImageViewCreateInfo{};
+        create_info.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+        create_info.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
+        create_info.format                          = surface_format.format;
+        create_info.components.r                    = VK_COMPONENT_SWIZZLE_IDENTITY;
+        create_info.components.g                    = VK_COMPONENT_SWIZZLE_IDENTITY;
+        create_info.components.b                    = VK_COMPONENT_SWIZZLE_IDENTITY;
+        create_info.components.a                    = VK_COMPONENT_SWIZZLE_IDENTITY;
+        create_info.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+        create_info.subresourceRange.baseMipLevel   = 0;
+        create_info.subresourceRange.levelCount     = 1;
+        create_info.subresourceRange.baseArrayLayer = 0;
+        create_info.subresourceRange.layerCount     = 1;
+
+        for (uint i = 0; i < count; i++) {
+            auto  view    = VulkanTextureView();
+            auto  texture = rhi->swapchain_images.at(i);
+            auto& tex     = fetch_resource(rhi->textures, texture);
+
+            create_info.image = tex.image;
+            vk_check(rhi->vtable.vkCreateImageView(rhi->device, &create_info, nullptr, &view.view));
+
+            uint index  = rhi->views.add(view);
+            auto handle = GPUTextureViewHandle(index);
+
+            rhi->swapchain_views.at(i) = handle;
         }
     }
 
@@ -154,7 +188,7 @@ bool create_surface(GPUSurface& surface, const GPUSurfaceDescriptor& desc)
     return true;
 }
 
-void delete_surface()
+void api::delete_surface()
 {
     auto rhi = get_rhi();
 
