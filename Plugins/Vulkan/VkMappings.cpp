@@ -548,11 +548,66 @@ VkFormat vkenum(GPUTextureFormat format)
     }
 }
 
-// VkImageLayout vkenum(GPUBarrierLayout layout)
-// {
-//     switch (layout) {
-//     }
-// }
+VkImageLayout vkenum(GPUBarrierLayout layout)
+{
+    switch (layout) {
+        case GPUBarrierLayout::UNDEFINED:
+            return VK_IMAGE_LAYOUT_UNDEFINED;
+        case GPUBarrierLayout::COMMON:
+            return VK_IMAGE_LAYOUT_GENERAL; // NOTE: requires usage to actually decide what layout
+        case GPUBarrierLayout::PRESENT:
+            return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        case GPUBarrierLayout::RENDER_TARGET:
+            return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        case GPUBarrierLayout::UNORDERED_ACCESS:
+            return VK_IMAGE_LAYOUT_GENERAL;
+        case GPUBarrierLayout::GENERIC_READ:
+            return VK_IMAGE_LAYOUT_GENERAL;
+        case GPUBarrierLayout::DEPTH_STENCIL_WRITE:
+            return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        case GPUBarrierLayout::DEPTH_STENCIL_READ:
+            return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+        case GPUBarrierLayout::SHADER_RESOURCE:
+            return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        case GPUBarrierLayout::COPY_SOURCE:
+            return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        case GPUBarrierLayout::COPY_DEST:
+            return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        case GPUBarrierLayout::RESOLVE_SOURCE:
+            return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        case GPUBarrierLayout::RESOLVE_DEST:
+            return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        case GPUBarrierLayout::SHADING_RATE_SOURCE:
+            return VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR;
+        case GPUBarrierLayout::VIDEO_DECODE_READ:
+            return VK_IMAGE_LAYOUT_VIDEO_DECODE_SRC_KHR;
+        case GPUBarrierLayout::VIDEO_DECODE_WRITE:
+            return VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR;
+        case GPUBarrierLayout::VIDEO_ENCODE_READ:
+            return VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR;
+        case GPUBarrierLayout::VIDEO_ENCODE_WRITE:
+            return VK_IMAGE_LAYOUT_VIDEO_ENCODE_DST_KHR;
+        case GPUBarrierLayout::VIDEO_PROCESS_READ:
+            return VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR;
+        case GPUBarrierLayout::VIDEO_PROCESS_WRITE:
+            return VK_IMAGE_LAYOUT_VIDEO_ENCODE_DST_KHR;
+        case GPUBarrierLayout::DIRECT_QUEUE_COMMON:
+        case GPUBarrierLayout::DIRECT_QUEUE_GENERIC_READ:
+        case GPUBarrierLayout::DIRECT_QUEUE_UNORDERED_ACCESS:
+        case GPUBarrierLayout::DIRECT_QUEUE_SHADER_RESOURCE:
+        case GPUBarrierLayout::DIRECT_QUEUE_COPY_SOURCE:
+        case GPUBarrierLayout::DIRECT_QUEUE_COPY_DEST:
+        case GPUBarrierLayout::COMPUTE_QUEUE_COMMON:
+        case GPUBarrierLayout::COMPUTE_QUEUE_GENERIC_READ:
+        case GPUBarrierLayout::COMPUTE_QUEUE_UNORDERED_ACCESS:
+        case GPUBarrierLayout::COMPUTE_QUEUE_SHADER_RESOURCE:
+        case GPUBarrierLayout::COMPUTE_QUEUE_COPY_SOURCE:
+        case GPUBarrierLayout::COMPUTE_QUEUE_COPY_DEST:
+        case GPUBarrierLayout::VIDEO_QUEUE_COMMON:
+            assert(!!!"Unsuported barrier layout in Vulkan!");
+            return VK_IMAGE_LAYOUT_GENERAL;
+    }
+}
 
 VkSampleCountFlagBits vkenum(GPUIntegerCoordinate samples)
 {

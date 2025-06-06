@@ -64,9 +64,7 @@ VkExtent2D choose_swap_extent(const GPUSurfaceDescriptor& desc, const VkSurfaceC
     return actual_extent;
 }
 
-// NOTE: This is only a temporary solution.
-// We will switch to regular pipeline barriers later.
-void temporary_solution_swapchain_image_barrier(VkCommandBuffer command_buffer)
+void default_swapchain_image_barrier(VkCommandBuffer command_buffer)
 {
     auto rhi = get_rhi();
 
@@ -100,7 +98,7 @@ void temporary_solution_swapchain_image_barrier(VkCommandBuffer command_buffer)
 }
 
 // vulkan swapchain utils
-bool api::acquire_next_frame(GPUTextureViewHandle& view, GPUFenceHandle& image_available_fence, GPUFenceHandle& render_complete_fence, bool& suboptimal)
+bool api::acquire_next_frame(GPUTextureHandle& texture, GPUTextureViewHandle& view, GPUFenceHandle& image_available_fence, GPUFenceHandle& render_complete_fence, bool& suboptimal)
 {
     auto rhi = get_rhi();
 
@@ -122,7 +120,8 @@ bool api::acquire_next_frame(GPUTextureViewHandle& view, GPUFenceHandle& image_a
     }
 
     // update swapchain view
-    view = rhi->swapchain_views.at(rhi->current_image_index);
+    texture = rhi->swapchain_images.at(rhi->current_image_index);
+    view    = rhi->swapchain_views.at(rhi->current_image_index);
 
     // update fences
     image_available_fence = frame.image_available_semaphore;
@@ -147,7 +146,7 @@ bool api::present_curr_frame()
         auto  command_buffer_handle = frame.allocate(GPUQueueType::COMPUTE, true);
         auto& command_buffer        = frame.allocated_command_buffers.at(command_buffer_handle.value);
         command_buffer.begin();
-        temporary_solution_swapchain_image_barrier(command_buffer.command_buffer);
+        default_swapchain_image_barrier(command_buffer.command_buffer);
         command_buffer.end();
         command_buffer.wait(image_available_fence, GPUBarrierSync::NONE);
         command_buffer.signal(render_complete_fence, GPUBarrierSync::ALL);

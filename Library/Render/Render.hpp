@@ -6,6 +6,7 @@
 #include <Render/RHI/Enums.h>
 #include <Render/RHI/Descs.h>
 #include <Render/RHI/Types.h>
+#include <Render/RHI/Inits.h>
 
 // RPI (Render Pass Interface)
 

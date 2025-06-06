@@ -91,6 +91,7 @@ struct VulkanTexture
     VmaAllocation      allocation;
     VmaAllocationInfo  alloc_info = {};
     VkImageAspectFlags aspects    = 0;
+    VkExtent2D         extent     = {}; // used to keep track of render area
 
     // implementation in VkImage.cpp
     explicit VulkanTexture();
@@ -103,7 +104,8 @@ struct VulkanTexture
 
 struct VulkanTextureView
 {
-    VkImageView view = VK_NULL_HANDLE;
+    VkImageView view   = VK_NULL_HANDLE;
+    VkExtent2D  extent = {}; // used to keep track of render area
 
     // implementation in VkImage.cpp
     explicit VulkanTextureView();
@@ -264,6 +266,11 @@ struct VulkanCommandBuffer
     VkQueue         command_queue  = VK_NULL_HANDLE;
     VkCommandBuffer command_buffer = VK_NULL_HANDLE;
 
+    // cache for pipeline
+    VkPipeline          last_bound_pipeline = VK_NULL_HANDLE;
+    VkPipelineLayout    last_bound_layout   = VK_NULL_HANDLE;
+    VkPipelineBindPoint last_bound_point    = VK_PIPELINE_BIND_POINT_COMPUTE;
+
     // GPU/GPU synchronization
     Vector<VkSemaphoreSubmitInfo> wait_semaphores   = {};
     Vector<VkSemaphoreSubmitInfo> signal_semaphores = {};
@@ -296,9 +303,16 @@ struct VulkanFrame
     Vector<VulkanCommandBuffer> allocated_command_buffers;
 
     // shortcut for cmd buffer
-    auto& cmd(GPUCommandEncoderHandle handle)
+    auto& command(GPUCommandEncoderHandle handle)
     {
         return allocated_command_buffers.at(handle.value);
+    }
+
+    // shortcut for descriptor set
+    auto descriptor(GPUBindGroupHandle handle)
+    {
+
+        return descriptor_pool.allocated.at(handle.value);
     }
 
     // implementation in VkFrame.cpp
@@ -413,7 +427,7 @@ namespace api
     void delete_raytracing_pipeline(GPURayTracingPipelineHandle pipeline);
 
     // vulkan swapchain
-    bool acquire_next_frame(GPUTextureViewHandle& view, GPUFenceHandle& image_available_fence, GPUFenceHandle& render_complete_fence, bool& suboptimal);
+    bool acquire_next_frame(GPUTextureHandle& texture, GPUTextureViewHandle& view, GPUFenceHandle& image_available_fence, GPUFenceHandle& render_complete_fence, bool& suboptimal);
     bool present_curr_frame();
 
     // vulkan desciprtor
@@ -422,6 +436,7 @@ namespace api
     // command buffer
     bool create_command_buffer(GPUCommandEncoderHandle& cmdbuffer, const GPUCommandBufferDescriptor& descriptor);
     bool create_command_bundle(GPUCommandEncoderHandle& cmdbuffer, const GPUCommandBundleDescriptor& descriptor);
+    bool submit_command_buffer(GPUCommandEncoderHandle& cmdbuffer);
 
     // device/queue related
     void wait_idle();
@@ -436,16 +451,33 @@ namespace cmd
     void signal_fence(GPUCommandEncoderHandle cmdbuffer, GPUFenceHandle fence, GPUBarrierSyncFlags sync);
     void begin_render_pass(GPUCommandEncoderHandle cmdbuffer, const GPURenderPassDescriptor& descriptor);
     void end_render_pass(GPUCommandEncoderHandle cmdbuffer);
-    void set_render_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURenderPipelineHandle pipeline);
-    void set_compute_pipeline(GPUCommandEncoderHandle cmdbuffer, GPUComputePipelineHandle pipeline);
-    void set_raytracing_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURayTracingPipelineHandle pipeline);
-    void set_bind_group(GPUCommandEncoderHandle cmdbuffer, GPUPipelineLayoutHandle layout, GPUIndex32 index, GPUBindGroupHandle bind_group, const Vector<GPUBufferDynamicOffset>& dynamic_offsets);
+    void set_render_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURenderPipelineHandle pipeline, GPUPipelineLayoutHandle layout);
+    void set_compute_pipeline(GPUCommandEncoderHandle cmdbuffer, GPUComputePipelineHandle pipeline, GPUPipelineLayoutHandle layout);
+    void set_raytracing_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURayTracingPipelineHandle pipeline, GPUPipelineLayoutHandle layout);
+    void set_bind_group(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 index, GPUBindGroupHandle bind_group, const Vector<GPUBufferDynamicOffset>& dynamic_offsets);
     void set_index_buffer(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle buffer, GPUIndexFormat format, GPUSize64 offset, GPUSize64 size);
     void set_vertex_buffer(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 slot, GPUBufferHandle buffer, GPUSize64 offset, GPUSize64 size);
     void draw(GPUCommandEncoderHandle cmdbuffer, GPUSize32 vertex_count, GPUSize32 instance_count, GPUSize32 first_vertex, GPUSize32 first_instance);
     void draw_indexed(GPUCommandEncoderHandle cmdbuffer, GPUSize32 index_count, GPUSize32 instance_count, GPUSize32 first_index, GPUSignedOffset32 base_vertex, GPUSize32 first_instance);
-    void draw_indirect(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle indirect_buffer, GPUSize64 indirect_offset);
-    void draw_indexed_indirect(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle indirect_buffer, GPUSize64 indirect_offset);
+    void draw_indirect(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle indirect_buffer, GPUSize64 indirect_offset, GPUSize32 draw_count);
+    void draw_indexed_indirect(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle indirect_buffer, GPUSize64 indirect_offset, GPUSize32 draw_count);
+    void dispatch_workgroups(GPUCommandEncoderHandle cmdbuffer, GPUSize32 x, GPUSize32 y, GPUSize32 z);
+    void dispatch_workgroups_indirect(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle indirect_buffer, GPUSize64 indirect_offset);
+    void copy_buffer_to_buffer(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle source, GPUSize64 source_offset, GPUBufferHandle destination, GPUSize64 destination_offset, GPUSize64 size);
+    void copy_buffer_to_texture(GPUCommandEncoderHandle cmdbuffer, const GPUTexelCopyBufferInfo& source, const GPUTexelCopyTextureInfo& destination, GPUExtent3D copy_size);
+    void copy_texture_to_buffer(GPUCommandEncoderHandle cmdbuffer, const GPUTexelCopyTextureInfo& source, const GPUTexelCopyBufferInfo& destination, const GPUExtent3D& copy_size);
+    void copy_texture_to_texture(GPUCommandEncoderHandle cmdbuffer, const GPUTexelCopyTextureInfo& source, const GPUTexelCopyTextureInfo& destination, const GPUExtent3D& copy_size);
+    void clear_buffer(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle buffer, GPUSize64 offset, GPUSize64 size);
+    void resolve_query_set(GPUCommandEncoderHandle cmdbuffer, GPUQuerySetHandle query_set, GPUSize32 first_query, GPUSize32 query_count, GPUBufferHandle destination, GPUSize64 destination_offset);
+    void set_viewport(GPUCommandEncoderHandle cmdbuffer, float x, float y, float w, float h, float min_depth, float max_depth);
+    void set_scissor_rect(GPUCommandEncoderHandle cmdbuffer, GPUIntegerCoordinate x, GPUIntegerCoordinate y, GPUIntegerCoordinate w, GPUIntegerCoordinate h);
+    void set_blend_constant(GPUCommandEncoderHandle cmdbuffer, GPUColor color);
+    void set_stencil_reference(GPUCommandEncoderHandle cmdbuffer, GPUStencilValue reference);
+    void begin_occlusion_query(GPUCommandEncoderHandle cmdbuffer, GPUSize32 queryIndex);
+    void end_occlusion_query(GPUCommandEncoderHandle cmdbuffer);
+    void memory_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUMemoryBarrier* barriers);
+    void buffer_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUBufferBarrier* barriers);
+    void texture_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUTextureBarrier* barriers);
 } // namespace cmd
 
 auto get_logger() -> Logger;

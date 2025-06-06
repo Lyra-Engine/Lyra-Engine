@@ -211,14 +211,17 @@ void render()
     render_pass.color_attachments        = {color_attachment};
     render_pass.depth_stencil_attachment = {};
 
-    command.wait(texture.available);
+    command.wait(texture.available, GPUBarrierSync::PIXEL_SHADING);
+    command.resource_barrier(transition_undefined_to_color_attachment(texture.texture));
     command.begin_render_pass(render_pass);
     command.set_viewport(0, 0, 1920, 1080);
     command.set_scissor_rect(0, 0, 1920, 1080);
     command.set_pipeline(pipeline);
     command.draw_indexed(3, 1, 0, 0, 0);
     command.end_render_pass();
-    command.signal(texture.complete);
+    command.resource_barrier(transition_color_attachment_to_present(texture.texture));
+    command.signal(texture.complete, GPUBarrierSync::RENDER_TARGET);
+    command.submit();
 
     // present this frame to swapchain
     texture.present();

@@ -413,7 +413,15 @@ namespace lyra::rhi
         GPUSize32 layer_count      = 0;
     };
 
-    struct BufferBarrier
+    struct GPUMemoryBarrier
+    {
+        GPUBarrierSync   src_sync;
+        GPUBarrierSync   dst_sync;
+        GPUBarrierAccess src_access;
+        GPUBarrierAccess dst_access;
+    };
+
+    struct GPUBufferBarrier
     {
         GPUBarrierSync   src_sync;
         GPUBarrierSync   dst_sync;
@@ -424,7 +432,7 @@ namespace lyra::rhi
         GPUSize64        size;
     };
 
-    struct TextureBarrier
+    struct GPUTextureBarrier
     {
         GPUBarrierSync             src_sync;
         GPUBarrierSync             dst_sync;

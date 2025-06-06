@@ -22,6 +22,10 @@ namespace lyra::rhi
     {
         GPUFenceHandle handle;
 
+        // implicit conversion
+        GPUFence() : handle() {}
+        GPUFence(GPUFenceHandle handle) : handle(handle) {}
+
         void wait();
 
         void destroy();
@@ -33,6 +37,10 @@ namespace lyra::rhi
     {
         GPUSamplerHandle handle;
 
+        // implicit conversion
+        GPUSampler() : handle() {}
+        GPUSampler(GPUSamplerHandle handle) : handle(handle) {}
+
         void destroy();
 
         operator GPUSamplerHandle() const { return handle; }
@@ -42,6 +50,10 @@ namespace lyra::rhi
     {
         GPUShaderModuleHandle handle;
 
+        // implicit conversion
+        GPUShaderModule() : handle() {}
+        GPUShaderModule(GPUShaderModuleHandle handle) : handle(handle) {}
+
         void destroy();
 
         operator GPUShaderModuleHandle() const { return handle; }
@@ -50,6 +62,10 @@ namespace lyra::rhi
     struct GPUTextureView : public GPUObjectBase
     {
         GPUTextureViewHandle handle;
+
+        // implicit conversion
+        GPUTextureView() : handle() {}
+        GPUTextureView(GPUTextureViewHandle handle) : handle(handle) {}
 
         void destroy();
 
@@ -123,6 +139,10 @@ namespace lyra::rhi
     {
         GPUTlasHandle handle;
 
+        // implicit conversion
+        GPUTlas() : handle() {}
+        GPUTlas(GPUTlasHandle handle) : handle(handle) {}
+
         auto destroy() -> void;
 
         operator GPUTlasHandle() const { return handle; }
@@ -131,6 +151,10 @@ namespace lyra::rhi
     struct GPUBlas : public GPUObjectBase
     {
         GPUBlasHandle handle;
+
+        // implicit conversion
+        GPUBlas() : handle() {}
+        GPUBlas(GPUBlasHandle handle) : handle(handle) {}
 
         auto destroy() -> void;
 
@@ -144,12 +168,20 @@ namespace lyra::rhi
         // NOTE: no manual deletion of GPUBindGroup,
         // because these are automatically recycled by GC.
 
+        // implicit conversion
+        GPUBindGroup() : handle() {}
+        GPUBindGroup(GPUBindGroupHandle handle) : handle(handle) {}
+
         operator GPUBindGroupHandle() const { return handle; }
     };
 
     struct GPUBindGroupLayout : public GPUObjectBase
     {
         GPUBindGroupLayoutHandle handle;
+
+        // implicit conversion
+        GPUBindGroupLayout() : handle() {}
+        GPUBindGroupLayout(GPUBindGroupLayoutHandle handle) : handle(handle) {}
 
         void destroy();
 
@@ -160,6 +192,10 @@ namespace lyra::rhi
     {
         GPUPipelineLayoutHandle handle;
 
+        // implicit conversion
+        GPUPipelineLayout() : handle() {}
+        GPUPipelineLayout(GPUPipelineLayoutHandle handle) : handle(handle) {}
+
         void destroy();
 
         operator GPUPipelineLayoutHandle() const { return handle; }
@@ -168,6 +204,7 @@ namespace lyra::rhi
     struct GPURenderPipeline : public GPUObjectBase
     {
         GPURenderPipelineHandle handle;
+        GPUPipelineLayoutHandle layout;
 
         void destroy();
 
@@ -177,6 +214,7 @@ namespace lyra::rhi
     struct GPUComputePipeline : public GPUObjectBase
     {
         GPUComputePipelineHandle handle;
+        GPUPipelineLayoutHandle  layout;
 
         void destroy();
 
@@ -186,6 +224,7 @@ namespace lyra::rhi
     struct GPURayTracingPipeline : public GPUObjectBase
     {
         GPURayTracingPipelineHandle handle;
+        GPUPipelineLayoutHandle     layout;
 
         void destroy();
 
@@ -202,21 +241,21 @@ namespace lyra::rhi
 
         void pop_debug_group();
 
-        void wait(GPUFence fence, GPUBarrierSyncFlags sync);
+        void wait(const GPUFence& fence, GPUBarrierSyncFlags sync);
 
-        void signal(GPUFence fence, GPUBarrierSyncFlags sync);
+        void signal(const GPUFence& fence, GPUBarrierSyncFlags sync);
 
-        void set_pipeline(GPURenderPipeline pipeline);
+        void set_pipeline(const GPURenderPipeline& pipeline);
 
-        void set_pipeline(GPUComputePipeline pipeline);
+        void set_pipeline(const GPUComputePipeline& pipeline);
 
-        void set_pipeline(GPURayTracingPipeline pipeline);
+        void set_pipeline(const GPURayTracingPipeline& pipeline);
 
-        void set_bind_group(GPUIndex32 index, GPUBindGroup bind_group, const Vector<GPUBufferDynamicOffset>& dynamic_offsets = {});
+        void set_bind_group(GPUIndex32 index, const GPUBindGroup& bind_group, const Vector<GPUBufferDynamicOffset>& dynamic_offsets = {});
 
         void dispatch_workgroups(GPUSize32 x, GPUSize32 y = 1, GPUSize32 z = 1);
 
-        void dispatch_Workgroups_indirect(const GPUBuffer& indirect_buffer, GPUSize64 indirect_offset);
+        void dispatch_workgroups_indirect(const GPUBuffer& indirect_buffer, GPUSize64 indirect_offset);
 
         void set_index_buffer(const GPUBuffer& buffer, GPUIndexFormat index_format, GPUSize64 offset = 0, GPUSize64 size = 0);
 
@@ -226,9 +265,9 @@ namespace lyra::rhi
 
         void draw_indexed(GPUSize32 index_count, GPUSize32 instance_count = 1, GPUSize32 first_index = 0, GPUSignedOffset32 base_vertex = 0, GPUSize32 first_instance = 0);
 
-        void draw_indirect(const GPUBuffer& buffer, GPUSize64 indirect_offset);
+        void draw_indirect(const GPUBuffer& indirect_buffer, GPUSize64 indirect_offset, GPUSize32 draw_count);
 
-        void draw_indexed_indirect(const GPUBuffer& buffer, GPUSize64 indirect_offset);
+        void draw_indexed_indirect(const GPUBuffer& indirect_buffer, GPUSize64 indirect_offset, GPUSize32 draw_count);
 
         void begin_render_pass(const GPURenderPassDescriptor& descriptor);
 
@@ -238,11 +277,11 @@ namespace lyra::rhi
 
         void copy_buffer_to_buffer(const GPUBuffer& source, GPUSize64 source_offset, const GPUBuffer& destination, GPUSize64 destination_offset, GPUSize64 size);
 
-        void copy_buffer_to_texture(GPUTexelCopyBufferInfo source, GPUTexelCopyTextureInfo destination, GPUExtent3D copy_size);
+        void copy_buffer_to_texture(const GPUTexelCopyBufferInfo& source, const GPUTexelCopyTextureInfo& destination, const GPUExtent3D& copy_size);
 
-        void copy_texture_to_buffer(GPUTexelCopyTextureInfo source, GPUTexelCopyBufferInfo destination, GPUExtent3D copy_size);
+        void copy_texture_to_buffer(const GPUTexelCopyTextureInfo& source, const GPUTexelCopyBufferInfo& destination, const GPUExtent3D& copy_size);
 
-        void copy_texture_to_texture(GPUTexelCopyTextureInfo source, GPUTexelCopyTextureInfo destination, GPUExtent3D copy_size);
+        void copy_texture_to_texture(const GPUTexelCopyTextureInfo& source, const GPUTexelCopyTextureInfo& destination, const GPUExtent3D& copy_size);
 
         void clear_buffer(const GPUBuffer& buffer, GPUSize64 offset = 0, GPUSize64 size = 0);
 
@@ -260,11 +299,11 @@ namespace lyra::rhi
 
         void end_occlusion_query();
 
-        void buffer_barrier(const Vector<BufferBarrier>& barriers);
+        void resource_barrier(const GPUBufferBarrier& barrier);
+        void resource_barrier(const Vector<GPUBufferBarrier>& barriers);
 
-        void texture_barrier(const Vector<TextureBarrier>& barriers);
-
-        void finish();
+        void resource_barrier(const GPUTextureBarrier& barrier);
+        void resource_barrier(const Vector<GPUTextureBarrier>& barriers);
     };
 
     struct GPUCommandBundle : public GPUCommandEncoder
@@ -276,11 +315,14 @@ namespace lyra::rhi
     {
         operator GPUCommandEncoderHandle() const { return handle; }
 
+        void submit();
+
         void execute_bundles(const Vector<GPUCommandBundle>& bundles);
     };
 
     struct GPUSurfaceTexture : public GPUObjectBase
     {
+        GPUTextureHandle     texture;
         GPUTextureViewHandle view;
         GPUFenceHandle       complete;
         GPUFenceHandle       available;

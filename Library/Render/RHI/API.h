@@ -67,7 +67,7 @@ namespace lyra::rhi
         bool (*create_bind_group_layout)(GPUBindGroupLayoutHandle& layout, const GPUBindGroupLayoutDescriptor& descriptor);
         void (*delete_bind_group_layout)(GPUBindGroupLayoutHandle layout);
 
-        bool (*acquire_next_frame)(GPUTextureViewHandle& view, GPUFenceHandle& image_available, GPUFenceHandle& render_complete, bool& suboptimal);
+        bool (*acquire_next_frame)(GPUTextureHandle& texture, GPUTextureViewHandle& view, GPUFenceHandle& image_available, GPUFenceHandle& render_complete, bool& suboptimal);
         bool (*present_curr_frame)();
 
         void (*get_mapped_range)(GPUBufferHandle buffer, MappedBufferRange& range);
@@ -79,21 +79,39 @@ namespace lyra::rhi
 
         bool (*create_command_buffer)(GPUCommandEncoderHandle& cmdbuffer, const GPUCommandBufferDescriptor& descriptor);
         bool (*create_command_bundle)(GPUCommandEncoderHandle& cmdbuffer, const GPUCommandBundleDescriptor& descriptor);
+        bool (*submit_command_buffer)(GPUCommandEncoderHandle& cmdbuffer);
 
         void (*cmd_wait_fence)(GPUCommandEncoderHandle cmdbuffer, GPUFenceHandle fence, GPUBarrierSyncFlags sync);
         void (*cmd_signal_fence)(GPUCommandEncoderHandle cmdbuffer, GPUFenceHandle fence, GPUBarrierSyncFlags sync);
         void (*cmd_begin_render_pass)(GPUCommandEncoderHandle cmdbuffer, const GPURenderPassDescriptor& descriptor);
         void (*cmd_end_render_pass)(GPUCommandEncoderHandle cmdbuffer);
-        void (*cmd_set_render_pipeline)(GPUCommandEncoderHandle cmdbuffer, GPURenderPipelineHandle pipeline);
-        void (*cmd_set_compute_pipeline)(GPUCommandEncoderHandle cmdbuffer, GPUComputePipelineHandle pipeline);
-        void (*cmd_set_raytracing_pipeline)(GPUCommandEncoderHandle cmdbuffer, GPURayTracingPipelineHandle pipeline);
-        void (*cmd_set_bind_group)(GPUCommandEncoderHandle cmdbuffer, GPUPipelineLayoutHandle layout, GPUIndex32 index, GPUBindGroupHandle bind_group, const Vector<GPUBufferDynamicOffset>& dynamic_offsets);
+        void (*cmd_set_render_pipeline)(GPUCommandEncoderHandle cmdbuffer, GPURenderPipelineHandle pipeline, GPUPipelineLayoutHandle layout);
+        void (*cmd_set_compute_pipeline)(GPUCommandEncoderHandle cmdbuffer, GPUComputePipelineHandle pipeline, GPUPipelineLayoutHandle layout);
+        void (*cmd_set_raytracing_pipeline)(GPUCommandEncoderHandle cmdbuffer, GPURayTracingPipelineHandle pipeline, GPUPipelineLayoutHandle layout);
+        void (*cmd_set_bind_group)(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 index, GPUBindGroupHandle bind_group, const Vector<GPUBufferDynamicOffset>& dynamic_offsets);
         void (*cmd_set_index_buffer)(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle buffer, GPUIndexFormat format, GPUSize64 offset, GPUSize64 size);
         void (*cmd_set_vertex_buffer)(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 slot, GPUBufferHandle buffer, GPUSize64 offset, GPUSize64 size);
         void (*cmd_draw)(GPUCommandEncoderHandle cmdbuffer, GPUSize32 vertex_count, GPUSize32 instance_count, GPUSize32 first_vertex, GPUSize32 first_instance);
         void (*cmd_draw_indexed)(GPUCommandEncoderHandle cmdbuffer, GPUSize32 index_count, GPUSize32 instance_count, GPUSize32 first_index, GPUSignedOffset32 base_vertex, GPUSize32 first_instance);
-        void (*cmd_draw_indirect)(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle indirect_buffer, GPUSize64 indirect_offset);
-        void (*cmd_draw_indexed_indirect)(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle indirect_buffer, GPUSize64 indirect_offset);
+        void (*cmd_draw_indirect)(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle indirect_buffer, GPUSize64 indirect_offset, GPUSize32 draw_count);
+        void (*cmd_draw_indexed_indirect)(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle indirect_buffer, GPUSize64 indirect_offset, GPUSize32 draw_count);
+        void (*cmd_dispatch_workgroups)(GPUCommandEncoderHandle cmdbuffer, GPUSize32 x, GPUSize32 y, GPUSize32 z);
+        void (*cmd_dispatch_workgroups_indirect)(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle indirect_buffer, GPUSize64 indirect_offset);
+        void (*cmd_copy_buffer_to_buffer)(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle source, GPUSize64 source_offset, GPUBufferHandle destination, GPUSize64 destination_offset, GPUSize64 size);
+        void (*cmd_copy_buffer_to_texture)(GPUCommandEncoderHandle cmdbuffer, const GPUTexelCopyBufferInfo& source, const GPUTexelCopyTextureInfo& destination, GPUExtent3D copy_size);
+        void (*cmd_copy_texture_to_buffer)(GPUCommandEncoderHandle cmdbuffer, const GPUTexelCopyTextureInfo& source, const GPUTexelCopyBufferInfo& destination, const GPUExtent3D& copy_size);
+        void (*cmd_copy_texture_to_texture)(GPUCommandEncoderHandle cmdbuffer, const GPUTexelCopyTextureInfo& source, const GPUTexelCopyTextureInfo& destination, const GPUExtent3D& copy_size);
+        void (*cmd_clear_buffer)(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle buffer, GPUSize64 offset, GPUSize64 size);
+        void (*cmd_resolve_query_set)(GPUCommandEncoderHandle cmdbuffer, GPUQuerySetHandle query_set, GPUSize32 first_query, GPUSize32 query_count, GPUBufferHandle destination, GPUSize64 destination_offset);
+        void (*cmd_set_viewport)(GPUCommandEncoderHandle cmdbuffer, float x, float y, float w, float h, float min_depth, float max_depth);
+        void (*cmd_set_scissor_rect)(GPUCommandEncoderHandle cmdbuffer, GPUIntegerCoordinate x, GPUIntegerCoordinate y, GPUIntegerCoordinate w, GPUIntegerCoordinate h);
+        void (*cmd_set_blend_constant)(GPUCommandEncoderHandle cmdbuffer, GPUColor color);
+        void (*cmd_set_stencil_reference)(GPUCommandEncoderHandle cmdbuffer, GPUStencilValue reference);
+        void (*cmd_begin_occlusion_query)(GPUCommandEncoderHandle cmdbuffer, GPUSize32 queryIndex);
+        void (*cmd_end_occlusion_query)(GPUCommandEncoderHandle cmdbuffer);
+        void (*cmd_memory_barrier)(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUMemoryBarrier* barriers);
+        void (*cmd_buffer_barrier)(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUBufferBarrier* barriers);
+        void (*cmd_texture_barrier)(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUTextureBarrier* barriers);
     };
 
 } // namespace lyra::rhi

@@ -167,6 +167,7 @@ bool api::create_surface(GPUSurface& surface, const GPUSurfaceDescriptor& desc)
 
             create_info.image = tex.image;
             vk_check(rhi->vtable.vkCreateImageView(rhi->device, &create_info, nullptr, &view.view));
+            view.extent = extent; // manually created (will be used to keep track of render area)
 
             uint index  = rhi->views.add(view);
             auto handle = GPUTextureViewHandle(index);
