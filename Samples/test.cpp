@@ -332,6 +332,8 @@ int main()
         return rhi->request_surface(desc);
     });
 
+    (void)surface; // avoid unused warning
+
     win->bind(WindowEvent::START, setup_pipeline);
     win->bind(WindowEvent::START, setup_buffers);
     win->bind(WindowEvent::CLOSE, cleanup);

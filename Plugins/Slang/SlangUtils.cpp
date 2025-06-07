@@ -71,6 +71,8 @@ SlangProfileID CompilerWrapper::select_profile(const CompilerDescriptor& descrip
             return GLOBAL_SESSION->findProfile("spirv_1_5");
         case CompileTarget::DXIL:
             return GLOBAL_SESSION->findProfile("sm_6_0");
+        default: // fallback for invalid arguments
+            return GLOBAL_SESSION->findProfile("spirv_1_5");
     }
 }
 

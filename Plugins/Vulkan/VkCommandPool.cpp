@@ -1,44 +1,69 @@
 #include "VkUtils.h"
 
-VkCommandPool create_command_pool(uint queue_family_index)
+void VulkanCommandPool::init(uint queue_family_index)
 {
-    auto rhi = get_rhi();
-
     auto pool_info             = VkCommandPoolCreateInfo{};
     pool_info.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     pool_info.pNext            = NULL;
-    pool_info.flags            = 0;
+    pool_info.flags            = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
     pool_info.queueFamilyIndex = queue_family_index;
 
-    VkCommandPool pool;
-    vk_check(rhi->vtable.vkCreateCommandPool(rhi->device, &pool_info, nullptr, &pool));
-    return pool;
-}
-
-void delete_command_pool(VkCommandPool pool)
-{
     auto rhi = get_rhi();
-    rhi->vtable.vkDestroyCommandPool(rhi->device, pool, nullptr);
+    vk_check(rhi->vtable.vkCreateCommandPool(rhi->device, &pool_info, nullptr, &command_pool));
 }
 
-void reset_command_pool(VkCommandPool pool)
+void VulkanCommandPool::reset()
 {
-    auto rhi = get_rhi();
-    vk_check(rhi->vtable.vkResetCommandPool(rhi->device, pool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT));
+    if (command_pool != VK_NULL_HANDLE) {
+        auto rhi = get_rhi();
+        vk_check(rhi->vtable.vkResetCommandPool(rhi->device, command_pool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT));
+        primary.reset();
+        secondary.reset();
+    }
 }
 
-VkCommandBuffer allocate_command_buffer(VkCommandPool pool, bool primary)
+void VulkanCommandPool::destroy()
 {
+    reset();
+    if (command_pool != VK_NULL_HANDLE) {
+        auto rhi = get_rhi();
+        rhi->vtable.vkDestroyCommandPool(rhi->device, command_pool, nullptr);
+        command_pool = VK_NULL_HANDLE;
+    }
+}
+
+VkCommandBuffer VulkanCommandPool::allocate(bool is_primary)
+{
+    if (command_pool == VK_NULL_HANDLE)
+        return VK_NULL_HANDLE;
+
+    return is_primary
+               ? primary.allocate(command_pool, VK_COMMAND_BUFFER_LEVEL_PRIMARY)
+               : secondary.allocate(command_pool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+}
+
+VkCommandBuffer VulkanCommandPool::AllocatedCommandBuffers::allocate(VkCommandPool pool, VkCommandBufferLevel level)
+{
+    if (index < allocated.size())
+        return allocated.at(index++);
+
     auto rhi = get_rhi();
 
     auto alloc_info               = VkCommandBufferAllocateInfo{};
     alloc_info.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     alloc_info.pNext              = nullptr;
-    alloc_info.commandPool        = pool,
-    alloc_info.level              = primary ? VK_COMMAND_BUFFER_LEVEL_PRIMARY : VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+    alloc_info.commandPool        = pool;
+    alloc_info.level              = level;
     alloc_info.commandBufferCount = 1;
 
     VkCommandBuffer command_buffer;
     vk_check(rhi->vtable.vkAllocateCommandBuffers(rhi->device, &alloc_info, &command_buffer));
-    return command_buffer;
+    index = static_cast<uint32_t>(allocated.size());
+    allocated.push_back(command_buffer);
+    return allocated.at(index++);
+}
+
+void VulkanCommandPool::AllocatedCommandBuffers::reset()
+{
+    index = 0;
 }

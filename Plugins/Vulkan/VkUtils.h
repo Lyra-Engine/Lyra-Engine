@@ -286,6 +286,29 @@ struct VulkanCommandBuffer
     void end();
 };
 
+struct VulkanCommandPool
+{
+    VkCommandPool command_pool = VK_NULL_HANDLE;
+
+    // implementation in VkCommandPool.cpp
+    void init(uint queue_family_index);
+    void reset();
+    void destroy();
+    auto allocate(bool primary = true) -> VkCommandBuffer;
+
+    struct AllocatedCommandBuffers
+    {
+        Vector<VkCommandBuffer> allocated;
+        uint32_t                index;
+
+        auto allocate(VkCommandPool pool, VkCommandBufferLevel level) -> VkCommandBuffer;
+        void reset();
+    };
+
+    AllocatedCommandBuffers primary;
+    AllocatedCommandBuffers secondary;
+};
+
 struct VulkanFrame
 {
     // used to check vulkan buffer usage,
@@ -293,12 +316,12 @@ struct VulkanFrame
     // frame id must match VulkanFrame's id
     uint32_t frame_id = 0u;
 
-    VulkanFence    inflight_fence;
-    VkCommandPool  compute_command_pool  = VK_NULL_HANDLE;
-    VkCommandPool  graphics_command_pool = VK_NULL_HANDLE;
-    VkCommandPool  transfer_command_pool = VK_NULL_HANDLE;
-    GPUFenceHandle image_available_semaphore; // must be binary semaphores
-    GPUFenceHandle render_complete_semaphore; // could be timeline semaphores
+    VulkanFence       inflight_fence;
+    VulkanCommandPool compute_command_pool;
+    VulkanCommandPool graphics_command_pool;
+    VulkanCommandPool transfer_command_pool;
+    GPUFenceHandle    image_available_semaphore; // must be binary semaphores
+    GPUFenceHandle    render_complete_semaphore; // could be timeline semaphores
 
     VulkanDescriptorPool descriptor_pool{};
 
@@ -537,14 +560,6 @@ auto create_bind_group(const GPUBindGroupDescriptor& desc) -> GPUBindGroupHandle
 auto create_descriptor_pool() -> VkDescriptorPool;
 void reset_descriptor_pool(VkDescriptorPool pool);
 void delete_descriptor_pool(VkDescriptorPool pool);
-
-// vulkan command pool utils
-auto create_command_pool(uint queue_family_index) -> VkCommandPool;
-void delete_command_pool(VkCommandPool pool);
-void reset_command_pool(VkCommandPool pool);
-
-// vulkan command buffer utils
-auto allocate_command_buffer(VkCommandPool pool, bool primary = true) -> VkCommandBuffer;
 
 // adapter/device utils
 bool has_portability_subset(VkPhysicalDevice physicalDevice);

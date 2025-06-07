@@ -12,6 +12,7 @@ VkPresentModeKHR vkenum(GPUPresentMode mode)
         case GPUPresentMode::Mailbox:
             return VK_PRESENT_MODE_MAILBOX_KHR;
     }
+    throw std::invalid_argument("invalid argument for GPUPresentMode");
 }
 
 VkCompositeAlphaFlagBitsKHR vkenum(GPUCompositeAlphaMode mode)
@@ -24,6 +25,7 @@ VkCompositeAlphaFlagBitsKHR vkenum(GPUCompositeAlphaMode mode)
         case GPUCompositeAlphaMode::PreMultiplied:
             return VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR;
     }
+    throw std::invalid_argument("invalid argument for GPUCompositeAlphaMode");
 }
 
 VkColorSpaceKHR vkenum(GPUColorSpace space)
@@ -34,6 +36,7 @@ VkColorSpaceKHR vkenum(GPUColorSpace space)
         case GPUColorSpace::DISPLAY_P3:
             return VK_COLOR_SPACE_DISPLAY_P3_LINEAR_EXT;
     }
+    throw std::invalid_argument("invalid argument for GPUColorSpace");
 }
 
 VkBlendOp vkenum(GPUBlendOperation op)
@@ -50,6 +53,7 @@ VkBlendOp vkenum(GPUBlendOperation op)
         case GPUBlendOperation::MAX:
             return VK_BLEND_OP_MAX;
     }
+    throw std::invalid_argument("invalid argument for GPUBlendOperation");
 }
 
 VkBlendFactor vkenum(GPUBlendFactor factor)
@@ -90,6 +94,7 @@ VkBlendFactor vkenum(GPUBlendFactor factor)
         case GPUBlendFactor::ONE_MINUS_SRC1_ALPHA:
             return VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA;
     }
+    throw std::invalid_argument("invalid argument for GPUBlendFactor");
 }
 
 VkAttachmentLoadOp vkenum(GPULoadOp op)
@@ -99,7 +104,10 @@ VkAttachmentLoadOp vkenum(GPULoadOp op)
             return VK_ATTACHMENT_LOAD_OP_CLEAR;
         case GPULoadOp::LOAD:
             return VK_ATTACHMENT_LOAD_OP_LOAD;
+        default: // fallback for invalid arguments
+            return VK_ATTACHMENT_LOAD_OP_CLEAR;
     }
+    throw std::invalid_argument("invalid argument for GPULoadOp");
 }
 
 VkAttachmentStoreOp vkenum(GPUStoreOp op)
@@ -109,7 +117,10 @@ VkAttachmentStoreOp vkenum(GPUStoreOp op)
             return VK_ATTACHMENT_STORE_OP_DONT_CARE;
         case GPUStoreOp::STORE:
             return VK_ATTACHMENT_STORE_OP_STORE;
+        default: // fallback for invalid arguments
+            return VK_ATTACHMENT_STORE_OP_DONT_CARE;
     }
+    throw std::invalid_argument("invalid argument for GPUStoreOp");
 }
 
 VkQueryType vkenum(GPUQueryType query)
@@ -119,7 +130,10 @@ VkQueryType vkenum(GPUQueryType query)
             return VK_QUERY_TYPE_OCCLUSION;
         case GPUQueryType::TIMESTAMP:
             return VK_QUERY_TYPE_TIMESTAMP;
+        default: // fallback for invalid arguments
+            return VK_QUERY_TYPE_OCCLUSION;
     }
+    throw std::invalid_argument("invalid argument for GPUQueryType");
 }
 
 VkImageAspectFlags vkenum(GPUTextureAspect aspect)
@@ -134,6 +148,7 @@ VkImageAspectFlags vkenum(GPUTextureAspect aspect)
         case GPUTextureAspect::STENCIL:
             return VK_IMAGE_ASPECT_STENCIL_BIT;
     }
+    throw std::invalid_argument("invalid argument for GPUTextureAspect");
 }
 
 VkImageType vkenum(GPUTextureDimension dim)
@@ -146,6 +161,7 @@ VkImageType vkenum(GPUTextureDimension dim)
         case GPUTextureDimension::x3D:
             return VK_IMAGE_TYPE_3D;
     }
+    throw std::invalid_argument("invalid argument for GPUTextureDimension");
 }
 
 VkImageViewType vkenum(GPUTextureViewDimension dim)
@@ -164,6 +180,7 @@ VkImageViewType vkenum(GPUTextureViewDimension dim)
         case GPUTextureViewDimension::x3D:
             return VK_IMAGE_VIEW_TYPE_3D;
     }
+    throw std::invalid_argument("invalid argument for GPUTextureViewDimension");
 }
 
 VkSamplerAddressMode vkenum(GPUAddressMode mode)
@@ -176,6 +193,7 @@ VkSamplerAddressMode vkenum(GPUAddressMode mode)
         case GPUAddressMode::MIRROR_REPEAT:
             return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
     }
+    throw std::invalid_argument("invalid argument for GPUAddressMode");
 }
 
 VkFilter vkenum(GPUFilterMode filter)
@@ -186,6 +204,7 @@ VkFilter vkenum(GPUFilterMode filter)
         case GPUFilterMode::LINEAR:
             return VK_FILTER_LINEAR;
     }
+    throw std::invalid_argument("invalid argument for GPUFilterMode");
 }
 
 VkSamplerMipmapMode vkenum(GPUMipmapFilterMode filter)
@@ -196,6 +215,7 @@ VkSamplerMipmapMode vkenum(GPUMipmapFilterMode filter)
         case GPUMipmapFilterMode::LINEAR:
             return VK_SAMPLER_MIPMAP_MODE_LINEAR;
     }
+    throw std::invalid_argument("invalid argument for GPUMipmapFilterMode");
 }
 
 VkCompareOp vkenum(GPUCompareFunction op)
@@ -218,6 +238,7 @@ VkCompareOp vkenum(GPUCompareFunction op)
         case GPUCompareFunction::NOT_EQUAL:
             return VK_COMPARE_OP_NOT_EQUAL;
     }
+    throw std::invalid_argument("invalid argument for GPUCompareFunction");
 }
 
 VkStencilOp vkenum(GPUStencilOperation op)
@@ -240,6 +261,7 @@ VkStencilOp vkenum(GPUStencilOperation op)
         case GPUStencilOperation::DECREMENT_WRAP:
             return VK_STENCIL_OP_DECREMENT_AND_WRAP;
     }
+    throw std::invalid_argument("invalid argument for GPUStencilOperation");
 }
 
 VkFrontFace vkenum(GPUFrontFace winding)
@@ -251,6 +273,7 @@ VkFrontFace vkenum(GPUFrontFace winding)
         case GPUFrontFace::CCW:
             return VK_FRONT_FACE_CLOCKWISE;
     }
+    throw std::invalid_argument("invalid argument for GPUFrontFace");
 }
 
 VkCullModeFlagBits vkenum(GPUCullMode culling)
@@ -263,6 +286,7 @@ VkCullModeFlagBits vkenum(GPUCullMode culling)
         case GPUCullMode::FRONT:
             return VK_CULL_MODE_FRONT_BIT;
     }
+    throw std::invalid_argument("invalid argument for GPUCullMode");
 }
 
 VkPrimitiveTopology vkenum(GPUPrimitiveTopology topology)
@@ -279,6 +303,7 @@ VkPrimitiveTopology vkenum(GPUPrimitiveTopology topology)
         case GPUPrimitiveTopology::TRIANGLE_STRIP:
             return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
     }
+    throw std::invalid_argument("invalid argument for GPUPrimitiveTopology");
 }
 
 VkVertexInputRate vkenum(GPUVertexStepMode step)
@@ -289,6 +314,7 @@ VkVertexInputRate vkenum(GPUVertexStepMode step)
         case GPUVertexStepMode::INSTANCE:
             return VK_VERTEX_INPUT_RATE_INSTANCE;
     }
+    throw std::invalid_argument("invalid argument for GPUVertexStepMode");
 }
 
 VkIndexType vkenum(GPUIndexFormat format)
@@ -299,6 +325,7 @@ VkIndexType vkenum(GPUIndexFormat format)
         case GPUIndexFormat::UINT32:
             return VK_INDEX_TYPE_UINT32;
     }
+    throw std::invalid_argument("invalid argument for GPUIndexFormat");
 }
 
 VkFormat vkenum(GPUVertexFormat format)
@@ -387,6 +414,7 @@ VkFormat vkenum(GPUVertexFormat format)
         case GPUVertexFormat::UNORM8x4_BGRA:
             return VK_FORMAT_B8G8R8A8_UNORM;
     }
+    throw std::invalid_argument("invalid argument for GPUVertexFormat");
 }
 
 VkFormat vkenum(GPUTextureFormat format)
@@ -547,6 +575,7 @@ VkFormat vkenum(GPUTextureFormat format)
             assert(!!!"ASTC formats are temporarily NOT supported!");
             return VK_FORMAT_UNDEFINED;
     }
+    throw std::invalid_argument("invalid argument for GPUTextureFormat");
 }
 
 #undef GENREIC_READ
@@ -609,6 +638,7 @@ VkImageLayout vkenum(GPUBarrierLayout layout)
             assert(!!!"Unsuported barrier layout in Vulkan!");
             return VK_IMAGE_LAYOUT_GENERAL;
     }
+    throw std::invalid_argument("invalid argument for GPUBarrierLayout");
 }
 
 VkSampleCountFlagBits vkenum(GPUIntegerCoordinate samples)
@@ -626,6 +656,7 @@ VkSampleCountFlagBits vkenum(GPUIntegerCoordinate samples)
             assert(!!!"Non-supported MSAA sample count!");
             return VK_SAMPLE_COUNT_1_BIT;
     }
+    throw std::invalid_argument("invalid argument for GPU sample count");
 }
 
 VkDescriptorType vkenum(GPUBindingResourceType type)
@@ -643,6 +674,7 @@ VkDescriptorType vkenum(GPUBindingResourceType type)
         case GPUBindingResourceType::BVH:
             return VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
     }
+    throw std::invalid_argument("invalid argument for GPUBindingResourceType");
 }
 
 VkColorComponentFlags vkenum(GPUColorWriteFlags color)

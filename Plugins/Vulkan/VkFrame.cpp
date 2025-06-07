@@ -10,13 +10,13 @@ void VulkanFrame::init()
     auto rhi = get_rhi();
 
     if (rhi->queues.compute.has_value())
-        compute_command_pool = create_command_pool(rhi->queues.compute.value());
+        compute_command_pool.init(rhi->queues.compute.value());
 
     if (rhi->queues.graphics.has_value())
-        graphics_command_pool = create_command_pool(rhi->queues.graphics.value());
+        graphics_command_pool.init(rhi->queues.graphics.value());
 
     if (rhi->queues.transfer.has_value())
-        transfer_command_pool = create_command_pool(rhi->queues.transfer.value());
+        transfer_command_pool.init(rhi->queues.transfer.value());
 }
 
 void VulkanFrame::wait()
@@ -27,18 +27,10 @@ void VulkanFrame::wait()
 void VulkanFrame::reset()
 {
     inflight_fence.reset();
-
     descriptor_pool.reset();
-
-    if (compute_command_pool != VK_NULL_HANDLE)
-        reset_command_pool(compute_command_pool);
-
-    if (graphics_command_pool != VK_NULL_HANDLE)
-        reset_command_pool(graphics_command_pool);
-
-    if (transfer_command_pool != VK_NULL_HANDLE)
-        reset_command_pool(transfer_command_pool);
-
+    compute_command_pool.reset();
+    graphics_command_pool.reset();
+    transfer_command_pool.reset();
     allocated_command_buffers.clear();
 }
 
@@ -51,15 +43,15 @@ GPUCommandEncoderHandle VulkanFrame::allocate(GPUQueueType type, bool primary)
     switch (type) {
         case GPUQueueType::DEFAULT:
             command_buffer.command_queue  = rhi->graphics_queue;
-            command_buffer.command_buffer = allocate_command_buffer(graphics_command_pool, primary);
+            command_buffer.command_buffer = graphics_command_pool.allocate(primary);
             break;
         case GPUQueueType::COMPUTE:
             command_buffer.command_queue  = rhi->compute_queue;
-            command_buffer.command_buffer = allocate_command_buffer(compute_command_pool, primary);
+            command_buffer.command_buffer = compute_command_pool.allocate(primary);
             break;
         case GPUQueueType::TRANSFER:
             command_buffer.command_queue  = rhi->transfer_queue;
-            command_buffer.command_buffer = allocate_command_buffer(transfer_command_pool, primary);
+            command_buffer.command_buffer = transfer_command_pool.allocate(primary);
             break;
     }
 
@@ -76,19 +68,7 @@ void VulkanFrame::destroy()
     api::delete_fence(render_complete_semaphore);
 
     descriptor_pool.destroy();
-
-    if (compute_command_pool != VK_NULL_HANDLE) {
-        reset_command_pool(compute_command_pool);
-        delete_command_pool(compute_command_pool);
-    }
-
-    if (graphics_command_pool != VK_NULL_HANDLE) {
-        reset_command_pool(graphics_command_pool);
-        delete_command_pool(graphics_command_pool);
-    }
-
-    if (transfer_command_pool != VK_NULL_HANDLE) {
-        reset_command_pool(transfer_command_pool);
-        delete_command_pool(transfer_command_pool);
-    }
+    compute_command_pool.destroy();
+    graphics_command_pool.destroy();
+    transfer_command_pool.destroy();
 }
