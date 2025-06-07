@@ -11,7 +11,7 @@ namespace lyra
     {
         std::vector<T> data = {};
         std::vector<I> free = {};
-        size_t         rear = 0;
+        I              rear = 0;
 
         auto add(const T& value) -> I
         {
@@ -51,7 +51,7 @@ namespace lyra
         {
             size_t size = data.size();
             data.resize(size * 2 + 1);
-            rear = size;
+            rear = static_cast<I>(size);
         }
     };
 

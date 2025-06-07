@@ -142,7 +142,7 @@ bool CompileResultInternal::get_shader_blob(CString entry, ShaderBlob& blob)
         SLANG_RETURN_ON_FAIL(result);
     }
 
-    blob.size = spirvCode->getBufferSize();
+    blob.size = static_cast<uint32_t>(spirvCode->getBufferSize());
     blob.data = new uint8_t[blob.size];
     std::memcpy((uint8_t*)blob.data, (uint8_t*)spirvCode->getBufferPointer(), blob.size);
     return true;

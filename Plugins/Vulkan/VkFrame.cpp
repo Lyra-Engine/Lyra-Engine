@@ -28,6 +28,8 @@ void VulkanFrame::reset()
 {
     inflight_fence.reset();
 
+    descriptor_pool.reset();
+
     if (compute_command_pool != VK_NULL_HANDLE)
         reset_command_pool(compute_command_pool);
 
@@ -72,6 +74,8 @@ void VulkanFrame::destroy()
     inflight_fence.destroy();
     api::delete_fence(image_available_semaphore);
     api::delete_fence(render_complete_semaphore);
+
+    descriptor_pool.destroy();
 
     if (compute_command_pool != VK_NULL_HANDLE) {
         reset_command_pool(compute_command_pool);

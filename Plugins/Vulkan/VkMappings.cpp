@@ -244,11 +244,12 @@ VkStencilOp vkenum(GPUStencilOperation op)
 
 VkFrontFace vkenum(GPUFrontFace winding)
 {
+    // NOTE: We flip the winding here because we flipped the viewport.
     switch (winding) {
         case GPUFrontFace::CW:
-            return VK_FRONT_FACE_CLOCKWISE;
-        case GPUFrontFace::CCW:
             return VK_FRONT_FACE_COUNTER_CLOCKWISE;
+        case GPUFrontFace::CCW:
+            return VK_FRONT_FACE_CLOCKWISE;
     }
 }
 
@@ -631,7 +632,7 @@ VkDescriptorType vkenum(GPUBindingResourceType type)
     switch (type) {
         case GPUBindingResourceType::BUFFER:
         case GPUBindingResourceType::BUFFER_ARRAY:
-            return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER; // TODO: decide UNIFORM_BUFFER or STORAGE_BUFFER
         case GPUBindingResourceType::SAMPLER:
         case GPUBindingResourceType::SAMPLER_ARRAY:
             return VK_DESCRIPTOR_TYPE_SAMPLER;

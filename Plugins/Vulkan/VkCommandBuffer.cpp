@@ -82,15 +82,7 @@ void cmd::wait_fence(GPUCommandEncoderHandle cmdbuffer, GPUFenceHandle fence, GP
     auto  rhi = get_rhi();
     auto& sem = fetch_resource(rhi->fences, fence);
     auto& cmd = rhi->current_frame().command(cmdbuffer);
-
-    auto submit        = VkSemaphoreSubmitInfo{};
-    submit.sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR;
-    submit.pNext       = nullptr;
-    submit.semaphore   = sem.semaphore;
-    submit.value       = sem.type == VK_SEMAPHORE_TYPE_BINARY ? 0 : sem.target;
-    submit.stageMask   = vkenum(sync);
-    submit.deviceIndex = 0;
-    cmd.wait_semaphores.push_back(submit);
+    cmd.wait(sem, sync);
 }
 
 void cmd::signal_fence(GPUCommandEncoderHandle cmdbuffer, GPUFenceHandle fence, GPUBarrierSyncFlags sync)
@@ -98,15 +90,7 @@ void cmd::signal_fence(GPUCommandEncoderHandle cmdbuffer, GPUFenceHandle fence, 
     auto  rhi = get_rhi();
     auto& sem = fetch_resource(rhi->fences, fence);
     auto& cmd = rhi->current_frame().command(cmdbuffer);
-
-    auto submit        = VkSemaphoreSubmitInfo{};
-    submit.sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR;
-    submit.pNext       = nullptr;
-    submit.semaphore   = sem.semaphore;
-    submit.value       = sem.type == VK_SEMAPHORE_TYPE_BINARY ? 0 : sem.target;
-    submit.stageMask   = vkenum(sync);
-    submit.deviceIndex = 0;
-    cmd.signal_semaphores.push_back(submit);
+    cmd.signal(sem, sync);
 }
 
 void cmd::begin_render_pass(GPUCommandEncoderHandle cmdbuffer, const GPURenderPassDescriptor& descriptor)
@@ -141,10 +125,12 @@ void cmd::begin_render_pass(GPUCommandEncoderHandle cmdbuffer, const GPURenderPa
     depth_attachment.imageLayout                   = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
     depth_attachment.loadOp                        = vkenum(descriptor.depth_stencil_attachment.depth_load_op);
     depth_attachment.storeOp                       = vkenum(descriptor.depth_stencil_attachment.depth_store_op);
-    depth_attachment.imageView                     = fetch_resource(rhi->views, descriptor.depth_stencil_attachment.view).view;
     depth_attachment.resolveImageView              = VK_NULL_HANDLE;
     depth_attachment.resolveMode                   = VK_RESOLVE_MODE_NONE;
     depth_attachment.clearValue.depthStencil.depth = descriptor.depth_stencil_attachment.depth_clear_value;
+    depth_attachment.imageView                     = descriptor.depth_stencil_attachment.view.valid()
+                                                         ? fetch_resource(rhi->views, descriptor.depth_stencil_attachment.view).view
+                                                         : VK_NULL_HANDLE;
 
     VkRenderingAttachmentInfo stencil_attachment{};
     stencil_attachment.sType                           = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
@@ -152,10 +138,12 @@ void cmd::begin_render_pass(GPUCommandEncoderHandle cmdbuffer, const GPURenderPa
     stencil_attachment.imageLayout                     = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
     stencil_attachment.loadOp                          = vkenum(descriptor.depth_stencil_attachment.stencil_load_op);
     stencil_attachment.storeOp                         = vkenum(descriptor.depth_stencil_attachment.stencil_store_op);
-    stencil_attachment.imageView                       = fetch_resource(rhi->views, descriptor.depth_stencil_attachment.view).view;
     stencil_attachment.resolveImageView                = VK_NULL_HANDLE;
     stencil_attachment.resolveMode                     = VK_RESOLVE_MODE_NONE;
     stencil_attachment.clearValue.depthStencil.stencil = descriptor.depth_stencil_attachment.stencil_clear_value;
+    stencil_attachment.imageView                       = descriptor.depth_stencil_attachment.view.valid()
+                                                             ? fetch_resource(rhi->views, descriptor.depth_stencil_attachment.view).view
+                                                             : VK_NULL_HANDLE;
 
     auto& render_view         = fetch_resource(rhi->views, descriptor.color_attachments.at(0).view);
     auto  render_area         = VkRect2D{};
@@ -171,8 +159,8 @@ void cmd::begin_render_pass(GPUCommandEncoderHandle cmdbuffer, const GPURenderPa
     rendering.layerCount           = 1;
     rendering.colorAttachmentCount = static_cast<uint32_t>(descriptor.color_attachments.size());
     rendering.pColorAttachments    = color_attachments.data();
-    rendering.pDepthAttachment     = &depth_attachment;
-    rendering.pStencilAttachment   = &stencil_attachment;
+    rendering.pDepthAttachment     = nullptr; // &depth_attachment;
+    rendering.pStencilAttachment   = nullptr; // &stencil_attachment;
 
     rhi->vtable.vkCmdBeginRenderingKHR(cmd.command_buffer, &rendering);
 }

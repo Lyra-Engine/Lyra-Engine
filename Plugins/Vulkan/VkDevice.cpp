@@ -326,7 +326,7 @@ bool api::create_device(const GPUDeviceDescriptor& desc)
     VkDeviceCreateInfo create_info      = {};
     create_info.sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     create_info.pQueueCreateInfos       = queue_create_infos.data();
-    create_info.queueCreateInfoCount    = queue_create_infos.size();
+    create_info.queueCreateInfoCount    = static_cast<uint32_t>(queue_create_infos.size());
     create_info.pEnabledFeatures        = nullptr;
     create_info.enabledExtensionCount   = static_cast<uint>(device_extensions.size());
     create_info.ppEnabledExtensionNames = device_extensions.data();
@@ -348,6 +348,7 @@ bool api::create_device(const GPUDeviceDescriptor& desc)
 
     // load necessary functions
     VK_LOAD(rhi, vkQueueSubmit2KHR);
+    VK_LOAD(rhi, vkCmdPipelineBarrier2KHR);
 
     // load swapchain functions
     // https://registry.khronos.org/vulkan/specs/latest/man/html/VK_KHR_swapchain.html
@@ -429,6 +430,10 @@ void api::delete_device()
     // clean up remaining buffers
     for (auto& buffer : rhi->buffers.data)
         buffer.destroy();
+
+    // clean up remaining texture views
+    for (auto& view : rhi->views.data)
+        view.destroy();
 
     // clean up remaining textures
     for (auto& texture : rhi->textures.data)

@@ -193,6 +193,10 @@ void api::delete_surface()
 {
     auto rhi = get_rhi();
 
+    for (auto& view : rhi->swapchain_views)
+        fetch_resource(rhi->views, view).destroy();
+    rhi->swapchain_views.clear();
+
     if (rhi->swapchain) {
         rhi->vtable.vkDestroySwapchainKHR(rhi->device, rhi->swapchain, nullptr);
         rhi->swapchain = VK_NULL_HANDLE;

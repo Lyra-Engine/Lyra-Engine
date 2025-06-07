@@ -38,7 +38,7 @@ VulkanPipeline::VulkanPipeline(const GPURenderPipelineDescriptor& desc)
         auto vertex_layout      = VkVertexInputBindingDescription{};
         vertex_layout.binding   = binding++;
         vertex_layout.inputRate = vkenum(layout.step_mode);
-        vertex_layout.stride    = layout.array_stride;
+        vertex_layout.stride    = static_cast<uint32_t>(layout.array_stride);
         vertex_layouts.push_back(vertex_layout);
 
         for (auto& attrib : layout.attributes) {
@@ -46,7 +46,7 @@ VulkanPipeline::VulkanPipeline(const GPURenderPipelineDescriptor& desc)
             attrib_desc.binding  = vertex_layout.binding;
             attrib_desc.format   = vkenum(attrib.format);
             attrib_desc.location = attrib.shader_location;
-            attrib_desc.offset   = attrib.offset;
+            attrib_desc.offset   = static_cast<uint32_t>(attrib.offset);
             vertex_attribs.push_back(attrib_desc);
         }
     }

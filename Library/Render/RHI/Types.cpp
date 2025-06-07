@@ -168,23 +168,26 @@ GPUPipelineLayout GPUDevice::create_pipeline_layout(const GPUPipelineLayoutDescr
 
 GPURenderPipeline GPUDevice::create_render_pipeline(const GPURenderPipelineDescriptor& desc)
 {
-    GPURenderPipeline layout;
-    RHI::api()->create_render_pipeline(layout.handle, desc);
-    return layout;
+    GPURenderPipeline pipeline;
+    pipeline.layout = desc.layout;
+    RHI::api()->create_render_pipeline(pipeline.handle, desc);
+    return pipeline;
 }
 
 GPUComputePipeline GPUDevice::create_compute_pipeline(const GPUComputePipelineDescriptor& desc)
 {
-    GPUComputePipeline layout;
-    RHI::api()->create_compute_pipeline(layout.handle, desc);
-    return layout;
+    GPUComputePipeline pipeline;
+    pipeline.layout = desc.layout;
+    RHI::api()->create_compute_pipeline(pipeline.handle, desc);
+    return pipeline;
 }
 
 GPURayTracingPipeline GPUDevice::create_raytracing_pipeline(const GPURayTracingPipelineDescriptor& desc)
 {
-    GPURayTracingPipeline layout;
-    RHI::api()->create_raytracing_pipeline(layout.handle, desc);
-    return layout;
+    GPURayTracingPipeline pipeline;
+    pipeline.layout = desc.layout;
+    RHI::api()->create_raytracing_pipeline(pipeline.handle, desc);
+    return pipeline;
 }
 
 GPUCommandBuffer GPUDevice::create_command_buffer(const GPUCommandBufferDescriptor& desc)
@@ -311,6 +314,13 @@ void GPUShaderModule::destroy()
     RHI::api()->delete_shader_module(handle);
 }
 #pragma endregion GPUShaderModule
+
+#pragma region GPUBindGroupLayout
+void GPUBindGroupLayout::destroy()
+{
+    RHI::api()->delete_bind_group_layout(handle);
+}
+#pragma endregion GPUBindGroupLayout
 
 #pragma region GPUPipelineLayout
 void GPUPipelineLayout::destroy()
@@ -458,12 +468,12 @@ void GPUCommandEncoder::resolve_query_set(GPUQuerySet query_set, GPUSize32 first
 
 void GPUCommandEncoder::set_viewport(float x, float y, float w, float h, float min_depth, float max_depth)
 {
-    RHI::api()->cmd_set_viewport(handle, x, y, h, w, min_depth, max_depth);
+    RHI::api()->cmd_set_viewport(handle, x, y, w, h, min_depth, max_depth);
 }
 
 void GPUCommandEncoder::set_scissor_rect(GPUIntegerCoordinate x, GPUIntegerCoordinate y, GPUIntegerCoordinate w, GPUIntegerCoordinate h)
 {
-    RHI::api()->cmd_set_scissor_rect(handle, x, y, h, w);
+    RHI::api()->cmd_set_scissor_rect(handle, x, y, w, h);
 }
 
 void GPUCommandEncoder::set_blend_constant(GPUColor color)

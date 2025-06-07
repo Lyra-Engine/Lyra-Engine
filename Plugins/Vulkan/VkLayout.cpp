@@ -14,7 +14,7 @@ VulkanBindGroupLayout::VulkanBindGroupLayout(const GPUBindGroupLayoutDescriptor&
 
     auto bindingflags_info          = VkDescriptorSetLayoutBindingFlagsCreateInfo{};
     bindingflags_info.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
-    bindingflags_info.bindingCount  = 1;
+    bindingflags_info.bindingCount  = 0;
     bindingflags_info.pBindingFlags = nullptr;
 
     // extract binding information for the descriptor set
@@ -40,7 +40,7 @@ VulkanBindGroupLayout::VulkanBindGroupLayout(const GPUBindGroupLayoutDescriptor&
         auto create_info         = VkDescriptorSetLayoutCreateInfo{};
         create_info.sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         create_info.pBindings    = bindings.data();
-        create_info.bindingCount = bindings.size();
+        create_info.bindingCount = static_cast<uint32_t>(bindings.size());
         create_info.pNext        = &bindingflags_info;
 
         // create descritpor set layout

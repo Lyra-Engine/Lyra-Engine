@@ -65,7 +65,7 @@ uint VulkanDescriptorPool::find_pool_index(uint index)
         VkDescriptorPool pool = create_descriptor_pool();
         pools.push_back(pool);
         counts.push_back(0);
-        return pools.size() - 1;
+        return static_cast<uint>(pools.size() - 1);
     }
 
     if (counts.at(index) < MAX_SETS)
@@ -159,7 +159,7 @@ GPUBindGroupHandle create_bind_group(const GPUBindGroupDescriptor& desc)
     }
 
     // update descriptor sets
-    rhi->vtable.vkUpdateDescriptorSets(rhi->device, writes.size(), writes.data(), 0, nullptr);
+    rhi->vtable.vkUpdateDescriptorSets(rhi->device, static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
     return handle;
 }
 

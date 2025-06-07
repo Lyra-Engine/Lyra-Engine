@@ -76,7 +76,7 @@ bool api::create_instance(const RHIDescriptor& desc)
     app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
     app_info.pEngineName        = "Lyra Engine";
     app_info.engineVersion      = VK_MAKE_VERSION(1, 0, 0);
-    app_info.apiVersion         = VK_API_VERSION_1_2;
+    app_info.apiVersion         = VK_API_VERSION_1_3;
 
     // prepare instance info
     VkInstanceCreateInfo create_info    = {};

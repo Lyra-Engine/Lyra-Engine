@@ -1,3 +1,8 @@
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 #include <Common/Function.h>
 #include <Render/Render.hpp>
 #include <Window/Window.hpp>
@@ -19,11 +24,13 @@ struct VertexOutput
     float4 color    : COLOR0;
 };
 
+ConstantBuffer<float4x4> mvp;
+
 [shader("vertex")]
 VertexOutput vsmain(VertexInput input)
 {
     VertexOutput output;
-    output.position = float4(input.position, 1.0);
+    output.position = mul(mvp, float4(input.position, 1.0));
     output.color = float4(input.color, 1.0);
     return output;
 }
@@ -48,6 +55,7 @@ GPUPipelineLayout  playout;
 GPURenderPipeline  pipeline;
 GPUBuffer          vbuffer;
 GPUBuffer          ibuffer;
+GPUBuffer          ubuffer;
 
 void setup_pipeline()
 {
@@ -84,9 +92,22 @@ void setup_pipeline()
         return device.create_shader_module(desc);
     });
 
+    blayout = execute([&]() {
+        auto desc                       = GPUBindGroupLayoutDescriptor{};
+        auto entry                      = GPUBindGroupLayoutEntry{};
+        entry.type                      = GPUBindingResourceType::BUFFER;
+        entry.binding                   = 0;
+        entry.count                     = 1;
+        entry.visibility                = GPUShaderStage::VERTEX;
+        entry.buffer.type               = GPUBufferBindingType::UNIFORM;
+        entry.buffer.has_dynamic_offset = false;
+        desc.entries.push_back(entry);
+        return device.create_bind_group_layout(desc);
+    });
+
     playout = execute([&]() {
         auto desc               = GPUPipelineLayoutDescriptor{};
-        desc.bind_group_layouts = {};
+        desc.bind_group_layouts = {blayout};
         return device.create_pipeline_layout(desc);
     });
 
@@ -98,7 +119,7 @@ void setup_pipeline()
 
         auto color            = GPUVertexAttribute{};
         color.format          = GPUVertexFormat::FLOAT32x3;
-        color.offset          = 0;
+        color.offset          = sizeof(float) * 3;
         color.shader_location = 1;
 
         auto layout         = GPUVertexBufferLayout{};
@@ -107,7 +128,7 @@ void setup_pipeline()
         layout.step_mode    = GPUVertexStepMode::VERTEX;
 
         auto target         = GPUColorTargetState{};
-        target.format       = GPUTextureFormat::RGBA8UNORM;
+        target.format       = GPUTextureFormat::BGRA8UNORM_SRGB;
         target.blend_enable = false;
 
         auto desc                                  = GPURenderPipelineDescriptor{};
@@ -146,7 +167,16 @@ void setup_buffers()
         auto desc               = GPUBufferDescriptor{};
         desc.label              = "index_buffer";
         desc.size               = sizeof(uint32_t) * 3;
-        desc.usage              = GPUBufferUsage::INDEX | GPUBufferUsage::MAP_READ;
+        desc.usage              = GPUBufferUsage::INDEX | GPUBufferUsage::MAP_WRITE;
+        desc.mapped_at_creation = true;
+        return device.create_buffer(desc);
+    });
+
+    ubuffer = execute([&]() {
+        auto desc               = GPUBufferDescriptor{};
+        desc.label              = "uniform_buffer";
+        desc.size               = sizeof(glm::mat4x4);
+        desc.usage              = GPUBufferUsage::UNIFORM | GPUBufferUsage::MAP_WRITE;
         desc.mapped_at_creation = true;
         return device.create_buffer(desc);
     });
@@ -164,19 +194,29 @@ void setup_buffers()
     vertices.at(2).color = {0.0f, 0.0f, 1.0f};
 
     // indices
-    auto indices  = vbuffer.get_mapped_range<uint>();
+    auto indices  = ibuffer.get_mapped_range<uint>();
     indices.at(0) = 0;
     indices.at(1) = 1;
     indices.at(2) = 2;
+
+    // uniform
+    auto uniform    = ubuffer.get_mapped_range<glm::mat4>();
+    auto projection = glm::perspective(1.05f, 1920.0f / 1080.0f, 0.1f, 100.0f);
+    auto modelview  = glm::lookAt(glm::vec3(0.0f, 0.0f, -3.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    uniform.at(0)   = projection * modelview;
 }
 
 void cleanup()
 {
+    auto& device = RHI::get_current_device();
+    device.wait();
+
     // NOTE: This is optional, because all resources will be automatically collected by device at destruction.
     ibuffer.destroy();
     vbuffer.destroy();
     vshader.destroy();
     fshader.destroy();
+    blayout.destroy();
     playout.destroy();
     pipeline.destroy();
 }
@@ -201,6 +241,24 @@ void render()
         return device.create_command_buffer(desc);
     });
 
+    // create bind group
+    auto bind_group = execute([&]() {
+        auto entry          = GPUBindGroupEntry{};
+        entry.type          = GPUBindingResourceType::BUFFER;
+        entry.binding       = 0;
+        entry.count         = 1;
+        entry.index         = 0;
+        entry.buffer.buffer = ubuffer;
+        entry.buffer.offset = 0;
+        entry.buffer.size   = 0;
+
+        auto desc   = GPUBindGroupDescriptor{};
+        desc.count  = 1;
+        desc.layout = blayout;
+        desc.entries.push_back(entry);
+        return device.create_bind_group(desc);
+    });
+
     auto color_attachment        = GPURenderPassColorAttachment{};
     color_attachment.clear_value = GPUColor{0.0f, 0.0f, 0.0f, 0.0f};
     color_attachment.load_op     = GPULoadOp::CLEAR;
@@ -217,6 +275,9 @@ void render()
     command.set_viewport(0, 0, 1920, 1080);
     command.set_scissor_rect(0, 0, 1920, 1080);
     command.set_pipeline(pipeline);
+    command.set_vertex_buffer(0, vbuffer);
+    command.set_index_buffer(ibuffer, GPUIndexFormat::UINT32);
+    command.set_bind_group(0, bind_group);
     command.draw_indexed(3, 1, 0, 0, 0);
     command.end_render_pass();
     command.resource_barrier(transition_color_attachment_to_present(texture.texture));
