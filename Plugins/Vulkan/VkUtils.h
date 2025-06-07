@@ -1,8 +1,10 @@
 #ifndef LYRA_PLUGIN_VULKAN_VKINCLUDE_H
 #define LYRA_PLUGIN_VULKAN_VKINCLUDE_H
 
-#include "Render/RHI/Descs.h"
-#include <istream>
+#include <sstream>
+
+#include <Render/RHI/Descs.h>
+
 #ifdef _WIN32
 #define VK_USE_PLATFORM_WIN32_KHR
 #endif
@@ -23,6 +25,7 @@
 #include <Common/Msgbox.h>
 #include <Common/Slotmap.h>
 #include <Common/Container.h>
+#include <Common/Compatibility.h>
 #include <Render/RHI/API.h>
 
 using namespace lyra;

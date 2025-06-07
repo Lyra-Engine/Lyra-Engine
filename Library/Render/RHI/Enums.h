@@ -2,6 +2,7 @@
 #define LYRA_LIBRARY_RENDER_RHI_ENUMS_H
 
 #include <Common/Stdint.h>
+#include <Common/Compatibility.h>
 
 namespace lyra::rhi
 {

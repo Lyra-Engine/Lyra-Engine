@@ -391,16 +391,21 @@ namespace lyra::rhi
 
     struct RHI
     {
-        static GPUDevice  DEVICE;
-        static GPUSurface SURFACE;
-
         RHIFlags     flags = 0;
         RHIBackend   backend;
         WindowHandle window = {};
 
-        static GPUDevice& get_current_device() { return DEVICE; }
+        static GPUDevice& get_current_device()
+        {
+            static GPUDevice DEVICE = {};
+            return DEVICE;
+        }
 
-        static GPUSurface& get_current_surface() { return SURFACE; }
+        static GPUSurface& get_current_surface()
+        {
+            static GPUSurface SURFACE = {};
+            return SURFACE;
+        }
 
         static auto init(const RHIDescriptor& descriptor) -> OwnedResource<RHI>;
 

@@ -1,5 +1,5 @@
+#include <algorithm>
 #include <Window/Window.hpp>
-
 #include "VkUtils.h"
 
 #ifdef USE_PLATFORM_WINDOWS

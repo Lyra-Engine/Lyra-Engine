@@ -2,16 +2,15 @@
 #include <Render/RHI/API.h>
 #include <Render/RHI/Types.h>
 
+#undef min
+#undef max
+
 using namespace lyra;
 using namespace lyra::rhi;
 
 using RenderPlugin = Plugin<RenderAPI>;
 
 static Own<RenderPlugin> RENDER_PLUGIN;
-
-// global objects
-GPUDevice  RHI::DEVICE  = {};
-GPUSurface RHI::SURFACE = {};
 
 #pragma region RHI
 OwnedResource<RHI> RHI::init(const RHIDescriptor& descriptor)
@@ -62,22 +61,20 @@ GPUAdapter RHI::request_adapter(const GPUAdapterDescriptor& descriptor)
 
 GPUSurface RHI::request_surface(const GPUSurfaceDescriptor& descriptor)
 {
-    RHI::SURFACE = {};
-    RHI::api()->create_surface(SURFACE, descriptor);
-    return RHI::SURFACE;
+    auto& surface = RHI::get_current_surface();
+    RHI::api()->create_surface(surface, descriptor);
+    return surface;
 }
 #pragma endregion RHI
 
 #pragma region GPUAdapter
 GPUDevice GPUAdapter::request_device(const GPUDeviceDescriptor& descriptor)
 {
-    RHI::DEVICE.adapter_info = info;
-    RHI::DEVICE.features     = features;
+    auto& device        = RHI::get_current_device();
+    device.adapter_info = info;
+    device.features     = features;
     RHI::api()->create_device(descriptor);
-
-    // TODO: create queues
-
-    return RHI::DEVICE;
+    return device;
 }
 #pragma endregion GPUAdapter
 

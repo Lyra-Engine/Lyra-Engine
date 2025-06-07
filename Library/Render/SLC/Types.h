@@ -36,11 +36,11 @@ namespace lyra::rhi
     {
         CompilerHandle handle;
 
-        static auto init(const CompilerDescriptor& descriptor) -> Compiler;
+        static auto init(const CompilerDescriptor& descriptor) -> OwnedResource<Compiler>;
 
         static auto api() -> ShaderAPI*;
 
-        virtual ~Compiler();
+        void destroy();
 
         auto compile(const Path& path) -> Own<CompileResult>;
 

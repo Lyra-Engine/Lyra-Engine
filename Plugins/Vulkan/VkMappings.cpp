@@ -549,6 +549,7 @@ VkFormat vkenum(GPUTextureFormat format)
     }
 }
 
+#undef GENREIC_READ
 VkImageLayout vkenum(GPUBarrierLayout layout)
 {
     switch (layout) {

@@ -107,7 +107,7 @@ namespace lyra
         void load_dll();
         void unload_dll();
         void load_api();
-        auto get_error() -> CString;
+        auto get_error() -> String;
 
     private:
         APIType     api;
@@ -142,7 +142,7 @@ void lyra::Plugin<APIType>::load_api()
 }
 
 template <typename APIType>
-auto lyra::Plugin<APIType>::get_error() -> CString
+auto lyra::Plugin<APIType>::get_error() -> String
 {
     // Get the error message ID, if any.
     DWORD errorMessageID = ::GetLastError();
@@ -158,7 +158,7 @@ auto lyra::Plugin<APIType>::get_error() -> CString
         NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
 
     // Copy the error message into a std::string.
-    CString message(messageBuffer, size);
+    String message(messageBuffer, size);
 
     // Free the Win32's string's buffer.
     LocalFree(messageBuffer);

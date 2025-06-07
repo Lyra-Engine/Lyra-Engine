@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "VkUtils.h"
 
 SwapchainSupportDetails query_swapchain_support(VkPhysicalDevice adapter, VkSurfaceKHR surface)

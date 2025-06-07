@@ -233,7 +233,7 @@ void cmd::set_index_buffer(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle bu
     if (size == 0) {
         rhi->vtable.vkCmdBindIndexBuffer(cmd.command_buffer, buf.buffer, offset, vkenum(format));
     } else {
-        rhi->vtable.vkCmdBindIndexBuffer2(cmd.command_buffer, buf.buffer, offset, size, vkenum(format));
+        rhi->vtable.vkCmdBindIndexBuffer2KHR(cmd.command_buffer, buf.buffer, offset, size, vkenum(format));
     }
 }
 

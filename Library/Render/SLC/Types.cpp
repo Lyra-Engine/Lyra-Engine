@@ -16,17 +16,17 @@ ShaderAPI* Compiler::api()
     return SHADER_PLUGIN->get_api();
 }
 
-Compiler Compiler::init(const CompilerDescriptor& descriptor)
+OwnedResource<Compiler> Compiler::init(const CompilerDescriptor& descriptor)
 {
     if (!SHADER_PLUGIN)
         SHADER_PLUGIN = std::make_unique<ShaderPlugin>("lyra-slang");
 
-    Compiler compiler;
-    Compiler::api()->create_compiler(compiler.handle, descriptor);
+    OwnedResource<Compiler> compiler(new Compiler());
+    Compiler::api()->create_compiler(compiler->handle, descriptor);
     return compiler;
 }
 
-Compiler::~Compiler()
+void Compiler::destroy()
 {
     Compiler::api()->delete_compiler(handle);
 }
@@ -39,11 +39,11 @@ Own<CompileResult> Compiler::compile(const Path& path)
     // read entire file into buffer
     std::stringstream buffer;
     buffer << file.rdbuf();
-    std::string source = buffer.str();
+    String source = buffer.str();
 
     auto descriptor   = CompileDescriptor{};
-    descriptor.path   = path.c_str();
-    descriptor.module = path.stem().c_str();
+    descriptor.path   = path.u8string().c_str();
+    descriptor.module = path.stem().u8string().c_str();
     descriptor.source = source.c_str();
     return compile(descriptor);
 }

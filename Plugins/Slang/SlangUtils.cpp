@@ -55,7 +55,7 @@ CompilerWrapper::CompilerWrapper(const CompilerDescriptor& descriptor)
     // emit option
     auto emit = slang::CompilerOptionEntry{};
     {
-        emit.name            = slang::CompilerOptionName::EmitSpirvMethod;
+        emit.name            = slang::CompilerOptionName::EmitSpirvDirectly;
         emit.value.kind      = slang::CompilerOptionValueKind::Int;
         emit.value.intValue0 = 1;
         options.push_back(emit);
@@ -105,45 +105,45 @@ bool CompileResultInternal::get_shader_blob(CString entry, ShaderBlob& blob)
     }
 
     // compose modules + entry points
-    std::array<slang::IComponentType*, 2> componentTypes = {module, entry_point};
-    Slang::ComPtr<slang::IComponentType>  composedProgram;
+    std::array<slang::IComponentType*, 2> component_types = {module, entry_point};
+    Slang::ComPtr<slang::IComponentType>  composed_program;
     {
         Slang::ComPtr<slang::IBlob> diagnostics;
         SlangResult                 result = session->createCompositeComponentType(
-            componentTypes.data(),
-            componentTypes.size(),
-            composedProgram.writeRef(),
+            component_types.data(),
+            component_types.size(),
+            composed_program.writeRef(),
             diagnostics.writeRef());
         diagnose_if_needed(diagnostics);
         SLANG_RETURN_ON_FAIL(result);
     }
 
     // link
-    Slang::ComPtr<slang::IComponentType> linkedProgram;
+    Slang::ComPtr<slang::IComponentType> linked_program;
     {
         Slang::ComPtr<slang::IBlob> diagnostics;
-        SlangResult                 result = composedProgram->link(
-            linkedProgram.writeRef(),
+        SlangResult                 result = composed_program->link(
+            linked_program.writeRef(),
             diagnostics.writeRef());
         diagnose_if_needed(diagnostics);
         SLANG_RETURN_ON_FAIL(result);
     }
 
     // kernel binary
-    Slang::ComPtr<slang::IBlob> spirvCode;
+    Slang::ComPtr<slang::IBlob> spirv_code;
     {
         Slang::ComPtr<slang::IBlob> diagnostics;
-        SlangResult                 result = linkedProgram->getEntryPointCode(
+        SlangResult                 result = linked_program->getEntryPointCode(
             0,
             0,
-            spirvCode.writeRef(),
+            spirv_code.writeRef(),
             diagnostics.writeRef());
         diagnose_if_needed(diagnostics);
         SLANG_RETURN_ON_FAIL(result);
     }
 
-    blob.size = static_cast<uint32_t>(spirvCode->getBufferSize());
+    blob.size = static_cast<uint32_t>(spirv_code->getBufferSize());
     blob.data = new uint8_t[blob.size];
-    std::memcpy((uint8_t*)blob.data, (uint8_t*)spirvCode->getBufferPointer(), blob.size);
+    std::memcpy((uint8_t*)blob.data, (uint8_t*)spirv_code->getBufferPointer(), blob.size);
     return true;
 }

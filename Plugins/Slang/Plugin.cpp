@@ -13,6 +13,8 @@ auto get_api_name() -> CString { return "Slang"; }
 bool create_compiler(CompilerHandle& compiler, const CompilerDescriptor& descriptor)
 {
     compiler.handle = new CompilerWrapper(descriptor);
+    get_logger()->info("handle: {:p}", compiler.handle);
+    get_logger()->info("session: {:p}", (void*)compiler.astype<CompilerWrapper>()->session.get());
     return true;
 }
 
@@ -28,6 +30,8 @@ bool compile(CompilerHandle compiler, const CompileDescriptor& desc, CompileResu
 {
     auto internal = std::make_unique<CompileResultInternal>();
     auto handle   = compiler.astype<CompilerWrapper>();
+    get_logger()->info("handle: {:p}", compiler.handle);
+    get_logger()->info("session: {:p}", (void*)compiler.astype<CompilerWrapper>()->session.get());
     handle->compile(desc, *internal);
     result = CompileResultHandle{internal.release()};
     return true;

@@ -21,5 +21,4 @@ add_subdirectory(Plugins/Slang)
 add_subdirectory(Plugins/Vulkan)
 
 # project samples
-add_executable(test ./Samples/test.cpp)
-target_link_libraries(test PRIVATE lyra::common)
+add_subdirectory(Samples)

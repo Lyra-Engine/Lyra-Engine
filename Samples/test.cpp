@@ -59,6 +59,8 @@ GPUBuffer          ubuffer;
 
 void setup_pipeline()
 {
+    auto& device = RHI::get_current_device();
+
     auto compiler = execute([&]() {
         auto desc   = CompilerDescriptor{};
         desc.target = CompileTarget::SPIRV;
@@ -66,13 +68,13 @@ void setup_pipeline()
         return Compiler::init(desc);
     });
 
-    auto module = compiler.compile(CompileDescriptor{
-        .module = "test",
-        .path   = "test.slang",
-        .source = SHADER,
+    auto module = execute([&]() {
+        auto desc   = CompileDescriptor{};
+        desc.module = "test";
+        desc.path   = "test.slang";
+        desc.source = SHADER;
+        return compiler->compile(desc);
     });
-
-    auto& device = RHI::get_current_device();
 
     vshader = execute([&]() {
         auto code  = module->get_shader_blob("vsmain");

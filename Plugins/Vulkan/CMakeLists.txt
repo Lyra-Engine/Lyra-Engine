@@ -30,5 +30,9 @@ target_sources(lyra-vulkan PRIVATE
 find_package(vma REQUIRED)
 find_package(volk REQUIRED)
 find_package(Vulkan REQUIRED)
-target_link_libraries(lyra-vulkan PRIVATE Vulkan::Vulkan Vulkan::Headers volk VulkanMemoryAllocator)
-target_compile_options(lyra-vulkan PRIVATE -Wno-nullability-completeness) # added for VulkanMemoryAllocator
+target_link_libraries(lyra-vulkan PRIVATE Vulkan::Headers volk VulkanMemoryAllocator)
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # added for VulkanMemoryAllocator
+    target_compile_options(lyra-vulkan PRIVATE -Wno-nullability-completeness)
+endif()

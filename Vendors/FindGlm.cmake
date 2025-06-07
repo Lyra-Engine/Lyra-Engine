@@ -4,15 +4,17 @@ include(FetchContent)
 FetchContent_Declare(
   glm
   GIT_REPOSITORY https://github.com/g-truc/glm.git
-  GIT_TAG        0.9.9.8
+  GIT_TAG        1.0.1
 )
 
 # get properties
 FetchContent_GetProperties(glm)
 
-# add glm target (if not done so)
-add_library(glm INTERFACE)
-target_include_directories(glm INTERFACE ${glm_SOURCE_DIR})
+# build glm when needed
+FetchContent_MakeAvailable(glm)
 
 # mark glm as found
 set(glm_FOUND TRUE)
+
+# put glm under folder
+set_target_properties(glm PROPERTIES FOLDER "Vendors")

@@ -10,17 +10,24 @@
       }
     },
     {
-      "name": "debug",
+      "name": "unix-debug",
       "inherits": "base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
       }
     },
     {
-      "name": "release",
+      "name": "unix-release",
       "inherits": "base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "msvc",
+      "inherits": "base",
+      "generator": "Visual Studio 17",
+      "cacheVariables": {
       }
     }
   ]
