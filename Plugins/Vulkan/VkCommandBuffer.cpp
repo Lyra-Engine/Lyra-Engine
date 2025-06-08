@@ -2,7 +2,6 @@
 
 void VulkanCommandBuffer::wait(const VulkanSemaphore& fence, GPUBarrierSyncFlags sync)
 {
-    auto rhi = get_rhi();
     wait_semaphores.push_back(VkSemaphoreSubmitInfo{});
 
     auto& submit_info       = wait_semaphores.back();
@@ -29,7 +28,7 @@ void VulkanCommandBuffer::signal(const VulkanSemaphore& fence, GPUBarrierSyncFla
 
     // attach the inflight fence if this command buffer signals render complete semaphore
     auto& frame     = rhi->current_frame();
-    auto& semaphore = fetch_resource(rhi->fences, frame.render_complete_semaphore);
+    auto& semaphore = fetch_resource(rhi->fences, rhi->render_complete_fence());
     if (fence.semaphore == semaphore.semaphore)
         this->fence = frame.inflight_fence;
 }

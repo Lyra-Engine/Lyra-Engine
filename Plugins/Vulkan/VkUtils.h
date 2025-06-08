@@ -309,6 +309,17 @@ struct VulkanCommandPool
     AllocatedCommandBuffers secondary;
 };
 
+struct VulkanSwapFrame
+{
+    GPUTextureHandle     texture;
+    GPUTextureViewHandle view;
+    GPUFenceHandle       render_complete_semaphore;
+
+    // implementation in vkSwapchain.cpp
+    void init(VkImage image, VkFormat format, VkExtent2D extent);
+    void destroy();
+};
+
 struct VulkanFrame
 {
     // used to check vulkan buffer usage,
@@ -317,11 +328,10 @@ struct VulkanFrame
     uint32_t frame_id = 0u;
 
     VulkanFence       inflight_fence;
+    GPUFenceHandle    image_available_semaphore; // must be binary semaphores
     VulkanCommandPool compute_command_pool;
     VulkanCommandPool graphics_command_pool;
     VulkanCommandPool transfer_command_pool;
-    GPUFenceHandle    image_available_semaphore; // must be binary semaphores
-    GPUFenceHandle    render_complete_semaphore; // could be timeline semaphores
 
     VulkanDescriptorPool descriptor_pool{};
 
@@ -369,9 +379,8 @@ struct VulkanRHI
     QueueFamilyIndices queues;
 
     // frame objects
-    Vector<VulkanFrame>          frames           = {};
-    Vector<GPUTextureHandle>     swapchain_images = {};
-    Vector<GPUTextureViewHandle> swapchain_views  = {};
+    Vector<VulkanFrame>     frames           = {};
+    Vector<VulkanSwapFrame> swapchain_frames = {};
 
     // frame tracker
     uint current_frame_index = 0;
@@ -390,6 +399,8 @@ struct VulkanRHI
     VulkanResourceManager<VulkanBindGroupLayout> bind_group_layouts;
 
     auto current_frame() -> VulkanFrame& { return frames.at(current_frame_index % frames.size()); }
+    auto image_available_fence() -> GPUFenceHandle { return current_frame().image_available_semaphore; }
+    auto render_complete_fence() -> GPUFenceHandle { return swapchain_frames.at(current_image_index).render_complete_semaphore; }
 };
 
 // These are the functions that implements the plugin.

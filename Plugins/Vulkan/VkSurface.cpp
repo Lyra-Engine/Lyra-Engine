@@ -129,54 +129,14 @@ bool api::create_surface(GPUSurface& surface, const GPUSurfaceDescriptor& desc)
     Vector<VkImage> swapchain_images(count);
     vk_check(rhi->vtable.vkGetSwapchainImagesKHR(rhi->device, rhi->swapchain, &count, swapchain_images.data()));
 
-    // create swapchain texture handles
-    if (rhi->swapchain_images.empty()) {
-        rhi->swapchain_images.resize(count);
-        for (uint i = 0; i < count; i++) {
-            auto& handle    = rhi->swapchain_images.at(i);
-            auto  texture   = VulkanTexture{};
-            texture.image   = swapchain_images.at(i);
-            texture.aspects = VK_IMAGE_ASPECT_COLOR_BIT;
-            handle          = rhi->textures.add(texture);
-        }
+    // create swapchain data
+    if (rhi->swapchain_frames.empty()) {
+        rhi->swapchain_frames.resize(count);
+        for (uint i = 0; i < count; i++)
+            rhi->swapchain_frames.at(i).init(swapchain_images.at(i), surface_format.format, extent);
     }
 
-    // create swapchain texture view handles
-    if (rhi->swapchain_views.empty()) {
-        rhi->swapchain_views.resize(count);
-
-        // common view descriptor
-        auto create_info                            = VkImageViewCreateInfo{};
-        create_info.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-        create_info.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
-        create_info.format                          = surface_format.format;
-        create_info.components.r                    = VK_COMPONENT_SWIZZLE_IDENTITY;
-        create_info.components.g                    = VK_COMPONENT_SWIZZLE_IDENTITY;
-        create_info.components.b                    = VK_COMPONENT_SWIZZLE_IDENTITY;
-        create_info.components.a                    = VK_COMPONENT_SWIZZLE_IDENTITY;
-        create_info.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-        create_info.subresourceRange.baseMipLevel   = 0;
-        create_info.subresourceRange.levelCount     = 1;
-        create_info.subresourceRange.baseArrayLayer = 0;
-        create_info.subresourceRange.layerCount     = 1;
-
-        for (uint i = 0; i < count; i++) {
-            auto  view    = VulkanTextureView();
-            auto  texture = rhi->swapchain_images.at(i);
-            auto& tex     = fetch_resource(rhi->textures, texture);
-
-            create_info.image = tex.image;
-            vk_check(rhi->vtable.vkCreateImageView(rhi->device, &create_info, nullptr, &view.view));
-            view.extent = extent; // manually created (will be used to keep track of render area)
-
-            uint index  = rhi->views.add(view);
-            auto handle = GPUTextureViewHandle(index);
-
-            rhi->swapchain_views.at(i) = handle;
-        }
-    }
-
-    // create frames in flight
+    // create logical frames in flight
     if (rhi->frames.empty()) {
         rhi->frames.resize(desc.frames_inflight);
         for (auto& frame : rhi->frames)
@@ -193,9 +153,9 @@ void api::delete_surface()
 {
     auto rhi = get_rhi();
 
-    for (auto& view : rhi->swapchain_views)
-        fetch_resource(rhi->views, view).destroy();
-    rhi->swapchain_views.clear();
+    for (auto& swap_frame : rhi->swapchain_frames)
+        swap_frame.destroy();
+    rhi->swapchain_frames.clear();
 
     if (rhi->swapchain) {
         rhi->vtable.vkDestroySwapchainKHR(rhi->device, rhi->swapchain, nullptr);

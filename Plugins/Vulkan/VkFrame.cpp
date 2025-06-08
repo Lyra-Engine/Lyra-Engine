@@ -3,9 +3,7 @@
 void VulkanFrame::init()
 {
     inflight_fence = VulkanFence(true);
-
     api::create_fence(image_available_semaphore, VK_SEMAPHORE_TYPE_BINARY);
-    api::create_fence(render_complete_semaphore, VK_SEMAPHORE_TYPE_BINARY);
 
     auto rhi = get_rhi();
 
@@ -65,7 +63,6 @@ void VulkanFrame::destroy()
 {
     inflight_fence.destroy();
     api::delete_fence(image_available_semaphore);
-    api::delete_fence(render_complete_semaphore);
 
     descriptor_pool.destroy();
     compute_command_pool.destroy();

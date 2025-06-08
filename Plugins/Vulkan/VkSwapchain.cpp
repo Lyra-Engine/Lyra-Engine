@@ -1,6 +1,51 @@
 #include <algorithm>
 #include "VkUtils.h"
 
+void VulkanSwapFrame::init(VkImage image, VkFormat format, VkExtent2D extent)
+{
+    auto rhi = get_rhi();
+
+    auto create_info                            = VkImageViewCreateInfo{};
+    create_info.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+    create_info.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
+    create_info.format                          = format;
+    create_info.components.r                    = VK_COMPONENT_SWIZZLE_IDENTITY;
+    create_info.components.g                    = VK_COMPONENT_SWIZZLE_IDENTITY;
+    create_info.components.b                    = VK_COMPONENT_SWIZZLE_IDENTITY;
+    create_info.components.a                    = VK_COMPONENT_SWIZZLE_IDENTITY;
+    create_info.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+    create_info.subresourceRange.baseMipLevel   = 0;
+    create_info.subresourceRange.levelCount     = 1;
+    create_info.subresourceRange.baseArrayLayer = 0;
+    create_info.subresourceRange.layerCount     = 1;
+
+    // create texture
+    auto texture    = VulkanTexture{};
+    texture.image   = image;
+    texture.aspects = VK_IMAGE_ASPECT_COLOR_BIT;
+    this->texture   = rhi->textures.add(texture);
+
+    // create texture view
+    auto view         = VulkanTextureView();
+    create_info.image = image;
+    vk_check(rhi->vtable.vkCreateImageView(rhi->device, &create_info, nullptr, &view.view));
+    view.extent = extent; // manually created (will be used to keep track of render area)
+    this->view  = rhi->views.add(view);
+
+    // create render complete semaphore
+    api::create_fence(render_complete_semaphore, VK_SEMAPHORE_TYPE_BINARY);
+}
+
+void VulkanSwapFrame::destroy()
+{
+    auto rhi = get_rhi();
+
+    // texture does not need to be deleted (but we can do it to free up texture handles)
+    fetch_resource(rhi->textures, texture).destroy();
+    fetch_resource(rhi->views, view).destroy();
+    fetch_resource(rhi->fences, render_complete_semaphore).destroy();
+}
+
 SwapchainSupportDetails query_swapchain_support(VkPhysicalDevice adapter, VkSurfaceKHR surface)
 {
     SwapchainSupportDetails details;
@@ -69,8 +114,8 @@ void default_swapchain_image_barrier(VkCommandBuffer command_buffer)
 {
     auto rhi = get_rhi();
 
-    auto handle  = rhi->swapchain_images.at(rhi->current_image_index);
-    auto texture = fetch_resource(rhi->textures, handle);
+    auto swap_frame = rhi->swapchain_frames.at(rhi->current_image_index);
+    auto texture    = fetch_resource(rhi->textures, swap_frame.texture);
 
     auto barrier                            = VkImageMemoryBarrier{};
     barrier.sType                           = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -114,19 +159,20 @@ bool api::acquire_next_frame(GPUTextureHandle& texture, GPUTextureViewHandle& vi
     // acquire next frame
     auto semaphore = fetch_resource(rhi->fences, frame.image_available_semaphore);
     auto result    = rhi->vtable.vkAcquireNextImageKHR(rhi->device, rhi->swapchain, UINT64_MAX, semaphore.semaphore, VK_NULL_HANDLE, &rhi->current_image_index);
-    if (result == VK_SUBOPTIMAL_KHR) {
+    if (result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR) {
         suboptimal = true;
     } else {
         vk_check(result);
     }
 
-    // update swapchain view
-    texture = rhi->swapchain_images.at(rhi->current_image_index);
-    view    = rhi->swapchain_views.at(rhi->current_image_index);
+    // update swapchain view (this must be done after current_image_index is updated)
+    auto& swap_frame = rhi->swapchain_frames.at(rhi->current_image_index);
+    texture          = swap_frame.texture;
+    view             = swap_frame.view;
 
-    // update fences
-    image_available_fence = frame.image_available_semaphore;
-    render_complete_fence = frame.render_complete_semaphore;
+    // update fences (this must be done after current_image_index is updated)
+    image_available_fence = rhi->image_available_fence();
+    render_complete_fence = rhi->render_complete_fence();
     return true;
 }
 
@@ -135,12 +181,11 @@ bool api::present_curr_frame()
     auto rhi = get_rhi();
 
     // query the current frame (also update the frame index)
-    auto& frame    = rhi->current_frame();
-    frame.frame_id = rhi->current_frame_index;
+    auto& frame = rhi->current_frame();
 
     // query the semaphores
-    auto& image_available_fence = fetch_resource(rhi->fences, frame.image_available_semaphore);
-    auto& render_complete_fence = fetch_resource(rhi->fences, frame.render_complete_semaphore);
+    auto& image_available_fence = fetch_resource(rhi->fences, rhi->image_available_fence());
+    auto& render_complete_fence = fetch_resource(rhi->fences, rhi->render_complete_fence());
 
     // check if nothing has been down, insert dummy workloads if needed
     if (frame.allocated_command_buffers.empty()) {
