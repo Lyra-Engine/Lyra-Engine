@@ -221,7 +221,8 @@ namespace lyra::rhi
 
     struct GPUSamplerBindingLayout
     {
-        GPUSamplerBindingType type = GPUSamplerBindingType::FILTERING;
+        GPUSamplerBindingType type     = GPUSamplerBindingType::FILTERING;
+        bool                  bindless = false;
     };
 
     struct GPUTextureBindingLayout
@@ -229,6 +230,7 @@ namespace lyra::rhi
         GPUTextureSampleType    sample_type    = GPUTextureSampleType::FLOAT;
         GPUTextureViewDimension view_dimension = GPUTextureViewDimension::x2D;
         bool                    multisampled   = false;
+        bool                    bindless       = false;
     };
 
     struct GPUStorageTextureBindingLayout
@@ -236,6 +238,11 @@ namespace lyra::rhi
         GPUStorageTextureAccess access = GPUStorageTextureAccess::WRITE_ONLY;
         GPUTextureFormat        format;
         GPUTextureViewDimension view_dimension = GPUTextureViewDimension::x2D;
+    };
+
+    struct GPUAccelerationStructureBindingLayout
+    {
+        bool vertex_return = false;
     };
 
     struct GPUBlendComponent
@@ -317,10 +324,11 @@ namespace lyra::rhi
         GPUBindingResourceType type;
         union
         {
-            GPUBufferBindingLayout         buffer;
-            GPUSamplerBindingLayout        sampler;
-            GPUTextureBindingLayout        texture;
-            GPUStorageTextureBindingLayout storage_texture;
+            GPUBufferBindingLayout                buffer;
+            GPUSamplerBindingLayout               sampler;
+            GPUTextureBindingLayout               texture;
+            GPUStorageTextureBindingLayout        storage_texture;
+            GPUAccelerationStructureBindingLayout acceleration_structure;
         };
     };
 

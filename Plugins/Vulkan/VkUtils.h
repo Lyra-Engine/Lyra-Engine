@@ -197,6 +197,9 @@ struct VulkanBindGroupLayout
 {
     VkDescriptorSetLayout layout = VK_NULL_HANDLE;
 
+    Vector<VkDescriptorType> binding_types = {};
+    Vector<uint>             is_bindless   = {};
+
     // implementation in VkLayout.cpp
     explicit VulkanBindGroupLayout();
     explicit VulkanBindGroupLayout(const GPUBindGroupLayoutDescriptor& desc);
@@ -550,7 +553,6 @@ auto vkenum(GPUVertexFormat format) -> VkFormat;
 auto vkenum(GPUTextureFormat format) -> VkFormat;
 auto vkenum(GPUBarrierLayout layout) -> VkImageLayout;
 auto vkenum(GPUIntegerCoordinate samples) -> VkSampleCountFlagBits;
-auto vkenum(GPUBindingResourceType type) -> VkDescriptorType;
 auto vkenum(GPUColorWriteFlags color) -> VkColorComponentFlags;
 auto vkenum(GPUBufferUsageFlags usages) -> VkBufferUsageFlags;
 auto vkenum(GPUTextureUsageFlags usages) -> VkImageUsageFlags;
@@ -583,8 +585,6 @@ auto query_swapchain_support(VkPhysicalDevice adapter, VkSurfaceKHR surface) -> 
 auto choose_swap_surface_format(const Vector<VkSurfaceFormatKHR>& availableFormats) -> VkSurfaceFormatKHR;
 auto choose_swap_present_mode(const Vector<VkPresentModeKHR>& availablePresentModes) -> VkPresentModeKHR;
 auto choose_swap_extent(const GPUSurfaceDescriptor& desc, const VkSurfaceCapabilitiesKHR& capabilities) -> VkExtent2D;
-
-bool is_binding_array(GPUBindingResourceType type);
 
 template <typename T, typename Handle>
 T& fetch_resource(VulkanResourceManager<T>& manager, Handle handle)

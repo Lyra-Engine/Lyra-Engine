@@ -74,14 +74,14 @@ uint VulkanDescriptorPool::find_pool_index(uint index)
     return find_pool_index(index + 1);
 }
 
-void fill_descriptor_write(VkWriteDescriptorSet& write, DescriptorObjects& objects, VkDescriptorSet descriptor, const GPUBindGroupEntry& entry)
+void fill_descriptor_write(VkWriteDescriptorSet& write, DescriptorObjects& objects, VkDescriptorSet descriptor, const VulkanBindGroupLayout& layout, const GPUBindGroupEntry& entry)
 {
     auto rhi = get_rhi();
 
     write                  = {};
     write.sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     write.descriptorCount  = 1;
-    write.descriptorType   = vkenum(entry.type);
+    write.descriptorType   = layout.binding_types.at(entry.binding);
     write.dstArrayElement  = entry.index;
     write.dstBinding       = entry.binding;
     write.dstSet           = descriptor;
@@ -92,7 +92,6 @@ void fill_descriptor_write(VkWriteDescriptorSet& write, DescriptorObjects& objec
 
     switch (entry.type) {
         case GPUBindingResourceType::BUFFER:
-        case GPUBindingResourceType::BUFFER_ARRAY:
         {
             objects.buffers.emplace_front();
             auto& buffer      = objects.buffers.front();
@@ -103,7 +102,6 @@ void fill_descriptor_write(VkWriteDescriptorSet& write, DescriptorObjects& objec
             break;
         }
         case GPUBindingResourceType::SAMPLER:
-        case GPUBindingResourceType::SAMPLER_ARRAY:
         {
             objects.images.emplace_front();
             auto& sampler       = objects.images.front();
@@ -114,7 +112,6 @@ void fill_descriptor_write(VkWriteDescriptorSet& write, DescriptorObjects& objec
             break;
         }
         case GPUBindingResourceType::TEXTURE:
-        case GPUBindingResourceType::TEXTURE_ARRAY:
         {
             objects.images.emplace_front();
             auto& image       = objects.images.front();
@@ -124,7 +121,17 @@ void fill_descriptor_write(VkWriteDescriptorSet& write, DescriptorObjects& objec
             write.pImageInfo  = &image;
             break;
         }
-        case GPUBindingResourceType::BVH:
+        case GPUBindingResourceType::STORAGE_TEXTURE:
+        {
+            objects.images.emplace_front();
+            auto& image       = objects.images.front();
+            image.imageView   = fetch_resource(rhi->views, entry.texture).view;
+            image.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+            image.sampler     = VK_NULL_HANDLE;
+            write.pImageInfo  = &image;
+            break;
+        }
+        case GPUBindingResourceType::ACCELERATION_STRUCTURE:
             assert(!!!"BVH not supported yet!");
             break;
     }
@@ -140,7 +147,7 @@ GPUBindGroupHandle create_bind_group(const GPUBindGroupDescriptor& desc)
     uint defined_count = 1;
     uint varying_count = 0;
     for (auto& entry : desc.entries) {
-        if (is_binding_array(entry.type))
+        if (layout.is_bindless.at(entry.binding))
             varying_count = std::max(varying_count, entry.count);
         else
             defined_count = std::max(defined_count, entry.count);
@@ -155,7 +162,7 @@ GPUBindGroupHandle create_bind_group(const GPUBindGroupDescriptor& desc)
     Vector<VkWriteDescriptorSet> writes;
     for (auto& entry : desc.entries) {
         writes.push_back(VkWriteDescriptorSet{});
-        fill_descriptor_write(writes.back(), objects, descriptor, entry);
+        fill_descriptor_write(writes.back(), objects, descriptor, layout, entry);
     }
 
     // update descriptor sets

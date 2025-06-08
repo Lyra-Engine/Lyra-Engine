@@ -1,5 +1,72 @@
 #include "VkUtils.h"
 
+VkDescriptorType infer_buffer_descriptor_type(const GPUBufferBindingLayout& entry)
+{
+    switch (entry.type) {
+        case GPUBufferBindingType::STORAGE:
+        case GPUBufferBindingType::READ_ONLY_STORAGE:
+            return entry.has_dynamic_offset ? VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        case GPUBufferBindingType::UNIFORM:
+            return entry.has_dynamic_offset ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        default:
+            throw std::invalid_argument("Invalid GPUBufferBindingType!");
+    }
+}
+
+VkDescriptorType infer_sampler_descriptor_type(const GPUSamplerBindingLayout& entry)
+{
+    (void)entry; // sampler is simple, no additional information from entry
+    return VK_DESCRIPTOR_TYPE_SAMPLER;
+}
+
+VkDescriptorType infer_texture_descriptor_type(const GPUTextureBindingLayout& entry)
+{
+    (void)entry; // texture is simple, no additional information from entry
+    return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+}
+
+VkDescriptorType infer_storage_texture_descriptor_type(const GPUStorageTextureBindingLayout& entry)
+{
+    (void)entry; // storage texture is simple, no additional information from entry
+    return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+}
+
+VkDescriptorType infer_acceleration_structure_descriptor_type(const GPUAccelerationStructureBindingLayout& entry)
+{
+    (void)entry; // acceleration structure is simple, no additional information from entry
+    return VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+}
+
+VkDescriptorType infer_descriptor_type(const GPUBindGroupLayoutEntry& entry)
+{
+    switch (entry.type) {
+        case GPUBindingResourceType::BUFFER:
+            return infer_buffer_descriptor_type(entry.buffer);
+        case GPUBindingResourceType::SAMPLER:
+            return infer_sampler_descriptor_type(entry.sampler);
+        case GPUBindingResourceType::TEXTURE:
+            return infer_texture_descriptor_type(entry.texture);
+        case GPUBindingResourceType::STORAGE_TEXTURE:
+            return infer_storage_texture_descriptor_type(entry.storage_texture);
+        case GPUBindingResourceType::ACCELERATION_STRUCTURE:
+            return infer_acceleration_structure_descriptor_type(entry.acceleration_structure);
+        default:
+            throw std::invalid_argument("Unsupported GPU binding resource type!");
+    }
+}
+
+bool is_bindgroup_bindless(const GPUBindGroupLayoutEntry& entry)
+{
+    switch (entry.type) {
+        case GPUBindingResourceType::SAMPLER:
+            return entry.sampler.bindless;
+        case GPUBindingResourceType::TEXTURE:
+            return entry.texture.bindless;
+        default:
+            return false;
+    }
+}
+
 // NOTE: A possible optimization is that we could hash the layout
 // to avoid creating identical layouts, not sure if this is useful.
 
@@ -18,18 +85,25 @@ VulkanBindGroupLayout::VulkanBindGroupLayout(const GPUBindGroupLayoutDescriptor&
     bindingflags_info.pBindingFlags = nullptr;
 
     // extract binding information for the descriptor set
+    binding_types.clear();
     Vector<VkDescriptorSetLayoutBinding> bindings;
     for (auto& entry : desc.entries) {
+        auto type                  = infer_descriptor_type(entry);
+        auto bindless              = is_bindgroup_bindless(entry);
         auto binding               = VkDescriptorSetLayoutBinding{};
         binding.binding            = entry.binding;
         binding.descriptorCount    = entry.count;
-        binding.descriptorType     = vkenum(entry.type);
+        binding.descriptorType     = type;
         binding.stageFlags         = vkenum(entry.visibility);
         binding.pImmutableSamplers = nullptr;
         bindings.push_back(binding);
 
+        // keep track of basic properties for bind group layout
+        is_bindless.push_back(bindless);
+        binding_types.push_back(binding.descriptorType);
+
         // variable size descriptor binding
-        if (is_binding_array(entry.type))
+        if (bindless)
             bindingflags_info.pBindingFlags = flags;
     }
 

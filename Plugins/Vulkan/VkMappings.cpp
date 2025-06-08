@@ -658,24 +658,6 @@ VkSampleCountFlagBits vkenum(GPUIntegerCoordinate samples)
     throw std::invalid_argument("invalid argument for GPU sample count");
 }
 
-VkDescriptorType vkenum(GPUBindingResourceType type)
-{
-    switch (type) {
-        case GPUBindingResourceType::BUFFER:
-        case GPUBindingResourceType::BUFFER_ARRAY:
-            return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER; // TODO: decide UNIFORM_BUFFER or STORAGE_BUFFER
-        case GPUBindingResourceType::SAMPLER:
-        case GPUBindingResourceType::SAMPLER_ARRAY:
-            return VK_DESCRIPTOR_TYPE_SAMPLER;
-        case GPUBindingResourceType::TEXTURE:
-        case GPUBindingResourceType::TEXTURE_ARRAY:
-            return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-        case GPUBindingResourceType::BVH:
-            return VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
-    }
-    throw std::invalid_argument("invalid argument for GPUBindingResourceType");
-}
-
 VkColorComponentFlags vkenum(GPUColorWriteFlags color)
 {
     VkColorComponentFlags flags = 0;
@@ -803,16 +785,4 @@ VkAccessFlags2 vkenum(GPUBarrierAccessFlags access)
     // clang-format on
 
     return flags;
-}
-
-bool is_binding_array(GPUBindingResourceType type)
-{
-    switch (type) {
-        case GPUBindingResourceType::BUFFER_ARRAY:
-        case GPUBindingResourceType::TEXTURE_ARRAY:
-        case GPUBindingResourceType::SAMPLER_ARRAY:
-            return true;
-        default:
-            return false;
-    }
 }
