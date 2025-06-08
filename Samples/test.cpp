@@ -1,6 +1,8 @@
 #define GLM_FORCE_RADIANS
+#define GLM_ENABLE_EXPERIMENTAL
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
+#include <glm/gtx/string_cast.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <Common/Function.h>
@@ -30,7 +32,7 @@ ConstantBuffer<float4x4> mvp;
 VertexOutput vsmain(VertexInput input)
 {
     VertexOutput output;
-    output.position = mul(mvp, float4(input.position, 1.0));
+    output.position = mul(float4(input.position, 1.0), mvp); // NOTE: Slang uses HLSL style matrix transform
     output.color = float4(input.color, 1.0);
     return output;
 }
@@ -204,7 +206,7 @@ void setup_buffers()
     // uniform
     auto uniform    = ubuffer.get_mapped_range<glm::mat4>();
     auto projection = glm::perspective(1.05f, 1920.0f / 1080.0f, 0.1f, 100.0f);
-    auto modelview  = glm::lookAt(glm::vec3(0.0f, 0.0f, -3.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    auto modelview  = glm::lookAt(glm::vec3(0.0f, 0.0f, +1.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     uniform.at(0)   = projection * modelview;
 }
 

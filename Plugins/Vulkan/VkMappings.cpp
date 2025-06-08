@@ -266,12 +266,11 @@ VkStencilOp vkenum(GPUStencilOperation op)
 
 VkFrontFace vkenum(GPUFrontFace winding)
 {
-    // NOTE: We flip the winding here because we flipped the viewport.
     switch (winding) {
         case GPUFrontFace::CW:
-            return VK_FRONT_FACE_COUNTER_CLOCKWISE;
-        case GPUFrontFace::CCW:
             return VK_FRONT_FACE_CLOCKWISE;
+        case GPUFrontFace::CCW:
+            return VK_FRONT_FACE_COUNTER_CLOCKWISE;
     }
     throw std::invalid_argument("invalid argument for GPUFrontFace");
 }

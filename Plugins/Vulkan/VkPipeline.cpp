@@ -69,11 +69,13 @@ VulkanPipeline::VulkanPipeline(const GPURenderPipelineDescriptor& desc)
     }
 
     // dummy viewport (supposed to be replaced by vkCmdSetViewport)
-    auto viewport   = VkViewport{};
-    viewport.x      = 0;
-    viewport.y      = rhi->swapchain_dim.height;
-    viewport.width  = rhi->swapchain_dim.width;
-    viewport.height = -rhi->swapchain_dim.height;
+    auto viewport     = VkViewport{};
+    viewport.x        = 0;
+    viewport.y        = rhi->swapchain_dim.height;
+    viewport.width    = rhi->swapchain_dim.width;
+    viewport.height   = -rhi->swapchain_dim.height;
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 0.0f;
 
     // dummy scissor (supposed to be replaced by vkCmdSetScissor)
     auto scissor          = VkRect2D{};
