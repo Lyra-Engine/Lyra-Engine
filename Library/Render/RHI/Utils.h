@@ -185,6 +185,12 @@ namespace lyra::rhi
         GPUIntegerCoordinate z = 0;
     };
 
+    struct GPUExtent2D
+    {
+        GPUIntegerCoordinate width  = 0;
+        GPUIntegerCoordinate height = 0;
+    };
+
     struct GPUExtent3D
     {
         GPUIntegerCoordinate width  = 0;

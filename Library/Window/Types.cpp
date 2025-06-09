@@ -23,6 +23,13 @@ OwnedResource<Window> Window::init(const WindowDescriptor& descriptor)
     return window;
 }
 
+WindowInfo Window::get_window_info() const
+{
+    auto info = WindowInfo{};
+    Window::api()->get_window_size(this->handle, info.width, info.height);
+    return info;
+}
+
 WindowAPI* Window::api()
 {
     return WINDOW_PLUGIN->get_api();

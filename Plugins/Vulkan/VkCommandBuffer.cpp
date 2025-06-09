@@ -27,9 +27,9 @@ void VulkanCommandBuffer::signal(const VulkanSemaphore& fence, GPUBarrierSyncFla
     submit_info.deviceIndex = 0;
 
     // attach the inflight fence if this command buffer signals render complete semaphore
-    auto& frame     = rhi->current_frame();
-    auto& semaphore = fetch_resource(rhi->fences, rhi->render_complete_fence());
-    if (fence.semaphore == semaphore.semaphore)
+    auto& frame    = rhi->current_frame();
+    auto& complete = fetch_resource(rhi->fences, frame.render_complete_semaphore);
+    if (fence.semaphore == complete.semaphore)
         this->fence = frame.inflight_fence;
 }
 
@@ -144,12 +144,11 @@ void cmd::begin_render_pass(GPUCommandEncoderHandle cmdbuffer, const GPURenderPa
                                                              ? fetch_resource(rhi->views, descriptor.depth_stencil_attachment.view).view
                                                              : VK_NULL_HANDLE;
 
-    auto& render_view         = fetch_resource(rhi->views, descriptor.color_attachments.at(0).view);
-    auto  render_area         = VkRect2D{};
+    auto render_area          = VkRect2D{};
     render_area.offset.x      = 0;
     render_area.offset.y      = 0;
-    render_area.extent.width  = render_view.extent.width;
-    render_area.extent.height = render_view.extent.height;
+    render_area.extent.width  = rhi->swapchain_extent.width;
+    render_area.extent.height = rhi->swapchain_extent.height;
 
     auto rendering                 = VkRenderingInfo{};
     rendering.sType                = VK_STRUCTURE_TYPE_RENDERING_INFO;

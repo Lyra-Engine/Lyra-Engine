@@ -12,6 +12,15 @@ using namespace lyra::wsi;
 
 auto get_api_name() -> CString { return "Vulkan"; }
 
+bool api::get_surface_extent(GPUExtent2D& extent)
+{
+    auto rhi = get_rhi();
+
+    extent.width  = rhi->swapchain_extent.width;
+    extent.height = rhi->swapchain_extent.height;
+    return true;
+}
+
 bool api::create_buffer(GPUBufferHandle& buffer, const GPUBufferDescriptor& desc)
 {
     auto obj = VulkanBuffer(desc);
@@ -271,6 +280,7 @@ LYRA_EXPORT auto create() -> RenderAPI
     api.delete_device                    = api::delete_device;
     api.create_surface                   = api::create_surface;
     api.delete_surface                   = api::delete_surface;
+    api.get_surface_extent               = api::get_surface_extent;
     api.create_buffer                    = api::create_buffer;
     api.delete_buffer                    = api::delete_buffer;
     api.create_texture                   = api::create_texture;

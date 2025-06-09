@@ -328,7 +328,7 @@ namespace lyra::rhi
         GPUFenceHandle       available;
         bool                 suboptimal;
 
-        void present();
+        void present() const;
 
         operator GPUTextureViewHandle() const { return view; }
     };
@@ -375,7 +375,9 @@ namespace lyra::rhi
 
     struct GPUSurface : public GPUObjectBase
     {
-        auto get_current_texture() -> GPUSurfaceTexture;
+        auto get_current_texture() const -> GPUSurfaceTexture;
+
+        auto get_current_extent() const -> GPUExtent2D;
 
         auto destroy() -> void;
     };

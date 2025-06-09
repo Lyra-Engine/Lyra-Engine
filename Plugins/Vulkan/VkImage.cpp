@@ -49,10 +49,6 @@ VulkanTexture::VulkanTexture(const GPUTextureDescriptor& desc) : aspects(0)
         aspects |= VK_IMAGE_ASPECT_STENCIL_BIT;
     if (aspects == 0)
         aspects |= VK_IMAGE_ASPECT_COLOR_BIT;
-
-    // update extent
-    extent.width  = desc.size.width;
-    extent.height = desc.size.height;
 }
 
 void VulkanTexture::destroy()
@@ -91,7 +87,6 @@ VulkanTextureView::VulkanTextureView(const VulkanTexture& texture, const GPUText
     create_info.subresourceRange.layerCount     = desc.array_layer_count;
 
     vk_check(vkCreateImageView(rhi->device, &create_info, nullptr, &view));
-    extent = texture.extent;
 }
 
 void VulkanTextureView::destroy()

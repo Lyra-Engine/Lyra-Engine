@@ -94,7 +94,6 @@ struct VulkanTexture
     VmaAllocation      allocation;
     VmaAllocationInfo  alloc_info = {};
     VkImageAspectFlags aspects    = 0;
-    VkExtent2D         extent     = {}; // used to keep track of render area
 
     // implementation in VkImage.cpp
     explicit VulkanTexture();
@@ -108,7 +107,6 @@ struct VulkanTexture
 struct VulkanTextureView
 {
     VkImageView view   = VK_NULL_HANDLE;
-    VkExtent2D  extent = {}; // used to keep track of render area
 
     // implementation in VkImage.cpp
     explicit VulkanTextureView();
@@ -332,6 +330,7 @@ struct VulkanFrame
 
     VulkanFence       inflight_fence;
     GPUFenceHandle    image_available_semaphore; // must be binary semaphores
+    GPUFenceHandle    render_complete_semaphore; // NOTE: VulkanFrame does NOT own this.
     VulkanCommandPool compute_command_pool;
     VulkanCommandPool graphics_command_pool;
     VulkanCommandPool transfer_command_pool;
@@ -374,12 +373,15 @@ struct VulkanRHI
     VkQueue            compute_queue  = VK_NULL_HANDLE;
     VkQueue            present_queue  = VK_NULL_HANDLE;
     VkSwapchainKHR     swapchain      = VK_NULL_HANDLE;
-    VkExtent2D         swapchain_dim;
-    VkFormat           swapchain_format;
-    VkColorSpaceKHR    swapchain_colorspace;
-    VolkDeviceTable    vtable = {};
+    VolkDeviceTable    vtable         = {};
     VmaAllocator       alloc;
     QueueFamilyIndices queues;
+
+    // objects for swapchain recreation
+    GPUSurfaceDescriptor surface_desc = {};
+    VkExtent2D           swapchain_extent;
+    VkFormat             swapchain_format;
+    VkColorSpaceKHR      swapchain_colorspace;
 
     // frame objects
     Vector<VulkanFrame>     frames           = {};
@@ -402,8 +404,8 @@ struct VulkanRHI
     VulkanResourceManager<VulkanBindGroupLayout> bind_group_layouts;
 
     auto current_frame() -> VulkanFrame& { return frames.at(current_frame_index % frames.size()); }
-    auto image_available_fence() -> GPUFenceHandle { return current_frame().image_available_semaphore; }
-    auto render_complete_fence() -> GPUFenceHandle { return swapchain_frames.at(current_image_index).render_complete_semaphore; }
+    auto current_image() -> VulkanSwapFrame& { return swapchain_frames.at(current_image_index); }
+    void create_swapchain(); // implementation in VkSwapchain.cpp
 };
 
 // These are the functions that implements the plugin.
@@ -416,6 +418,7 @@ namespace api
     // surface apis
     bool create_surface(GPUSurface& surface, const GPUSurfaceDescriptor& desc);
     void delete_surface();
+    bool get_surface_extent(GPUExtent2D& extent);
 
     // adapter apis
     bool create_adapter(GPUAdapter& adapter, const GPUAdapterDescriptor& descriptor);

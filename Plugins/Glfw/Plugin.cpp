@@ -77,9 +77,12 @@ auto create_window(const WindowDescriptor& desc, WindowHandle& window) -> bool
     return true;
 }
 
-void get_window_size(WindowHandle window, int& width, int& height)
+void get_window_size(WindowHandle window, uint& width, uint& height)
 {
-    glfwGetWindowSize((GLFWwindow*)window.window, &width, &height);
+    int32_t w, h;
+    glfwGetWindowSize((GLFWwindow*)window.window, &w, &h);
+    width  = static_cast<uint32_t>(w);
+    height = static_cast<uint32_t>(h);
 }
 
 auto delete_window(WindowHandle window) -> void

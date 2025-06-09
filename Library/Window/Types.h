@@ -15,6 +15,13 @@ namespace lyra::wsi
 
     struct WindowAPI;
 
+    struct WindowInfo
+    {
+        uint32_t width;  // logical window width
+        uint32_t height; // logical window height
+        float    scale;  // reserved for high DPI
+    };
+
     struct Window
     {
         using Callback  = std::function<void()>;
@@ -29,6 +36,8 @@ namespace lyra::wsi
         void destroy();
 
         void loop();
+
+        auto get_window_info() const -> WindowInfo;
 
         template <typename T, typename F>
         void bind(WindowEvent event, F&& f, T* user)

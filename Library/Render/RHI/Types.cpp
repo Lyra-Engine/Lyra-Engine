@@ -79,23 +79,32 @@ GPUDevice GPUAdapter::request_device(const GPUDeviceDescriptor& descriptor)
 #pragma endregion GPUAdapter
 
 #pragma region GPUSurface
-GPUSurfaceTexture GPUSurface::get_current_texture()
+GPUSurfaceTexture GPUSurface::get_current_texture() const
 {
     GPUSurfaceTexture texture;
     RHI::api()->acquire_next_frame(texture.texture, texture.view, texture.available, texture.complete, texture.suboptimal);
     return texture;
 }
 
+GPUExtent2D GPUSurface::get_current_extent() const
+{
+    GPUExtent2D extent;
+    RHI::api()->get_surface_extent(extent);
+    return extent;
+}
+
 void GPUSurface::destroy()
 {
     RHI::api()->delete_surface();
 }
+#pragma endregion GPUSurface
 
-void GPUSurfaceTexture::present()
+#pragma region GPUSurfaceTexture
+void GPUSurfaceTexture::present() const
 {
     RHI::api()->present_curr_frame();
 }
-#pragma endregion GPUSurface
+#pragma endregion GPUSurfaceTexture
 
 #pragma region GPUDevice
 GPUFence GPUDevice::create_fence()

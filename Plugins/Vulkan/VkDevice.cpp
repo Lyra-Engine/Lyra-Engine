@@ -423,6 +423,10 @@ void api::delete_device()
     for (auto& frame : rhi->frames)
         frame.destroy();
 
+    // clean up remaining swapchain fences
+    for (auto& frame : rhi->swapchain_frames)
+        frame.destroy();
+
     // clean up remaining fences
     for (auto& fence : rhi->fences.data)
         fence.destroy();

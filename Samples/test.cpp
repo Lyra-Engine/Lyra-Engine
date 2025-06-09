@@ -202,12 +202,6 @@ void setup_buffers()
     indices.at(0) = 0;
     indices.at(1) = 1;
     indices.at(2) = 2;
-
-    // uniform
-    auto uniform    = ubuffer.get_mapped_range<glm::mat4>();
-    auto projection = glm::perspective(1.05f, 1920.0f / 1080.0f, 0.1f, 100.0f);
-    auto modelview  = glm::lookAt(glm::vec3(0.0f, 0.0f, +1.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    uniform.at(0)   = projection * modelview;
 }
 
 void cleanup()
@@ -227,7 +221,14 @@ void cleanup()
 
 void update()
 {
-    // do some logic updates here
+    auto& surface = RHI::get_current_surface();
+    auto extent = surface.get_current_extent();
+
+    // update uniform
+    auto uniform    = ubuffer.get_mapped_range<glm::mat4>();
+    auto projection = glm::perspective(1.05f, float(extent.width) / float(extent.height), 0.1f, 100.0f);
+    auto modelview  = glm::lookAt(glm::vec3(0.0f, 0.0f, +3.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    uniform.at(0)   = projection * modelview;
 }
 
 void render()
@@ -237,6 +238,7 @@ void render()
 
     // acquire next frame from swapchain
     auto texture = surface.get_current_texture();
+    if (texture.suboptimal) return;
 
     // create command buffer
     auto command = execute([&]() {
@@ -273,11 +275,12 @@ void render()
     render_pass.color_attachments        = {color_attachment};
     render_pass.depth_stencil_attachment = {};
 
+    auto extent = surface.get_current_extent();
     command.wait(texture.available, GPUBarrierSync::PIXEL_SHADING);
     command.resource_barrier(transition_undefined_to_color_attachment(texture.texture));
     command.begin_render_pass(render_pass);
-    command.set_viewport(0, 0, 1920, 1080);
-    command.set_scissor_rect(0, 0, 1920, 1080);
+    command.set_viewport(0, 0, extent.width, extent.height);
+    command.set_scissor_rect(0, 0, extent.width, extent.height);
     command.set_pipeline(pipeline);
     command.set_vertex_buffer(0, vbuffer);
     command.set_index_buffer(ibuffer, GPUIndexFormat::UINT32);

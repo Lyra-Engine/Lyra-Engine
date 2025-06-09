@@ -71,9 +71,9 @@ VulkanPipeline::VulkanPipeline(const GPURenderPipelineDescriptor& desc)
     // dummy viewport (supposed to be replaced by vkCmdSetViewport)
     auto viewport     = VkViewport{};
     viewport.x        = 0;
-    viewport.y        = rhi->swapchain_dim.height;
-    viewport.width    = rhi->swapchain_dim.width;
-    viewport.height   = -rhi->swapchain_dim.height;
+    viewport.y        = rhi->swapchain_extent.height;
+    viewport.width    = rhi->swapchain_extent.width;
+    viewport.height   = -rhi->swapchain_extent.height;
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 0.0f;
 
@@ -81,8 +81,8 @@ VulkanPipeline::VulkanPipeline(const GPURenderPipelineDescriptor& desc)
     auto scissor          = VkRect2D{};
     scissor.offset.x      = 0;
     scissor.offset.y      = 0;
-    scissor.extent.width  = rhi->swapchain_dim.width;
-    scissor.extent.height = rhi->swapchain_dim.height;
+    scissor.extent.width  = rhi->swapchain_extent.width;
+    scissor.extent.height = rhi->swapchain_extent.height;
 
     // allow viewport/scissor/etc to be reset at rendering time
     Vector<VkDynamicState> dynamics = {

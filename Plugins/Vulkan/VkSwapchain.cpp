@@ -1,39 +1,130 @@
 #include <algorithm>
 #include "VkUtils.h"
 
+void VulkanRHI::create_swapchain()
+{
+    auto rhi = get_rhi();
+
+    SwapchainSupportDetails swapchain_support = query_swapchain_support(rhi->adapter, rhi->surface);
+    VkSurfaceFormatKHR      surface_format    = choose_swap_surface_format(swapchain_support.formats);
+    VkPresentModeKHR        present_mode      = choose_swap_present_mode(swapchain_support.present_modes);
+    VkExtent2D              extent            = choose_swap_extent(surface_desc, swapchain_support.capabilities);
+
+    uint32_t image_count = std::clamp(
+        surface_desc.frames_inflight,
+        swapchain_support.capabilities.minImageCount,
+        swapchain_support.capabilities.maxImageCount);
+
+    auto create_info             = VkSwapchainCreateInfoKHR{};
+    create_info.sType            = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    create_info.surface          = rhi->surface;
+    create_info.minImageCount    = image_count;
+    create_info.imageFormat      = surface_format.format;
+    create_info.imageColorSpace  = surface_format.colorSpace;
+    create_info.imageExtent      = extent;
+    create_info.imageArrayLayers = 1;
+    create_info.imageUsage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    create_info.clipped          = VK_TRUE;
+    create_info.presentMode      = present_mode;
+    create_info.preTransform     = swapchain_support.capabilities.currentTransform;
+    create_info.compositeAlpha   = vkenum(surface_desc.alpha_mode);
+
+    auto indices              = find_queue_family_indices(rhi->adapter, rhi->surface);
+    uint queueFamilyIndices[] = {indices.graphics.value(), indices.present.value()};
+    if (indices.graphics != indices.present) {
+        create_info.imageSharingMode      = VK_SHARING_MODE_CONCURRENT;
+        create_info.queueFamilyIndexCount = 2;
+        create_info.pQueueFamilyIndices   = queueFamilyIndices;
+    } else {
+        create_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    }
+
+    VkSwapchainKHR old_swapchain = rhi->swapchain;
+    if (rhi->swapchain != VK_NULL_HANDLE)
+        create_info.oldSwapchain = old_swapchain;
+
+    rhi->swapchain_colorspace = surface_format.colorSpace;
+    rhi->swapchain_format     = surface_format.format;
+    rhi->swapchain_extent     = extent;
+    vk_check(rhi->vtable.vkCreateSwapchainKHR(rhi->device, &create_info, nullptr, &rhi->swapchain));
+
+    // delete the old swapchain
+    if (old_swapchain != VK_NULL_HANDLE)
+        rhi->vtable.vkDestroySwapchainKHR(rhi->device, old_swapchain, nullptr);
+
+    // get swapchain images
+    uint count;
+    vk_check(rhi->vtable.vkGetSwapchainImagesKHR(rhi->device, rhi->swapchain, &count, nullptr));
+
+    Vector<VkImage> swapchain_images(count);
+    vk_check(rhi->vtable.vkGetSwapchainImagesKHR(rhi->device, rhi->swapchain, &count, swapchain_images.data()));
+
+    // clean up swapchain data if mismatching size
+    if (rhi->swapchain_frames.size() != count) {
+        for (auto& swap_frame : rhi->swapchain_frames)
+            swap_frame.destroy();
+        rhi->swapchain_frames.clear();
+        rhi->swapchain_frames.resize(count);
+    }
+
+    // create swapchain data
+    for (uint i = 0; i < count; i++)
+        rhi->swapchain_frames.at(i).init(swapchain_images.at(i), surface_format.format, extent);
+
+    // create logical frames in flight
+    if (rhi->frames.empty()) {
+        rhi->frames.resize(surface_desc.frames_inflight);
+        for (auto& frame : rhi->frames)
+            frame.init();
+    }
+
+    // reset frame / image indices
+    rhi->current_frame_index = 0;
+    rhi->current_image_index = 0;
+}
+
 void VulkanSwapFrame::init(VkImage image, VkFormat format, VkExtent2D extent)
 {
     auto rhi = get_rhi();
 
-    auto create_info                            = VkImageViewCreateInfo{};
-    create_info.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-    create_info.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
-    create_info.format                          = format;
-    create_info.components.r                    = VK_COMPONENT_SWIZZLE_IDENTITY;
-    create_info.components.g                    = VK_COMPONENT_SWIZZLE_IDENTITY;
-    create_info.components.b                    = VK_COMPONENT_SWIZZLE_IDENTITY;
-    create_info.components.a                    = VK_COMPONENT_SWIZZLE_IDENTITY;
-    create_info.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-    create_info.subresourceRange.baseMipLevel   = 0;
-    create_info.subresourceRange.levelCount     = 1;
-    create_info.subresourceRange.baseArrayLayer = 0;
-    create_info.subresourceRange.layerCount     = 1;
+    // clean up texture if already created
+    if (this->texture.valid())
+        fetch_resource(rhi->textures, texture).destroy();
 
-    // create texture
+    // clean up texture view if already created
+    if (this->view.valid())
+        fetch_resource(rhi->views, view).destroy();
+
+    // reuse render complete semaphore if possible
+    if (!render_complete_semaphore.valid())
+        api::create_fence(render_complete_semaphore, VK_SEMAPHORE_TYPE_BINARY);
+
+    // re-create texture
     auto texture    = VulkanTexture{};
     texture.image   = image;
     texture.aspects = VK_IMAGE_ASPECT_COLOR_BIT;
     this->texture   = rhi->textures.add(texture);
 
-    // create texture view
-    auto view         = VulkanTextureView();
-    create_info.image = image;
+    // re-create new texture view
+    auto view        = VulkanTextureView();
+    auto create_info = VkImageViewCreateInfo{};
+    {
+        create_info.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+        create_info.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
+        create_info.image                           = image;
+        create_info.format                          = format;
+        create_info.components.r                    = VK_COMPONENT_SWIZZLE_IDENTITY;
+        create_info.components.g                    = VK_COMPONENT_SWIZZLE_IDENTITY;
+        create_info.components.b                    = VK_COMPONENT_SWIZZLE_IDENTITY;
+        create_info.components.a                    = VK_COMPONENT_SWIZZLE_IDENTITY;
+        create_info.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+        create_info.subresourceRange.baseMipLevel   = 0;
+        create_info.subresourceRange.levelCount     = 1;
+        create_info.subresourceRange.baseArrayLayer = 0;
+        create_info.subresourceRange.layerCount     = 1;
+    }
     vk_check(rhi->vtable.vkCreateImageView(rhi->device, &create_info, nullptr, &view.view));
-    view.extent = extent; // manually created (will be used to keep track of render area)
     this->view  = rhi->views.add(view);
-
-    // create render complete semaphore
-    api::create_fence(render_complete_semaphore, VK_SEMAPHORE_TYPE_BINARY);
 }
 
 void VulkanSwapFrame::destroy()
@@ -99,7 +190,7 @@ VkExtent2D choose_swap_extent(const GPUSurfaceDescriptor& desc, const VkSurfaceC
     }
 
     // query window size
-    int width, height;
+    uint width, height;
     Window::api()->get_window_size(desc.window, width, height);
 
     VkExtent2D actual_extent;
@@ -156,14 +247,20 @@ bool api::acquire_next_frame(GPUTextureHandle& texture, GPUTextureViewHandle& vi
     frame.wait();
     frame.reset();
 
+    // initialize suboptimal
+    suboptimal = false;
+
     // acquire next frame
     auto semaphore = fetch_resource(rhi->fences, frame.image_available_semaphore);
     auto result    = rhi->vtable.vkAcquireNextImageKHR(rhi->device, rhi->swapchain, UINT64_MAX, semaphore.semaphore, VK_NULL_HANDLE, &rhi->current_image_index);
     if (result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR) {
+        // recreate the swapchain if window resizes or moved to other displays
+        api::wait_idle();
+        rhi->create_swapchain();
         suboptimal = true;
-    } else {
-        vk_check(result);
+        return true;
     }
+    vk_check(result);
 
     // update swapchain view (this must be done after current_image_index is updated)
     auto& swap_frame = rhi->swapchain_frames.at(rhi->current_image_index);
@@ -171,8 +268,11 @@ bool api::acquire_next_frame(GPUTextureHandle& texture, GPUTextureViewHandle& vi
     view             = swap_frame.view;
 
     // update fences (this must be done after current_image_index is updated)
-    image_available_fence = rhi->image_available_fence();
-    render_complete_fence = rhi->render_complete_fence();
+    image_available_fence = rhi->current_frame().image_available_semaphore;
+    render_complete_fence = rhi->current_image().render_complete_semaphore;
+
+    // also tracks the render complete semaphore in frame (for consistent synchronization)
+    frame.render_complete_semaphore = render_complete_fence;
     return true;
 }
 
@@ -184,8 +284,8 @@ bool api::present_curr_frame()
     auto& frame = rhi->current_frame();
 
     // query the semaphores
-    auto& image_available_fence = fetch_resource(rhi->fences, rhi->image_available_fence());
-    auto& render_complete_fence = fetch_resource(rhi->fences, rhi->render_complete_fence());
+    auto& image_available_fence = fetch_resource(rhi->fences, frame.image_available_semaphore);
+    auto& render_complete_fence = fetch_resource(rhi->fences, frame.render_complete_semaphore);
 
     // check if nothing has been down, insert dummy workloads if needed
     if (frame.allocated_command_buffers.empty()) {
@@ -210,8 +310,15 @@ bool api::present_curr_frame()
     present_info.pImageIndices      = &rhi->current_image_index;
     present_info.pResults           = nullptr;
 
-    vk_check(rhi->vtable.vkQueuePresentKHR(rhi->present_queue, &present_info));
+    VkResult result = rhi->vtable.vkQueuePresentKHR(rhi->present_queue, &present_info);
+    if (result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR) {
+        // recreate the swapchain if window resizes or moved to other displays
+        api::wait_idle();
+        rhi->create_swapchain();
+        return true;
+    }
 
+    vk_check(result);
     rhi->current_frame_index++;
     return true;
 }
