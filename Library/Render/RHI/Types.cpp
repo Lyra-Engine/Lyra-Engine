@@ -86,6 +86,13 @@ GPUSurfaceTexture GPUSurface::get_current_texture() const
     return texture;
 }
 
+GPUTextureFormat GPUSurface::get_current_format() const
+{
+    GPUTextureFormat format;
+    RHI::api()->get_surface_format(format);
+    return format;
+}
+
 GPUExtent2D GPUSurface::get_current_extent() const
 {
     GPUExtent2D extent;
@@ -149,6 +156,20 @@ GPUQuerySet GPUDevice::create_query_set(const GPUQuerySetDescriptor& desc)
     GPUQuerySet query;
     RHI::api()->create_query_set(query.handle, desc);
     return query;
+}
+
+GPUBlas GPUDevice::create_blas(const GPUBlasDescriptor& desc, const Vector<GPUBlasGeometrySizeDescriptor>& sizes)
+{
+    GPUBlas blas;
+    RHI::api()->create_blas(blas.handle, desc, sizes);
+    return blas;
+}
+
+GPUTlas GPUDevice::create_tlas(const GPUTlasDescriptor& desc)
+{
+    GPUTlas tlas;
+    RHI::api()->create_tlas(tlas.handle, desc);
+    return tlas;
 }
 
 GPUBindGroup GPUDevice::create_bind_group(const GPUBindGroupDescriptor& desc)

@@ -61,7 +61,8 @@ GPUBuffer          ubuffer;
 
 void setup_pipeline()
 {
-    auto& device = RHI::get_current_device();
+    auto& device  = RHI::get_current_device();
+    auto& surface = RHI::get_current_surface();
 
     auto compiler = execute([&]() {
         auto desc   = CompilerDescriptor{};
@@ -132,7 +133,7 @@ void setup_pipeline()
         layout.step_mode    = GPUVertexStepMode::VERTEX;
 
         auto target         = GPUColorTargetState{};
-        target.format       = GPUTextureFormat::BGRA8UNORM_SRGB;
+        target.format       = surface.get_current_format();
         target.blend_enable = false;
 
         auto desc                                  = GPURenderPipelineDescriptor{};
@@ -222,7 +223,7 @@ void cleanup()
 void update()
 {
     auto& surface = RHI::get_current_surface();
-    auto extent = surface.get_current_extent();
+    auto  extent  = surface.get_current_extent();
 
     // update uniform
     auto uniform    = ubuffer.get_mapped_range<glm::mat4>();

@@ -21,6 +21,19 @@ bool api::get_surface_extent(GPUExtent2D& extent)
     return true;
 }
 
+bool api::get_surface_format(GPUTextureFormat& format)
+{
+    auto rhi = get_rhi();
+    switch (rhi->swapchain_format) {
+        case VK_FORMAT_B8G8R8A8_SRGB:
+            format = GPUTextureFormat::BGRA8UNORM_SRGB;
+            return true;
+        default:
+            throw std::runtime_error("Failed to match the corresponding swapchain format");
+            return false;
+    }
+}
+
 bool api::create_buffer(GPUBufferHandle& buffer, const GPUBufferDescriptor& desc)
 {
     auto obj = VulkanBuffer(desc);
@@ -137,6 +150,54 @@ bool api::create_fence(GPUFenceHandle& fence)
 void api::delete_fence(GPUFenceHandle fence)
 {
     get_rhi()->fences.remove(fence.value);
+}
+
+bool api::create_blas(GPUBlasHandle& blas, const GPUBlasDescriptor& desc, const Vector<GPUBlasGeometrySizeDescriptor>& sizes)
+{
+    auto obj = VulkanBlas(desc, sizes);
+    auto rhi = get_rhi();
+    auto ind = rhi->blases.add(obj);
+
+    blas = GPUBlasHandle(ind);
+    return true;
+}
+
+void api::delete_blas(GPUBlasHandle blas)
+{
+    get_rhi()->blases.remove(blas.value);
+}
+
+bool api::create_tlas(GPUTlasHandle& tlas, const GPUTlasDescriptor& desc)
+{
+    auto obj = VulkanTlas(desc);
+    auto rhi = get_rhi();
+    auto ind = rhi->tlases.add(obj);
+
+    tlas = GPUTlasHandle(ind);
+    return true;
+}
+
+void api::delete_tlas(GPUTlasHandle tlas)
+{
+    get_rhi()->tlases.remove(tlas.value);
+}
+
+bool api::get_blas_sizes(GPUBlasHandle blas, GPUBVHSizes& sizes)
+{
+    auto& size_info   = fetch_resource(get_rhi()->blases, blas).sizes;
+    sizes.bvh_size    = size_info.accelerationStructureSize;
+    sizes.build_size  = size_info.buildScratchSize;
+    sizes.update_size = size_info.updateScratchSize;
+    return true;
+}
+
+bool api::get_tlas_sizes(GPUTlasHandle tlas, GPUBVHSizes& sizes)
+{
+    auto& size_info   = fetch_resource(get_rhi()->tlases, tlas).sizes;
+    sizes.bvh_size    = size_info.accelerationStructureSize;
+    sizes.build_size  = size_info.buildScratchSize;
+    sizes.update_size = size_info.updateScratchSize;
+    return true;
 }
 
 bool api::create_bind_group_layout(GPUBindGroupLayoutHandle& layout, const GPUBindGroupLayoutDescriptor& desc)
@@ -281,6 +342,7 @@ LYRA_EXPORT auto create() -> RenderAPI
     api.create_surface                   = api::create_surface;
     api.delete_surface                   = api::delete_surface;
     api.get_surface_extent               = api::get_surface_extent;
+    api.get_surface_format               = api::get_surface_format;
     api.create_buffer                    = api::create_buffer;
     api.delete_buffer                    = api::delete_buffer;
     api.create_texture                   = api::create_texture;
@@ -292,6 +354,10 @@ LYRA_EXPORT auto create() -> RenderAPI
     api.delete_fence                     = api::delete_fence;
     api.create_shader_module             = api::create_shader_module;
     api.delete_shader_module             = api::delete_shader_module;
+    api.create_blas                      = api::create_blas;
+    api.delete_blas                      = api::delete_blas;
+    api.create_tlas                      = api::create_tlas;
+    api.delete_tlas                      = api::delete_tlas;
     api.create_pipeline_layout           = api::create_pipeline_layout;
     api.delete_pipeline_layout           = api::delete_pipeline_layout;
     api.create_render_pipeline           = api::create_render_pipeline;
@@ -311,6 +377,8 @@ LYRA_EXPORT auto create() -> RenderAPI
     api.create_command_buffer            = api::create_command_buffer;
     api.create_command_bundle            = api::create_command_bundle;
     api.submit_command_buffer            = api::submit_command_buffer;
+    api.get_blas_sizes                   = api::get_blas_sizes;
+    api.get_tlas_sizes                   = api::get_tlas_sizes;
     api.acquire_next_frame               = api::acquire_next_frame;
     api.present_curr_frame               = api::present_curr_frame;
     api.cmd_wait_fence                   = cmd::wait_fence;

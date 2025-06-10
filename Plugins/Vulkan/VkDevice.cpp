@@ -367,10 +367,13 @@ bool api::create_device(const GPUDeviceDescriptor& desc)
         VK_LOAD(rhi, vkCmdEndRenderingKHR);
     }
 
-    // load dynamic rendering functions
+    // load accelertion structures functions
     // https://registry.khronos.org/vulkan/specs/latest/man/html/VK_KHR_acceleration_structure.html
     if (is_supported(device_extensions, VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME)) {
         VK_LOAD(rhi, vkBuildAccelerationStructuresKHR);
+        VK_LOAD(rhi, vkGetAccelerationStructureBuildSizesKHR);
+        VK_LOAD(rhi, vkCreateAccelerationStructureKHR);
+        VK_LOAD(rhi, vkDestroyAccelerationStructureKHR);
         VK_LOAD(rhi, vkCmdCopyAccelerationStructureKHR);
         VK_LOAD(rhi, vkCmdBuildAccelerationStructuresKHR);
         VK_LOAD(rhi, vkCmdBuildAccelerationStructuresIndirectKHR);
@@ -410,6 +413,9 @@ bool api::create_device(const GPUDeviceDescriptor& desc)
     if (queue_family_indices.present.has_value())
         rhi->vtable.vkGetDeviceQueue(rhi->device, queue_family_indices.present.value(), 0, &rhi->present_queue);
 
+    if (desc.label)
+        rhi->set_debug_label(VK_OBJECT_TYPE_DEVICE, (uint64_t)rhi->device, desc.label);
+
     return true;
 }
 
@@ -418,6 +424,14 @@ void api::delete_device()
     wait_idle();
 
     auto rhi = get_rhi();
+
+    // clean up remaining blases
+    for (auto& blas : rhi->blases.data)
+        blas.destroy();
+
+    // clean up remaining tlases
+    for (auto& tlas : rhi->tlases.data)
+        tlas.destroy();
 
     // clean up remaining fences
     for (auto& frame : rhi->frames)

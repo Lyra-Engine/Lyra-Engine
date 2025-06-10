@@ -317,6 +317,11 @@ void cmd::clear_buffer(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle buffer
     assert(!!!"unimplemented");
 }
 
+void cmd::clear_texture(GPUCommandEncoderHandle cmdbuffer, GPUTextureHandle texture, const GPUTextureSubresourceRange& range)
+{
+    assert(!!!"unimplemented");
+}
+
 void cmd::resolve_query_set(GPUCommandEncoderHandle cmdbuffer, GPUQuerySetHandle query_set, GPUSize32 first_query, GPUSize32 query_count, GPUBufferHandle destination, GPUSize64 destination_offset)
 {
     assert(!!!"unimplemented");
@@ -482,4 +487,81 @@ void cmd::texture_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPU
     dependency.pImageMemoryBarriers     = bars.data();
 
     rhi->vtable.vkCmdPipelineBarrier2KHR(cmd.command_buffer, &dependency);
+}
+
+void cmd::build_tlases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, uint32_t count, GPUTlasBuildEntry* entries)
+{
+    assert(!!!"unimplemented");
+}
+
+void cmd::build_blases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, uint32_t count, GPUBlasBuildEntry* entries)
+{
+    auto  rhi = get_rhi();
+    auto& cmd = rhi->current_frame().command(cmdbuffer);
+    auto& buf = fetch_resource(rhi->buffers, scratch_buffer);
+
+    Vector<VkAccelerationStructureBuildGeometryInfoKHR> build_infos  = {};
+    Vector<VkAccelerationStructureBuildRangeInfoKHR*>   build_ranges = {};
+
+    VkDeviceAddress address = buf.device_address();
+    for (uint i = 0; i < count; i++) {
+        auto& entry = entries[i];
+        auto& blas  = fetch_resource(rhi->blases, entry.blas);
+
+        // geometry count check
+        if (entries->geometries.triangles.size() > blas.geometries.size()) {
+            get_logger()->error("Trying to build more geometries than BVH could hold!");
+        }
+
+        // update geometries and ranges
+        uint geometry_count = std::min(entries->geometries.triangles.size(), blas.geometries.size());
+        for (uint k = 0; k < geometry_count; k++) {
+            auto& src_geometry = entry.geometries.triangles.at(k);
+            auto& dst_geometry = blas.geometries.at(k);
+
+            auto index_data = VkDeviceAddress{0};
+            if (src_geometry.index_buffer.valid())
+                index_data = fetch_resource(rhi->buffers, src_geometry.index_buffer).device_address();
+
+            auto vertex_data = VkDeviceAddress{0};
+            if (src_geometry.vertex_buffer.valid())
+                vertex_data = fetch_resource(rhi->buffers, src_geometry.vertex_buffer).device_address();
+
+            dst_geometry.sType                                       = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+            dst_geometry.geometryType                                = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
+            dst_geometry.geometry.triangles.sType                    = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
+            dst_geometry.geometry.triangles.indexType                = vkenum(src_geometry.size.index_format);
+            dst_geometry.geometry.triangles.indexData.deviceAddress  = index_data;
+            dst_geometry.geometry.triangles.vertexStride             = src_geometry.vertex_stride;
+            dst_geometry.geometry.triangles.vertexFormat             = vkenum(src_geometry.size.vertex_format);
+            dst_geometry.geometry.triangles.vertexData.deviceAddress = vertex_data;
+            dst_geometry.geometry.triangles.maxVertex                = src_geometry.size.vertex_count - 1;
+
+            auto& range           = blas.ranges.at(k);
+            range.firstVertex     = src_geometry.first_vertex;
+            range.primitiveCount  = src_geometry.size.vertex_count / 3;
+            range.primitiveOffset = src_geometry.first_index;
+            range.transformOffset = 0;
+        }
+
+        // update build info
+        blas.build.srcAccelerationStructure  = blas.blas;
+        blas.build.dstAccelerationStructure  = blas.blas;
+        blas.build.scratchData.deviceAddress = address;
+        blas.build.geometryCount             = geometry_count;
+        blas.build.pGeometries               = blas.geometries.data();
+
+        build_infos.push_back(blas.build);
+        build_ranges.push_back(blas.ranges.data());
+
+        address += blas.sizes.buildScratchSize;
+    }
+
+    rhi->vtable.vkCmdBuildAccelerationStructuresKHR(cmd.command_buffer, static_cast<uint32_t>(build_infos.size()),
+        build_infos.data(), build_ranges.data());
+}
+
+void cmd::compact_blases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, uint32_t count, GPUBlasHandle* blases)
+{
+    assert(!!!"unimplemented");
 }

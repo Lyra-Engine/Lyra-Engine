@@ -658,6 +658,26 @@ VkSampleCountFlagBits vkenum(GPUIntegerCoordinate samples)
     throw std::invalid_argument("invalid argument for GPU sample count");
 }
 
+VkGeometryTypeKHR vkenum(GPUBlasType type)
+{
+    switch (type) {
+        case GPUBlasType::TRIANGLE:
+            return VK_GEOMETRY_TYPE_TRIANGLES_KHR;
+    }
+    throw std::invalid_argument("invalid argument for GPUBlasType");
+}
+
+VkBuildAccelerationStructureModeKHR vkenum(GPUBVHUpdateMode mode)
+{
+    switch (mode) {
+        case GPUBVHUpdateMode::BUILD:
+            return VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
+        case GPUBVHUpdateMode::UPDATE:
+            return VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR;
+    }
+    throw std::invalid_argument("invalid argument for GPUBVHUpdateMode");
+}
+
 VkColorComponentFlags vkenum(GPUColorWriteFlags color)
 {
     VkColorComponentFlags flags = 0;
@@ -677,13 +697,15 @@ VkBufferUsageFlags vkenum(GPUBufferUsageFlags usages)
     VkBufferUsageFlags flags = 0;
 
     // clang-format off
-    if (usages.contains(GPUBufferUsage::COPY_SRC)) flags |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    if (usages.contains(GPUBufferUsage::COPY_DST)) flags |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-    if (usages.contains(GPUBufferUsage::INDEX))    flags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-    if (usages.contains(GPUBufferUsage::VERTEX))   flags |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    if (usages.contains(GPUBufferUsage::UNIFORM))  flags |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-    if (usages.contains(GPUBufferUsage::STORAGE))  flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    if (usages.contains(GPUBufferUsage::INDIRECT)) flags |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+    if (usages.contains(GPUBufferUsage::COPY_SRC))   flags |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    if (usages.contains(GPUBufferUsage::COPY_DST))   flags |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    if (usages.contains(GPUBufferUsage::INDEX))      flags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+    if (usages.contains(GPUBufferUsage::VERTEX))     flags |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    if (usages.contains(GPUBufferUsage::UNIFORM))    flags |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+    if (usages.contains(GPUBufferUsage::STORAGE))    flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    if (usages.contains(GPUBufferUsage::INDIRECT))   flags |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+    if (usages.contains(GPUBufferUsage::BLAS_INPUT)) flags |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
+    if (usages.contains(GPUBufferUsage::TLAS_INPUT)) flags |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
     // clang-format on
 
     return flags;
@@ -727,26 +749,26 @@ VkPipelineStageFlags2 vkenum(GPUBarrierSyncFlags sync)
     VkPipelineStageFlags flags = 0;
 
     // clang-format off
-    if (sync.contains(GPUBarrierSync::NONE))             flags |= VK_PIPELINE_STAGE_2_NONE;
-    if (sync.contains(GPUBarrierSync::ALL))              flags |= VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
-    if (sync.contains(GPUBarrierSync::DRAW))             flags |= VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT; // TODO: figure out the correct mapping for this.
-    if (sync.contains(GPUBarrierSync::INDEX_INPUT))      flags |= VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT;
-    if (sync.contains(GPUBarrierSync::VERTEX_SHADING))   flags |= VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
-    if (sync.contains(GPUBarrierSync::PIXEL_SHADING))    flags |= VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
-    if (sync.contains(GPUBarrierSync::DEPTH_STENCIL))    flags |= VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
-    if (sync.contains(GPUBarrierSync::RENDER_TARGET))    flags |= VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-    if (sync.contains(GPUBarrierSync::COMPUTE))          flags |= VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
-    if (sync.contains(GPUBarrierSync::RAYTRACING))       flags |= VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR;
-    if (sync.contains(GPUBarrierSync::COPY))             flags |= VK_PIPELINE_STAGE_2_TRANSFER_BIT;
-    if (sync.contains(GPUBarrierSync::BLIT))             flags |= VK_PIPELINE_STAGE_2_BLIT_BIT;
-    if (sync.contains(GPUBarrierSync::CLEAR))            flags |= VK_PIPELINE_STAGE_2_CLEAR_BIT;
-    if (sync.contains(GPUBarrierSync::RESOLVE))          flags |= VK_PIPELINE_STAGE_2_RESOLVE_BIT;
-    if (sync.contains(GPUBarrierSync::EXECUTE_INDIRECT)) flags |= VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT;
-    if (sync.contains(GPUBarrierSync::ALL_SHADING))      flags |= VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT;
-    if (sync.contains(GPUBarrierSync::VIDEO_DECODE))     flags |= VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR;
-    if (sync.contains(GPUBarrierSync::VIDEO_ENCODE))     flags |= VK_PIPELINE_STAGE_2_VIDEO_ENCODE_BIT_KHR;
-    if (sync.contains(GPUBarrierSync::BVH_BUILD))        flags |= VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
-    if (sync.contains(GPUBarrierSync::BVH_COPY))         flags |= VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_COPY_BIT_KHR;
+    if (sync.contains(GPUBarrierSync::NONE))                         flags |= VK_PIPELINE_STAGE_2_NONE;
+    if (sync.contains(GPUBarrierSync::ALL))                          flags |= VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+    if (sync.contains(GPUBarrierSync::DRAW))                         flags |= VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT; // TODO: figure out the correct mapping for this.
+    if (sync.contains(GPUBarrierSync::INDEX_INPUT))                  flags |= VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT;
+    if (sync.contains(GPUBarrierSync::VERTEX_SHADING))               flags |= VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
+    if (sync.contains(GPUBarrierSync::PIXEL_SHADING))                flags |= VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+    if (sync.contains(GPUBarrierSync::DEPTH_STENCIL))                flags |= VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
+    if (sync.contains(GPUBarrierSync::RENDER_TARGET))                flags |= VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+    if (sync.contains(GPUBarrierSync::COMPUTE))                      flags |= VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+    if (sync.contains(GPUBarrierSync::RAYTRACING))                   flags |= VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR;
+    if (sync.contains(GPUBarrierSync::COPY))                         flags |= VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+    if (sync.contains(GPUBarrierSync::BLIT))                         flags |= VK_PIPELINE_STAGE_2_BLIT_BIT;
+    if (sync.contains(GPUBarrierSync::CLEAR))                        flags |= VK_PIPELINE_STAGE_2_CLEAR_BIT;
+    if (sync.contains(GPUBarrierSync::RESOLVE))                      flags |= VK_PIPELINE_STAGE_2_RESOLVE_BIT;
+    if (sync.contains(GPUBarrierSync::EXECUTE_INDIRECT))             flags |= VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT;
+    if (sync.contains(GPUBarrierSync::ALL_SHADING))                  flags |= VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT;
+    if (sync.contains(GPUBarrierSync::VIDEO_DECODE))                 flags |= VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR;
+    if (sync.contains(GPUBarrierSync::VIDEO_ENCODE))                 flags |= VK_PIPELINE_STAGE_2_VIDEO_ENCODE_BIT_KHR;
+    if (sync.contains(GPUBarrierSync::ACCELERATION_STRUCTURE_BUILD)) flags |= VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
+    if (sync.contains(GPUBarrierSync::ACCELERATION_STRUCTURE_COPY))  flags |= VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_COPY_BIT_KHR;
     // clang-format on
 
     return flags;
@@ -757,32 +779,55 @@ VkAccessFlags2 vkenum(GPUBarrierAccessFlags access)
     VkAccessFlags2 flags = 0;
 
     // clang-format off
-    if (access.contains(GPUBarrierAccess::COMMON))              flags |= VK_ACCESS_2_NONE; // TODO: figure out the correct mapping
-    if (access.contains(GPUBarrierAccess::VERTEX_BUFFER))       flags |= VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT;
-    if (access.contains(GPUBarrierAccess::UNIFORM_BUFFER))      flags |= VK_ACCESS_2_UNIFORM_READ_BIT;
-    if (access.contains(GPUBarrierAccess::INDEX_BUFFER))        flags |= VK_ACCESS_2_INDEX_READ_BIT;
-    if (access.contains(GPUBarrierAccess::RENDER_TARGET))       flags |= VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT;
-    if (access.contains(GPUBarrierAccess::UNORDERED_ACCESS))    flags |= VK_ACCESS_2_SHADER_SAMPLED_READ_BIT;
-    if (access.contains(GPUBarrierAccess::DEPTH_STENCIL_WRITE)) flags |= VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    if (access.contains(GPUBarrierAccess::DEPTH_STENCIL_READ))  flags |= VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
-    if (access.contains(GPUBarrierAccess::SHADER_RESOURCE))     flags |= VK_ACCESS_2_SHADER_READ_BIT;
-    if (access.contains(GPUBarrierAccess::STREAM_OUTPUT))       flags |= VK_ACCESS_2_TRANSFORM_FEEDBACK_WRITE_BIT_EXT;
-    if (access.contains(GPUBarrierAccess::INDIRECT_ARGUMENT))   flags |= VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT;
-    if (access.contains(GPUBarrierAccess::COPY_DEST))           flags |= VK_ACCESS_2_TRANSFER_WRITE_BIT;
-    if (access.contains(GPUBarrierAccess::COPY_SOURCE))         flags |= VK_ACCESS_2_TRANSFER_READ_BIT;
-    if (access.contains(GPUBarrierAccess::RESOLVE_DEST))        flags |= VK_ACCESS_2_TRANSFER_WRITE_BIT;
-    if (access.contains(GPUBarrierAccess::RESOLVE_SOURCE))      flags |= VK_ACCESS_2_TRANSFER_READ_BIT;
-    if (access.contains(GPUBarrierAccess::BVH_READ))            flags |= VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR;
-    if (access.contains(GPUBarrierAccess::BVH_WRITE))           flags |= VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
-    if (access.contains(GPUBarrierAccess::SHADING_RATE_SOURCE)) flags |= VK_ACCESS_2_SHADING_RATE_IMAGE_READ_BIT_NV;
-    if (access.contains(GPUBarrierAccess::VIDEO_DECODE_READ))   flags |= VK_ACCESS_2_VIDEO_DECODE_READ_BIT_KHR;
-    if (access.contains(GPUBarrierAccess::VIDEO_DECODE_WRITE))  flags |= VK_ACCESS_2_VIDEO_DECODE_WRITE_BIT_KHR;
-    if (access.contains(GPUBarrierAccess::VIDEO_PROCESS_READ))  flags |= VK_ACCESS_2_VIDEO_DECODE_READ_BIT_KHR;
-    if (access.contains(GPUBarrierAccess::VIDEO_PROCESS_WRITE)) flags |= VK_ACCESS_2_VIDEO_DECODE_WRITE_BIT_KHR;
-    if (access.contains(GPUBarrierAccess::VIDEO_ENCODE_READ))   flags |= VK_ACCESS_2_VIDEO_ENCODE_READ_BIT_KHR;
-    if (access.contains(GPUBarrierAccess::VIDEO_ENCODE_WRITE))  flags |= VK_ACCESS_2_VIDEO_ENCODE_WRITE_BIT_KHR;
-    if (access.contains(GPUBarrierAccess::NO_ACCESS))           flags |= VK_ACCESS_2_NONE;
+    if (access.contains(GPUBarrierAccess::COMMON))                       flags |= VK_ACCESS_2_NONE; // TODO: figure out the correct mapping
+    if (access.contains(GPUBarrierAccess::VERTEX_BUFFER))                flags |= VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT;
+    if (access.contains(GPUBarrierAccess::UNIFORM_BUFFER))               flags |= VK_ACCESS_2_UNIFORM_READ_BIT;
+    if (access.contains(GPUBarrierAccess::INDEX_BUFFER))                 flags |= VK_ACCESS_2_INDEX_READ_BIT;
+    if (access.contains(GPUBarrierAccess::RENDER_TARGET))                flags |= VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT;
+    if (access.contains(GPUBarrierAccess::UNORDERED_ACCESS))             flags |= VK_ACCESS_2_SHADER_SAMPLED_READ_BIT;
+    if (access.contains(GPUBarrierAccess::DEPTH_STENCIL_WRITE))          flags |= VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    if (access.contains(GPUBarrierAccess::DEPTH_STENCIL_READ))           flags |= VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+    if (access.contains(GPUBarrierAccess::SHADER_RESOURCE))              flags |= VK_ACCESS_2_SHADER_READ_BIT;
+    if (access.contains(GPUBarrierAccess::STREAM_OUTPUT))                flags |= VK_ACCESS_2_TRANSFORM_FEEDBACK_WRITE_BIT_EXT;
+    if (access.contains(GPUBarrierAccess::INDIRECT_ARGUMENT))            flags |= VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT;
+    if (access.contains(GPUBarrierAccess::COPY_DEST))                    flags |= VK_ACCESS_2_TRANSFER_WRITE_BIT;
+    if (access.contains(GPUBarrierAccess::COPY_SOURCE))                  flags |= VK_ACCESS_2_TRANSFER_READ_BIT;
+    if (access.contains(GPUBarrierAccess::RESOLVE_DEST))                 flags |= VK_ACCESS_2_TRANSFER_WRITE_BIT;
+    if (access.contains(GPUBarrierAccess::RESOLVE_SOURCE))               flags |= VK_ACCESS_2_TRANSFER_READ_BIT;
+    if (access.contains(GPUBarrierAccess::ACCELERATION_STRUCTURE_READ))  flags |= VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR;
+    if (access.contains(GPUBarrierAccess::ACCELERATION_STRUCTURE_WRITE)) flags |= VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
+    if (access.contains(GPUBarrierAccess::SHADING_RATE_SOURCE))          flags |= VK_ACCESS_2_SHADING_RATE_IMAGE_READ_BIT_NV;
+    if (access.contains(GPUBarrierAccess::VIDEO_DECODE_READ))            flags |= VK_ACCESS_2_VIDEO_DECODE_READ_BIT_KHR;
+    if (access.contains(GPUBarrierAccess::VIDEO_DECODE_WRITE))           flags |= VK_ACCESS_2_VIDEO_DECODE_WRITE_BIT_KHR;
+    if (access.contains(GPUBarrierAccess::VIDEO_PROCESS_READ))           flags |= VK_ACCESS_2_VIDEO_DECODE_READ_BIT_KHR;
+    if (access.contains(GPUBarrierAccess::VIDEO_PROCESS_WRITE))          flags |= VK_ACCESS_2_VIDEO_DECODE_WRITE_BIT_KHR;
+    if (access.contains(GPUBarrierAccess::VIDEO_ENCODE_READ))            flags |= VK_ACCESS_2_VIDEO_ENCODE_READ_BIT_KHR;
+    if (access.contains(GPUBarrierAccess::VIDEO_ENCODE_WRITE))           flags |= VK_ACCESS_2_VIDEO_ENCODE_WRITE_BIT_KHR;
+    if (access.contains(GPUBarrierAccess::NO_ACCESS))                    flags |= VK_ACCESS_2_NONE;
     // clang-format on
 
     return flags;
+}
+
+VkBuildAccelerationStructureFlagsKHR vkenum(GPUBVHFlags flags)
+{
+    VkBuildAccelerationStructureFlagsKHR result = 0;
+    // clang-format off
+    if (flags.contains(GPUBVHFlag::ALLOW_COMPACTION))  result = VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR;
+    if (flags.contains(GPUBVHFlag::ALLOW_UPDATE))      result = VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
+    if (flags.contains(GPUBVHFlag::PREFER_FAST_BUILD)) result = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_KHR;
+    if (flags.contains(GPUBVHFlag::PREFER_FAST_TRACE)) result = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+    if (flags.contains(GPUBVHFlag::LOW_MEMORY))        result = VK_BUILD_ACCELERATION_STRUCTURE_LOW_MEMORY_BIT_KHR;
+    // clang-format on
+    return result;
+}
+
+VkGeometryFlagsKHR vkenum(GPUBVHGeometryFlags flags)
+{
+    VkGeometryFlagsKHR result = 0;
+    // clang-format off
+    if (flags.contains(GPUBVHGeometryFlag::BVH_OPAQUE))                      result = VK_GEOMETRY_OPAQUE_BIT_KHR;
+    if (flags.contains(GPUBVHGeometryFlag::NO_DUPLICATE_ANY_HIT_INVOCATION)) result = VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR;
+    // clang-format on
+    return result;
 }

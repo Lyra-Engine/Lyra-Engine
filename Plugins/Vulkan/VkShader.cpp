@@ -15,6 +15,9 @@ VulkanShader::VulkanShader(const GPUShaderModuleDescriptor& desc)
     create_info.codeSize = desc.size;
 
     vk_check(rhi->vtable.vkCreateShaderModule(rhi->device, &create_info, nullptr, &module));
+
+    if (desc.label)
+        rhi->set_debug_label(VK_OBJECT_TYPE_SHADER_MODULE, (uint64_t)module, desc.label);
 }
 
 void VulkanShader::destroy()

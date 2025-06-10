@@ -175,6 +175,8 @@ namespace lyra::rhi
         STORAGE       = 0x0080,
         INDIRECT      = 0x0100,
         QUERY_RESOLVE = 0x0200,
+        BLAS_INPUT    = 0x0400,
+        TLAS_INPUT    = 0x0800,
     };
 
     enum struct GPUTextureUsage : uint
@@ -520,55 +522,55 @@ namespace lyra::rhi
 
     enum struct GPUBarrierSync : uint
     {
-        NONE             = 0x1u << 0,
-        ALL              = 0x1u << 1,
-        DRAW             = 0x1u << 2,
-        INDEX_INPUT      = 0x1u << 4,
-        VERTEX_SHADING   = 0x1u << 5,
-        PIXEL_SHADING    = 0x1u << 6,
-        DEPTH_STENCIL    = 0x1u << 7,
-        RENDER_TARGET    = 0x1u << 8,
-        COMPUTE          = 0x1u << 9,
-        RAYTRACING       = 0x1u << 10,
-        COPY             = 0x1u << 11,
-        BLIT             = 0x1u << 12,
-        CLEAR            = 0x1u << 13,
-        RESOLVE          = 0x1u << 14,
-        EXECUTE_INDIRECT = 0x1u << 15,
-        ALL_SHADING      = 0x1u << 16,
-        VIDEO_DECODE     = 0x1u << 17,
-        VIDEO_ENCODE     = 0x1u << 18,
-        BVH_BUILD        = 0x1u << 19,
-        BVH_COPY         = 0x1u << 20,
+        NONE                         = 0x1u << 0,
+        ALL                          = 0x1u << 1,
+        DRAW                         = 0x1u << 2,
+        INDEX_INPUT                  = 0x1u << 4,
+        VERTEX_SHADING               = 0x1u << 5,
+        PIXEL_SHADING                = 0x1u << 6,
+        DEPTH_STENCIL                = 0x1u << 7,
+        RENDER_TARGET                = 0x1u << 8,
+        COMPUTE                      = 0x1u << 9,
+        RAYTRACING                   = 0x1u << 10,
+        COPY                         = 0x1u << 11,
+        BLIT                         = 0x1u << 12,
+        CLEAR                        = 0x1u << 13,
+        RESOLVE                      = 0x1u << 14,
+        EXECUTE_INDIRECT             = 0x1u << 15,
+        ALL_SHADING                  = 0x1u << 16,
+        VIDEO_DECODE                 = 0x1u << 17,
+        VIDEO_ENCODE                 = 0x1u << 18,
+        ACCELERATION_STRUCTURE_BUILD = 0x1u << 19,
+        ACCELERATION_STRUCTURE_COPY  = 0x1u << 20,
     };
 
     enum struct GPUBarrierAccess : uint
     {
-        COMMON              = 0x1u << 0,
-        VERTEX_BUFFER       = 0x1u << 1,
-        UNIFORM_BUFFER      = 0x1u << 2,
-        INDEX_BUFFER        = 0x1u << 4,
-        RENDER_TARGET       = 0x1u << 5,
-        UNORDERED_ACCESS    = 0x1u << 6,
-        DEPTH_STENCIL_WRITE = 0x1u << 7,
-        DEPTH_STENCIL_READ  = 0x1u << 8,
-        SHADER_RESOURCE     = 0x1u << 9,
-        STREAM_OUTPUT       = 0x1u << 10,
-        INDIRECT_ARGUMENT   = 0x1u << 11,
-        COPY_DEST           = 0x1u << 12,
-        COPY_SOURCE         = 0x1u << 13,
-        RESOLVE_DEST        = 0x1u << 14,
-        RESOLVE_SOURCE      = 0x1u << 15,
-        BVH_READ            = 0x1u << 16,
-        BVH_WRITE           = 0x1u << 17,
-        SHADING_RATE_SOURCE = 0x1u << 18,
-        VIDEO_DECODE_READ   = 0x1u << 19,
-        VIDEO_DECODE_WRITE  = 0x1u << 20,
-        VIDEO_PROCESS_READ  = 0x1u << 21,
-        VIDEO_PROCESS_WRITE = 0x1u << 22,
-        VIDEO_ENCODE_READ   = 0x1u << 23,
-        VIDEO_ENCODE_WRITE  = 0x1u << 24,
-        NO_ACCESS           = 0x1u << 25,
+        COMMON                       = 0x1u << 0,
+        VERTEX_BUFFER                = 0x1u << 1,
+        UNIFORM_BUFFER               = 0x1u << 2,
+        INDEX_BUFFER                 = 0x1u << 4,
+        RENDER_TARGET                = 0x1u << 5,
+        UNORDERED_ACCESS             = 0x1u << 6,
+        DEPTH_STENCIL_WRITE          = 0x1u << 7,
+        DEPTH_STENCIL_READ           = 0x1u << 8,
+        SHADER_RESOURCE              = 0x1u << 9,
+        STREAM_OUTPUT                = 0x1u << 10,
+        INDIRECT_ARGUMENT            = 0x1u << 11,
+        COPY_DEST                    = 0x1u << 12,
+        COPY_SOURCE                  = 0x1u << 13,
+        RESOLVE_DEST                 = 0x1u << 14,
+        RESOLVE_SOURCE               = 0x1u << 15,
+        ACCELERATION_STRUCTURE_READ  = 0x1u << 16,
+        ACCELERATION_STRUCTURE_WRITE = 0x1u << 17,
+        SHADING_RATE_SOURCE          = 0x1u << 18,
+        VIDEO_DECODE_READ            = 0x1u << 19,
+        VIDEO_DECODE_WRITE           = 0x1u << 20,
+        VIDEO_PROCESS_READ           = 0x1u << 21,
+        VIDEO_PROCESS_WRITE          = 0x1u << 22,
+        VIDEO_ENCODE_READ            = 0x1u << 23,
+        VIDEO_ENCODE_WRITE           = 0x1u << 24,
+        NO_ACCESS                    = 0x1u << 25,
     };
 
     enum struct GPUBarrierLayout : uint
@@ -606,6 +608,34 @@ namespace lyra::rhi
         COMPUTE_QUEUE_COPY_SOURCE,
         COMPUTE_QUEUE_COPY_DEST,
         VIDEO_QUEUE_COMMON
+    };
+
+    enum struct GPUBlasType : uint
+    {
+        TRIANGLE,
+    };
+
+    enum struct GPUBVHFlag : uint
+    {
+        ALLOW_UPDATE                = 0x0001,
+        ALLOW_COMPACTION            = 0x0002,
+        PREFER_FAST_TRACE           = 0x0004,
+        PREFER_FAST_BUILD           = 0x0004,
+        LOW_MEMORY                  = 0x0008,
+        USE_TRANSFORM               = 0x0010,
+        ALLOW_RAY_HIT_VERTEX_RETURN = 0x0020,
+    };
+
+    enum struct GPUBVHUpdateMode : uint
+    {
+        BUILD,
+        UPDATE,
+    };
+
+    enum struct GPUBVHGeometryFlag : uint
+    {
+        BVH_OPAQUE                      = 0x0001,
+        NO_DUPLICATE_ANY_HIT_INVOCATION = 0x0002,
     };
 
     inline bool is_depth_format(GPUTextureFormat format)

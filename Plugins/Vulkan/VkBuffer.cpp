@@ -6,15 +6,21 @@ VulkanBuffer::VulkanBuffer()
     // do nothing
 }
 
-VulkanBuffer::VulkanBuffer(const GPUBufferDescriptor& desc)
+VulkanBuffer::VulkanBuffer(const GPUBufferDescriptor& desc, VkBufferUsageFlags additional_usages)
 {
+    auto rhi = get_rhi();
+
     VkBufferCreateInfo      buffer_create_info = {};
     VmaAllocationCreateInfo alloc_create_info  = {};
+
+    // device buffer address
+    if (desc.device_buffer_address)
+        additional_usages |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 
     // buffer create info
     buffer_create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     buffer_create_info.size  = desc.size;
-    buffer_create_info.usage = vkenum(desc.usage);
+    buffer_create_info.usage = vkenum(desc.usage) | additional_usages;
 
     // allocation create info
     alloc_create_info.usage = VMA_MEMORY_USAGE_AUTO;
@@ -51,13 +57,16 @@ VulkanBuffer::VulkanBuffer(const GPUBufferDescriptor& desc)
 
     // create buffer
     vk_check(vmaCreateBuffer(
-        get_rhi()->alloc, &buffer_create_info, &alloc_create_info,
+        rhi->alloc, &buffer_create_info, &alloc_create_info,
         &buffer, &allocation, &alloc_info));
 
     if (desc.mapped_at_creation) {
         mapped_data = reinterpret_cast<uint8_t*>(alloc_info.pMappedData);
         mapped_size = desc.size;
     }
+
+    if (desc.label)
+        rhi->set_debug_label(VK_OBJECT_TYPE_BUFFER, (uint64_t)buffer, desc.label);
 }
 
 void VulkanBuffer::map(GPUSize64 offset, GPUSize64 size)
@@ -79,4 +88,19 @@ void VulkanBuffer::destroy()
         vmaDestroyBuffer(get_rhi()->alloc, buffer, allocation);
         buffer = VK_NULL_HANDLE;
     }
+}
+
+VkDeviceAddress VulkanBuffer::device_address() const
+{
+    return get_buffer_device_address(buffer);
+}
+
+VkDeviceAddress get_buffer_device_address(VkBuffer buffer)
+{
+    auto rhi    = get_rhi();
+    auto info   = VkBufferDeviceAddressInfo{};
+    info.sType  = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+    info.pNext  = nullptr;
+    info.buffer = buffer;
+    return vkGetBufferDeviceAddressKHR(rhi->device, &info);
 }

@@ -78,8 +78,9 @@ struct VulkanBuffer
 
     // implementation in VkBuffer.cpp
     explicit VulkanBuffer();
-    explicit VulkanBuffer(const GPUBufferDescriptor& desc);
+    explicit VulkanBuffer(const GPUBufferDescriptor& desc, VkBufferUsageFlags additional_usages = 0);
 
+    auto device_address() const -> VkDeviceAddress;
     void map(GPUSize64 offset = 0, GPUSize64 size = 0);
     void unmap();
     void destroy();
@@ -106,7 +107,7 @@ struct VulkanTexture
 
 struct VulkanTextureView
 {
-    VkImageView view   = VK_NULL_HANDLE;
+    VkImageView view = VK_NULL_HANDLE;
 
     // implementation in VkImage.cpp
     explicit VulkanTextureView();
@@ -168,12 +169,14 @@ struct VulkanSemaphore
     bool valid() const { return semaphore != VK_NULL_HANDLE; }
 };
 
-struct VulkanQuery
+struct VulkanQueryPool
 {
     VkQueryPool pool = VK_NULL_HANDLE;
 
     // implementation in VkQuery.cpp
-    void destroy() {}
+    explicit VulkanQueryPool();
+
+    void destroy();
 
     bool valid() const { return pool != VK_NULL_HANDLE; }
 };
@@ -234,6 +237,49 @@ struct VulkanPipeline
     void destroy();
 
     bool valid() const { return pipeline != VK_NULL_HANDLE; }
+};
+
+struct VulkanTlas
+{
+    VkAccelerationStructureKHR                  tlas     = VK_NULL_HANDLE;
+    VkAccelerationStructureBuildGeometryInfoKHR build    = {};
+    VkAccelerationStructureBuildSizesInfoKHR    sizes    = {};
+    VkAccelerationStructureBuildRangeInfoKHR    range    = {};
+    VkAccelerationStructureGeometryKHR          geometry = {};
+
+    // used to build content of instances in memory
+    VulkanBuffer storage;
+    VulkanBuffer instances;
+
+    uint max_instance_count = 0;
+
+    // implementation in VkTlas.cpp
+    explicit VulkanTlas();
+    explicit VulkanTlas(const GPUTlasDescriptor& desc);
+
+    void destroy();
+
+    bool valid() const { return tlas != VK_NULL_HANDLE; }
+};
+
+struct VulkanBlas
+{
+    VkAccelerationStructureKHR                       blas       = VK_NULL_HANDLE;
+    VkAccelerationStructureBuildGeometryInfoKHR      build      = {};
+    VkAccelerationStructureBuildSizesInfoKHR         sizes      = {};
+    Vector<VkAccelerationStructureBuildRangeInfoKHR> ranges     = {};
+    Vector<VkAccelerationStructureGeometryKHR>       geometries = {};
+
+    // underlying storage for blas
+    VulkanBuffer storage;
+
+    // implementation in VkBlas.cpp
+    explicit VulkanBlas();
+    explicit VulkanBlas(const GPUBlasDescriptor& desc, const Vector<GPUBlasGeometrySizeDescriptor>& sizes);
+
+    void destroy();
+
+    bool valid() const { return blas != VK_NULL_HANDLE; }
 };
 
 struct VulkanDescriptorPool
@@ -393,12 +439,13 @@ struct VulkanRHI
 
     // collection of objects
     VulkanResourceManager<VulkanSemaphore>       fences;
-    VulkanResourceManager<VulkanQuery>           queries;
     VulkanResourceManager<VulkanBuffer>          buffers;
     VulkanResourceManager<VulkanTexture>         textures;
     VulkanResourceManager<VulkanTextureView>     views;
     VulkanResourceManager<VulkanSampler>         samplers;
     VulkanResourceManager<VulkanShader>          shaders;
+    VulkanResourceManager<VulkanTlas>            tlases;
+    VulkanResourceManager<VulkanBlas>            blases;
     VulkanResourceManager<VulkanPipeline>        pipelines;
     VulkanResourceManager<VulkanPipelineLayout>  pipeline_layouts;
     VulkanResourceManager<VulkanBindGroupLayout> bind_group_layouts;
@@ -406,6 +453,21 @@ struct VulkanRHI
     auto current_frame() -> VulkanFrame& { return frames.at(current_frame_index % frames.size()); }
     auto current_image() -> VulkanSwapFrame& { return swapchain_frames.at(current_image_index); }
     void create_swapchain(); // implementation in VkSwapchain.cpp
+
+    // debug label
+    void set_debug_label(VkObjectType type, uint64_t handle, CString name)
+    {
+        static auto vkSetDebugUtilsObjectNameEXT = (PFN_vkSetDebugUtilsObjectNameEXT)
+            vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT");
+
+        auto name_info         = VkDebugUtilsObjectNameInfoEXT{};
+        name_info.sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+        name_info.objectType   = type;
+        name_info.objectHandle = handle;
+        name_info.pObjectName  = name;
+
+        vkSetDebugUtilsObjectNameEXT(device, &name_info);
+    }
 };
 
 // These are the functions that implements the plugin.
@@ -419,6 +481,7 @@ namespace api
     bool create_surface(GPUSurface& surface, const GPUSurfaceDescriptor& desc);
     void delete_surface();
     bool get_surface_extent(GPUExtent2D& extent);
+    bool get_surface_format(GPUTextureFormat& format);
 
     // adapter apis
     bool create_adapter(GPUAdapter& adapter, const GPUAdapterDescriptor& descriptor);
@@ -452,6 +515,16 @@ namespace api
     // shader apis
     bool create_shader_module(GPUShaderModuleHandle& shader, const GPUShaderModuleDescriptor& desc);
     void delete_shader_module(GPUShaderModuleHandle shader);
+
+    // bvh blas apis
+    bool create_blas(GPUBlasHandle& blas, const GPUBlasDescriptor& descriptor, const Vector<GPUBlasGeometrySizeDescriptor>& sizes);
+    void delete_blas(GPUBlasHandle blas);
+    bool get_blas_sizes(GPUBlasHandle blas, GPUBVHSizes& sizes);
+
+    // bvh tlas apis
+    bool create_tlas(GPUTlasHandle& tlas, const GPUTlasDescriptor& descriptor);
+    void delete_tlas(GPUTlasHandle tlas);
+    bool get_tlas_sizes(GPUTlasHandle tlas, GPUBVHSizes& sizes);
 
     // bind group layout apis
     bool create_bind_group_layout(GPUBindGroupLayoutHandle& handle, const GPUBindGroupLayoutDescriptor& desc);
@@ -511,6 +584,7 @@ namespace cmd
     void copy_texture_to_buffer(GPUCommandEncoderHandle cmdbuffer, const GPUTexelCopyTextureInfo& source, const GPUTexelCopyBufferInfo& destination, const GPUExtent3D& copy_size);
     void copy_texture_to_texture(GPUCommandEncoderHandle cmdbuffer, const GPUTexelCopyTextureInfo& source, const GPUTexelCopyTextureInfo& destination, const GPUExtent3D& copy_size);
     void clear_buffer(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle buffer, GPUSize64 offset, GPUSize64 size);
+    void clear_texture(GPUCommandEncoderHandle cmdbuffer, GPUTextureHandle texture, const GPUTextureSubresourceRange& range);
     void resolve_query_set(GPUCommandEncoderHandle cmdbuffer, GPUQuerySetHandle query_set, GPUSize32 first_query, GPUSize32 query_count, GPUBufferHandle destination, GPUSize64 destination_offset);
     void set_viewport(GPUCommandEncoderHandle cmdbuffer, float x, float y, float w, float h, float min_depth, float max_depth);
     void set_scissor_rect(GPUCommandEncoderHandle cmdbuffer, GPUIntegerCoordinate x, GPUIntegerCoordinate y, GPUIntegerCoordinate w, GPUIntegerCoordinate h);
@@ -521,6 +595,9 @@ namespace cmd
     void memory_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUMemoryBarrier* barriers);
     void buffer_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUBufferBarrier* barriers);
     void texture_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUTextureBarrier* barriers);
+    void build_tlases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, uint32_t count, GPUTlasBuildEntry* entries);
+    void build_blases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, uint32_t count, GPUBlasBuildEntry* entries);
+    void compact_blases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, uint32_t count, GPUBlasHandle* blases);
 } // namespace cmd
 
 auto get_logger() -> Logger;
@@ -556,12 +633,16 @@ auto vkenum(GPUVertexFormat format) -> VkFormat;
 auto vkenum(GPUTextureFormat format) -> VkFormat;
 auto vkenum(GPUBarrierLayout layout) -> VkImageLayout;
 auto vkenum(GPUIntegerCoordinate samples) -> VkSampleCountFlagBits;
+auto vkenum(GPUBlasType type) -> VkGeometryTypeKHR;
+auto vkenum(GPUBVHUpdateMode mode) -> VkBuildAccelerationStructureModeKHR;
 auto vkenum(GPUColorWriteFlags color) -> VkColorComponentFlags;
 auto vkenum(GPUBufferUsageFlags usages) -> VkBufferUsageFlags;
 auto vkenum(GPUTextureUsageFlags usages) -> VkImageUsageFlags;
 auto vkenum(GPUShaderStageFlags stages) -> VkShaderStageFlags;
 auto vkenum(GPUBarrierSyncFlags flags) -> VkPipelineStageFlags2;
 auto vkenum(GPUBarrierAccessFlags flags) -> VkAccessFlags2;
+auto vkenum(GPUBVHFlags flags) -> VkBuildAccelerationStructureFlagsKHR;
+auto vkenum(GPUBVHGeometryFlags flags) -> VkGeometryFlagsKHR;
 
 // vulkan rhi
 void set_rhi(VulkanRHI* instance);
@@ -570,6 +651,9 @@ auto get_rhi() -> VulkanRHI*;
 // vulkan surface utils
 void add_surface_extension(Vector<const char*>& instance_extensions);
 auto create_surface(VkInstance instance, const WindowHandle& handle) -> VkSurfaceKHR;
+
+// vulkan buffer utils
+auto get_buffer_device_address(VkBuffer buffer) -> VkDeviceAddress;
 
 // vulkan descriptor pool
 auto create_bind_group(const GPUBindGroupDescriptor& desc) -> GPUBindGroupHandle;

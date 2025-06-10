@@ -23,6 +23,7 @@ namespace lyra::rhi
         bool (*create_surface)(GPUSurface& surface, const GPUSurfaceDescriptor& descriptor);
         void (*delete_surface)();
         bool (*get_surface_extent)(GPUExtent2D& extent);
+        bool (*get_surface_format)(GPUTextureFormat& format);
 
         bool (*create_device)(const GPUDeviceDescriptor& descriptor);
         void (*delete_device)();
@@ -46,11 +47,11 @@ namespace lyra::rhi
         bool (*create_query_set)(GPUQuerySetHandle& query, const GPUQuerySetDescriptor& descriptor);
         void (*delete_query_set)(GPUQuerySetHandle query);
 
-        bool (*create_blas)(GPUBlasHandle& texture, const GPUBlasDescriptor& descriptor);
-        void (*delete_blas)(GPUBlasHandle texture);
+        bool (*create_blas)(GPUBlasHandle& blas, const GPUBlasDescriptor& descriptor, const Vector<GPUBlasGeometrySizeDescriptor>& sizes);
+        void (*delete_blas)(GPUBlasHandle blas);
 
-        bool (*create_tlas)(GPUTlasHandle& texture, const GPUTlasDescriptor& descriptor);
-        void (*delete_tlas)(GPUTlasHandle texture);
+        bool (*create_tlas)(GPUTlasHandle& tlas, const GPUTlasDescriptor& descriptor);
+        void (*delete_tlas)(GPUTlasHandle tlas);
 
         bool (*create_pipeline_layout)(GPUPipelineLayoutHandle& layout, const GPUPipelineLayoutDescriptor& descriptor);
         void (*delete_pipeline_layout)(GPUPipelineLayoutHandle layout);
@@ -78,6 +79,9 @@ namespace lyra::rhi
         void (*wait_idle)();
         void (*wait_fence)(GPUFenceHandle fence);
 
+        bool (*get_blas_sizes)(GPUBlasHandle blas, GPUBVHSizes& sizes);
+        bool (*get_tlas_sizes)(GPUTlasHandle tlas, GPUBVHSizes& sizes);
+
         bool (*create_command_buffer)(GPUCommandEncoderHandle& cmdbuffer, const GPUCommandBufferDescriptor& descriptor);
         bool (*create_command_bundle)(GPUCommandEncoderHandle& cmdbuffer, const GPUCommandBundleDescriptor& descriptor);
         bool (*submit_command_buffer)(GPUCommandEncoderHandle& cmdbuffer);
@@ -103,6 +107,7 @@ namespace lyra::rhi
         void (*cmd_copy_texture_to_buffer)(GPUCommandEncoderHandle cmdbuffer, const GPUTexelCopyTextureInfo& source, const GPUTexelCopyBufferInfo& destination, const GPUExtent3D& copy_size);
         void (*cmd_copy_texture_to_texture)(GPUCommandEncoderHandle cmdbuffer, const GPUTexelCopyTextureInfo& source, const GPUTexelCopyTextureInfo& destination, const GPUExtent3D& copy_size);
         void (*cmd_clear_buffer)(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle buffer, GPUSize64 offset, GPUSize64 size);
+        void (*cmd_clear_texture)(GPUCommandEncoderHandle cmdbuffer, GPUTextureHandle texture, const GPUTextureSubresourceRange& range);
         void (*cmd_resolve_query_set)(GPUCommandEncoderHandle cmdbuffer, GPUQuerySetHandle query_set, GPUSize32 first_query, GPUSize32 query_count, GPUBufferHandle destination, GPUSize64 destination_offset);
         void (*cmd_set_viewport)(GPUCommandEncoderHandle cmdbuffer, float x, float y, float w, float h, float min_depth, float max_depth);
         void (*cmd_set_scissor_rect)(GPUCommandEncoderHandle cmdbuffer, GPUIntegerCoordinate x, GPUIntegerCoordinate y, GPUIntegerCoordinate w, GPUIntegerCoordinate h);
@@ -113,6 +118,9 @@ namespace lyra::rhi
         void (*cmd_memory_barrier)(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUMemoryBarrier* barriers);
         void (*cmd_buffer_barrier)(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUBufferBarrier* barriers);
         void (*cmd_texture_barrier)(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUTextureBarrier* barriers);
+        void (*cmd_build_tlases)(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, uint32_t count, GPUTlasBuildEntry* entries);
+        void (*cmd_build_blases)(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, uint32_t count, GPUBlasBuildEntry* entries);
+        void (*cmd_compact_blases)(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, uint32_t count, GPUBlasHandle* blases);
     };
 
 } // namespace lyra::rhi

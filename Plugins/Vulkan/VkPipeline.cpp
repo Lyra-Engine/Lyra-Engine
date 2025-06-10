@@ -199,6 +199,9 @@ VulkanPipeline::VulkanPipeline(const GPURenderPipelineDescriptor& desc)
     // TODO: support specialization constants
 
     vk_check(rhi->vtable.vkCreateGraphicsPipelines(rhi->device, cache, 1, &create_info, nullptr, &pipeline));
+
+    if (desc.label)
+        rhi->set_debug_label(VK_OBJECT_TYPE_PIPELINE, (uint64_t)pipeline, desc.label);
 }
 
 VulkanPipeline::VulkanPipeline(const GPUComputePipelineDescriptor& desc)
@@ -217,6 +220,9 @@ VulkanPipeline::VulkanPipeline(const GPUComputePipelineDescriptor& desc)
     // TODO: support specialization constants
 
     vk_check(rhi->vtable.vkCreateComputePipelines(rhi->device, cache, 1, &create_info, nullptr, &pipeline));
+
+    if (desc.label)
+        rhi->set_debug_label(VK_OBJECT_TYPE_PIPELINE, (uint64_t)pipeline, desc.label);
 }
 
 VulkanPipeline::VulkanPipeline(const GPURayTracingPipelineDescriptor& desc)

@@ -350,6 +350,10 @@ namespace lyra::rhi
 
         auto create_query_set(const GPUQuerySetDescriptor& descriptor) -> GPUQuerySet;
 
+        auto create_blas(const GPUBlasDescriptor& descriptor, const Vector<GPUBlasGeometrySizeDescriptor>& sizes) -> GPUBlas;
+
+        auto create_tlas(const GPUTlasDescriptor& descriptor) -> GPUTlas;
+
         auto create_bind_group(const GPUBindGroupDescriptor& descriptor) -> GPUBindGroup;
 
         auto create_bind_group_layout(const GPUBindGroupLayoutDescriptor& descriptor) -> GPUBindGroupLayout;
@@ -376,6 +380,8 @@ namespace lyra::rhi
     struct GPUSurface : public GPUObjectBase
     {
         auto get_current_texture() const -> GPUSurfaceTexture;
+
+        auto get_current_format() const -> GPUTextureFormat;
 
         auto get_current_extent() const -> GPUExtent2D;
 

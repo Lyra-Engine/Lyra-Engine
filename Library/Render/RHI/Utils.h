@@ -36,6 +36,7 @@ namespace lyra::rhi
     using GPUSize32Out             = uint32_t;
     using GPUFlagsConstant         = uint32_t;
     using GPUPipelineConstantValue = uint64_t;
+    using GPUBufferAddress         = uint64_t;
     using RHIFlags                 = BitFlags<RHIFlag>;
     using GPUShaderStageFlags      = BitFlags<GPUShaderStage>;
     using GPUBufferUsageFlags      = BitFlags<GPUBufferUsage>;
@@ -43,6 +44,8 @@ namespace lyra::rhi
     using GPUColorWriteFlags       = BitFlags<GPUColorWrite>;
     using GPUBarrierSyncFlags      = BitFlags<GPUBarrierSync>;
     using GPUBarrierAccessFlags    = BitFlags<GPUBarrierAccess>;
+    using GPUBVHFlags              = BitFlags<GPUBVHFlag>;
+    using GPUBVHGeometryFlags      = BitFlags<GPUBVHGeometryFlag>;
 
     // typed GPU handle
     using GPUFenceHandle              = Handle<GPUObjectType, GPUObjectType::FENCE>;
@@ -246,9 +249,80 @@ namespace lyra::rhi
         GPUTextureViewDimension view_dimension = GPUTextureViewDimension::x2D;
     };
 
-    struct GPUAccelerationStructureBindingLayout
+    struct GPUBVHBindingLayout
     {
         bool vertex_return = false;
+    };
+
+    struct GPUBVHSizes
+    {
+        uint bvh_size;
+        uint build_size;
+        uint update_size;
+    };
+
+    struct GPUBlasTriangleGeometrySizeDescriptor
+    {
+        GPUVertexFormat     vertex_format;
+        GPUIndexFormat      index_format;
+        uint                vertex_count;
+        uint                index_count;
+        GPUBVHGeometryFlags flags;
+    };
+
+    struct GPUBlasGeometrySizeDescriptor
+    {
+        GPUBlasType type = GPUBlasType::TRIANGLE;
+        union
+        {
+            GPUBlasTriangleGeometrySizeDescriptor triangles;
+        };
+
+        explicit GPUBlasGeometrySizeDescriptor() {} // adding default trivial constructor
+    };
+
+    // NOTE: index is optional
+    struct GPUBlasTriangleGeometry
+    {
+        GPUBlasTriangleGeometrySizeDescriptor size;
+        GPUBufferHandle                       vertex_buffer;
+        GPUBufferHandle                       index_buffer;
+        GPUBufferHandle                       transform_buffer;
+        uint                                  first_vertex;
+        uint                                  first_index;
+        GPUBufferAddress                      vertex_stride;
+        GPUBufferAddress                      transform_buffer_offset;
+    };
+
+    struct GPUBlasGeometries
+    {
+        GPUBlasType type;
+        union
+        {
+            Vector<GPUBlasTriangleGeometry> triangles;
+        };
+
+        ~GPUBlasGeometries() {} // fill in the automatically deleted destructor
+    };
+
+    struct GPUBlasBuildEntry
+    {
+        GPUBlasHandle     blas;
+        GPUBlasGeometries geometries;
+    };
+
+    struct GPUTlasInstance
+    {
+        float         transform[4][3];
+        uint32_t      custom_data;
+        uint8_t       mask;
+        GPUBlasHandle blas;
+    };
+
+    struct GPUTlasBuildEntry
+    {
+        GPUTlasHandle           tlas;
+        Vector<GPUTlasInstance> instances;
     };
 
     struct GPUBlendComponent
@@ -330,11 +404,11 @@ namespace lyra::rhi
         GPUBindingResourceType type;
         union
         {
-            GPUBufferBindingLayout                buffer;
-            GPUSamplerBindingLayout               sampler;
-            GPUTextureBindingLayout               texture;
-            GPUStorageTextureBindingLayout        storage_texture;
-            GPUAccelerationStructureBindingLayout acceleration_structure;
+            GPUBufferBindingLayout         buffer;
+            GPUSamplerBindingLayout        sampler;
+            GPUTextureBindingLayout        texture;
+            GPUStorageTextureBindingLayout storage_texture;
+            GPUBVHBindingLayout            bvh;
         };
     };
 

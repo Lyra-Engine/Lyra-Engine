@@ -8,6 +8,8 @@ VulkanTexture::VulkanTexture()
 
 VulkanTexture::VulkanTexture(const GPUTextureDescriptor& desc) : aspects(0)
 {
+    auto rhi = get_rhi();
+
     auto tex_create_info   = VkImageCreateInfo{};
     auto alloc_create_info = VmaAllocationCreateInfo{};
 
@@ -38,7 +40,7 @@ VulkanTexture::VulkanTexture(const GPUTextureDescriptor& desc) : aspects(0)
     alloc_create_info.flags = 0;
 
     // create texture
-    vk_check(vmaCreateImage(get_rhi()->alloc,
+    vk_check(vmaCreateImage(rhi->alloc,
         &tex_create_info, &alloc_create_info,
         &image, &allocation, &alloc_info));
 
@@ -49,6 +51,9 @@ VulkanTexture::VulkanTexture(const GPUTextureDescriptor& desc) : aspects(0)
         aspects |= VK_IMAGE_ASPECT_STENCIL_BIT;
     if (aspects == 0)
         aspects |= VK_IMAGE_ASPECT_COLOR_BIT;
+
+    if (desc.label)
+        rhi->set_debug_label(VK_OBJECT_TYPE_IMAGE, (uint64_t)image, desc.label);
 }
 
 void VulkanTexture::destroy()
@@ -87,6 +92,9 @@ VulkanTextureView::VulkanTextureView(const VulkanTexture& texture, const GPUText
     create_info.subresourceRange.layerCount     = desc.array_layer_count;
 
     vk_check(vkCreateImageView(rhi->device, &create_info, nullptr, &view));
+
+    if (desc.label)
+        rhi->set_debug_label(VK_OBJECT_TYPE_IMAGE_VIEW, (uint64_t)view, desc.label);
 }
 
 void VulkanTextureView::destroy()

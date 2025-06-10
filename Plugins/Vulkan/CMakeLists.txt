@@ -19,6 +19,9 @@ target_sources(lyra-vulkan PRIVATE
     VkBuffer.cpp
     VkImage.cpp
     VkSampler.cpp
+    VkTlas.cpp
+    VkBlas.cpp
+    VkQuery.cpp
     VkLayout.cpp
     VkPipeline.cpp
     VkCommandPool.cpp

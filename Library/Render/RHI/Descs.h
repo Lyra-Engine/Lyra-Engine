@@ -49,9 +49,10 @@ namespace lyra::rhi
 
     struct GPUBufferDescriptor : public GPUObjectDescriptorBase
     {
-        GPUSize64           size               = 0;
-        GPUBufferUsageFlags usage              = 0;
-        bool                mapped_at_creation = false;
+        GPUSize64           size                  = 0;
+        GPUBufferUsageFlags usage                 = 0;
+        bool                mapped_at_creation    = false;
+        bool                device_buffer_address = false;
     };
 
     struct GPUSamplerDescriptor : public GPUObjectDescriptorBase
@@ -104,14 +105,17 @@ namespace lyra::rhi
         GPUSize32    count;
     };
 
-    struct GPUTlasDescriptor : public GPUObjectDescriptorBase
-    {
-        // nothing here for now
-    };
-
     struct GPUBlasDescriptor : public GPUObjectDescriptorBase
     {
-        // nothing here for now
+        GPUBVHFlags      flags       = 0;
+        GPUBVHUpdateMode update_mode = GPUBVHUpdateMode::BUILD;
+    };
+
+    struct GPUTlasDescriptor : public GPUObjectDescriptorBase
+    {
+        uint             max_instances = 0;
+        GPUBVHFlags      flags         = 0;
+        GPUBVHUpdateMode update_mode   = GPUBVHUpdateMode::BUILD;
     };
 
     struct GPUBindGroupDescriptor : public GPUObjectDescriptorBase
@@ -131,13 +135,13 @@ namespace lyra::rhi
         Vector<GPUBindGroupLayoutHandle> bind_group_layouts;
     };
 
-    struct GPUComputePipelineDescriptor
+    struct GPUComputePipelineDescriptor : public GPUObjectDescriptorBase
     {
         GPUPipelineLayoutHandle layout;
         GPUProgrammableStage    compute;
     };
 
-    struct GPURenderPipelineDescriptor
+    struct GPURenderPipelineDescriptor : public GPUObjectDescriptorBase
     {
         GPUPipelineLayoutHandle layout;
         GPUVertexState          vertex        = {};
@@ -147,7 +151,7 @@ namespace lyra::rhi
         GPUFragmentState        fragment      = {};
     };
 
-    struct GPURayTracingPipelineDescriptor
+    struct GPURayTracingPipelineDescriptor : public GPUObjectDescriptorBase
     {
         // more stuff in here
         GPUPipelineLayoutHandle layout;

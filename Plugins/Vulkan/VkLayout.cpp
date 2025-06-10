@@ -13,27 +13,23 @@ VkDescriptorType infer_buffer_descriptor_type(const GPUBufferBindingLayout& entr
     }
 }
 
-VkDescriptorType infer_sampler_descriptor_type(const GPUSamplerBindingLayout& entry)
+VkDescriptorType infer_sampler_descriptor_type(const GPUSamplerBindingLayout&)
 {
-    (void)entry; // sampler is simple, no additional information from entry
     return VK_DESCRIPTOR_TYPE_SAMPLER;
 }
 
-VkDescriptorType infer_texture_descriptor_type(const GPUTextureBindingLayout& entry)
+VkDescriptorType infer_texture_descriptor_type(const GPUTextureBindingLayout&)
 {
-    (void)entry; // texture is simple, no additional information from entry
     return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
 }
 
-VkDescriptorType infer_storage_texture_descriptor_type(const GPUStorageTextureBindingLayout& entry)
+VkDescriptorType infer_storage_texture_descriptor_type(const GPUStorageTextureBindingLayout&)
 {
-    (void)entry; // storage texture is simple, no additional information from entry
     return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 }
 
-VkDescriptorType infer_acceleration_structure_descriptor_type(const GPUAccelerationStructureBindingLayout& entry)
+VkDescriptorType infer_bvh_descriptor_type(const GPUBVHBindingLayout&)
 {
-    (void)entry; // acceleration structure is simple, no additional information from entry
     return VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
 }
 
@@ -49,7 +45,7 @@ VkDescriptorType infer_descriptor_type(const GPUBindGroupLayoutEntry& entry)
         case GPUBindingResourceType::STORAGE_TEXTURE:
             return infer_storage_texture_descriptor_type(entry.storage_texture);
         case GPUBindingResourceType::ACCELERATION_STRUCTURE:
-            return infer_acceleration_structure_descriptor_type(entry.acceleration_structure);
+            return infer_bvh_descriptor_type(entry.bvh);
         default:
             throw std::invalid_argument("Unsupported GPU binding resource type!");
     }
@@ -120,6 +116,9 @@ VulkanBindGroupLayout::VulkanBindGroupLayout(const GPUBindGroupLayoutDescriptor&
         // create descritpor set layout
         auto rhi = get_rhi();
         vk_check(rhi->vtable.vkCreateDescriptorSetLayout(rhi->device, &create_info, nullptr, &layout));
+
+        if (desc.label)
+            rhi->set_debug_label(VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (uint64_t)layout, desc.label);
     }
 }
 
@@ -154,6 +153,9 @@ VulkanPipelineLayout::VulkanPipelineLayout(const GPUPipelineLayoutDescriptor& de
 
     // create pipeline layout
     vk_check(rhi->vtable.vkCreatePipelineLayout(rhi->device, &create_info, nullptr, &layout));
+
+    if (desc.label)
+        rhi->set_debug_label(VK_OBJECT_TYPE_PIPELINE_LAYOUT, (uint64_t)layout, desc.label);
 }
 
 void VulkanPipelineLayout::destroy()
