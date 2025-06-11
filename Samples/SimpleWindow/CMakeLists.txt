@@ -1,0 +1,7 @@
+lyra_sample(test)
+find_package(glm REQUIRED)
+find_package(cmrc REQUIRED)
+target_sources(lyra-test PRIVATE main.cpp)
+cmrc_add_resource_library(resources shader.slang)
+target_link_libraries(lyra-test PRIVATE resources)
+target_link_libraries(lyra-test PRIVATE lyra::common glm::glm)

@@ -45,21 +45,21 @@ RenderAPI* RHI::api()
     return RENDER_PLUGIN->get_api();
 }
 
-void RHI::destroy()
+void RHI::destroy() const
 {
     RHI::api()->delete_surface();
     RHI::api()->delete_device();
     RHI::api()->delete_instance();
 }
 
-GPUAdapter RHI::request_adapter(const GPUAdapterDescriptor& descriptor)
+GPUAdapter RHI::request_adapter(const GPUAdapterDescriptor& descriptor) const
 {
     GPUAdapter adapter = {};
     RHI::api()->create_adapter(adapter, descriptor);
     return adapter;
 }
 
-GPUSurface RHI::request_surface(const GPUSurfaceDescriptor& descriptor)
+GPUSurface RHI::request_surface(const GPUSurfaceDescriptor& descriptor) const
 {
     auto& surface = RHI::get_current_surface();
     RHI::api()->create_surface(surface, descriptor);
@@ -100,7 +100,7 @@ GPUExtent2D GPUSurface::get_current_extent() const
     return extent;
 }
 
-void GPUSurface::destroy()
+void GPUSurface::destroy() const
 {
     RHI::api()->delete_surface();
 }
@@ -114,14 +114,14 @@ void GPUSurfaceTexture::present() const
 #pragma endregion GPUSurfaceTexture
 
 #pragma region GPUDevice
-GPUFence GPUDevice::create_fence()
+GPUFence GPUDevice::create_fence() const
 {
     GPUFence fence;
     RHI::api()->create_fence(fence.handle);
     return fence;
 }
 
-GPUBuffer GPUDevice::create_buffer(const GPUBufferDescriptor& desc)
+GPUBuffer GPUDevice::create_buffer(const GPUBufferDescriptor& desc) const
 {
     GPUBuffer buffer;
     RHI::api()->create_buffer(buffer.handle, desc);
@@ -130,70 +130,70 @@ GPUBuffer GPUDevice::create_buffer(const GPUBufferDescriptor& desc)
     return buffer;
 }
 
-GPUTexture GPUDevice::create_texture(const GPUTextureDescriptor& desc)
+GPUTexture GPUDevice::create_texture(const GPUTextureDescriptor& desc) const
 {
     GPUTexture texture;
     RHI::api()->create_texture(texture.handle, desc);
     return texture;
 }
 
-GPUSampler GPUDevice::create_sampler(const GPUSamplerDescriptor& desc)
+GPUSampler GPUDevice::create_sampler(const GPUSamplerDescriptor& desc) const
 {
     GPUSampler sampler;
     RHI::api()->create_sampler(sampler.handle, desc);
     return sampler;
 }
 
-GPUShaderModule GPUDevice::create_shader_module(const GPUShaderModuleDescriptor& desc)
+GPUShaderModule GPUDevice::create_shader_module(const GPUShaderModuleDescriptor& desc) const
 {
     GPUShaderModule module;
     RHI::api()->create_shader_module(module.handle, desc);
     return module;
 }
 
-GPUQuerySet GPUDevice::create_query_set(const GPUQuerySetDescriptor& desc)
+GPUQuerySet GPUDevice::create_query_set(const GPUQuerySetDescriptor& desc) const
 {
     GPUQuerySet query;
     RHI::api()->create_query_set(query.handle, desc);
     return query;
 }
 
-GPUBlas GPUDevice::create_blas(const GPUBlasDescriptor& desc, const Vector<GPUBlasGeometrySizeDescriptor>& sizes)
+GPUBlas GPUDevice::create_blas(const GPUBlasDescriptor& desc, const Vector<GPUBlasGeometrySizeDescriptor>& sizes) const
 {
     GPUBlas blas;
     RHI::api()->create_blas(blas.handle, desc, sizes);
     return blas;
 }
 
-GPUTlas GPUDevice::create_tlas(const GPUTlasDescriptor& desc)
+GPUTlas GPUDevice::create_tlas(const GPUTlasDescriptor& desc) const
 {
     GPUTlas tlas;
     RHI::api()->create_tlas(tlas.handle, desc);
     return tlas;
 }
 
-GPUBindGroup GPUDevice::create_bind_group(const GPUBindGroupDescriptor& desc)
+GPUBindGroup GPUDevice::create_bind_group(const GPUBindGroupDescriptor& desc) const
 {
     GPUBindGroup bind_group;
     RHI::api()->create_bind_group(bind_group.handle, desc);
     return bind_group;
 }
 
-GPUBindGroupLayout GPUDevice::create_bind_group_layout(const GPUBindGroupLayoutDescriptor& desc)
+GPUBindGroupLayout GPUDevice::create_bind_group_layout(const GPUBindGroupLayoutDescriptor& desc) const
 {
     GPUBindGroupLayout layout;
     RHI::api()->create_bind_group_layout(layout.handle, desc);
     return layout;
 }
 
-GPUPipelineLayout GPUDevice::create_pipeline_layout(const GPUPipelineLayoutDescriptor& desc)
+GPUPipelineLayout GPUDevice::create_pipeline_layout(const GPUPipelineLayoutDescriptor& desc) const
 {
     GPUPipelineLayout layout;
     RHI::api()->create_pipeline_layout(layout.handle, desc);
     return layout;
 }
 
-GPURenderPipeline GPUDevice::create_render_pipeline(const GPURenderPipelineDescriptor& desc)
+GPURenderPipeline GPUDevice::create_render_pipeline(const GPURenderPipelineDescriptor& desc) const
 {
     GPURenderPipeline pipeline;
     pipeline.layout = desc.layout;
@@ -201,7 +201,7 @@ GPURenderPipeline GPUDevice::create_render_pipeline(const GPURenderPipelineDescr
     return pipeline;
 }
 
-GPUComputePipeline GPUDevice::create_compute_pipeline(const GPUComputePipelineDescriptor& desc)
+GPUComputePipeline GPUDevice::create_compute_pipeline(const GPUComputePipelineDescriptor& desc) const
 {
     GPUComputePipeline pipeline;
     pipeline.layout = desc.layout;
@@ -209,7 +209,7 @@ GPUComputePipeline GPUDevice::create_compute_pipeline(const GPUComputePipelineDe
     return pipeline;
 }
 
-GPURayTracingPipeline GPUDevice::create_raytracing_pipeline(const GPURayTracingPipelineDescriptor& desc)
+GPURayTracingPipeline GPUDevice::create_raytracing_pipeline(const GPURayTracingPipelineDescriptor& desc) const
 {
     GPURayTracingPipeline pipeline;
     pipeline.layout = desc.layout;
@@ -217,31 +217,31 @@ GPURayTracingPipeline GPUDevice::create_raytracing_pipeline(const GPURayTracingP
     return pipeline;
 }
 
-GPUCommandBuffer GPUDevice::create_command_buffer(const GPUCommandBufferDescriptor& desc)
+GPUCommandBuffer GPUDevice::create_command_buffer(const GPUCommandBufferDescriptor& desc) const
 {
     GPUCommandBuffer command_buffer;
     RHI::api()->create_command_buffer(command_buffer.handle, desc);
     return command_buffer;
 }
 
-GPUCommandBundle GPUDevice::create_command_bundle(const GPUCommandBundleDescriptor& desc)
+GPUCommandBundle GPUDevice::create_command_bundle(const GPUCommandBundleDescriptor& desc) const
 {
     GPUCommandBundle command_bundle;
     RHI::api()->create_command_bundle(command_bundle.handle, desc);
     return command_bundle;
 }
 
-void GPUDevice::wait()
+void GPUDevice::wait() const
 {
     RHI::api()->wait_idle();
 }
 
-void GPUDevice::wait(GPUFence fence)
+void GPUDevice::wait(GPUFence fence) const
 {
     RHI::api()->wait_fence(fence.handle);
 }
 
-void GPUDevice::destroy()
+void GPUDevice::destroy() const
 {
     RHI::api()->delete_device();
 }
@@ -313,6 +313,7 @@ GPUTextureView GPUTexture::create_view(GPUTextureViewDescriptor descriptor)
 void GPUTexture::destroy()
 {
     RHI::api()->delete_texture(handle);
+    handle.reset();
 }
 #pragma endregion GPUTexture
 
@@ -320,11 +321,12 @@ void GPUTexture::destroy()
 void GPUSampler::destroy()
 {
     RHI::api()->delete_sampler(handle);
+    handle.reset();
 }
 #pragma endregion GPUSampler
 
 #pragma region GPUFence
-void GPUFence::wait()
+void GPUFence::wait() const
 {
     RHI::api()->wait_fence(handle);
 }
@@ -332,6 +334,7 @@ void GPUFence::wait()
 void GPUFence::destroy()
 {
     RHI::api()->delete_fence(handle);
+    handle.reset();
 }
 #pragma endregion GPUFence
 
@@ -339,6 +342,7 @@ void GPUFence::destroy()
 void GPUShaderModule::destroy()
 {
     RHI::api()->delete_shader_module(handle);
+    handle.reset();
 }
 #pragma endregion GPUShaderModule
 
@@ -346,6 +350,7 @@ void GPUShaderModule::destroy()
 void GPUBindGroupLayout::destroy()
 {
     RHI::api()->delete_bind_group_layout(handle);
+    handle.reset();
 }
 #pragma endregion GPUBindGroupLayout
 
@@ -353,6 +358,7 @@ void GPUBindGroupLayout::destroy()
 void GPUPipelineLayout::destroy()
 {
     RHI::api()->delete_pipeline_layout(handle);
+    handle.reset();
 }
 #pragma endregion GPUPipelineLayout
 
@@ -360,6 +366,7 @@ void GPUPipelineLayout::destroy()
 void GPURenderPipeline::destroy()
 {
     RHI::api()->delete_render_pipeline(handle);
+    handle.reset();
 }
 #pragma endregion GPURenderPipeline
 
@@ -367,6 +374,7 @@ void GPURenderPipeline::destroy()
 void GPUComputePipeline::destroy()
 {
     RHI::api()->delete_compute_pipeline(handle);
+    handle.reset();
 }
 #pragma endregion GPUComputePipeline
 
@@ -374,178 +382,179 @@ void GPUComputePipeline::destroy()
 void GPURayTracingPipeline::destroy()
 {
     RHI::api()->delete_raytracing_pipeline(handle);
+    handle.reset();
 }
 #pragma endregion GPURayTracingPipeline
 
 #pragma region GPUCommandEncoder
-void GPUCommandEncoder::wait(const GPUFence& fence, GPUBarrierSyncFlags sync)
+void GPUCommandEncoder::wait(const GPUFence& fence, GPUBarrierSyncFlags sync) const
 {
     RHI::api()->cmd_wait_fence(handle, fence.handle, sync);
 }
 
-void GPUCommandEncoder::signal(const GPUFence& fence, GPUBarrierSyncFlags sync)
+void GPUCommandEncoder::signal(const GPUFence& fence, GPUBarrierSyncFlags sync) const
 {
     RHI::api()->cmd_signal_fence(handle, fence.handle, sync);
 }
 
-void GPUCommandEncoder::set_pipeline(const GPURenderPipeline& pipeline)
+void GPUCommandEncoder::set_pipeline(const GPURenderPipeline& pipeline) const
 {
     RHI::api()->cmd_set_render_pipeline(handle, pipeline.handle, pipeline.layout);
 }
 
-void GPUCommandEncoder::set_pipeline(const GPUComputePipeline& pipeline)
+void GPUCommandEncoder::set_pipeline(const GPUComputePipeline& pipeline) const
 {
     RHI::api()->cmd_set_compute_pipeline(handle, pipeline.handle, pipeline.layout);
 }
 
-void GPUCommandEncoder::set_pipeline(const GPURayTracingPipeline& pipeline)
+void GPUCommandEncoder::set_pipeline(const GPURayTracingPipeline& pipeline) const
 {
     RHI::api()->cmd_set_raytracing_pipeline(handle, pipeline.handle, pipeline.layout);
 }
 
-void GPUCommandEncoder::set_bind_group(GPUIndex32 index, const GPUBindGroup& bind_group, const Vector<GPUBufferDynamicOffset>& dynamic_offsets)
+void GPUCommandEncoder::set_bind_group(GPUIndex32 index, const GPUBindGroup& bind_group, const Vector<GPUBufferDynamicOffset>& dynamic_offsets) const
 {
     RHI::api()->cmd_set_bind_group(handle, index, bind_group, dynamic_offsets);
 }
 
-void GPUCommandEncoder::dispatch_workgroups(GPUSize32 x, GPUSize32 y, GPUSize32 z)
+void GPUCommandEncoder::dispatch_workgroups(GPUSize32 x, GPUSize32 y, GPUSize32 z) const
 {
     RHI::api()->cmd_dispatch_workgroups(handle, x, y, z);
 }
 
-void GPUCommandEncoder::dispatch_workgroups_indirect(const GPUBuffer& indirect_buffer, GPUSize64 indirect_offset)
+void GPUCommandEncoder::dispatch_workgroups_indirect(const GPUBuffer& indirect_buffer, GPUSize64 indirect_offset) const
 {
     RHI::api()->cmd_dispatch_workgroups_indirect(handle, indirect_buffer, indirect_offset);
 }
 
-void GPUCommandEncoder::set_index_buffer(const GPUBuffer& buffer, GPUIndexFormat index_format, GPUSize64 offset, GPUSize64 size)
+void GPUCommandEncoder::set_index_buffer(const GPUBuffer& buffer, GPUIndexFormat index_format, GPUSize64 offset, GPUSize64 size) const
 {
     RHI::api()->cmd_set_index_buffer(handle, buffer.handle, index_format, offset, size);
 }
 
-void GPUCommandEncoder::set_vertex_buffer(GPUIndex32 slot, const GPUBuffer& buffer, GPUSize64 offset, GPUSize64 size)
+void GPUCommandEncoder::set_vertex_buffer(GPUIndex32 slot, const GPUBuffer& buffer, GPUSize64 offset, GPUSize64 size) const
 {
     RHI::api()->cmd_set_vertex_buffer(handle, slot, buffer.handle, offset, size);
 }
 
-void GPUCommandEncoder::draw(GPUSize32 vertex_count, GPUSize32 instance_count, GPUSize32 first_vertex, GPUSize32 first_instance)
+void GPUCommandEncoder::draw(GPUSize32 vertex_count, GPUSize32 instance_count, GPUSize32 first_vertex, GPUSize32 first_instance) const
 {
     RHI::api()->cmd_draw(handle, vertex_count, instance_count, first_vertex, first_instance);
 }
 
-void GPUCommandEncoder::draw_indexed(GPUSize32 index_count, GPUSize32 instance_count, GPUSize32 first_index, GPUSignedOffset32 base_vertex, GPUSize32 first_instance)
+void GPUCommandEncoder::draw_indexed(GPUSize32 index_count, GPUSize32 instance_count, GPUSize32 first_index, GPUSignedOffset32 base_vertex, GPUSize32 first_instance) const
 {
     RHI::api()->cmd_draw_indexed(handle, index_count, instance_count, first_index, base_vertex, first_instance);
 }
 
-void GPUCommandEncoder::draw_indirect(const GPUBuffer& indirect_buffer, GPUSize64 indirect_offset, GPUSize32 draw_count)
+void GPUCommandEncoder::draw_indirect(const GPUBuffer& indirect_buffer, GPUSize64 indirect_offset, GPUSize32 draw_count) const
 {
     RHI::api()->cmd_draw_indirect(handle, indirect_buffer.handle, indirect_offset, draw_count);
 }
 
-void GPUCommandEncoder::draw_indexed_indirect(const GPUBuffer& indirect_buffer, GPUSize64 indirect_offset, GPUSize32 draw_count)
+void GPUCommandEncoder::draw_indexed_indirect(const GPUBuffer& indirect_buffer, GPUSize64 indirect_offset, GPUSize32 draw_count) const
 {
     RHI::api()->cmd_draw_indexed_indirect(handle, indirect_buffer.handle, indirect_offset, draw_count);
 }
 
-void GPUCommandEncoder::begin_render_pass(const GPURenderPassDescriptor& descriptor)
+void GPUCommandEncoder::begin_render_pass(const GPURenderPassDescriptor& descriptor) const
 {
     RHI::api()->cmd_begin_render_pass(handle, descriptor);
 }
 
-void GPUCommandEncoder::end_render_pass()
+void GPUCommandEncoder::end_render_pass() const
 {
     RHI::api()->cmd_end_render_pass(handle);
 }
 
-void GPUCommandEncoder::copy_buffer_to_buffer(const GPUBuffer& source, const GPUBuffer& destination, GPUSize64 size)
+void GPUCommandEncoder::copy_buffer_to_buffer(const GPUBuffer& source, const GPUBuffer& destination, GPUSize64 size) const
 {
     assert(!!!"unimplemented");
 }
 
-void GPUCommandEncoder::copy_buffer_to_buffer(const GPUBuffer& source, GPUSize64 source_offset, const GPUBuffer& destination, GPUSize64 destination_offset, GPUSize64 size)
+void GPUCommandEncoder::copy_buffer_to_buffer(const GPUBuffer& source, GPUSize64 source_offset, const GPUBuffer& destination, GPUSize64 destination_offset, GPUSize64 size) const
 {
     assert(!!!"unimplemented");
 }
 
-void GPUCommandEncoder::copy_buffer_to_texture(const GPUTexelCopyBufferInfo& source, const GPUTexelCopyTextureInfo& destination, const GPUExtent3D& copy_size)
+void GPUCommandEncoder::copy_buffer_to_texture(const GPUTexelCopyBufferInfo& source, const GPUTexelCopyTextureInfo& destination, const GPUExtent3D& copy_size) const
 {
     assert(!!!"unimplemented");
 }
 
-void GPUCommandEncoder::copy_texture_to_buffer(const GPUTexelCopyTextureInfo& source, const GPUTexelCopyBufferInfo& destination, const GPUExtent3D& copy_size)
+void GPUCommandEncoder::copy_texture_to_buffer(const GPUTexelCopyTextureInfo& source, const GPUTexelCopyBufferInfo& destination, const GPUExtent3D& copy_size) const
 {
     assert(!!!"unimplemented");
 }
 
-void GPUCommandEncoder::copy_texture_to_texture(const GPUTexelCopyTextureInfo& source, const GPUTexelCopyTextureInfo& destination, const GPUExtent3D& copy_size)
+void GPUCommandEncoder::copy_texture_to_texture(const GPUTexelCopyTextureInfo& source, const GPUTexelCopyTextureInfo& destination, const GPUExtent3D& copy_size) const
 {
     assert(!!!"unimplemented");
 }
 
-void GPUCommandEncoder::clear_buffer(const GPUBuffer& buffer, GPUSize64 offset, GPUSize64 size)
+void GPUCommandEncoder::clear_buffer(const GPUBuffer& buffer, GPUSize64 offset, GPUSize64 size) const
 {
     assert(!!!"unimplemented");
 }
 
-void GPUCommandEncoder::resolve_query_set(GPUQuerySet query_set, GPUSize32 first_query, GPUSize32 query_count, const GPUBuffer& destination, GPUSize64 destination_offset)
+void GPUCommandEncoder::resolve_query_set(GPUQuerySet query_set, GPUSize32 first_query, GPUSize32 query_count, const GPUBuffer& destination, GPUSize64 destination_offset) const
 {
     assert(!!!"unimplemented");
 }
 
-void GPUCommandEncoder::set_viewport(float x, float y, float w, float h, float min_depth, float max_depth)
+void GPUCommandEncoder::set_viewport(float x, float y, float w, float h, float min_depth, float max_depth) const
 {
     RHI::api()->cmd_set_viewport(handle, x, y, w, h, min_depth, max_depth);
 }
 
-void GPUCommandEncoder::set_scissor_rect(GPUIntegerCoordinate x, GPUIntegerCoordinate y, GPUIntegerCoordinate w, GPUIntegerCoordinate h)
+void GPUCommandEncoder::set_scissor_rect(GPUIntegerCoordinate x, GPUIntegerCoordinate y, GPUIntegerCoordinate w, GPUIntegerCoordinate h) const
 {
     RHI::api()->cmd_set_scissor_rect(handle, x, y, w, h);
 }
 
-void GPUCommandEncoder::set_blend_constant(GPUColor color)
+void GPUCommandEncoder::set_blend_constant(GPUColor color) const
 {
     assert(!!!"unimplemented");
 }
 
-void GPUCommandEncoder::set_stencil_reference(GPUStencilValue reference)
+void GPUCommandEncoder::set_stencil_reference(GPUStencilValue reference) const
 {
     assert(!!!"unimplemented");
 }
 
-void GPUCommandEncoder::begin_occlusion_query(GPUSize32 queryIndex)
+void GPUCommandEncoder::begin_occlusion_query(GPUSize32 queryIndex) const
 {
     assert(!!!"unimplemented");
 }
 
-void GPUCommandEncoder::end_occlusion_query()
+void GPUCommandEncoder::end_occlusion_query() const
 {
     assert(!!!"unimplemented");
 }
 
-void GPUCommandEncoder::resource_barrier(const GPUBufferBarrier& barrier)
+void GPUCommandEncoder::resource_barrier(const GPUBufferBarrier& barrier) const
 {
     RHI::api()->cmd_buffer_barrier(handle, 1, const_cast<GPUBufferBarrier*>(&barrier));
 }
 
-void GPUCommandEncoder::resource_barrier(const Vector<GPUBufferBarrier>& barriers)
+void GPUCommandEncoder::resource_barrier(const Vector<GPUBufferBarrier>& barriers) const
 {
     RHI::api()->cmd_buffer_barrier(handle, static_cast<uint32_t>(barriers.size()), const_cast<GPUBufferBarrier*>(barriers.data()));
 }
 
-void GPUCommandEncoder::resource_barrier(const GPUTextureBarrier& barrier)
+void GPUCommandEncoder::resource_barrier(const GPUTextureBarrier& barrier) const
 {
     RHI::api()->cmd_texture_barrier(handle, 1, const_cast<GPUTextureBarrier*>(&barrier));
 }
 
-void GPUCommandEncoder::resource_barrier(const Vector<GPUTextureBarrier>& barriers)
+void GPUCommandEncoder::resource_barrier(const Vector<GPUTextureBarrier>& barriers) const
 {
     RHI::api()->cmd_texture_barrier(handle, static_cast<uint32_t>(barriers.size()), const_cast<GPUTextureBarrier*>(barriers.data()));
 }
 #pragma endregion GPUCommandEncoder
 
 #pragma region GPUCommandBuffer
-void GPUCommandBuffer::submit()
+void GPUCommandBuffer::submit() const
 {
     RHI::api()->submit_command_buffer(handle);
 }

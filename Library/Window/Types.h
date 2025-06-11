@@ -1,6 +1,7 @@
 #ifndef LYRA_LIBRARY_WINDOW_TYPES_H
 #define LYRA_LIBRARY_WINDOW_TYPES_H
 
+#include <chrono>
 #include <functional>
 
 #include <Common/Pointer.h>
@@ -17,18 +18,52 @@ namespace lyra::wsi
 
     struct WindowInfo
     {
-        uint32_t width;  // logical window width
-        uint32_t height; // logical window height
-        float    scale;  // reserved for high DPI
+        uint32_t width;        // logical window width
+        uint32_t height;       // logical window height
+        float    scale = 1.0f; // reserved for high DPI
+    };
+
+    struct WindowInput
+    {
+        using TimePoint = std::chrono::time_point<std::chrono::steady_clock>;
+
+        WindowInputState states[2];
+
+        uint state_index = 0;
+
+        float delta_time = 0.0f; // in seconds
+
+        TimePoint elapsed_time;
+
+        explicit WindowInput();
+
+        void update(const WindowHandle& handle);
+
+        bool is_mouse_moved(MouseButton button) const;
+        bool is_mouse_dragged(MouseButton button) const;
+        bool is_mouse_pressed(MouseButton button) const;
+        bool is_mouse_released(MouseButton button) const;
+
+        bool is_key_down(KeyButton key) const;     // when key is pressed down and hold (simply the current status)
+        bool is_key_pressed(KeyButton key) const;  // exactly once when key is pressed down
+        bool is_key_released(KeyButton key) const; // exactly once when key is released up
+
+        auto current_state() const -> const WindowInputState& { return states[state_index]; }
+        auto previous_state() const -> const WindowInputState& { return states[(state_index + 1) % 2]; }
+    };
+
+    struct WindowCallbacks
+    {
+        Vector<std::function<void()>>                   start;
+        Vector<std::function<void()>>                   close;
+        Vector<std::function<void()>>                   timer;
+        Vector<std::function<void(const WindowInput&)>> update;
+        Vector<std::function<void()>>                   render;
+        Vector<std::function<void(const WindowInfo&)>>  resize;
     };
 
     struct Window
     {
-        using Callback  = std::function<void()>;
-        using Callbacks = Vector<Callback>;
-
-        WindowHandle handle;
-
         static auto init(const WindowDescriptor& descriptor) -> OwnedResource<Window>;
 
         static auto api() -> WindowAPI*;
@@ -39,22 +74,47 @@ namespace lyra::wsi
 
         auto get_window_info() const -> WindowInfo;
 
-        template <typename T, typename F>
-        void bind(WindowEvent event, F&& f, T* user)
+        template <WindowEvent E, typename T, typename F>
+        void bind(F&& f, T* user)
         {
-            bind(event, std::bind(f, user, std::placeholders::_1));
+            bind<E>(std::bind(f, user, std::placeholders::_1));
         }
 
-        template <typename F>
-        void bind(WindowEvent event, F&& f)
+        template <WindowEvent E, typename F>
+        void bind(F&& f)
         {
-            callbacks.at(static_cast<uint>(event)).push_back(f);
+            if constexpr (E == WindowEvent::START) {
+                callbacks.start.push_back(f);
+            }
+
+            if constexpr (E == WindowEvent::CLOSE) {
+                callbacks.close.push_back(f);
+            }
+
+            if constexpr (E == WindowEvent::TIMER) {
+                callbacks.timer.push_back(f);
+            }
+
+            if constexpr (E == WindowEvent::UPDATE) {
+                callbacks.update.push_back(f);
+            }
+
+            if constexpr (E == WindowEvent::RENDER) {
+                callbacks.render.push_back(f);
+            }
+
+            if constexpr (E == WindowEvent::RESIZE) {
+                callbacks.resize.push_back(f);
+            }
         }
+
+    public:
+        WindowHandle handle;
 
     private:
-        static constexpr size_t NUM_WINDOW_EVENTS = enum_count<WindowEvent>();
-
-        Array<Callbacks, NUM_WINDOW_EVENTS> callbacks;
+        WindowCallbacks callbacks;
+        WindowInput     inputs;
+        WindowInfo      info;
     };
 
 } // namespace lyra::wsi

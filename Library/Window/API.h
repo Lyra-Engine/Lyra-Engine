@@ -16,6 +16,7 @@ namespace lyra::wsi
         CString (*get_api_name)();
 
         void (*get_window_size)(WindowHandle handle, uint& width, uint& height);
+        void (*get_input_state)(WindowHandle handle, WindowInputState& state);
 
         bool (*create_window)(const WindowDescriptor& desc, WindowHandle& window);
         void (*delete_window)(WindowHandle window);

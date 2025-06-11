@@ -299,7 +299,7 @@ bool api::create_command_bundle(GPUCommandEncoderHandle& cmdbuffer, const GPUCom
     return true;
 }
 
-bool api::submit_command_buffer(GPUCommandEncoderHandle& cmdbuffer)
+bool api::submit_command_buffer(GPUCommandEncoderHandle cmdbuffer)
 {
     auto  rhi = get_rhi();
     auto& frm = rhi->current_frame();

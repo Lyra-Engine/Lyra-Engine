@@ -5,6 +5,10 @@
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <iostream>
+#include <string_view>
+#include <cmrc/cmrc.hpp>
+
 #include <Common/Function.h>
 #include <Render/Render.hpp>
 #include <Window/Window.hpp>
@@ -13,36 +17,7 @@ using namespace lyra;
 using namespace lyra::wsi;
 using namespace lyra::rhi;
 
-CString SHADER = R"""(
-struct VertexInput
-{
-    float3 position : POSITION;
-    float3 color    : COLOR0;
-};
-
-struct VertexOutput
-{
-    float4 position : SV_Position;
-    float4 color    : COLOR0;
-};
-
-ConstantBuffer<float4x4> mvp;
-
-[shader("vertex")]
-VertexOutput vsmain(VertexInput input)
-{
-    VertexOutput output;
-    output.position = mul(float4(input.position, 1.0), mvp); // NOTE: Slang uses HLSL style matrix transform
-    output.color = float4(input.color, 1.0);
-    return output;
-}
-
-[shader("fragment")]
-float4 fsmain(VertexOutput input) : SV_Target
-{
-    return input.color;
-}
-)""";
+CMRC_DECLARE(resources);
 
 struct Vertex
 {
@@ -58,6 +33,19 @@ GPURenderPipeline  pipeline;
 GPUBuffer          vbuffer;
 GPUBuffer          ibuffer;
 GPUBuffer          ubuffer;
+Window*            window;
+
+glm::vec3 camera_position = glm::vec3(0.0f, 0.0f, 3.0f);
+glm::vec3 camera_target   = glm::vec3(0.0f, 0.0f, 0.0f);
+
+const char* read_shader_source()
+{
+    auto fs      = cmrc::resources::get_filesystem();
+    auto data    = fs.open("shader.slang");
+    auto program = std::string_view(data.begin(), data.end() - data.begin()).data();
+    std::cout << program << std::endl;
+    return program;
+}
 
 void setup_pipeline()
 {
@@ -75,7 +63,7 @@ void setup_pipeline()
         auto desc   = CompileDescriptor{};
         desc.module = "test";
         desc.path   = "test.slang";
-        desc.source = SHADER;
+        desc.source = read_shader_source();
         return compiler->compile(desc);
     });
 
@@ -220,15 +208,48 @@ void cleanup()
     pipeline.destroy();
 }
 
-void update()
+void update(const WindowInput& input)
 {
+    // std::cout << "delta time: " << input.delta_time << std::endl;
+
+    float speed = 10.0f;
+    float delta = input.delta_time;
+
+    if (input.is_key_down(KeyButton::W)) {
+        camera_position -= speed * glm::vec3(0.0f, 0.0f, 1.0f) * delta;
+        camera_target.x = camera_position.x;
+        std::cout << "W is down!" << std::endl;
+        std::cout << glm::to_string(camera_position) << std::endl;
+    }
+
+    if (input.is_key_down(KeyButton::S)) {
+        camera_position += speed * glm::vec3(0.0f, 0.0f, 1.0f) * delta;
+        camera_target.x = camera_position.x;
+        std::cout << "S is down!" << std::endl;
+        std::cout << glm::to_string(camera_position) << std::endl;
+    }
+
+    if (input.is_key_down(KeyButton::A)) {
+        camera_position -= speed * glm::vec3(1.0f, 0.0f, 0.0f) * delta;
+        camera_target.x = camera_position.x;
+        std::cout << "A is down!" << std::endl;
+        std::cout << glm::to_string(camera_position) << std::endl;
+    }
+
+    if (input.is_key_down(KeyButton::D)) {
+        camera_position += speed * glm::vec3(1.0f, 0.0f, 0.0f) * delta;
+        camera_target.x = camera_position.x;
+        std::cout << "D is down!" << std::endl;
+        std::cout << glm::to_string(camera_position) << std::endl;
+    }
+
     auto& surface = RHI::get_current_surface();
     auto  extent  = surface.get_current_extent();
 
     // update uniform
     auto uniform    = ubuffer.get_mapped_range<glm::mat4>();
     auto projection = glm::perspective(1.05f, float(extent.width) / float(extent.height), 0.1f, 100.0f);
-    auto modelview  = glm::lookAt(glm::vec3(0.0f, 0.0f, +3.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    auto modelview  = glm::lookAt(camera_position, camera_target, glm::vec3(0.0f, 1.0f, 0.0f));
     uniform.at(0)   = projection * modelview;
 }
 
@@ -296,8 +317,9 @@ void render()
     texture.present();
 }
 
-void resize()
+void resize(const WindowInfo& info)
 {
+    std::cout << "Window Resized: " << info.width << "x" << info.height << std::endl;
 }
 
 int main()
@@ -332,20 +354,23 @@ int main()
     });
 
     auto surface = execute([&]() {
-        auto desc   = GPUSurfaceDescriptor{};
-        desc.label  = "main_surface";
-        desc.window = win->handle;
+        auto desc         = GPUSurfaceDescriptor{};
+        desc.label        = "main_surface";
+        desc.window       = win->handle;
+        desc.present_mode = GPUPresentMode::Fifo;
         return rhi->request_surface(desc);
     });
 
     (void)surface; // avoid unused warning
 
-    win->bind(WindowEvent::START, setup_pipeline);
-    win->bind(WindowEvent::START, setup_buffers);
-    win->bind(WindowEvent::CLOSE, cleanup);
-    win->bind(WindowEvent::UPDATE, update);
-    win->bind(WindowEvent::RENDER, render);
-    win->bind(WindowEvent::RESIZE, resize);
+    window = win.get();
+
+    win->bind<WindowEvent::START>(setup_pipeline);
+    win->bind<WindowEvent::START>(setup_buffers);
+    win->bind<WindowEvent::CLOSE>(cleanup);
+    win->bind<WindowEvent::UPDATE>(update);
+    win->bind<WindowEvent::RENDER>(render);
+    win->bind<WindowEvent::RESIZE>(resize);
     win->loop();
 
     return 0;

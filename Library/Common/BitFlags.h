@@ -36,6 +36,16 @@ struct BitFlags
         return value & static_cast<U>(flag);
     }
 
+    void set(E flag)
+    {
+        *this = *this | flag;
+    }
+
+    void unset(E flag)
+    {
+        *this = *this & ~BitFlags(flag);
+    }
+
     friend T operator~(T lhs)
     {
         return T(~lhs.value);

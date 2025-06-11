@@ -26,7 +26,7 @@ namespace lyra::rhi
         GPUFence() : handle() {}
         GPUFence(GPUFenceHandle handle) : handle(handle) {}
 
-        void wait();
+        void wait() const;
 
         void destroy();
 
@@ -241,69 +241,69 @@ namespace lyra::rhi
 
         void pop_debug_group();
 
-        void wait(const GPUFence& fence, GPUBarrierSyncFlags sync);
+        void wait(const GPUFence& fence, GPUBarrierSyncFlags sync) const;
 
-        void signal(const GPUFence& fence, GPUBarrierSyncFlags sync);
+        void signal(const GPUFence& fence, GPUBarrierSyncFlags sync) const;
 
-        void set_pipeline(const GPURenderPipeline& pipeline);
+        void set_pipeline(const GPURenderPipeline& pipeline) const;
 
-        void set_pipeline(const GPUComputePipeline& pipeline);
+        void set_pipeline(const GPUComputePipeline& pipeline) const;
 
-        void set_pipeline(const GPURayTracingPipeline& pipeline);
+        void set_pipeline(const GPURayTracingPipeline& pipeline) const;
 
-        void set_bind_group(GPUIndex32 index, const GPUBindGroup& bind_group, const Vector<GPUBufferDynamicOffset>& dynamic_offsets = {});
+        void set_bind_group(GPUIndex32 index, const GPUBindGroup& bind_group, const Vector<GPUBufferDynamicOffset>& dynamic_offsets = {}) const;
 
-        void dispatch_workgroups(GPUSize32 x, GPUSize32 y = 1, GPUSize32 z = 1);
+        void dispatch_workgroups(GPUSize32 x, GPUSize32 y = 1, GPUSize32 z = 1) const;
 
-        void dispatch_workgroups_indirect(const GPUBuffer& indirect_buffer, GPUSize64 indirect_offset);
+        void dispatch_workgroups_indirect(const GPUBuffer& indirect_buffer, GPUSize64 indirect_offset) const;
 
-        void set_index_buffer(const GPUBuffer& buffer, GPUIndexFormat index_format, GPUSize64 offset = 0, GPUSize64 size = 0);
+        void set_index_buffer(const GPUBuffer& buffer, GPUIndexFormat index_format, GPUSize64 offset = 0, GPUSize64 size = 0) const;
 
-        void set_vertex_buffer(GPUIndex32 slot, const GPUBuffer& buffer, GPUSize64 offset = 0, GPUSize64 size = 0);
+        void set_vertex_buffer(GPUIndex32 slot, const GPUBuffer& buffer, GPUSize64 offset = 0, GPUSize64 size = 0) const;
 
-        void draw(GPUSize32 vertex_count, GPUSize32 instance_count = 1, GPUSize32 first_vertex = 0, GPUSize32 first_instance = 0);
+        void draw(GPUSize32 vertex_count, GPUSize32 instance_count = 1, GPUSize32 first_vertex = 0, GPUSize32 first_instance = 0) const;
 
-        void draw_indexed(GPUSize32 index_count, GPUSize32 instance_count = 1, GPUSize32 first_index = 0, GPUSignedOffset32 base_vertex = 0, GPUSize32 first_instance = 0);
+        void draw_indexed(GPUSize32 index_count, GPUSize32 instance_count = 1, GPUSize32 first_index = 0, GPUSignedOffset32 base_vertex = 0, GPUSize32 first_instance = 0) const;
 
-        void draw_indirect(const GPUBuffer& indirect_buffer, GPUSize64 indirect_offset, GPUSize32 draw_count);
+        void draw_indirect(const GPUBuffer& indirect_buffer, GPUSize64 indirect_offset, GPUSize32 draw_count) const;
 
-        void draw_indexed_indirect(const GPUBuffer& indirect_buffer, GPUSize64 indirect_offset, GPUSize32 draw_count);
+        void draw_indexed_indirect(const GPUBuffer& indirect_buffer, GPUSize64 indirect_offset, GPUSize32 draw_count) const;
 
-        void begin_render_pass(const GPURenderPassDescriptor& descriptor);
+        void begin_render_pass(const GPURenderPassDescriptor& descriptor) const;
 
-        void end_render_pass();
+        void end_render_pass() const;
 
-        void copy_buffer_to_buffer(const GPUBuffer& source, const GPUBuffer& destination, GPUSize64 size);
+        void copy_buffer_to_buffer(const GPUBuffer& source, const GPUBuffer& destination, GPUSize64 size) const;
 
-        void copy_buffer_to_buffer(const GPUBuffer& source, GPUSize64 source_offset, const GPUBuffer& destination, GPUSize64 destination_offset, GPUSize64 size);
+        void copy_buffer_to_buffer(const GPUBuffer& source, GPUSize64 source_offset, const GPUBuffer& destination, GPUSize64 destination_offset, GPUSize64 size) const;
 
-        void copy_buffer_to_texture(const GPUTexelCopyBufferInfo& source, const GPUTexelCopyTextureInfo& destination, const GPUExtent3D& copy_size);
+        void copy_buffer_to_texture(const GPUTexelCopyBufferInfo& source, const GPUTexelCopyTextureInfo& destination, const GPUExtent3D& copy_size) const;
 
-        void copy_texture_to_buffer(const GPUTexelCopyTextureInfo& source, const GPUTexelCopyBufferInfo& destination, const GPUExtent3D& copy_size);
+        void copy_texture_to_buffer(const GPUTexelCopyTextureInfo& source, const GPUTexelCopyBufferInfo& destination, const GPUExtent3D& copy_size) const;
 
-        void copy_texture_to_texture(const GPUTexelCopyTextureInfo& source, const GPUTexelCopyTextureInfo& destination, const GPUExtent3D& copy_size);
+        void copy_texture_to_texture(const GPUTexelCopyTextureInfo& source, const GPUTexelCopyTextureInfo& destination, const GPUExtent3D& copy_size) const;
 
-        void clear_buffer(const GPUBuffer& buffer, GPUSize64 offset = 0, GPUSize64 size = 0);
+        void clear_buffer(const GPUBuffer& buffer, GPUSize64 offset = 0, GPUSize64 size = 0) const;
 
-        void resolve_query_set(GPUQuerySet query_set, GPUSize32 first_query, GPUSize32 query_count, const GPUBuffer& destination, GPUSize64 destination_offset);
+        void resolve_query_set(GPUQuerySet query_set, GPUSize32 first_query, GPUSize32 query_count, const GPUBuffer& destination, GPUSize64 destination_offset) const;
 
-        void set_viewport(float x, float y, float w, float h, float min_depth = 0.0f, float max_depth = 1.0f);
+        void set_viewport(float x, float y, float w, float h, float min_depth = 0.0f, float max_depth = 1.0f) const;
 
-        void set_scissor_rect(GPUIntegerCoordinate x, GPUIntegerCoordinate y, GPUIntegerCoordinate w, GPUIntegerCoordinate h);
+        void set_scissor_rect(GPUIntegerCoordinate x, GPUIntegerCoordinate y, GPUIntegerCoordinate w, GPUIntegerCoordinate h) const;
 
-        void set_blend_constant(GPUColor color);
+        void set_blend_constant(GPUColor color) const;
 
-        void set_stencil_reference(GPUStencilValue reference);
+        void set_stencil_reference(GPUStencilValue reference) const;
 
-        void begin_occlusion_query(GPUSize32 queryIndex);
+        void begin_occlusion_query(GPUSize32 queryIndex) const;
 
-        void end_occlusion_query();
+        void end_occlusion_query() const;
 
-        void resource_barrier(const GPUBufferBarrier& barrier);
-        void resource_barrier(const Vector<GPUBufferBarrier>& barriers);
+        void resource_barrier(const GPUBufferBarrier& barrier) const;
+        void resource_barrier(const Vector<GPUBufferBarrier>& barriers) const;
 
-        void resource_barrier(const GPUTextureBarrier& barrier);
-        void resource_barrier(const Vector<GPUTextureBarrier>& barriers);
+        void resource_barrier(const GPUTextureBarrier& barrier) const;
+        void resource_barrier(const Vector<GPUTextureBarrier>& barriers) const;
     };
 
     struct GPUCommandBundle : public GPUCommandEncoder
@@ -315,9 +315,9 @@ namespace lyra::rhi
     {
         operator GPUCommandEncoderHandle() const { return handle; }
 
-        void submit();
+        void submit() const;
 
-        void execute_bundles(const Vector<GPUCommandBundle>& bundles);
+        void execute_bundles(const Vector<GPUCommandBundle>& bundles) const;
     };
 
     struct GPUSurfaceTexture : public GPUObjectBase
@@ -338,43 +338,43 @@ namespace lyra::rhi
         GPUAdapterInfo       adapter_info = {};
         GPUSupportedFeatures features     = {};
 
-        auto create_fence() -> GPUFence;
+        auto create_fence() const -> GPUFence;
 
-        auto create_buffer(const GPUBufferDescriptor& descriptor) -> GPUBuffer;
+        auto create_buffer(const GPUBufferDescriptor& descriptor) const -> GPUBuffer;
 
-        auto create_texture(const GPUTextureDescriptor& descriptor) -> GPUTexture;
+        auto create_texture(const GPUTextureDescriptor& descriptor) const -> GPUTexture;
 
-        auto create_sampler(const GPUSamplerDescriptor& descriptor) -> GPUSampler;
+        auto create_sampler(const GPUSamplerDescriptor& descriptor) const -> GPUSampler;
 
-        auto create_shader_module(const GPUShaderModuleDescriptor& descriptor) -> GPUShaderModule;
+        auto create_shader_module(const GPUShaderModuleDescriptor& descriptor) const -> GPUShaderModule;
 
-        auto create_query_set(const GPUQuerySetDescriptor& descriptor) -> GPUQuerySet;
+        auto create_query_set(const GPUQuerySetDescriptor& descriptor) const -> GPUQuerySet;
 
-        auto create_blas(const GPUBlasDescriptor& descriptor, const Vector<GPUBlasGeometrySizeDescriptor>& sizes) -> GPUBlas;
+        auto create_blas(const GPUBlasDescriptor& descriptor, const Vector<GPUBlasGeometrySizeDescriptor>& sizes) const -> GPUBlas;
 
-        auto create_tlas(const GPUTlasDescriptor& descriptor) -> GPUTlas;
+        auto create_tlas(const GPUTlasDescriptor& descriptor) const -> GPUTlas;
 
-        auto create_bind_group(const GPUBindGroupDescriptor& descriptor) -> GPUBindGroup;
+        auto create_bind_group(const GPUBindGroupDescriptor& descriptor) const -> GPUBindGroup;
 
-        auto create_bind_group_layout(const GPUBindGroupLayoutDescriptor& descriptor) -> GPUBindGroupLayout;
+        auto create_bind_group_layout(const GPUBindGroupLayoutDescriptor& descriptor) const -> GPUBindGroupLayout;
 
-        auto create_pipeline_layout(const GPUPipelineLayoutDescriptor& descriptor) -> GPUPipelineLayout;
+        auto create_pipeline_layout(const GPUPipelineLayoutDescriptor& descriptor) const -> GPUPipelineLayout;
 
-        auto create_render_pipeline(const GPURenderPipelineDescriptor& descriptor) -> GPURenderPipeline;
+        auto create_render_pipeline(const GPURenderPipelineDescriptor& descriptor) const -> GPURenderPipeline;
 
-        auto create_compute_pipeline(const GPUComputePipelineDescriptor& descriptor) -> GPUComputePipeline;
+        auto create_compute_pipeline(const GPUComputePipelineDescriptor& descriptor) const -> GPUComputePipeline;
 
-        auto create_raytracing_pipeline(const GPURayTracingPipelineDescriptor& descriptor) -> GPURayTracingPipeline;
+        auto create_raytracing_pipeline(const GPURayTracingPipelineDescriptor& descriptor) const -> GPURayTracingPipeline;
 
-        auto create_command_buffer(const GPUCommandBufferDescriptor& descriptor) -> GPUCommandBuffer;
+        auto create_command_buffer(const GPUCommandBufferDescriptor& descriptor) const -> GPUCommandBuffer;
 
-        auto create_command_bundle(const GPUCommandBundleDescriptor& descriptor) -> GPUCommandBundle;
+        auto create_command_bundle(const GPUCommandBundleDescriptor& descriptor) const -> GPUCommandBundle;
 
-        auto wait() -> void;
+        auto wait() const -> void;
 
-        auto wait(GPUFence fence) -> void;
+        auto wait(GPUFence fence) const -> void;
 
-        auto destroy() -> void;
+        auto destroy() const -> void;
     };
 
     struct GPUSurface : public GPUObjectBase
@@ -385,7 +385,7 @@ namespace lyra::rhi
 
         auto get_current_extent() const -> GPUExtent2D;
 
-        auto destroy() -> void;
+        auto destroy() const -> void;
     };
 
     struct GPUAdapter : public GPUObjectBase
@@ -419,11 +419,11 @@ namespace lyra::rhi
 
         static auto api() -> RenderAPI*;
 
-        auto destroy() -> void;
+        auto destroy() const -> void;
 
-        auto request_adapter(const GPUAdapterDescriptor& descriptor = {}) -> GPUAdapter;
+        auto request_adapter(const GPUAdapterDescriptor& descriptor = {}) const -> GPUAdapter;
 
-        auto request_surface(const GPUSurfaceDescriptor& descriptor = {}) -> GPUSurface;
+        auto request_surface(const GPUSurfaceDescriptor& descriptor = {}) const -> GPUSurface;
     };
 
 } // namespace lyra::rhi

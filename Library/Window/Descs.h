@@ -5,6 +5,7 @@
 #include <Common/String.h>
 
 #include <Window/Enums.h>
+#include <Window/Utils.h>
 
 namespace lyra::wsi
 {

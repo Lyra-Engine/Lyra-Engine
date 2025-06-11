@@ -84,7 +84,7 @@ namespace lyra::rhi
 
         bool (*create_command_buffer)(GPUCommandEncoderHandle& cmdbuffer, const GPUCommandBufferDescriptor& descriptor);
         bool (*create_command_bundle)(GPUCommandEncoderHandle& cmdbuffer, const GPUCommandBundleDescriptor& descriptor);
-        bool (*submit_command_buffer)(GPUCommandEncoderHandle& cmdbuffer);
+        bool (*submit_command_buffer)(GPUCommandEncoderHandle cmdbuffer);
 
         void (*cmd_wait_fence)(GPUCommandEncoderHandle cmdbuffer, GPUFenceHandle fence, GPUBarrierSyncFlags sync);
         void (*cmd_signal_fence)(GPUCommandEncoderHandle cmdbuffer, GPUFenceHandle fence, GPUBarrierSyncFlags sync);

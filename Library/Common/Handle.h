@@ -18,6 +18,8 @@ namespace lyra
         Handle(T value) : value(value) {}
 
         bool valid() const { return value != T(-1); }
+
+        void reset() { value = T(-1); }
     };
 
     template <typename T>
