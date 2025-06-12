@@ -629,7 +629,7 @@ namespace lyra::rhi
     enum struct GPUBVHUpdateMode : uint
     {
         BUILD,
-        UPDATE,
+        PREFER_UPDATE,
     };
 
     enum struct GPUBVHGeometryFlag : uint

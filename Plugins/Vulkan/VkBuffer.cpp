@@ -14,7 +14,7 @@ VulkanBuffer::VulkanBuffer(const GPUBufferDescriptor& desc, VkBufferUsageFlags a
     VmaAllocationCreateInfo alloc_create_info  = {};
 
     // device buffer address
-    if (desc.device_buffer_address)
+    if (desc.virtual_address)
         additional_usages |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 
     // buffer create info
@@ -65,6 +65,10 @@ VulkanBuffer::VulkanBuffer(const GPUBufferDescriptor& desc, VkBufferUsageFlags a
         mapped_size = desc.size;
     }
 
+    if (desc.virtual_address) {
+        device_address = get_buffer_device_address(buffer);
+    }
+
     if (desc.label)
         rhi->set_debug_label(VK_OBJECT_TYPE_BUFFER, (uint64_t)buffer, desc.label);
 }
@@ -88,11 +92,6 @@ void VulkanBuffer::destroy()
         vmaDestroyBuffer(get_rhi()->alloc, buffer, allocation);
         buffer = VK_NULL_HANDLE;
     }
-}
-
-VkDeviceAddress VulkanBuffer::device_address() const
-{
-    return get_buffer_device_address(buffer);
 }
 
 VkDeviceAddress get_buffer_device_address(VkBuffer buffer)

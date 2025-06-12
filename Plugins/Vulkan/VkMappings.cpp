@@ -672,7 +672,7 @@ VkBuildAccelerationStructureModeKHR vkenum(GPUBVHUpdateMode mode)
     switch (mode) {
         case GPUBVHUpdateMode::BUILD:
             return VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
-        case GPUBVHUpdateMode::UPDATE:
+        case GPUBVHUpdateMode::PREFER_UPDATE:
             return VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR;
     }
     throw std::invalid_argument("invalid argument for GPUBVHUpdateMode");

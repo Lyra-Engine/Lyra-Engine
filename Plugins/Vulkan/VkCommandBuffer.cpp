@@ -1,4 +1,5 @@
 #include "VkUtils.h"
+#include <vulkan/vulkan_core.h>
 
 void VulkanCommandBuffer::wait(const VulkanSemaphore& fence, GPUBarrierSyncFlags sync)
 {
@@ -31,6 +32,14 @@ void VulkanCommandBuffer::signal(const VulkanSemaphore& fence, GPUBarrierSyncFla
     auto& complete = fetch_resource(rhi->fences, frame.render_complete_semaphore);
     if (fence.semaphore == complete.semaphore)
         this->fence = frame.inflight_fence;
+}
+
+void VulkanCommandBuffer::reset()
+{
+    for (auto& buffer : temporary_buffers)
+        buffer.destroy();
+
+    temporary_buffers.clear();
 }
 
 void VulkanCommandBuffer::submit()
@@ -491,7 +500,100 @@ void cmd::texture_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPU
 
 void cmd::build_tlases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, uint32_t count, GPUTlasBuildEntry* entries)
 {
-    assert(!!!"unimplemented");
+    auto  rhi = get_rhi();
+    auto& cmd = rhi->current_frame().command(cmdbuffer);
+    auto& buf = fetch_resource(rhi->buffers, scratch_buffer);
+
+    Vector<VkBufferMemoryBarrier>                       barriers;
+    Vector<VkAccelerationStructureBuildGeometryInfoKHR> build_infos  = {};
+    Vector<VkAccelerationStructureBuildRangeInfoKHR*>   build_ranges = {};
+
+    barriers.reserve(count);
+    build_infos.reserve(count);
+    build_ranges.reserve(count);
+
+    VkDeviceAddress scratch_address = buf.device_address;
+    for (uint i = 0; i < count; i++) {
+        auto& entry = entries[i];
+        auto& tlas  = fetch_resource(rhi->tlases, entry.tlas);
+
+        // create VkAccelerationStructureInstanceKHR on the fly
+        auto address = tlas.staging.map<VkAccelerationStructureInstanceKHR>();
+        for (auto& instance : entry.instances) {
+            auto& blas = fetch_resource(rhi->blases, instance.blas);
+
+            float* src_transform = reinterpret_cast<float*>(instance.transform);
+            float* dst_transform = reinterpret_cast<float*>(address->transform.matrix);
+            std::memcpy(dst_transform, src_transform, 12);
+            address->instanceCustomIndex                    = instance.custom_data;
+            address->instanceShaderBindingTableRecordOffset = 0; // NOTE: We don't support more complex cases for now.
+            address->mask                                   = instance.mask;
+            address->flags                                  = blas.build.flags;
+            address->accelerationStructureReference         = blas.reference;
+
+            address++;
+        }
+        tlas.staging.unmap();
+
+        // copy from staging buffer to instance buffer
+        auto copy      = VkBufferCopy{};
+        copy.size      = entry.instances.size() * sizeof(VkAccelerationStructureInstanceKHR);
+        copy.srcOffset = 0;
+        copy.dstOffset = 0;
+        rhi->vtable.vkCmdCopyBuffer(cmd.command_buffer, tlas.staging.buffer, tlas.instances.buffer, 1, &copy);
+
+        // prepare buffer barrier
+        barriers.push_back({});
+        auto& barrier               = barriers.back();
+        barrier.sType               = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+        barrier.pNext               = nullptr;
+        barrier.offset              = 0u;
+        barrier.size                = copy.size;
+        barrier.buffer              = tlas.instances.buffer;
+        barrier.srcAccessMask       = VK_ACCESS_TRANSFER_WRITE_BIT;
+        barrier.dstAccessMask       = VK_ACCESS_TRANSFER_READ_BIT;
+        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_EXTERNAL;
+        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_EXTERNAL;
+
+        // prepare build info
+        tlas.build.srcAccelerationStructure  = tlas.tlas;
+        tlas.build.dstAccelerationStructure  = tlas.tlas;
+        tlas.build.geometryCount             = 1;
+        tlas.build.pGeometries               = &tlas.geometry;
+        tlas.build.scratchData.deviceAddress = scratch_address;
+        tlas.build.mode                      = (tlas.tlas == VK_NULL_HANDLE)
+                                                   ? VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR
+                                                   : vkenum(tlas.update_mode);
+
+        // prepare build range
+        tlas.range.firstVertex     = 0;
+        tlas.range.primitiveCount  = entry.instances.size();
+        tlas.range.primitiveOffset = 0;
+        tlas.range.transformOffset = 0;
+
+        build_infos.push_back(tlas.build);
+        build_ranges.push_back(&tlas.range);
+
+        scratch_address += (tlas.build.mode == VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR)
+                               ? tlas.sizes.buildScratchSize
+                               : tlas.sizes.updateScratchSize;
+    }
+
+    // wait until copies have completed
+    rhi->vtable.vkCmdPipelineBarrier(
+        cmd.command_buffer,
+        VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
+        VK_DEPENDENCY_BY_REGION_BIT,
+        0, nullptr,
+        static_cast<uint32_t>(barriers.size()), barriers.data(),
+        0, nullptr);
+
+    rhi->vtable.vkCmdBuildAccelerationStructuresKHR(
+        cmd.command_buffer,
+        static_cast<uint32_t>(build_infos.size()),
+        build_infos.data(),
+        build_ranges.data());
 }
 
 void cmd::build_blases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, uint32_t count, GPUBlasBuildEntry* entries)
@@ -503,7 +605,10 @@ void cmd::build_blases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratc
     Vector<VkAccelerationStructureBuildGeometryInfoKHR> build_infos  = {};
     Vector<VkAccelerationStructureBuildRangeInfoKHR*>   build_ranges = {};
 
-    VkDeviceAddress address = buf.device_address();
+    build_infos.reserve(count);
+    build_ranges.reserve(count);
+
+    VkDeviceAddress scratch_address = buf.device_address;
     for (uint i = 0; i < count; i++) {
         auto& entry = entries[i];
         auto& blas  = fetch_resource(rhi->blases, entry.blas);
@@ -521,11 +626,11 @@ void cmd::build_blases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratc
 
             auto index_data = VkDeviceAddress{0};
             if (src_geometry.index_buffer.valid())
-                index_data = fetch_resource(rhi->buffers, src_geometry.index_buffer).device_address();
+                index_data = fetch_resource(rhi->buffers, src_geometry.index_buffer).device_address;
 
             auto vertex_data = VkDeviceAddress{0};
             if (src_geometry.vertex_buffer.valid())
-                vertex_data = fetch_resource(rhi->buffers, src_geometry.vertex_buffer).device_address();
+                vertex_data = fetch_resource(rhi->buffers, src_geometry.vertex_buffer).device_address;
 
             dst_geometry.sType                                       = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
             dst_geometry.geometryType                                = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
@@ -547,18 +652,26 @@ void cmd::build_blases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratc
         // update build info
         blas.build.srcAccelerationStructure  = blas.blas;
         blas.build.dstAccelerationStructure  = blas.blas;
-        blas.build.scratchData.deviceAddress = address;
+        blas.build.scratchData.deviceAddress = scratch_address;
         blas.build.geometryCount             = geometry_count;
         blas.build.pGeometries               = blas.geometries.data();
+        blas.build.mode                      = (blas.blas == VK_NULL_HANDLE)
+                                                   ? VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR
+                                                   : vkenum(blas.update_mode);
 
         build_infos.push_back(blas.build);
         build_ranges.push_back(blas.ranges.data());
 
-        address += blas.sizes.buildScratchSize;
+        scratch_address += (blas.build.mode == VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR)
+                               ? blas.sizes.buildScratchSize
+                               : blas.sizes.updateScratchSize;
     }
 
-    rhi->vtable.vkCmdBuildAccelerationStructuresKHR(cmd.command_buffer, static_cast<uint32_t>(build_infos.size()),
-        build_infos.data(), build_ranges.data());
+    rhi->vtable.vkCmdBuildAccelerationStructuresKHR(
+        cmd.command_buffer,
+        static_cast<uint32_t>(build_infos.size()),
+        build_infos.data(),
+        build_ranges.data());
 }
 
 void cmd::compact_blases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, uint32_t count, GPUBlasHandle* blases)

@@ -1,3 +1,5 @@
+#include <Common/Function.h>
+
 #include "VkUtils.h"
 
 VulkanTlas::VulkanTlas() : tlas(VK_NULL_HANDLE)
@@ -11,12 +13,24 @@ VulkanTlas::VulkanTlas(const GPUTlasDescriptor& desc)
 
     max_instance_count = desc.max_instances;
 
+    update_mode = desc.update_mode;
+
     // create instance buffer
-    auto instance_buffer_desc                  = GPUBufferDescriptor{};
-    instance_buffer_desc.size                  = sizeof(VkAccelerationStructureInstanceKHR) * max_instance_count;
-    instance_buffer_desc.usage                 = GPUBufferUsage::TLAS_INPUT | GPUBufferUsage::COPY_DST;
-    instance_buffer_desc.device_buffer_address = true;
-    instances                                  = VulkanBuffer(instance_buffer_desc);
+    instances = execute([&]() {
+        auto desc            = GPUBufferDescriptor{};
+        desc.size            = sizeof(VkAccelerationStructureInstanceKHR) * max_instance_count;
+        desc.usage           = GPUBufferUsage::TLAS_INPUT | GPUBufferUsage::COPY_DST;
+        desc.virtual_address = true;
+        return VulkanBuffer(desc);
+    });
+
+    // create staging buffer
+    staging = execute([&]() {
+        auto desc  = GPUBufferDescriptor{};
+        desc.size  = sizeof(VkAccelerationStructureInstanceKHR) * max_instance_count;
+        desc.usage = GPUBufferUsage::COPY_SRC | GPUBufferUsage::MAP_WRITE;
+        return VulkanBuffer(desc);
+    });
 
     // setup geometry for instances
     geometry.sType                                 = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
@@ -24,7 +38,7 @@ VulkanTlas::VulkanTlas(const GPUTlasDescriptor& desc)
     geometry.flags                                 = VK_GEOMETRY_OPAQUE_BIT_KHR;
     geometry.geometry.instances.sType              = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR;
     geometry.geometry.instances.arrayOfPointers    = VK_FALSE;
-    geometry.geometry.instances.data.deviceAddress = instances.device_address();
+    geometry.geometry.instances.data.deviceAddress = instances.device_address;
 
     // setup build info
     build.sType         = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
@@ -50,20 +64,20 @@ VulkanTlas::VulkanTlas(const GPUTlasDescriptor& desc)
         &build, &range.primitiveCount, &this->sizes);
 
     // create storage buffer
-    auto storage_buffer_desc                  = GPUBufferDescriptor{};
-    storage_buffer_desc.size                  = this->sizes.accelerationStructureSize;
-    storage_buffer_desc.usage                 = GPUBufferUsage::TLAS_INPUT | GPUBufferUsage::COPY_DST;
-    storage_buffer_desc.device_buffer_address = true;
-    storage                                   = VulkanBuffer(storage_buffer_desc, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR);
+    auto storage_buffer_desc            = GPUBufferDescriptor{};
+    storage_buffer_desc.size            = this->sizes.accelerationStructureSize;
+    storage_buffer_desc.usage           = GPUBufferUsage::TLAS_INPUT | GPUBufferUsage::COPY_DST;
+    storage_buffer_desc.virtual_address = true;
+    storage                             = VulkanBuffer(storage_buffer_desc, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR);
 
     // Create TLAS acceleration structure
-    auto createInfo   = VkAccelerationStructureCreateInfoKHR{};
-    createInfo.sType  = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
-    createInfo.buffer = storage.buffer;
-    createInfo.size   = this->sizes.accelerationStructureSize;
-    createInfo.type   = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+    auto create_info   = VkAccelerationStructureCreateInfoKHR{};
+    create_info.sType  = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
+    create_info.buffer = storage.buffer;
+    create_info.size   = this->sizes.accelerationStructureSize;
+    create_info.type   = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
 
-    auto result = rhi->vtable.vkCreateAccelerationStructureKHR(rhi->device, &createInfo, nullptr, &tlas);
+    auto result = rhi->vtable.vkCreateAccelerationStructureKHR(rhi->device, &create_info, nullptr, &tlas);
     if (result != VK_SUCCESS) destroy();
     vk_check(result);
 
@@ -76,6 +90,7 @@ void VulkanTlas::destroy()
     auto rhi = get_rhi();
 
     storage.destroy();
+    staging.destroy();
     instances.destroy();
 
     if (tlas != VK_NULL_HANDLE) {

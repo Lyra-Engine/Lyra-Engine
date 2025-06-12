@@ -24,6 +24,10 @@ void VulkanFrame::wait()
 
 void VulkanFrame::reset()
 {
+    // release any resources that is owned by this command buffer
+    for (auto& command_buffer : allocated_command_buffers)
+        command_buffer.reset();
+
     inflight_fence.reset();
     descriptor_pool.reset();
     compute_command_pool.reset();

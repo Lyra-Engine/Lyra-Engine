@@ -13,6 +13,8 @@ VulkanBlas::VulkanBlas(const GPUBlasDescriptor& desc, const Vector<GPUBlasGeomet
     geometries.clear();
     uint32_t max_primitive_count = 0;
 
+    update_mode = desc.update_mode;
+
     for (auto& size : sizes) {
         ranges.push_back({});
         geometries.push_back({});
@@ -62,12 +64,12 @@ VulkanBlas::VulkanBlas(const GPUBlasDescriptor& desc, const Vector<GPUBlasGeomet
         &build, &max_primitive_count, &this->sizes);
 
     // create buffer to store BLAS
-    auto additional                   = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR;
-    auto buffer_desc                  = GPUBufferDescriptor{};
-    buffer_desc.usage                 = 0;
-    buffer_desc.size                  = this->sizes.accelerationStructureSize;
-    buffer_desc.device_buffer_address = true;
-    storage                           = VulkanBuffer(buffer_desc, additional);
+    auto additional             = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR;
+    auto buffer_desc            = GPUBufferDescriptor{};
+    buffer_desc.usage           = 0;
+    buffer_desc.size            = this->sizes.accelerationStructureSize;
+    buffer_desc.virtual_address = true;
+    storage                     = VulkanBuffer(buffer_desc, additional);
 
     // create BLAS vulkan object
     auto create_info   = VkAccelerationStructureCreateInfoKHR{};
@@ -79,6 +81,11 @@ VulkanBlas::VulkanBlas(const GPUBlasDescriptor& desc, const Vector<GPUBlasGeomet
     auto result = rhi->vtable.vkCreateAccelerationStructureKHR(rhi->device, &create_info, nullptr, &blas);
     if (result != VK_SUCCESS) destroy();
     vk_check(result);
+
+    auto address_info                  = VkAccelerationStructureDeviceAddressInfoKHR{};
+    address_info.sType                 = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
+    address_info.accelerationStructure = blas;
+    vk_check(rhi->vtable.vkGetAccelerationStructureDeviceAddressKHR(rhi->device, &address_info));
 
     if (desc.label)
         rhi->set_debug_label(VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR, (uint64_t)blas, desc.label);

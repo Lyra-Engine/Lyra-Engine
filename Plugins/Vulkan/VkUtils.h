@@ -69,9 +69,10 @@ struct VulkanBase
 
 struct VulkanBuffer
 {
-    VkBuffer          buffer     = VK_NULL_HANDLE;
-    VmaAllocation     allocation = {};
-    VmaAllocationInfo alloc_info = {};
+    VkBuffer          buffer         = VK_NULL_HANDLE;
+    VmaAllocation     allocation     = {};
+    VmaAllocationInfo alloc_info     = {};
+    VkDeviceAddress   device_address = 0ull;
 
     uint8_t* mapped_data = nullptr;
     uint64_t mapped_size = 0ull;
@@ -80,12 +81,24 @@ struct VulkanBuffer
     explicit VulkanBuffer();
     explicit VulkanBuffer(const GPUBufferDescriptor& desc, VkBufferUsageFlags additional_usages = 0);
 
-    auto device_address() const -> VkDeviceAddress;
     void map(GPUSize64 offset = 0, GPUSize64 size = 0);
     void unmap();
     void destroy();
 
     bool valid() const { return buffer != VK_NULL_HANDLE; }
+
+    template <typename T>
+    auto get_mapped_data_typed() -> T*
+    {
+        return reinterpret_cast<T*>(mapped_data);
+    }
+
+    template <typename T>
+    auto map(GPUSize64 offset = 0, GPUSize64 size = 0)
+    {
+        map(offset, size);
+        return get_mapped_data_typed<T>();
+    }
 };
 
 struct VulkanTextureView;
@@ -249,9 +262,12 @@ struct VulkanTlas
 
     // used to build content of instances in memory
     VulkanBuffer storage;
+    VulkanBuffer staging;
     VulkanBuffer instances;
 
-    uint max_instance_count = 0;
+    // other info
+    uint             max_instance_count = 0;
+    GPUBVHUpdateMode update_mode        = GPUBVHUpdateMode::BUILD;
 
     // implementation in VkTlas.cpp
     explicit VulkanTlas();
@@ -264,6 +280,7 @@ struct VulkanTlas
 
 struct VulkanBlas
 {
+    uint64_t                                         reference  = 0ull;
     VkAccelerationStructureKHR                       blas       = VK_NULL_HANDLE;
     VkAccelerationStructureBuildGeometryInfoKHR      build      = {};
     VkAccelerationStructureBuildSizesInfoKHR         sizes      = {};
@@ -272,6 +289,9 @@ struct VulkanBlas
 
     // underlying storage for blas
     VulkanBuffer storage;
+
+    // other info
+    GPUBVHUpdateMode update_mode = GPUBVHUpdateMode::BUILD;
 
     // implementation in VkBlas.cpp
     explicit VulkanBlas();
@@ -325,9 +345,13 @@ struct VulkanCommandBuffer
     Vector<VkSemaphoreSubmitInfo> wait_semaphores   = {};
     Vector<VkSemaphoreSubmitInfo> signal_semaphores = {};
 
+    // additional resources to be clean-up after command buffer is reset
+    Vector<VulkanBuffer> temporary_buffers;
+
     // implementation in VkCommandBuffer.cpp
     void wait(const VulkanSemaphore& fence, GPUBarrierSyncFlags sync);
     void signal(const VulkanSemaphore& fence, GPUBarrierSyncFlags sync);
+    void reset();
     void submit();
     void begin();
     void end();

@@ -49,10 +49,10 @@ namespace lyra::rhi
 
     struct GPUBufferDescriptor : public GPUObjectDescriptorBase
     {
-        GPUSize64           size                  = 0;
-        GPUBufferUsageFlags usage                 = 0;
-        bool                mapped_at_creation    = false;
-        bool                device_buffer_address = false;
+        GPUSize64           size               = 0;
+        GPUBufferUsageFlags usage              = 0;
+        bool                virtual_address    = false;
+        bool                mapped_at_creation = false;
     };
 
     struct GPUSamplerDescriptor : public GPUObjectDescriptorBase
