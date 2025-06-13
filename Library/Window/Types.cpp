@@ -1,4 +1,3 @@
-#include <iostream>
 #include <Common/Plugin.h>
 #include <Window/API.h>
 #include <Window/Types.h>
@@ -88,11 +87,9 @@ void WindowInput::update(const WindowHandle& handle)
 
     auto timestamp = std::chrono::steady_clock::now();
     auto duration  = timestamp - elapsed_time;
-
-    auto ms    = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
-    delta_time = static_cast<float>(ms.count()) / 1000.0f;
-
-    elapsed_time = timestamp;
+    auto ms        = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+    delta_time     = static_cast<float>(ms.count()) / 1000.0f;
+    elapsed_time   = timestamp;
 }
 
 bool WindowInput::is_mouse_moved(MouseButton button) const

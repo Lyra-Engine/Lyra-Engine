@@ -237,10 +237,7 @@ void get_input_state(WindowHandle window, WindowInputState& state)
     auto& user   = *static_cast<UserState*>(glfwGetWindowUserPointer(handle));
 
     // copy the input state back to user
-    state        = user.input_state;
-
-    // reset the user input state for the next frame
-    user.input_state = {};
+    state = user.input_state;
 }
 
 auto delete_window(WindowHandle window) -> void
@@ -269,8 +266,8 @@ void run_in_loop(WindowHandle window, WindowAPI::MainLoopCallback&& callback)
     // glfw main loop
     callback(WindowEvent::START);
     while (!glfwWindowShouldClose(handle)) {
-        callback(WindowEvent::RENDER);
         callback(WindowEvent::UPDATE);
+        callback(WindowEvent::RENDER);
         glfwPollEvents();
     }
     callback(WindowEvent::CLOSE);

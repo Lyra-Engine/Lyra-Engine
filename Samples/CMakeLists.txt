@@ -1,1 +1,2 @@
-add_subdirectory(SimpleWindow)
+add_subdirectory(01_Triangle)
+add_subdirectory(02_UserInput)

@@ -21,8 +21,8 @@ CMRC_DECLARE(resources);
 
 struct Vertex
 {
-    Array<float, 3> position;
-    Array<float, 3> color;
+    glm::vec3 position;
+    glm::vec3 color;
 };
 
 GPUShaderModule    vshader;
@@ -33,12 +33,8 @@ GPURenderPipeline  pipeline;
 GPUBuffer          vbuffer;
 GPUBuffer          ibuffer;
 GPUBuffer          ubuffer;
-Window*            window;
 
-glm::vec3 camera_position = glm::vec3(0.0f, 0.0f, 3.0f);
-glm::vec3 camera_target   = glm::vec3(0.0f, 0.0f, 0.0f);
-
-const char* read_shader_source()
+auto read_shader_source() -> const char*
 {
     auto fs      = cmrc::resources::get_filesystem();
     auto data    = fs.open("shader.slang");
@@ -191,6 +187,17 @@ void setup_buffers()
     indices.at(0) = 0;
     indices.at(1) = 1;
     indices.at(2) = 2;
+
+    // uniform
+    auto& surface    = RHI::get_current_surface();
+    auto  extent     = surface.get_current_extent();
+    auto  uniform    = ubuffer.get_mapped_range<glm::mat4>();
+    auto  projection = glm::perspective(1.05f, float(extent.width) / float(extent.height), 0.1f, 100.0f);
+    auto  modelview  = glm::lookAt(
+        glm::vec3(0.0f, 0.0f, 3.0f),
+        glm::vec3(0.0f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 1.0f, 0.0f));
+    uniform.at(0) = projection * modelview;
 }
 
 void cleanup()
@@ -206,51 +213,6 @@ void cleanup()
     blayout.destroy();
     playout.destroy();
     pipeline.destroy();
-}
-
-void update(const WindowInput& input)
-{
-    // std::cout << "delta time: " << input.delta_time << std::endl;
-
-    float speed = 10.0f;
-    float delta = input.delta_time;
-
-    if (input.is_key_down(KeyButton::W)) {
-        camera_position -= speed * glm::vec3(0.0f, 0.0f, 1.0f) * delta;
-        camera_target.x = camera_position.x;
-        std::cout << "W is down!" << std::endl;
-        std::cout << glm::to_string(camera_position) << std::endl;
-    }
-
-    if (input.is_key_down(KeyButton::S)) {
-        camera_position += speed * glm::vec3(0.0f, 0.0f, 1.0f) * delta;
-        camera_target.x = camera_position.x;
-        std::cout << "S is down!" << std::endl;
-        std::cout << glm::to_string(camera_position) << std::endl;
-    }
-
-    if (input.is_key_down(KeyButton::A)) {
-        camera_position -= speed * glm::vec3(1.0f, 0.0f, 0.0f) * delta;
-        camera_target.x = camera_position.x;
-        std::cout << "A is down!" << std::endl;
-        std::cout << glm::to_string(camera_position) << std::endl;
-    }
-
-    if (input.is_key_down(KeyButton::D)) {
-        camera_position += speed * glm::vec3(1.0f, 0.0f, 0.0f) * delta;
-        camera_target.x = camera_position.x;
-        std::cout << "D is down!" << std::endl;
-        std::cout << glm::to_string(camera_position) << std::endl;
-    }
-
-    auto& surface = RHI::get_current_surface();
-    auto  extent  = surface.get_current_extent();
-
-    // update uniform
-    auto uniform    = ubuffer.get_mapped_range<glm::mat4>();
-    auto projection = glm::perspective(1.05f, float(extent.width) / float(extent.height), 0.1f, 100.0f);
-    auto modelview  = glm::lookAt(camera_position, camera_target, glm::vec3(0.0f, 1.0f, 0.0f));
-    uniform.at(0)   = projection * modelview;
 }
 
 void render()
@@ -317,11 +279,6 @@ void render()
     texture.present();
 }
 
-void resize(const WindowInfo& info)
-{
-    std::cout << "Window Resized: " << info.width << "x" << info.height << std::endl;
-}
-
 int main()
 {
     auto win = execute([&]() {
@@ -363,14 +320,10 @@ int main()
 
     (void)surface; // avoid unused warning
 
-    window = win.get();
-
     win->bind<WindowEvent::START>(setup_pipeline);
     win->bind<WindowEvent::START>(setup_buffers);
     win->bind<WindowEvent::CLOSE>(cleanup);
-    win->bind<WindowEvent::UPDATE>(update);
     win->bind<WindowEvent::RENDER>(render);
-    win->bind<WindowEvent::RESIZE>(resize);
     win->loop();
 
     return 0;

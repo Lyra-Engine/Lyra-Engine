@@ -50,8 +50,10 @@ Own<CompileResult> Compiler::compile(const Path& path)
 
 Own<CompileResult> Compiler::compile(const CompileDescriptor& descriptor)
 {
-    auto result = std::make_unique<CompileResult>();
-    Compiler::api()->compile(handle, descriptor, result->handle);
+    auto result  = std::make_unique<CompileResult>();
+    bool success = Compiler::api()->compile(handle, descriptor, result->handle);
+    if (!success)
+        throw std::runtime_error("Failed to compile shader!");
     return result;
 }
 

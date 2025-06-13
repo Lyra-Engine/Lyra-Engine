@@ -29,8 +29,11 @@ bool compile(CompilerHandle compiler, const CompileDescriptor& desc, CompileResu
     auto internal = std::make_unique<CompileResultInternal>();
     auto handle   = compiler.astype<CompilerWrapper>();
     handle->compile(desc, *internal);
-    result = CompileResultHandle{internal.release()};
-    return true;
+    if (internal->module) {
+        result = CompileResultHandle{internal.release()};
+        return true;
+    }
+    return false;
 }
 
 void cleanup(CompileResultHandle result)

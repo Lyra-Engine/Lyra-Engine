@@ -12,7 +12,7 @@ Logger get_logger()
 void diagnose_if_needed(slang::IBlob* diagnosticsBlob)
 {
     if (diagnosticsBlob != nullptr) {
-        get_logger()->info("Slang diagnostics: {}", diagnosticsBlob->getBufferPointer());
+        get_logger()->info("Slang diagnostics: {}", (const char*)diagnosticsBlob->getBufferPointer());
     }
 }
 
