@@ -71,11 +71,20 @@ void VulkanRHI::create_swapchain()
     for (uint i = 0; i < count; i++)
         rhi->swapchain_frames.at(i).init(swapchain_images.at(i), surface_format.format, extent);
 
-    // create logical frames in flight
-    if (rhi->frames.empty()) {
+    size_t current_frames = rhi->frames.size();
+    size_t desired_frames = surface_desc.frames_inflight;
+
+    // destroy additional logical frames
+    if (current_frames > desired_frames) {
+        for (size_t i = desired_frames; i < current_frames; i++)
+            rhi->frames.at(i).destroy();
         rhi->frames.resize(surface_desc.frames_inflight);
-        for (auto& frame : rhi->frames)
-            frame.init();
+    }
+    // create logical frames in flight if not enough
+    if (current_frames < desired_frames) {
+        rhi->frames.resize(desired_frames);
+        for (size_t i = current_frames; i < desired_frames; i++)
+            rhi->frames.at(i).init();
     }
 
     // reset frame / image indices
@@ -124,7 +133,7 @@ void VulkanSwapFrame::init(VkImage image, VkFormat format, VkExtent2D extent)
         create_info.subresourceRange.layerCount     = 1;
     }
     vk_check(rhi->vtable.vkCreateImageView(rhi->device, &create_info, nullptr, &view.view));
-    this->view  = rhi->views.add(view);
+    this->view = rhi->views.add(view);
 }
 
 void VulkanSwapFrame::destroy()

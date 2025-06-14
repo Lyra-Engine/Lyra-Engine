@@ -413,6 +413,10 @@ bool api::create_device(const GPUDeviceDescriptor& desc)
     if (queue_family_indices.present.has_value())
         rhi->vtable.vkGetDeviceQueue(rhi->device, queue_family_indices.present.value(), 0, &rhi->present_queue);
 
+    // create a default frame (for compute only cases)
+    rhi->frames.emplace_back();
+    rhi->frames.back().init();
+
     if (desc.label)
         rhi->set_debug_label(VK_OBJECT_TYPE_DEVICE, (uint64_t)rhi->device, desc.label);
 

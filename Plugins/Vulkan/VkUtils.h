@@ -720,7 +720,7 @@ T& fetch_resource(VulkanResourceManager<T>& manager, Handle handle)
     return resource;
 }
 
-static VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_callback(
+inline VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_callback(
     VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,
     VkDebugUtilsMessageTypeFlagsEXT             messageType,
     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
