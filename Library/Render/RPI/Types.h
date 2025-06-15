@@ -8,7 +8,6 @@
 #include <Render/RPI/Enums.h>
 #include <Render/RPI/Utils.h>
 
-// NOTE: RDG is short for Render Graph
 namespace lyra::rpi
 {
     using namespace lyra::rhi;
@@ -78,15 +77,15 @@ namespace lyra::rpi
         virtual ~RDGRenderPass() {}
 
         // attachment
-        void set_color_attachment(RDGTextureHandle texture, GPULoadOp load, GPUStoreOp store = GPUStoreOp::STORE);
-        void set_depth_attachment(RDGTextureHandle texture, GPULoadOp load, GPUStoreOp store = GPUStoreOp::STORE);
-        void set_stencil_attachment(RDGTextureHandle texture, GPULoadOp load, GPUStoreOp store = GPUStoreOp::STORE);
-        void set_depth_stencil_attachment(RDGTextureHandle texture, GPULoadOp load, GPUStoreOp store = GPUStoreOp::STORE);
+        void use_color_attachment(RDGTextureHandle texture, GPULoadOp load, GPUStoreOp store = GPUStoreOp::STORE);
+        void use_depth_attachment(RDGTextureHandle texture, GPULoadOp load, GPUStoreOp store = GPUStoreOp::STORE);
+        void use_stencil_attachment(RDGTextureHandle texture, GPULoadOp load, GPUStoreOp store = GPUStoreOp::STORE);
+        void use_depth_stencil_attachment(RDGTextureHandle texture, GPULoadOp load, GPUStoreOp store = GPUStoreOp::STORE);
 
         // additional settings on the clear values
-        void clear_color(const GPUColor& color);
-        void clear_depth(float depth);
-        void clear_stencil(uint8_t stencil);
+        void clear_color(RDGTextureHandle texture, const GPUColor& color);
+        void clear_depth(RDGTextureHandle texture, float depth);
+        void clear_stencil(RDGTextureHandle texture, uint8_t stencil);
     };
 
     struct RDGBuilder
