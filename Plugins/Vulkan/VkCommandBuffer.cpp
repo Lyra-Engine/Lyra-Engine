@@ -156,8 +156,8 @@ void cmd::begin_render_pass(GPUCommandEncoderHandle cmdbuffer, const GPURenderPa
     auto render_area          = VkRect2D{};
     render_area.offset.x      = 0;
     render_area.offset.y      = 0;
-    render_area.extent.width  = rhi->swapchain_extent.width;
-    render_area.extent.height = rhi->swapchain_extent.height;
+    render_area.extent.width  = std::max(1u, rhi->swapchain_extent.width);
+    render_area.extent.height = std::max(1u, rhi->swapchain_extent.height);
 
     auto rendering                 = VkRenderingInfo{};
     rendering.sType                = VK_STRUCTURE_TYPE_RENDERING_INFO;
@@ -303,32 +303,114 @@ void cmd::dispatch_workgroups_indirect(GPUCommandEncoderHandle cmdbuffer, GPUBuf
 
 void cmd::copy_buffer_to_buffer(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle source, GPUSize64 source_offset, GPUBufferHandle destination, GPUSize64 destination_offset, GPUSize64 size)
 {
-    assert(!!!"unimplemented");
+    auto  rhi = get_rhi();
+    auto& cmd = rhi->current_frame().command(cmdbuffer);
+    auto& src = fetch_resource(rhi->buffers, source);
+    auto& dst = fetch_resource(rhi->buffers, destination);
+
+    auto copy      = VkBufferCopy{};
+    copy.size      = size;
+    copy.srcOffset = source_offset;
+    copy.dstOffset = destination_offset;
+
+    rhi->vtable.vkCmdCopyBuffer(cmd.command_buffer, src.buffer, dst.buffer, 1, &copy);
 }
 
 void cmd::copy_buffer_to_texture(GPUCommandEncoderHandle cmdbuffer, const GPUTexelCopyBufferInfo& source, const GPUTexelCopyTextureInfo& destination, GPUExtent3D copy_size)
 {
-    assert(!!!"unimplemented");
+    auto  rhi = get_rhi();
+    auto& cmd = rhi->current_frame().command(cmdbuffer);
+    auto& src = fetch_resource(rhi->buffers, source.buffer);
+    auto& dst = fetch_resource(rhi->textures, destination.texture);
+
+    auto copy                            = VkBufferImageCopy{};
+    copy.bufferOffset                    = source.offset;
+    copy.bufferRowLength                 = source.bytes_per_row;
+    copy.bufferImageHeight               = source.rows_per_image;
+    copy.imageOffset.x                   = destination.origin.x;
+    copy.imageOffset.y                   = destination.origin.y;
+    copy.imageOffset.z                   = destination.origin.z;
+    copy.imageExtent.width               = copy_size.width;
+    copy.imageExtent.height              = copy_size.height;
+    copy.imageExtent.depth               = copy_size.depth;
+    copy.imageSubresource.aspectMask     = vkenum(destination.aspect);
+    copy.imageSubresource.mipLevel       = destination.mip_level;
+    copy.imageSubresource.baseArrayLayer = 0; // TODO: Is WebGPU able to set this?
+    copy.imageSubresource.layerCount     = 1; // TODO: Is WebGPU able to set this?
+
+    auto layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    rhi->vtable.vkCmdCopyBufferToImage(cmd.command_buffer, src.buffer, dst.image, layout, 1, &copy);
 }
 
 void cmd::copy_texture_to_buffer(GPUCommandEncoderHandle cmdbuffer, const GPUTexelCopyTextureInfo& source, const GPUTexelCopyBufferInfo& destination, const GPUExtent3D& copy_size)
 {
-    assert(!!!"unimplemented");
+    auto  rhi = get_rhi();
+    auto& cmd = rhi->current_frame().command(cmdbuffer);
+    auto& src = fetch_resource(rhi->textures, source.texture);
+    auto& dst = fetch_resource(rhi->buffers, destination.buffer);
+
+    auto copy                            = VkBufferImageCopy{};
+    copy.bufferOffset                    = destination.offset;
+    copy.bufferRowLength                 = destination.bytes_per_row;
+    copy.bufferImageHeight               = destination.rows_per_image;
+    copy.imageOffset.x                   = source.origin.x;
+    copy.imageOffset.y                   = source.origin.y;
+    copy.imageOffset.z                   = source.origin.z;
+    copy.imageExtent.width               = copy_size.width;
+    copy.imageExtent.height              = copy_size.height;
+    copy.imageExtent.depth               = copy_size.depth;
+    copy.imageSubresource.aspectMask     = vkenum(source.aspect);
+    copy.imageSubresource.mipLevel       = source.mip_level;
+    copy.imageSubresource.baseArrayLayer = 0; // TODO: Is WebGPU able to set this?
+    copy.imageSubresource.layerCount     = 1; // TODO: Is WebGPU able to set this?
+
+    auto layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    rhi->vtable.vkCmdCopyImageToBuffer(cmd.command_buffer, src.image, layout, dst.buffer, 1, &copy);
 }
 
 void cmd::copy_texture_to_texture(GPUCommandEncoderHandle cmdbuffer, const GPUTexelCopyTextureInfo& source, const GPUTexelCopyTextureInfo& destination, const GPUExtent3D& copy_size)
 {
-    assert(!!!"unimplemented");
+    auto  rhi = get_rhi();
+    auto& cmd = rhi->current_frame().command(cmdbuffer);
+    auto& src = fetch_resource(rhi->textures, source.texture);
+    auto& dst = fetch_resource(rhi->textures, destination.texture);
+
+    auto copy                          = VkImageCopy{};
+    copy.extent.width                  = copy_size.width;
+    copy.extent.height                 = copy_size.height;
+    copy.extent.depth                  = copy_size.depth;
+    copy.srcOffset.x                   = source.origin.x;
+    copy.srcOffset.y                   = source.origin.y;
+    copy.srcOffset.z                   = source.origin.z;
+    copy.dstOffset.x                   = destination.origin.x;
+    copy.dstOffset.y                   = destination.origin.y;
+    copy.dstOffset.z                   = destination.origin.z;
+    copy.srcSubresource.aspectMask     = vkenum(source.aspect);
+    copy.srcSubresource.mipLevel       = source.mip_level;
+    copy.srcSubresource.baseArrayLayer = 0; // TODO: Is WebGPU able to set this?
+    copy.srcSubresource.layerCount     = 1; // TODO: Is WebGPU able to set this?
+    copy.dstSubresource.aspectMask     = vkenum(destination.aspect);
+    copy.dstSubresource.mipLevel       = source.mip_level;
+    copy.dstSubresource.baseArrayLayer = 0; // TODO: Is WebGPU able to set this?
+    copy.dstSubresource.layerCount     = 1; // TODO: Is WebGPU able to set this?
+
+    auto src_layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    auto dst_layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    rhi->vtable.vkCmdCopyImage(cmd.command_buffer, src.image, src_layout, dst.image, dst_layout, 1, &copy);
 }
 
 void cmd::clear_buffer(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle buffer, GPUSize64 offset, GPUSize64 size)
 {
-    assert(!!!"unimplemented");
-}
+    auto  rhi = get_rhi();
+    auto& cmd = rhi->current_frame().command(cmdbuffer);
+    auto& buf = fetch_resource(rhi->buffers, buffer);
 
-void cmd::clear_texture(GPUCommandEncoderHandle cmdbuffer, GPUTextureHandle texture, const GPUTextureSubresourceRange& range)
-{
-    assert(!!!"unimplemented");
+    rhi->vtable.vkCmdFillBuffer(
+        cmd.command_buffer,
+        buf.buffer,
+        offset,
+        size == 0 ? VK_WHOLE_SIZE : size,
+        0);
 }
 
 void cmd::resolve_query_set(GPUCommandEncoderHandle cmdbuffer, GPUQuerySetHandle query_set, GPUSize32 first_query, GPUSize32 query_count, GPUBufferHandle destination, GPUSize64 destination_offset)

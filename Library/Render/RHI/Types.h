@@ -80,10 +80,11 @@ namespace lyra::rhi
         GPUIntegerCoordinateOut height;
         GPUIntegerCoordinate    depth;
         GPUIntegerCoordinate    array_layers;
+        GPUIntegerCoordinate    mip_level_count;
         GPUSize32Out            sample_count;
         GPUTextureDimension     dimension;
         GPUTextureFormat        format;
-        GPUFlagsConstant        usage;
+        GPUTextureUsageFlags    usage;
 
         auto create_view() -> GPUTextureView;
 
@@ -98,12 +99,12 @@ namespace lyra::rhi
     {
         GPUBufferHandle handle;
 
-        GPUSize64Out   size      = 0;
-        GPUBufferUsage usage     = static_cast<GPUBufferUsage>(0);
-        GPUMapState    map_state = GPUMapState::UNMAPPED;
+        GPUSize64Out        size      = 0;
+        GPUBufferUsageFlags usage     = 0;
+        GPUMapState         map_state = GPUMapState::UNMAPPED;
 
         template <typename T>
-        auto get_mapped_range() -> TypedBufferRange<T>
+        auto get_mapped_range() const -> TypedBufferRange<T>
         {
             auto range  = get_mapped_range();
             auto typed  = TypedBufferRange<T>{};
@@ -112,7 +113,7 @@ namespace lyra::rhi
             return typed;
         }
 
-        auto get_mapped_range() -> MappedBufferRange;
+        auto get_mapped_range() const -> MappedBufferRange;
 
         void map(GPUMapMode mode, GPUSize64 offset = 0, GPUSize64 size = 0);
 

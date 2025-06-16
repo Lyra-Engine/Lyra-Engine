@@ -125,6 +125,8 @@ GPUBuffer GPUDevice::create_buffer(const GPUBufferDescriptor& desc) const
 {
     GPUBuffer buffer;
     RHI::api()->create_buffer(buffer.handle, desc);
+    buffer.size  = desc.size;
+    buffer.usage = desc.usage;
     if (desc.mapped_at_creation)
         buffer.map_state = GPUMapState::MAPPED;
     return buffer;
@@ -134,6 +136,15 @@ GPUTexture GPUDevice::create_texture(const GPUTextureDescriptor& desc) const
 {
     GPUTexture texture;
     RHI::api()->create_texture(texture.handle, desc);
+    texture.width           = desc.size.width;
+    texture.height          = desc.size.height;
+    texture.depth           = desc.size.depth;
+    texture.array_layers    = desc.array_layers;
+    texture.mip_level_count = desc.mip_level_count;
+    texture.sample_count    = desc.sample_count;
+    texture.dimension       = desc.dimension;
+    texture.format          = desc.format;
+    texture.usage           = desc.usage;
     return texture;
 }
 
@@ -248,7 +259,7 @@ void GPUDevice::destroy() const
 #pragma endregion GPUSurface
 
 #pragma region GPUBuffer
-MappedBufferRange GPUBuffer::get_mapped_range()
+MappedBufferRange GPUBuffer::get_mapped_range() const
 {
     MappedBufferRange range = {};
     if (map_state == GPUMapState::MAPPED)
@@ -285,7 +296,7 @@ GPUTextureView GPUTexture::create_view()
     desc.base_array_layer         = 0;
     desc.array_layer_count        = array_layers;
     desc.base_mip_level           = 0;
-    desc.mip_level_count          = static_cast<uint32_t>(std::log2(std::min(width, height)));
+    desc.mip_level_count          = std::min(mip_level_count, static_cast<GPUIntegerCoordinate>(std::log2(std::min(width, height))));
     desc.aspect                   = GPUTextureAspect::COLOR;
     desc.format                   = format;
     desc.usage                    = usage;
@@ -469,32 +480,32 @@ void GPUCommandEncoder::end_render_pass() const
 
 void GPUCommandEncoder::copy_buffer_to_buffer(const GPUBuffer& source, const GPUBuffer& destination, GPUSize64 size) const
 {
-    assert(!!!"unimplemented");
+    RHI::api()->cmd_copy_buffer_to_buffer(handle, source, 0u, destination, 0u, size);
 }
 
 void GPUCommandEncoder::copy_buffer_to_buffer(const GPUBuffer& source, GPUSize64 source_offset, const GPUBuffer& destination, GPUSize64 destination_offset, GPUSize64 size) const
 {
-    assert(!!!"unimplemented");
+    RHI::api()->cmd_copy_buffer_to_buffer(handle, source, source_offset, destination, destination_offset, size);
 }
 
 void GPUCommandEncoder::copy_buffer_to_texture(const GPUTexelCopyBufferInfo& source, const GPUTexelCopyTextureInfo& destination, const GPUExtent3D& copy_size) const
 {
-    assert(!!!"unimplemented");
+    RHI::api()->cmd_copy_buffer_to_texture(handle, source, destination, copy_size);
 }
 
 void GPUCommandEncoder::copy_texture_to_buffer(const GPUTexelCopyTextureInfo& source, const GPUTexelCopyBufferInfo& destination, const GPUExtent3D& copy_size) const
 {
-    assert(!!!"unimplemented");
+    RHI::api()->cmd_copy_texture_to_buffer(handle, source, destination, copy_size);
 }
 
 void GPUCommandEncoder::copy_texture_to_texture(const GPUTexelCopyTextureInfo& source, const GPUTexelCopyTextureInfo& destination, const GPUExtent3D& copy_size) const
 {
-    assert(!!!"unimplemented");
+    RHI::api()->cmd_copy_texture_to_texture(handle, source, destination, copy_size);
 }
 
 void GPUCommandEncoder::clear_buffer(const GPUBuffer& buffer, GPUSize64 offset, GPUSize64 size) const
 {
-    assert(!!!"unimplemented");
+    RHI::api()->cmd_clear_buffer(handle, buffer, offset, size);
 }
 
 void GPUCommandEncoder::resolve_query_set(GPUQuerySet query_set, GPUSize32 first_query, GPUSize32 query_count, const GPUBuffer& destination, GPUSize64 destination_offset) const

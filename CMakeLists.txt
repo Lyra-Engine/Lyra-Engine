@@ -12,13 +12,8 @@ include(Compiler)
 include(Project)
 include(System)
 
-# project library
+# project components
 add_subdirectory(Library)
-
-# project plugins
-add_subdirectory(Plugins/Glfw)
-add_subdirectory(Plugins/Slang)
-add_subdirectory(Plugins/Vulkan)
-
-# project samples
+add_subdirectory(Plugins)
 add_subdirectory(Samples)
+add_subdirectory(TestLib)

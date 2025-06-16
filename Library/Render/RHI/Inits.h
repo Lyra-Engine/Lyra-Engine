@@ -54,6 +54,18 @@ namespace lyra::rhi
         return barrier;
     }
 
+    inline GPUTextureBarrier transition_color_attachment_to_copy_src(rhi::GPUTextureHandle texture, uint32_t base_array_layer = 0, uint32_t layer_count = 1, uint32_t base_mip_level = 0, uint32_t level_count = 1)
+    {
+        auto barrier       = transition_base_template(texture, base_array_layer, layer_count, base_mip_level, level_count);
+        barrier.src_layout = GPUBarrierLayout::RENDER_TARGET;
+        barrier.dst_layout = GPUBarrierLayout::COPY_SOURCE;
+        barrier.src_sync   = GPUBarrierSync::RENDER_TARGET;
+        barrier.dst_sync   = GPUBarrierSync::COPY;
+        barrier.src_access = GPUBarrierAccess::RENDER_TARGET;
+        barrier.dst_access = GPUBarrierAccess::COPY_SOURCE;
+        return barrier;
+    }
+
 } // namespace lyra::rhi
 
 #endif // LYRA_LIBRARY_RENDER_RHI_INITS_H
