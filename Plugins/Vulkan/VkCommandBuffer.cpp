@@ -153,11 +153,12 @@ void cmd::begin_render_pass(GPUCommandEncoderHandle cmdbuffer, const GPURenderPa
                                                              ? fetch_resource(rhi->views, descriptor.depth_stencil_attachment.view).view
                                                              : VK_NULL_HANDLE;
 
-    auto render_area          = VkRect2D{};
+    auto& view                = fetch_resource(rhi->views, descriptor.color_attachments.at(0).view);
+    auto  render_area         = VkRect2D{};
     render_area.offset.x      = 0;
     render_area.offset.y      = 0;
-    render_area.extent.width  = std::max(1u, rhi->swapchain_extent.width);
-    render_area.extent.height = std::max(1u, rhi->swapchain_extent.height);
+    render_area.extent.width  = view.area.width;
+    render_area.extent.height = view.area.height;
 
     auto rendering                 = VkRenderingInfo{};
     rendering.sType                = VK_STRUCTURE_TYPE_RENDERING_INFO;
@@ -326,7 +327,7 @@ void cmd::copy_buffer_to_texture(GPUCommandEncoderHandle cmdbuffer, const GPUTex
     auto copy                            = VkBufferImageCopy{};
     copy.bufferOffset                    = source.offset;
     copy.bufferRowLength                 = source.bytes_per_row;
-    copy.bufferImageHeight               = source.rows_per_image;
+    copy.bufferImageHeight               = source.rows_per_image; // TODO: convert this to texels, not in bytes
     copy.imageOffset.x                   = destination.origin.x;
     copy.imageOffset.y                   = destination.origin.y;
     copy.imageOffset.z                   = destination.origin.z;
@@ -351,7 +352,7 @@ void cmd::copy_texture_to_buffer(GPUCommandEncoderHandle cmdbuffer, const GPUTex
 
     auto copy                            = VkBufferImageCopy{};
     copy.bufferOffset                    = destination.offset;
-    copy.bufferRowLength                 = destination.bytes_per_row;
+    copy.bufferRowLength                 = destination.bytes_per_row; // TODO: convert this to texels, not in bytes
     copy.bufferImageHeight               = destination.rows_per_image;
     copy.imageOffset.x                   = source.origin.x;
     copy.imageOffset.y                   = source.origin.y;
@@ -450,12 +451,27 @@ void cmd::set_scissor_rect(GPUCommandEncoderHandle cmdbuffer, GPUIntegerCoordina
 
 void cmd::set_blend_constant(GPUCommandEncoderHandle cmdbuffer, GPUColor color)
 {
-    assert(!!!"unimplemented");
+    auto  rhi = get_rhi();
+    auto& cmd = rhi->current_frame().command(cmdbuffer);
+
+    float blend_color[4] = {
+        color.r,
+        color.g,
+        color.b,
+        color.a,
+    };
+
+    rhi->vtable.vkCmdSetBlendConstants(cmd.command_buffer, blend_color);
 }
 
 void cmd::set_stencil_reference(GPUCommandEncoderHandle cmdbuffer, GPUStencilValue reference)
 {
-    assert(!!!"unimplemented");
+    auto  rhi = get_rhi();
+    auto& cmd = rhi->current_frame().command(cmdbuffer);
+
+    // NOTE: WebGPU applies stencil reference to both front and back uniformly to simplify the design.
+    auto face = VK_STENCIL_FRONT_AND_BACK;
+    rhi->vtable.vkCmdSetStencilReference(cmd.command_buffer, face, reference);
 }
 
 void cmd::begin_occlusion_query(GPUCommandEncoderHandle cmdbuffer, GPUSize32 queryIndex)
@@ -478,9 +494,9 @@ void cmd::memory_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUM
         b.sType         = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2_KHR;
         b.pNext         = nullptr;
         b.srcStageMask  = vkenum(barrier.src_sync);
-        b.dstStageMask  = vkenum(barrier.src_sync);
+        b.dstStageMask  = vkenum(barrier.dst_sync);
         b.srcAccessMask = vkenum(barrier.src_access);
-        b.dstAccessMask = vkenum(barrier.src_access);
+        b.dstAccessMask = vkenum(barrier.dst_access);
         bars.push_back(b);
     }
 
@@ -513,9 +529,9 @@ void cmd::buffer_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUB
         b.sType               = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2_KHR;
         b.pNext               = nullptr;
         b.srcStageMask        = vkenum(barrier.src_sync);
-        b.dstStageMask        = vkenum(barrier.src_sync);
+        b.dstStageMask        = vkenum(barrier.dst_sync);
         b.srcAccessMask       = vkenum(barrier.src_access);
-        b.dstAccessMask       = vkenum(barrier.src_access);
+        b.dstAccessMask       = vkenum(barrier.dst_access);
         b.buffer              = fetch_resource(rhi->buffers, barrier.buffer).buffer;
         b.offset              = barrier.offset;
         b.size                = barrier.size;
@@ -551,9 +567,9 @@ void cmd::texture_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPU
         b.sType         = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2_KHR;
         b.pNext         = nullptr;
         b.srcStageMask  = vkenum(barrier.src_sync);
-        b.dstStageMask  = vkenum(barrier.src_sync);
+        b.dstStageMask  = vkenum(barrier.dst_sync);
         b.srcAccessMask = vkenum(barrier.src_access);
-        b.dstAccessMask = vkenum(barrier.src_access);
+        b.dstAccessMask = vkenum(barrier.dst_access);
         b.image         = t.image;
         b.oldLayout     = vkenum(barrier.src_layout);
         b.newLayout     = vkenum(barrier.dst_layout);

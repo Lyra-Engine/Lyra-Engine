@@ -8,7 +8,10 @@
 #include <Render/RHI/Types.h>
 #include <Render/RHI/Inits.h>
 
-// RPI (Render Pass Interface)
+// RDG (Render Graph)
+#include <Render/RDG/Enums.h>
+#include <Render/RDG/Utils.h>
+#include <Render/RDG/Types.h>
 
 // SLC (Shader Language Compiler)
 #include <Render/SLC/API.h>

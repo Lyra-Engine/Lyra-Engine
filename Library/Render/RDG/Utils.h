@@ -2,7 +2,7 @@
 #define LYRA_LIBRARY_RENDER_RPI_UTILS_H
 
 #include <Render/RHI/Types.h>
-#include <Render/RPI/Enums.h>
+#include <Render/RDG/Enums.h>
 
 namespace lyra::rpi
 {

@@ -783,7 +783,7 @@ VkAccessFlags2 vkenum(GPUBarrierAccessFlags access)
     if (access.contains(GPUBarrierAccess::VERTEX_BUFFER))                flags |= VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT;
     if (access.contains(GPUBarrierAccess::UNIFORM_BUFFER))               flags |= VK_ACCESS_2_UNIFORM_READ_BIT;
     if (access.contains(GPUBarrierAccess::INDEX_BUFFER))                 flags |= VK_ACCESS_2_INDEX_READ_BIT;
-    if (access.contains(GPUBarrierAccess::RENDER_TARGET))                flags |= VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT;
+    if (access.contains(GPUBarrierAccess::RENDER_TARGET))                flags |= VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
     if (access.contains(GPUBarrierAccess::UNORDERED_ACCESS))             flags |= VK_ACCESS_2_SHADER_SAMPLED_READ_BIT;
     if (access.contains(GPUBarrierAccess::DEPTH_STENCIL_WRITE))          flags |= VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
     if (access.contains(GPUBarrierAccess::DEPTH_STENCIL_READ))           flags |= VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT;

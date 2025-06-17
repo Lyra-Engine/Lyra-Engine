@@ -1,25 +1,33 @@
-include(FetchContent)
+find_package(stb CONFIG)
 
-# define external project
-FetchContent_Declare(
-  stb
-  GIT_REPOSITORY https://github.com/nothings/stb.git
-)
-
-# get properties
-FetchContent_GetProperties(stb)
-
-# populate stb
-if(NOT imgui_POPULATED)
-  FetchContent_Populate(stb)
-endif()
-
-# create an alias for the library (if not done so)
-if(NOT TARGET stb)
+if(${stb_FOUND})
   add_library(stb INTERFACE)
-  target_include_directories(stb INTERFACE ${stb_SOURCE_DIR})
+  target_include_directories(stb INTERFACE ${stb_INCLUDE_DIR})
   set_target_properties(stb PROPERTIES FOLDER "Vendors")
-endif()
+else()
+  include(FetchContent)
 
-# mark stb as found
-set(stb_FOUND TRUE)
+  # define external project
+  FetchContent_Declare(
+    stb
+    GIT_REPOSITORY https://github.com/nothings/stb.git
+  )
+
+  # get properties
+  FetchContent_GetProperties(stb)
+
+  # populate stb
+  if(NOT imgui_POPULATED)
+    FetchContent_Populate(stb)
+  endif()
+
+  # create an alias for the library (if not done so)
+  if(NOT TARGET stb)
+    add_library(stb INTERFACE)
+    target_include_directories(stb INTERFACE ${stb_SOURCE_DIR})
+    set_target_properties(stb PROPERTIES FOLDER "Vendors")
+  endif()
+
+  # mark stb as found
+  set(stb_FOUND TRUE)
+endif()

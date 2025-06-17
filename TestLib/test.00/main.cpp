@@ -197,7 +197,7 @@ struct TestApp00 : public TestApp
             command.signal(backbuffer.complete, GPUBarrierSync::RENDER_TARGET);
         }
 
-        command.resource_barrier(transition_undefined_to_color_attachment(backbuffer.texture));
+        command.resource_barrier(state_transition(backbuffer.texture, undefined_state(), color_attachment_state()));
         command.begin_render_pass(render_pass);
         command.set_viewport(0, 0, desc.width, desc.height);
         command.set_scissor_rect(0, 0, desc.width, desc.height);
@@ -216,7 +216,7 @@ TEST_CASE("rhi::vulkan::basic_graphics_pipeline" * doctest::description("Renderi
 {
     TestAppDescriptor desc{};
     desc.name           = "test00";
-    desc.window         = true;
+    desc.window         = false;
     desc.backend        = RHIBackend::VULKAN;
     desc.width          = 1920;
     desc.height         = 1080;

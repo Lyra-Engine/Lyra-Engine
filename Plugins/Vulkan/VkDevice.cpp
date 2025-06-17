@@ -420,6 +420,9 @@ bool api::create_device(const GPUDeviceDescriptor& desc)
     if (desc.label)
         rhi->set_debug_label(VK_OBJECT_TYPE_DEVICE, (uint64_t)rhi->device, desc.label);
 
+    // set a dummy swapchain extent
+    rhi->swapchain_extent = {1920, 1080};
+
     return true;
 }
 

@@ -75,7 +75,7 @@ VulkanPipeline::VulkanPipeline(const GPURenderPipelineDescriptor& desc)
     viewport.width    = rhi->swapchain_extent.width;
     viewport.height   = -rhi->swapchain_extent.height;
     viewport.minDepth = 0.0f;
-    viewport.maxDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
 
     // dummy scissor (supposed to be replaced by vkCmdSetScissor)
     auto scissor          = VkRect2D{};
@@ -89,6 +89,8 @@ VulkanPipeline::VulkanPipeline(const GPURenderPipelineDescriptor& desc)
         VK_DYNAMIC_STATE_VIEWPORT,
         VK_DYNAMIC_STATE_SCISSOR,
         VK_DYNAMIC_STATE_LINE_WIDTH,
+        VK_DYNAMIC_STATE_BLEND_CONSTANTS,
+        VK_DYNAMIC_STATE_STENCIL_REFERENCE,
     };
 
     auto vertex_input_state                            = VkPipelineVertexInputStateCreateInfo{};

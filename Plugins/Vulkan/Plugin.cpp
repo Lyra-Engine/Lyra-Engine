@@ -61,6 +61,7 @@ void api::unmap_buffer(GPUBufferHandle buffer)
     auto  rhi = get_rhi();
     auto& buf = fetch_resource(rhi->buffers, buffer);
     buf.unmap();
+    buf.mapped_size = 0;
 }
 
 void api::get_mapped_range(GPUBufferHandle buffer, MappedBufferRange& range)

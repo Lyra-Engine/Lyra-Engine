@@ -1,14 +1,8 @@
-#define GLM_FORCE_RADIANS
-#define GLM_ENABLE_EXPERIMENTAL
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
-#include <glm/gtx/string_cast.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-
 #include <iostream>
 #include <string_view>
 #include <cmrc/cmrc.hpp>
 
+#include <Common/GLM.h>
 #include <Common/Function.h>
 #include <Render/Render.hpp>
 #include <Window/Window.hpp>
@@ -261,7 +255,7 @@ void render()
 
     auto extent = surface.get_current_extent();
     command.wait(texture.available, GPUBarrierSync::PIXEL_SHADING);
-    command.resource_barrier(transition_undefined_to_color_attachment(texture.texture));
+    command.resource_barrier(state_transition(texture.texture, undefined_state(), color_attachment_state()));
     command.begin_render_pass(render_pass);
     command.set_viewport(0, 0, extent.width, extent.height);
     command.set_scissor_rect(0, 0, extent.width, extent.height);
@@ -271,7 +265,7 @@ void render()
     command.set_bind_group(0, bind_group);
     command.draw_indexed(3, 1, 0, 0, 0);
     command.end_render_pass();
-    command.resource_barrier(transition_color_attachment_to_present(texture.texture));
+    command.resource_barrier(state_transition(texture.texture, color_attachment_state(), present_src_state()));
     command.signal(texture.complete, GPUBarrierSync::RENDER_TARGET);
     command.submit();
 

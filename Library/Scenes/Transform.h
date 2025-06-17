@@ -1,20 +1,30 @@
 #ifndef LYRA_LIBRARY_SCENES_TRANSFORM_H
 #define LYRA_LIBRARY_SCENES_TRANSFORM_H
 
-#define GLM_FORCE_RADIANS
-#define GLM_ENABLE_EXPERIMENTAL
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
-#include <glm/gtx/string_cast.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+#include <Common/GLM.h>
 
-namespace lyra
+namespace lyra::scn
 {
 
     struct Transform
     {
+        glm::vec3 scale    = glm::vec3(1.0f);
+        glm::vec3 position = glm::vec3(0.0f);
+        glm::quat rotation = glm::quat();
     };
 
-} // namespace lyra
+    struct WorldTransform
+    {
+        glm::mat4 xform = glm::mat4();
+
+        bool dirty = false;
+    };
+
+    struct CameraTransform
+    {
+        glm::mat4 projection;
+    };
+
+} // namespace lyra::scn
 
 #endif // LYRA_LIBRARY_SCENES_TRANSFORM_H

@@ -108,6 +108,7 @@ struct VulkanTexture
     VmaAllocation      allocation;
     VmaAllocationInfo  alloc_info = {};
     VkImageAspectFlags aspects    = 0;
+    VkExtent2D         area       = {}; // only used for Render Area
 
     // implementation in VkImage.cpp
     explicit VulkanTexture();
@@ -121,6 +122,7 @@ struct VulkanTexture
 struct VulkanTextureView
 {
     VkImageView view = VK_NULL_HANDLE;
+    VkExtent2D  area = {}; // only used for Render Area
 
     // implementation in VkImage.cpp
     explicit VulkanTextureView();

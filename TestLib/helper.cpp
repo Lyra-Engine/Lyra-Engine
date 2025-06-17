@@ -7,7 +7,7 @@
 
 #include "helper.h"
 
-Uniform Uniform::create(float aspect, float fovy, const glm::vec3& eye)
+Uniform Uniform::create(float fovy, float aspect, const glm::vec3& eye)
 {
     Uniform res = {};
 
@@ -96,7 +96,7 @@ GPUTexelCopyBufferInfo RenderTarget::copy_dst() const
     auto buffer_region           = GPUTexelCopyBufferInfo{};
     buffer_region.buffer         = buffer;
     buffer_region.offset         = 0;
-    buffer_region.bytes_per_row  = 0; // NOTE: leave this to underlying implementation
+    buffer_region.bytes_per_row  = 0; // NOTE: currently let underlying implemetation decide
     buffer_region.rows_per_image = height;
     return buffer_region;
 }
@@ -106,22 +106,28 @@ GPUExtent3D RenderTarget::copy_ext() const
     return GPUExtent3D{width, height, 1};
 }
 
-void RenderTarget::save(CString filename) const
+void RenderTarget::save(CString filename)
 {
+#if 0
     auto cwd = std::filesystem::current_path();
     std::cout << "cwd: " << cwd << std::endl;
+#endif
 
-    auto data = buffer.get_mapped_range<uint8_t>();
-    stbi_write_png(filename, width, height, 4, data.data, width * 4);
+    buffer.map(GPUMapMode::READ);
+    {
+        auto data = buffer.get_mapped_range<uint8_t>();
+        stbi_write_png(filename, width, height, 4, data.data, width * 4);
+    }
+    buffer.unmap();
 }
 
-RenderTarget RenderTarget::create(uint width, uint height, uint samples)
+RenderTarget RenderTarget::create(GPUTextureFormat format, uint width, uint height, uint samples)
 {
     RenderTarget res = {};
 
     GPUTextureDescriptor tex_desc{};
     tex_desc.label           = "render target";
-    tex_desc.format          = GPUTextureFormat::RGBA8UNORM;
+    tex_desc.format          = format;
     tex_desc.dimension       = GPUTextureDimension::x2D;
     tex_desc.size.width      = width;
     tex_desc.size.height     = height;
@@ -132,10 +138,9 @@ RenderTarget RenderTarget::create(uint width, uint height, uint samples)
     tex_desc.usage           = GPUTextureUsage::COPY_SRC | GPUTextureUsage::RENDER_ATTACHMENT;
 
     GPUBufferDescriptor buf_desc{};
-    buf_desc.label              = "host back buffer";
-    buf_desc.usage              = GPUBufferUsage::COPY_DST | GPUBufferUsage::MAP_READ;
-    buf_desc.size               = sizeof(uint32_t) * width * height;
-    buf_desc.mapped_at_creation = true;
+    buf_desc.label = "host backbuffer";
+    buf_desc.usage = GPUBufferUsage::COPY_DST | GPUBufferUsage::MAP_READ;
+    buf_desc.size  = sizeof(uint32_t) * width * height;
 
     auto& device = RHI::get_current_device();
     res.format   = tex_desc.format;
@@ -203,6 +208,8 @@ TestApp::TestApp(const TestAppDescriptor& app_desc) : desc(app_desc)
 
 void TestApp::run()
 {
+    render_target = RenderTarget::create(get_backbuffer_format(), desc.width, desc.height);
+
     if (desc.window) {
         run_with_window();
     } else {
@@ -221,16 +228,13 @@ void TestApp::run_with_window()
         }
     });
     win->bind<WindowEvent::CLOSE>([&]() {
-        auto& device = RHI::get_current_device();
-        device.wait();
+        RHI::get_current_device().wait();
     });
     win->loop();
 }
 
 void TestApp::run_without_window()
 {
-    render_target = RenderTarget::create(desc.width, desc.height);
-
     GPUSurfaceTexture backbuffer;
     backbuffer.texture = render_target.texture.handle;
     backbuffer.view    = render_target.view.handle;
@@ -246,9 +250,9 @@ void TestApp::run_without_window()
 void TestApp::postprocessing(const GPUCommandBuffer& cmd, GPUTextureHandle backbuffer)
 {
     if (desc.window) {
-        cmd.resource_barrier(transition_color_attachment_to_present(backbuffer));
+        cmd.resource_barrier(state_transition(backbuffer, color_attachment_state(), present_src_state()));
     } else {
-        cmd.resource_barrier(transition_color_attachment_to_copy_src(backbuffer));
+        cmd.resource_barrier(state_transition(backbuffer, color_attachment_state(), copy_src_state()));
         cmd.copy_texture_to_buffer(render_target.copy_src(), render_target.copy_dst(), render_target.copy_ext());
     }
 }

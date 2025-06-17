@@ -36,7 +36,7 @@ struct Uniform
 {
     GPUBuffer ubuffer;
 
-    static auto create(float aspect, float fovy, const glm::vec3& eye) -> Uniform;
+    static auto create(float fovy, float aspect, const glm::vec3& eye) -> Uniform;
 };
 
 struct Geometry
@@ -59,9 +59,9 @@ struct RenderTarget
     auto copy_src() const -> GPUTexelCopyTextureInfo;
     auto copy_dst() const -> GPUTexelCopyBufferInfo;
     auto copy_ext() const -> GPUExtent3D;
-    void save(CString name) const;
+    void save(CString name);
 
-    static auto create(uint width, uint height, uint samples = 1) -> RenderTarget;
+    static auto create(GPUTextureFormat format, uint width, uint height, uint samples = 1) -> RenderTarget;
 };
 
 struct TestAppDescriptor

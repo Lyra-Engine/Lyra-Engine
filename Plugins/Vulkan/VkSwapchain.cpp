@@ -115,7 +115,9 @@ void VulkanSwapFrame::init(VkImage image, VkFormat format, VkExtent2D extent)
     this->texture   = rhi->textures.add(texture);
 
     // re-create new texture view
-    auto view        = VulkanTextureView();
+    auto view = VulkanTextureView();
+    view.area = rhi->swapchain_extent; // record the render area
+
     auto create_info = VkImageViewCreateInfo{};
     {
         create_info.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,

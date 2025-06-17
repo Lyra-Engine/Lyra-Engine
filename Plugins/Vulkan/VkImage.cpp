@@ -36,8 +36,9 @@ VulkanTexture::VulkanTexture(const GPUTextureDescriptor& desc) : aspects(0)
     tex_create_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
     // allocation create info
-    alloc_create_info.usage = VMA_MEMORY_USAGE_AUTO;
-    alloc_create_info.flags = 0;
+    alloc_create_info.usage         = VMA_MEMORY_USAGE_AUTO;
+    alloc_create_info.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    alloc_create_info.flags         = 0;
 
     // create texture
     vk_check(vmaCreateImage(rhi->alloc,
@@ -54,6 +55,10 @@ VulkanTexture::VulkanTexture(const GPUTextureDescriptor& desc) : aspects(0)
 
     if (desc.label)
         rhi->set_debug_label(VK_OBJECT_TYPE_IMAGE, (uint64_t)image, desc.label);
+
+    // record the render area
+    area.width  = desc.size.width;
+    area.height = desc.size.height;
 }
 
 void VulkanTexture::destroy()
@@ -95,6 +100,9 @@ VulkanTextureView::VulkanTextureView(const VulkanTexture& texture, const GPUText
 
     if (desc.label)
         rhi->set_debug_label(VK_OBJECT_TYPE_IMAGE_VIEW, (uint64_t)view, desc.label);
+
+    // record the render area
+    area = texture.area;
 }
 
 void VulkanTextureView::destroy()

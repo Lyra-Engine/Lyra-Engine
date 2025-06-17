@@ -5,8 +5,8 @@
 #include <Common/Function.h>
 #include <Common/Container.h>
 #include <Render/RHI/Types.h>
-#include <Render/RPI/Enums.h>
-#include <Render/RPI/Utils.h>
+#include <Render/RDG/Enums.h>
+#include <Render/RDG/Utils.h>
 
 namespace lyra::rpi
 {

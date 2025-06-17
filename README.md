@@ -68,6 +68,9 @@ goal is to make the overhead as low as possible. With FrameGraph / RenderGraph b
 standard practice of 3A game engines now, it would be best to design an explicit API, but use
 render graph to track resource usages, combining the best of two worlds.
 
+WebGPU does not support ray tracing APIs yet. For this part, we are partly borrowing design from
+Rust **wgpu** and Vulkan. This part is still under design phase.
+
 ## Shading Language
 
 Our choice of shading language is **slang**. It is mostly compatible with HLSL, while introducing
@@ -76,6 +79,30 @@ projects have chosen **slang** for research or production.
 
 However, this being said, users can implement their own choice of shading language following the
 APIs defined in **Library/SLC/API.h**.
+
+We also plan to implement the shader reflection API to alleviate the manual pipeline layout creation.
+The shader reflection API design is still in progress.
+
+## Scene Management
+
+Our choice of scene management design is based on ECS. Historically I have relied on hierarchical
+scene graph, but this design would gradually couple more operations into the scene node class as
+the system gets more complicated. Therefore, we adopted ECS based scene management system to decouple
+the scene node entity from all kinds of logic. Components can be added or removed independently
+without modifying the existing node class. An implicit scene node hierarchy is still preserved
+by adding **ParentNode** component, which records the parent entity.
+
+However, the ECS-based scene management does not naturally support walking the scene hierarchy
+like walking down a tree. Common operations such as frustum culling might be not as efficient.
+Therefore we might want to implement an OctTree as well for culling purpose.
+
+## Asset Management
+
+Not started yet.
+
+## Material System
+
+Not started yet.
 
 ## Author(s)
 
