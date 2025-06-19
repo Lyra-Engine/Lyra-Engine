@@ -35,7 +35,8 @@ find_package(volk REQUIRED)
 find_package(Vulkan REQUIRED)
 target_link_libraries(lyra-vulkan PRIVATE Vulkan::Headers volk VulkanMemoryAllocator)
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+# message(STATUS "CXX COMPILER: ${CMAKE_CXX_COMPILER_ID}")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     # added for VulkanMemoryAllocator
     target_compile_options(lyra-vulkan PRIVATE -Wno-nullability-completeness)
 endif()

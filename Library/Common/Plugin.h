@@ -190,7 +190,7 @@ void lyra::Plugin<APIType>::load_api()
 }
 
 template <typename APIType>
-auto lyra::Plugin<APIType>::get_error() -> CString
+auto lyra::Plugin<APIType>::get_error() -> String
 {
     return CString(dlerror());
 }
