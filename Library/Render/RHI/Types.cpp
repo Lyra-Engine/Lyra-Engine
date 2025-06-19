@@ -508,11 +508,6 @@ void GPUCommandEncoder::clear_buffer(const GPUBuffer& buffer, GPUSize64 offset, 
     RHI::api()->cmd_clear_buffer(handle, buffer, offset, size);
 }
 
-void GPUCommandEncoder::resolve_query_set(GPUQuerySet query_set, GPUSize32 first_query, GPUSize32 query_count, const GPUBuffer& destination, GPUSize64 destination_offset) const
-{
-    assert(!!!"unimplemented");
-}
-
 void GPUCommandEncoder::set_viewport(float x, float y, float w, float h, float min_depth, float max_depth) const
 {
     RHI::api()->cmd_set_viewport(handle, x, y, w, h, min_depth, max_depth);
@@ -525,22 +520,37 @@ void GPUCommandEncoder::set_scissor_rect(GPUIntegerCoordinate x, GPUIntegerCoord
 
 void GPUCommandEncoder::set_blend_constant(GPUColor color) const
 {
-    assert(!!!"unimplemented");
+    RHI::api()->cmd_set_blend_constant(handle, color);
 }
 
 void GPUCommandEncoder::set_stencil_reference(GPUStencilValue reference) const
 {
-    assert(!!!"unimplemented");
+    RHI::api()->cmd_set_stencil_reference(handle, reference);
 }
 
-void GPUCommandEncoder::begin_occlusion_query(GPUSize32 queryIndex) const
+void GPUCommandEncoder::begin_occlusion_query(GPUSize32 query_index) const
 {
-    assert(!!!"unimplemented");
+    RHI::api()->cmd_begin_occlusion_query(handle, query_index);
 }
 
 void GPUCommandEncoder::end_occlusion_query() const
 {
-    assert(!!!"unimplemented");
+    RHI::api()->cmd_end_occlusion_query(handle);
+}
+
+void GPUCommandEncoder::write_timestamp(const GPUQuerySet& query_set, GPUSize32 query_index) const
+{
+    RHI::api()->cmd_write_timestamp(handle, query_set, query_index);
+}
+
+void GPUCommandEncoder::write_blas_properties(const GPUQuerySet& query_set, GPUSize32 query_index, const GPUBlas& blas) const
+{
+    RHI::api()->cmd_write_blas_properties(handle, query_set, query_index, blas);
+}
+
+void GPUCommandEncoder::resolve_query_set(GPUQuerySet query_set, GPUSize32 first_query, GPUSize32 query_count, const GPUBuffer& destination, GPUSize64 destination_offset) const
+{
+    RHI::api()->cmd_resolve_query_set(handle, query_set, first_query, query_count, destination, destination_offset);
 }
 
 void GPUCommandEncoder::resource_barrier(const GPUBufferBarrier& barrier) const

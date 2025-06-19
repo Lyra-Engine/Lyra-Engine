@@ -479,20 +479,6 @@ namespace lyra::rhi
         bool                 stencil_read_only = false;
     };
 
-    struct GPURenderPassTimestampWrites
-    {
-        GPUQuerySetHandle query_set;
-        GPUSize32         beginning_of_pass_write_index;
-        GPUSize32         end_of_pass_write_index;
-    };
-
-    struct GPUComputePassTimestampWrites
-    {
-        GPUQuerySetHandle query_set;
-        GPUSize32         beginning_of_pass_write_index;
-        GPUSize32         end_of_pass_write_index;
-    };
-
     struct GPUTextureSubresourceRange
     {
         GPUSize32 base_mip_level   = 0;

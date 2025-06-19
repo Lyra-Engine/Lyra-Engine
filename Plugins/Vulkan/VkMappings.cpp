@@ -130,8 +130,12 @@ VkQueryType vkenum(GPUQueryType query)
             return VK_QUERY_TYPE_OCCLUSION;
         case GPUQueryType::TIMESTAMP:
             return VK_QUERY_TYPE_TIMESTAMP;
+        case GPUQueryType::BLAS_PROPERTIES:
+            return VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR;
+        case GPUQueryType::PIPELINE_STATISTICS:
+            return VK_QUERY_TYPE_PIPELINE_STATISTICS;
         default: // fallback for invalid arguments
-            return VK_QUERY_TYPE_OCCLUSION;
+            return VK_QUERY_TYPE_TIMESTAMP;
     }
     throw std::invalid_argument("invalid argument for GPUQueryType");
 }

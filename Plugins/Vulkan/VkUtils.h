@@ -184,12 +184,15 @@ struct VulkanSemaphore
     bool valid() const { return semaphore != VK_NULL_HANDLE; }
 };
 
-struct VulkanQueryPool
+struct VulkanQuerySet
 {
-    VkQueryPool pool = VK_NULL_HANDLE;
+    VkQueryPool pool  = VK_NULL_HANDLE;
+    VkQueryType type  = VK_QUERY_TYPE_TIMESTAMP;
+    uint32_t    count = 0;
 
     // implementation in VkQuery.cpp
-    explicit VulkanQueryPool();
+    explicit VulkanQuerySet();
+    explicit VulkanQuerySet(const GPUQuerySetDescriptor& desc);
 
     void destroy();
 
@@ -335,6 +338,10 @@ struct VulkanCommandBuffer
     // CPU/GPU synchronization
     VulkanFence fence;
 
+    // Query sets
+    VulkanQuerySet     query_set;
+    Optional<uint32_t> query_index;
+
     VkQueue         command_queue  = VK_NULL_HANDLE;
     VkCommandBuffer command_buffer = VK_NULL_HANDLE;
 
@@ -472,6 +479,7 @@ struct VulkanRHI
     VulkanResourceManager<VulkanShader>          shaders;
     VulkanResourceManager<VulkanTlas>            tlases;
     VulkanResourceManager<VulkanBlas>            blases;
+    VulkanResourceManager<VulkanQuerySet>        query_sets;
     VulkanResourceManager<VulkanPipeline>        pipelines;
     VulkanResourceManager<VulkanPipelineLayout>  pipeline_layouts;
     VulkanResourceManager<VulkanBindGroupLayout> bind_group_layouts;
@@ -552,6 +560,10 @@ namespace api
     void delete_tlas(GPUTlasHandle tlas);
     bool get_tlas_sizes(GPUTlasHandle tlas, GPUBVHSizes& sizes);
 
+    // query set apis
+    bool create_query_set(GPUQuerySetHandle& query_set, const GPUQuerySetDescriptor& descriptor);
+    void delete_query_set(GPUQuerySetHandle query_set);
+
     // bind group layout apis
     bool create_bind_group_layout(GPUBindGroupLayoutHandle& handle, const GPUBindGroupLayoutDescriptor& desc);
     void delete_bind_group_layout(GPUBindGroupLayoutHandle handle);
@@ -610,19 +622,20 @@ namespace cmd
     void copy_texture_to_buffer(GPUCommandEncoderHandle cmdbuffer, const GPUTexelCopyTextureInfo& source, const GPUTexelCopyBufferInfo& destination, const GPUExtent3D& copy_size);
     void copy_texture_to_texture(GPUCommandEncoderHandle cmdbuffer, const GPUTexelCopyTextureInfo& source, const GPUTexelCopyTextureInfo& destination, const GPUExtent3D& copy_size);
     void clear_buffer(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle buffer, GPUSize64 offset, GPUSize64 size);
-    void resolve_query_set(GPUCommandEncoderHandle cmdbuffer, GPUQuerySetHandle query_set, GPUSize32 first_query, GPUSize32 query_count, GPUBufferHandle destination, GPUSize64 destination_offset);
     void set_viewport(GPUCommandEncoderHandle cmdbuffer, float x, float y, float w, float h, float min_depth, float max_depth);
     void set_scissor_rect(GPUCommandEncoderHandle cmdbuffer, GPUIntegerCoordinate x, GPUIntegerCoordinate y, GPUIntegerCoordinate w, GPUIntegerCoordinate h);
     void set_blend_constant(GPUCommandEncoderHandle cmdbuffer, GPUColor color);
     void set_stencil_reference(GPUCommandEncoderHandle cmdbuffer, GPUStencilValue reference);
-    void begin_occlusion_query(GPUCommandEncoderHandle cmdbuffer, GPUSize32 queryIndex);
+    void begin_occlusion_query(GPUCommandEncoderHandle cmdbuffer, GPUSize32 query_index);
     void end_occlusion_query(GPUCommandEncoderHandle cmdbuffer);
+    void write_timestamp(GPUCommandEncoderHandle cmdbuffer, GPUQuerySetHandle query_set, GPUSize32 query_index);
+    void write_blas_properties(GPUCommandEncoderHandle cmdbuffer, GPUQuerySetHandle query_set, GPUSize32 query_index, GPUBlasHandle blas);
+    void resolve_query_set(GPUCommandEncoderHandle cmdbuffer, GPUQuerySetHandle query_set, GPUSize32 first_query, GPUSize32 query_count, GPUBufferHandle destination, GPUSize64 destination_offset);
     void memory_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUMemoryBarrier* barriers);
     void buffer_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUBufferBarrier* barriers);
     void texture_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUTextureBarrier* barriers);
     void build_tlases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, uint32_t count, GPUTlasBuildEntry* entries);
     void build_blases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, uint32_t count, GPUBlasBuildEntry* entries);
-    void compact_blases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, uint32_t count, GPUBlasHandle* blases);
 } // namespace cmd
 
 auto get_logger() -> Logger;

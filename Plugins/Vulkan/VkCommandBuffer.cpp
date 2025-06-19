@@ -171,6 +171,11 @@ void cmd::begin_render_pass(GPUCommandEncoderHandle cmdbuffer, const GPURenderPa
     rendering.pStencilAttachment   = nullptr; // &stencil_attachment;
 
     rhi->vtable.vkCmdBeginRenderingKHR(cmd.command_buffer, &rendering);
+
+    // record the query set used for this render pass
+    if (descriptor.occlusion_query_set.valid()) {
+        cmd.query_set = fetch_resource(rhi->query_sets, descriptor.occlusion_query_set);
+    }
 }
 
 void cmd::end_render_pass(GPUCommandEncoderHandle cmdbuffer)
@@ -414,11 +419,6 @@ void cmd::clear_buffer(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle buffer
         0);
 }
 
-void cmd::resolve_query_set(GPUCommandEncoderHandle cmdbuffer, GPUQuerySetHandle query_set, GPUSize32 first_query, GPUSize32 query_count, GPUBufferHandle destination, GPUSize64 destination_offset)
-{
-    assert(!!!"unimplemented");
-}
-
 void cmd::set_viewport(GPUCommandEncoderHandle cmdbuffer, float x, float y, float w, float h, float min_depth, float max_depth)
 {
     auto  rhi = get_rhi();
@@ -474,14 +474,56 @@ void cmd::set_stencil_reference(GPUCommandEncoderHandle cmdbuffer, GPUStencilVal
     rhi->vtable.vkCmdSetStencilReference(cmd.command_buffer, face, reference);
 }
 
-void cmd::begin_occlusion_query(GPUCommandEncoderHandle cmdbuffer, GPUSize32 queryIndex)
+void cmd::begin_occlusion_query(GPUCommandEncoderHandle cmdbuffer, GPUSize32 query_index)
 {
-    assert(!!!"unimplemented");
+    auto  rhi = get_rhi();
+    auto& cmd = rhi->current_frame().command(cmdbuffer);
+
+    assert(cmd.query_set.valid());
+
+    cmd.query_index = query_index;
+    rhi->vtable.vkCmdBeginQuery(cmd.command_buffer, cmd.query_set.pool, query_index, 0);
 }
 
 void cmd::end_occlusion_query(GPUCommandEncoderHandle cmdbuffer)
 {
-    assert(!!!"unimplemented");
+    auto  rhi = get_rhi();
+    auto& cmd = rhi->current_frame().command(cmdbuffer);
+
+    assert(cmd.query_set.valid());
+    assert(cmd.query_index.has_value());
+
+    rhi->vtable.vkCmdEndQuery(cmd.command_buffer, cmd.query_set.pool, cmd.query_index.value());
+}
+
+void cmd::write_timestamp(GPUCommandEncoderHandle cmdbuffer, GPUQuerySetHandle query_set, GPUSize32 query_index)
+{
+    auto  rhi = get_rhi();
+    auto& cmd = rhi->current_frame().command(cmdbuffer);
+    auto& qry = fetch_resource(rhi->query_sets, query_set);
+
+    rhi->vtable.vkCmdWriteTimestamp(cmd.command_buffer, VK_PIPELINE_STAGE_NONE, qry.pool, query_index);
+}
+
+void cmd::write_blas_properties(GPUCommandEncoderHandle cmdbuffer, GPUQuerySetHandle query_set, GPUSize32 query_index, GPUBlasHandle blas)
+{
+    auto  rhi = get_rhi();
+    auto& cmd = rhi->current_frame().command(cmdbuffer);
+    auto& qry = fetch_resource(rhi->query_sets, query_set);
+    auto& bvh = fetch_resource(rhi->blases, blas);
+
+    rhi->vtable.vkCmdWriteAccelerationStructuresPropertiesKHR(cmd.command_buffer, 1, &bvh.blas, qry.type, qry.pool, query_index);
+}
+
+void cmd::resolve_query_set(GPUCommandEncoderHandle cmdbuffer, GPUQuerySetHandle query_set, GPUSize32 first_query, GPUSize32 query_count, GPUBufferHandle destination, GPUSize64 destination_offset)
+{
+    auto  rhi = get_rhi();
+    auto& cmd = rhi->current_frame().command(cmdbuffer);
+    auto& qry = fetch_resource(rhi->query_sets, query_set);
+    auto& buf = fetch_resource(rhi->buffers, destination);
+
+    auto stride = sizeof(uint64_t); // NOTE: This might not be good enough. We might determine the stride based on query type.
+    rhi->vtable.vkCmdCopyQueryPoolResults(cmd.command_buffer, qry.pool, first_query, query_count, buf.buffer, destination_offset, stride, 0);
 }
 
 void cmd::memory_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUMemoryBarrier* barriers)
@@ -770,9 +812,4 @@ void cmd::build_blases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratc
         static_cast<uint32_t>(build_infos.size()),
         build_infos.data(),
         build_ranges.data());
-}
-
-void cmd::compact_blases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, uint32_t count, GPUBlasHandle* blases)
-{
-    assert(!!!"unimplemented");
 }

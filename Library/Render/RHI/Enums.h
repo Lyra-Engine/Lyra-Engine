@@ -213,6 +213,8 @@ namespace lyra::rhi
     {
         OCCLUSION,
         TIMESTAMP,
+        BLAS_PROPERTIES,     // additional accelerations structure support
+        PIPELINE_STATISTICS, // additional pipeline support
     };
 
     enum struct GPUBufferBindingType : uint

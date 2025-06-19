@@ -129,7 +129,7 @@ namespace lyra::rhi
         GPUQuerySetHandle handle;
 
         GPUQueryType type;
-        GPUSize32Out count;
+        GPUSize32    count;
 
         auto destroy() -> void;
 
@@ -286,8 +286,6 @@ namespace lyra::rhi
 
         void clear_buffer(const GPUBuffer& buffer, GPUSize64 offset = 0, GPUSize64 size = 0) const;
 
-        void resolve_query_set(GPUQuerySet query_set, GPUSize32 first_query, GPUSize32 query_count, const GPUBuffer& destination, GPUSize64 destination_offset) const;
-
         void set_viewport(float x, float y, float w, float h, float min_depth = 0.0f, float max_depth = 1.0f) const;
 
         void set_scissor_rect(GPUIntegerCoordinate x, GPUIntegerCoordinate y, GPUIntegerCoordinate w, GPUIntegerCoordinate h) const;
@@ -296,14 +294,22 @@ namespace lyra::rhi
 
         void set_stencil_reference(GPUStencilValue reference) const;
 
-        void begin_occlusion_query(GPUSize32 queryIndex) const;
+        void begin_occlusion_query(GPUSize32 query_index) const;
 
         void end_occlusion_query() const;
 
+        void write_timestamp(const GPUQuerySet& query_set, GPUSize32 query_index) const;
+
+        void write_blas_properties(const GPUQuerySet& query_set, GPUSize32 query_index, const GPUBlas& blas) const;
+
+        void resolve_query_set(GPUQuerySet query_set, GPUSize32 first_query, GPUSize32 query_count, const GPUBuffer& destination, GPUSize64 destination_offset) const;
+
         void resource_barrier(const GPUBufferBarrier& barrier) const;
+
         void resource_barrier(const Vector<GPUBufferBarrier>& barriers) const;
 
         void resource_barrier(const GPUTextureBarrier& barrier) const;
+
         void resource_barrier(const Vector<GPUTextureBarrier>& barriers) const;
     };
 

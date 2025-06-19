@@ -201,6 +201,21 @@ bool api::get_tlas_sizes(GPUTlasHandle tlas, GPUBVHSizes& sizes)
     return true;
 }
 
+bool api::create_query_set(GPUQuerySetHandle& query_set, const GPUQuerySetDescriptor& desc)
+{
+    auto obj = VulkanQuerySet(desc);
+    auto rhi = get_rhi();
+    auto ind = rhi->query_sets.add(obj);
+
+    query_set = GPUQuerySetHandle(ind);
+    return true;
+}
+
+void api::delete_query_set(GPUQuerySetHandle query_set)
+{
+    get_rhi()->query_sets.remove(query_set.value);
+}
+
 bool api::create_bind_group_layout(GPUBindGroupLayoutHandle& layout, const GPUBindGroupLayoutDescriptor& desc)
 {
     auto obj = VulkanBindGroupLayout(desc);
@@ -403,13 +418,15 @@ LYRA_EXPORT auto create() -> RenderAPI
     api.cmd_copy_texture_to_buffer       = cmd::copy_texture_to_buffer;
     api.cmd_copy_texture_to_texture      = cmd::copy_texture_to_texture;
     api.cmd_clear_buffer                 = cmd::clear_buffer;
-    api.cmd_resolve_query_set            = cmd::resolve_query_set;
     api.cmd_set_viewport                 = cmd::set_viewport;
     api.cmd_set_scissor_rect             = cmd::set_scissor_rect;
     api.cmd_set_blend_constant           = cmd::set_blend_constant;
     api.cmd_set_stencil_reference        = cmd::set_stencil_reference;
     api.cmd_begin_occlusion_query        = cmd::begin_occlusion_query;
     api.cmd_end_occlusion_query          = cmd::end_occlusion_query;
+    api.cmd_write_timestamp              = cmd::write_timestamp;
+    api.cmd_write_blas_properties        = cmd::write_blas_properties;
+    api.cmd_resolve_query_set            = cmd::resolve_query_set;
     api.cmd_memory_barrier               = cmd::memory_barrier;
     api.cmd_buffer_barrier               = cmd::buffer_barrier;
     api.cmd_texture_barrier              = cmd::texture_barrier;

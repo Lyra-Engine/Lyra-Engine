@@ -164,17 +164,11 @@ namespace lyra::rhi
         GPUSize32                sample_count = 1;
     };
 
-    struct GPUComputePassDescriptor : public GPUObjectDescriptorBase
-    {
-        GPUComputePassTimestampWrites timestampWrites;
-    };
-
     struct GPURenderPassDescriptor : public GPUObjectDescriptorBase
     {
         Vector<GPURenderPassColorAttachment> color_attachments;
         GPURenderPassDepthStencilAttachment  depth_stencil_attachment;
         GPUQuerySetHandle                    occlusion_query_set;
-        GPURenderPassTimestampWrites         timestamp_writes;
         GPUSize64                            max_draw_count = 50000000;
     };
 

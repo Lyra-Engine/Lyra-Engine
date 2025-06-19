@@ -108,19 +108,21 @@ namespace lyra::rhi
         void (*cmd_copy_texture_to_texture)(GPUCommandEncoderHandle cmdbuffer, const GPUTexelCopyTextureInfo& source, const GPUTexelCopyTextureInfo& destination, const GPUExtent3D& copy_size);
         void (*cmd_clear_buffer)(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle buffer, GPUSize64 offset, GPUSize64 size);
         void (*cmd_clear_texture)(GPUCommandEncoderHandle cmdbuffer, GPUTextureHandle texture, const GPUTextureSubresourceRange& range);
-        void (*cmd_resolve_query_set)(GPUCommandEncoderHandle cmdbuffer, GPUQuerySetHandle query_set, GPUSize32 first_query, GPUSize32 query_count, GPUBufferHandle destination, GPUSize64 destination_offset);
         void (*cmd_set_viewport)(GPUCommandEncoderHandle cmdbuffer, float x, float y, float w, float h, float min_depth, float max_depth);
         void (*cmd_set_scissor_rect)(GPUCommandEncoderHandle cmdbuffer, GPUIntegerCoordinate x, GPUIntegerCoordinate y, GPUIntegerCoordinate w, GPUIntegerCoordinate h);
         void (*cmd_set_blend_constant)(GPUCommandEncoderHandle cmdbuffer, GPUColor color);
         void (*cmd_set_stencil_reference)(GPUCommandEncoderHandle cmdbuffer, GPUStencilValue reference);
-        void (*cmd_begin_occlusion_query)(GPUCommandEncoderHandle cmdbuffer, GPUSize32 queryIndex);
+        void (*cmd_begin_occlusion_query)(GPUCommandEncoderHandle cmdbuffer, GPUSize32 query_index);
         void (*cmd_end_occlusion_query)(GPUCommandEncoderHandle cmdbuffer);
-        void (*cmd_memory_barrier)(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUMemoryBarrier* barriers);
-        void (*cmd_buffer_barrier)(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUBufferBarrier* barriers);
-        void (*cmd_texture_barrier)(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUTextureBarrier* barriers);
-        void (*cmd_build_tlases)(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, uint32_t count, GPUTlasBuildEntry* entries);
-        void (*cmd_build_blases)(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, uint32_t count, GPUBlasBuildEntry* entries);
-        void (*cmd_compact_blases)(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, uint32_t count, GPUBlasHandle* blases);
+        void (*cmd_write_timestamp)(GPUCommandEncoderHandle cmdbuffer, GPUQuerySetHandle query_set, GPUSize32 query_index);
+        void (*cmd_write_blas_properties)(GPUCommandEncoderHandle cmdbuffer, GPUQuerySetHandle query_set, GPUSize32 query_index, GPUBlasHandle blas);
+        void (*cmd_resolve_query_set)(GPUCommandEncoderHandle cmdbuffer, GPUQuerySetHandle query_set, GPUSize32 first_query, GPUSize32 query_count, GPUBufferHandle destination, GPUSize64 destination_offset);
+        void (*cmd_memory_barrier)(GPUCommandEncoderHandle cmdbuffer, GPUSize32 count, GPUMemoryBarrier* barriers);
+        void (*cmd_buffer_barrier)(GPUCommandEncoderHandle cmdbuffer, GPUSize32 count, GPUBufferBarrier* barriers);
+        void (*cmd_texture_barrier)(GPUCommandEncoderHandle cmdbuffer, GPUSize32 count, GPUTextureBarrier* barriers);
+        void (*cmd_build_tlases)(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, GPUSize32 count, GPUTlasBuildEntry* entries);
+        void (*cmd_build_blases)(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, GPUSize32 count, GPUBlasBuildEntry* entries);
+        void (*cmd_copy_blas)(GPUCommandEncoderHandle cmdbuffer, GPUBlasHandle old_blas, GPUBlasHandle new_blas);
     };
 
 } // namespace lyra::rhi
