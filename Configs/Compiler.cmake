@@ -1,4 +1,4 @@
-# Suppress both developer warnings
+# Suppress developer warnings
 set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS 1 CACHE BOOL "Suppress developer warnings")
 
 # export compilation database

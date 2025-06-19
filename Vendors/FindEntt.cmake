@@ -2,7 +2,6 @@
 set(ENTT_INCLUDE_NATVIS ON)
 
 find_package(EnTT CONFIG)
-
 if(NOT ${EnTT_FOUND})
   include(FetchContent)
 

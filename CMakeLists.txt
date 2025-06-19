@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8...3.26)
+cmake_minimum_required(VERSION 3.6...3.27)
 
 # project name and version
 project(Lyra-Engine VERSION 0.1 LANGUAGES C CXX)
