@@ -619,8 +619,8 @@ void cmd::texture_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPU
         b.subresourceRange.aspectMask     = vkenum(t.aspects);
         b.subresourceRange.baseArrayLayer = barrier.subresources.base_array_layer;
         b.subresourceRange.baseMipLevel   = barrier.subresources.base_mip_level;
-        b.subresourceRange.layerCount     = barrier.subresources.layer_count;
-        b.subresourceRange.levelCount     = barrier.subresources.level_count;
+        b.subresourceRange.layerCount     = barrier.subresources.array_layers;
+        b.subresourceRange.levelCount     = barrier.subresources.mip_level_count;
         bars.push_back(b);
     }
 

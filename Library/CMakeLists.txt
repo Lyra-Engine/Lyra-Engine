@@ -10,6 +10,7 @@ target_sources(lyra-core PRIVATE
     # render sources
     Render/RHI/Types.cpp
     Render/RHI/Inits.cpp
+    Render/RDG/Types.cpp
     Render/SLC/Types.cpp
 )
 

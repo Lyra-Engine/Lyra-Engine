@@ -34,6 +34,18 @@ namespace lyra
         U* astype() const { return reinterpret_cast<U*>(handle); }
     };
 
+    template <typename E, E TYPE, typename T = uint32_t>
+    inline bool operator==(const Handle<E, TYPE, T>& lhs, const Handle<E, TYPE, T>& rhs)
+    {
+        return lhs.value == rhs.value;
+    }
+
+    template <typename E, E TYPE, typename T = uint32_t>
+    inline bool operator!=(const Handle<E, TYPE, T>& lhs, const Handle<E, TYPE, T>& rhs)
+    {
+        return lhs.value != rhs.value;
+    }
+
 } // namespace lyra
 
 #endif // LYRA_LIBRARY_COMMON_HANDLE_H

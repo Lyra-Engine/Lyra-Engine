@@ -74,7 +74,7 @@ namespace lyra::wsi
 
         auto get_window_info() const -> WindowInfo;
 
-        template <WindowEvent E, typename T, typename F>
+        template <WindowEvent E, typename F, typename T>
         void bind(F&& f, T* user)
         {
             bind<E>(std::bind(f, user, std::placeholders::_1));

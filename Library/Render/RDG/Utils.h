@@ -1,34 +1,43 @@
-#ifndef LYRA_LIBRARY_RENDER_RPI_UTILS_H
-#define LYRA_LIBRARY_RENDER_RPI_UTILS_H
+#ifndef LYRA_LIBRARY_RENDER_RDG_UTILS_H
+#define LYRA_LIBRARY_RENDER_RDG_UTILS_H
 
 #include <Render/RHI/Types.h>
 #include <Render/RDG/Enums.h>
 
-namespace lyra::rpi
+namespace lyra::rdg
 {
     using namespace lyra::rhi;
 
     using RDGBufferHandle  = Handle<RDGResource, RDGResource::BUFFER>;
     using RDGTextureHandle = Handle<RDGResource, RDGResource::TEXTURE>;
 
+    struct RDGResourceBase
+    {
+        String label     = "";
+        uint   rid       = static_cast<uint>(-1); // resource id
+        bool   imported  = false;
+        bool   preserved = false;
+    };
+
     // Users are supposed to only use RDGBufferHandle.
     // RDGBufferResource is supposed to be only used internally.
-    struct RDGBufferResource
+    struct RDGBufferResource : public RDGResourceBase
     {
-        GPUBufferHandle     buffer;
+        GPUBuffer           buffer;
         GPUBufferDescriptor descriptor;
     };
 
     // Users are supposed to only use RDGTextureHandle.
     // RDGTextureResource is supposed to be only used internally.
-    struct RDGTextureResource
+    struct RDGTextureResource : public RDGResourceBase
     {
-        GPUTextureHandle     texture;
+        GPUTexture           texture;
         GPUTextureDescriptor descriptor;
     };
 
     struct RDGBufferView
     {
+        RDGBufferAction action;
         RDGBufferHandle buffer;
         GPUSize64       offset = 0;
         GPUSize64       size   = 0;
@@ -36,28 +45,53 @@ namespace lyra::rpi
 
     struct RDGTextureView
     {
-        RDGTextureHandle     texture;
-        GPUIntegerCoordinate base_mip_level    = 0;
-        GPUIntegerCoordinate mip_level_count   = 1;
-        GPUIntegerCoordinate base_array_layer  = 0;
-        GPUIntegerCoordinate array_layer_count = 1;
+        RDGTextureAction action;
+        RDGTextureHandle texture;
+        GPUBarrierSync   sync = GPUBarrierSync::ALL_SHADING;
     };
 
     // Users are not supposed to directly use RDGAttachment.
     // RDGAttachment is a helper struct used by RDGPass.
     struct RDGAttachment
     {
-        RDGTextureHandle texture;
-        GPULoadOp        load_op  = GPULoadOp::LOAD;
-        GPUStoreOp       store_op = GPUStoreOp::STORE;
+        RDGAttachmentType type;
+        RDGTextureHandle  texture;
+        GPULoadOp         load_op  = GPULoadOp::LOAD;
+        GPUStoreOp        store_op = GPUStoreOp::STORE;
         union
         {
             GPUColor clear_color = GPUColor{0.0f, 0.0f, 0.0f, 0.0f};
-            float    clear_depth;
-            uint8_t  clear_stencil;
+            struct
+            {
+                float   clear_depth;
+                uint8_t clear_stencil;
+            };
         };
     };
 
-} // namespace lyra::rpi
+    inline bool is_read_action(RDGBufferAction action)
+    {
+        switch (action) {
+            case RDGBufferAction::READ:
+                return true;
+            case RDGBufferAction::WRITE:
+            default:
+                return false;
+        }
+    }
 
-#endif // LYRA_LIBRARY_RENDER_RPI_UTILS_H
+    inline bool is_read_action(RDGTextureAction action)
+    {
+        switch (action) {
+            case RDGTextureAction::READ:
+            case RDGTextureAction::SAMPLE:
+                return true;
+            case RDGTextureAction::WRITE:
+            case RDGTextureAction::PRESENT:
+                return false;
+        }
+    }
+
+} // namespace lyra::rdg
+
+#endif // LYRA_LIBRARY_RENDER_rdg_UTILS_H

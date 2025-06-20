@@ -482,9 +482,9 @@ namespace lyra::rhi
     struct GPUTextureSubresourceRange
     {
         GPUSize32 base_mip_level   = 0;
-        GPUSize32 level_count      = 0;
+        GPUSize32 mip_level_count  = 1;
         GPUSize32 base_array_layer = 0;
-        GPUSize32 layer_count      = 0;
+        GPUSize32 array_layers     = 1;
     };
 
     struct GPUMemoryBarrier

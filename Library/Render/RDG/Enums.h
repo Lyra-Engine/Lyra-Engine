@@ -1,14 +1,28 @@
-#ifndef LYRA_LIBRARY_RENDER_RPI_ENUMS_H
-#define LYRA_LIBRARY_RENDER_RPI_ENUMS_H
+#ifndef LYRA_LIBRARY_RENDER_RDG_ENUMS_H
+#define LYRA_LIBRARY_RENDER_RDG_ENUMS_H
 
 #include <Render/RHI/Types.h>
 
-namespace lyra::rpi
+namespace lyra::rdg
 {
     enum struct RDGResource
     {
         BUFFER,
         TEXTURE,
+    };
+
+    enum struct RDGBufferAction
+    {
+        READ,
+        WRITE,
+    };
+
+    enum struct RDGTextureAction
+    {
+        READ,
+        WRITE,
+        SAMPLE,
+        PRESENT,
     };
 
     enum struct RDGAttachmentType
@@ -20,6 +34,6 @@ namespace lyra::rpi
         STENCIL,
     };
 
-} // namespace lyra::rpi
+} // namespace lyra::rdg
 
-#endif // LYRA_LIBRARY_RENDER_RPI_ENUMS_H
+#endif // LYRA_LIBRARY_RENDER_rdg_ENUMS_H

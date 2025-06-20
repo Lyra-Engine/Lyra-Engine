@@ -15,8 +15,10 @@ namespace lyra::rhi
     };
 
     TransitionState undefined_state();
+    TransitionState shader_resource_state(GPUBarrierSync sync);
     TransitionState present_src_state();
     TransitionState color_attachment_state();
+    TransitionState depth_stencil_attachment_state();
     TransitionState copy_src_state();
     TransitionState copy_dst_state();
 
@@ -25,9 +27,9 @@ namespace lyra::rhi
         const TransitionState& src_state,
         const TransitionState& dst_state,
         uint32_t               base_array_layer = 0,
-        uint32_t               layer_count      = 1,
+        uint32_t               array_layers     = 1,
         uint32_t               base_mip_level   = 0,
-        uint32_t               level_count      = 1);
+        uint32_t               mip_level_count  = 1);
 
 } // namespace lyra::rhi
 
