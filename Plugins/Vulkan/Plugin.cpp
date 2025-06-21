@@ -1,8 +1,8 @@
 // global module headers
-#include <Common/String.h>
-#include <Common/Plugin.h>
-#include <Render/Render.hpp>
-#include <Window/Window.hpp>
+#include <Lyra/Common/String.h>
+#include <Lyra/Common/Plugin.h>
+#include <Lyra/Render/Render.hpp>
+#include <Lyra/Window/Window.hpp>
 
 #include "VkUtils.h"
 

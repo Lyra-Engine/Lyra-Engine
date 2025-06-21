@@ -1,10 +1,6 @@
 #ifndef LYRA_PLUGIN_VULKAN_VKINCLUDE_H
 #define LYRA_PLUGIN_VULKAN_VKINCLUDE_H
 
-#include <sstream>
-
-#include <Render/RHI/Descs.h>
-
 #ifdef _WIN32
 #define VK_USE_PLATFORM_WIN32_KHR
 #endif
@@ -20,13 +16,15 @@
 
 #include <volk.h>
 #include <vk_mem_alloc.h>
+#include <sstream>
 
-#include <Common/Logger.h>
-#include <Common/Msgbox.h>
-#include <Common/Slotmap.h>
-#include <Common/Container.h>
-#include <Common/Compatibility.h>
-#include <Render/RHI/API.h>
+#include <Lyra/Common/Logger.h>
+#include <Lyra/Common/Msgbox.h>
+#include <Lyra/Common/Slotmap.h>
+#include <Lyra/Common/Container.h>
+#include <Lyra/Common/Compatibility.h>
+#include <Lyra/Render/RHI/Descs.h>
+#include <Lyra/Render/RHI/API.h>
 
 using namespace lyra;
 using namespace lyra::rhi;

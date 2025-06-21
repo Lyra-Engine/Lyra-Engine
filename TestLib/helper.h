@@ -11,9 +11,10 @@
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include <Common/Container.h>
-#include <Common/Function.h>
-#include <Render/Render.hpp>
+#include <Lyra/Common/Container.h>
+#include <Lyra/Common/Function.h>
+#include <Lyra/Render/Render.hpp>
+#include <Lyra/Window/Window.hpp>
 
 using namespace lyra;
 using namespace lyra::wsi;

@@ -16,10 +16,10 @@
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 
-#include <Common/String.h>
-#include <Common/Logger.h>
-#include <Common/Plugin.h>
-#include <Window/API.h>
+#include <Lyra/Common/String.h>
+#include <Lyra/Common/Logger.h>
+#include <Lyra/Common/Plugin.h>
+#include <Lyra/Window/API.h>
 
 using namespace lyra;
 using namespace lyra::wsi;

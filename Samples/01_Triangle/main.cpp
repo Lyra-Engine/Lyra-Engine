@@ -2,10 +2,10 @@
 #include <string_view>
 #include <cmrc/cmrc.hpp>
 
-#include <Common/GLM.h>
-#include <Common/Function.h>
-#include <Render/Render.hpp>
-#include <Window/Window.hpp>
+#include <Lyra/Common/GLM.h>
+#include <Lyra/Common/Function.h>
+#include <Lyra/Render/Render.hpp>
+#include <Lyra/Window/Window.hpp>
 
 using namespace lyra;
 using namespace lyra::wsi;

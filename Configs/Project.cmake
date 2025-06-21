@@ -1,6 +1,6 @@
 set(PROJECT_NAME "lyra")
 set(PROJECT_PREFIX "")
-set(PROJECT_COMMON_LIB "lyra::core")
+set(PROJECT_COMMON_LIB "lyra::engine")
 
 # specify the binary directory
 set(LIBRARY_BIN_DIRECTORY ${CMAKE_BINARY_DIR}/bin)

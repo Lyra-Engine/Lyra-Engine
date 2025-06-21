@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <Lyra/Window/API.h>
+#include <Lyra/Window/Types.h>
 #include "VkUtils.h"
 
 void VulkanRHI::create_swapchain()

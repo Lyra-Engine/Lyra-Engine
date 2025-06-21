@@ -5,8 +5,8 @@
 #include <slang-com-ptr.h>
 #include <slang-com-helper.h>
 
-#include <Common/Logger.h>
-#include <Render/SLC/API.h>
+#include <Lyra/Common/Logger.h>
+#include <Lyra/Render/SLC/API.h>
 
 using namespace lyra;
 using namespace lyra::rhi;
