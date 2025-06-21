@@ -24,6 +24,3 @@ target_link_libraries(lyra-engine PUBLIC EnTT::EnTT)
 target_link_libraries(lyra-engine PUBLIC libassert::assert)
 target_link_libraries(lyra-engine PUBLIC glm boxer spdlog magic_enum)
 target_include_directories(lyra-engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-
-# headers (used only for installation)
-file(GLOB_RECURSE LYRA_HEADER_FILES "*.h" "*.hpp")

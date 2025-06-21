@@ -24,11 +24,15 @@ macro(lyra_shared NAME)
         LIBRARY_OUTPUT_DIRECTORY ${LIBRARY_BIN_DIRECTORY}/
         ARCHIVE_OUTPUT_DIRECTORY ${LIBRARY_BIN_DIRECTORY}/)
 
-    # Re-export target with namespace
+    # re-export target with namespace
     add_library(${NAMESPACE_NAME} ALIAS ${TARGET_NAME})
 
+    # IDE target folders
     set_target_properties(${TARGET_NAME} PROPERTIES PREFIX "")
     set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "Plugins")
+
+    # install shared library object
+    install(TARGETS ${TARGET_NAME} DESTINATION lib)
 endmacro()
 
 # define a macro for plugin registration
@@ -45,12 +49,16 @@ macro(lyra_plugin NAME)
         LIBRARY_OUTPUT_DIRECTORY ${LIBRARY_BIN_DIRECTORY}/
         ARCHIVE_OUTPUT_DIRECTORY ${LIBRARY_BIN_DIRECTORY}/)
 
-    # Re-export target with namespace
+    # re-export target with namespace
     add_library(${NAMESPACE_NAME} ALIAS ${TARGET_NAME})
 
+    # IDE target folders
     set_target_properties(${TARGET_NAME} PROPERTIES PREFIX "")
     set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "Plugins")
     target_link_libraries(${TARGET_NAME} PUBLIC ${PROJECT_COMMON_LIB})
+
+    # install shared library object
+    install(TARGETS ${TARGET_NAME} DESTINATION lib)
 endmacro()
 
 # define a macro for sample registration

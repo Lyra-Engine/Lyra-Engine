@@ -17,3 +17,9 @@ add_subdirectory(Library)
 add_subdirectory(Plugins)
 add_subdirectory(Samples)
 add_subdirectory(TestLib)
+
+# install shared library header
+install(
+    DIRECTORY Library/
+    DESTINATION include/
+    FILES_MATCHING PATTERN "*.[h|hpp]")
