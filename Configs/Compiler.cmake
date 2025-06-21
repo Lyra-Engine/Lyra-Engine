@@ -4,6 +4,9 @@ set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS 1 CACHE BOOL "Suppress developer warnings"
 # export compilation database
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# use position independent code for shared libraries
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 # enable C++ 17
 set(CMAKE_CXX_STANDARD 17)
 

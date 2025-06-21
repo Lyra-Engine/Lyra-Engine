@@ -13,3 +13,4 @@ set(libassert_FOUND TRUE)
 
 # put libassert under folder
 set_target_properties(libassert-lib PROPERTIES FOLDER "Vendors")
+set_target_properties(cpptrace-lib PROPERTIES FOLDER "Vendors")
