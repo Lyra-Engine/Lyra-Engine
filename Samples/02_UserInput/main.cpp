@@ -3,9 +3,9 @@
 #include <cmrc/cmrc.hpp>
 
 #include <Lyra/Common/GLM.h>
-#include <Lyra/Common/Function.h>
-#include <Lyra/Render/Render.hpp>
-#include <Lyra/Window/Window.hpp>
+#include <Lyra/Common.hpp>
+#include <Lyra/Render.hpp>
+#include <Lyra/Window.hpp>
 
 using namespace lyra;
 using namespace lyra::wsi;
