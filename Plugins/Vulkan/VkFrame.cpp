@@ -22,7 +22,7 @@ void VulkanFrame::wait()
     inflight_fence.wait();
 }
 
-void VulkanFrame::reset()
+void VulkanFrame::reset(bool free)
 {
     // release any resources that is owned by this command buffer
     for (auto& command_buffer : allocated_command_buffers)
@@ -30,9 +30,9 @@ void VulkanFrame::reset()
 
     inflight_fence.reset();
     descriptor_pool.reset();
-    compute_command_pool.reset();
-    graphics_command_pool.reset();
-    transfer_command_pool.reset();
+    compute_command_pool.reset(free);
+    graphics_command_pool.reset(free);
+    transfer_command_pool.reset(free);
     allocated_command_buffers.clear();
 }
 

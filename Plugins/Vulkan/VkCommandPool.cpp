@@ -12,13 +12,13 @@ void VulkanCommandPool::init(uint queue_family_index)
     vk_check(rhi->vtable.vkCreateCommandPool(rhi->device, &pool_info, nullptr, &command_pool));
 }
 
-void VulkanCommandPool::reset()
+void VulkanCommandPool::reset(bool free)
 {
     if (command_pool != VK_NULL_HANDLE) {
         auto rhi = get_rhi();
         vk_check(rhi->vtable.vkResetCommandPool(rhi->device, command_pool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT));
-        primary.reset();
-        secondary.reset();
+        primary.reset(command_pool, free);
+        secondary.reset(command_pool, free);
     }
 }
 
@@ -63,7 +63,14 @@ VkCommandBuffer VulkanCommandPool::AllocatedCommandBuffers::allocate(VkCommandPo
     return allocated.at(index++);
 }
 
-void VulkanCommandPool::AllocatedCommandBuffers::reset()
+void VulkanCommandPool::AllocatedCommandBuffers::reset(VkCommandPool pool, bool free)
 {
     index = 0;
+
+    if (free && !allocated.empty()) {
+        auto rhi   = get_rhi();
+        uint count = static_cast<uint32_t>(allocated.size());
+        rhi->vtable.vkFreeCommandBuffers(rhi->device, pool, count, allocated.data());
+        allocated.clear();
+    }
 }

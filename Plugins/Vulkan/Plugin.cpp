@@ -329,6 +329,10 @@ void api::wait_idle()
 {
     auto rhi = get_rhi();
     vk_check(rhi->vtable.vkDeviceWaitIdle(rhi->device));
+
+    // optional: clean up all pools from all frames
+    for (auto& frame : rhi->frames)
+        frame.reset(true);
 }
 
 void api::wait_fence(GPUFenceHandle handle)

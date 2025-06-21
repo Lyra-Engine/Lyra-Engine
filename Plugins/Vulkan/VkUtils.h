@@ -372,7 +372,7 @@ struct VulkanCommandPool
 
     // implementation in VkCommandPool.cpp
     void init(uint queue_family_index);
-    void reset();
+    void reset(bool free = false);
     void destroy();
     auto allocate(bool primary = true) -> VkCommandBuffer;
 
@@ -382,7 +382,7 @@ struct VulkanCommandPool
         uint32_t                index;
 
         auto allocate(VkCommandPool pool, VkCommandBufferLevel level) -> VkCommandBuffer;
-        void reset();
+        void reset(VkCommandPool pool, bool free);
     };
 
     AllocatedCommandBuffers primary;
@@ -428,14 +428,13 @@ struct VulkanFrame
     // shortcut for descriptor set
     auto descriptor(GPUBindGroupHandle handle)
     {
-
         return descriptor_pool.allocated.at(handle.value);
     }
 
     // implementation in VkFrame.cpp
     void init();
     void wait();
-    void reset();
+    void reset(bool free = false);
     auto allocate(GPUQueueType type, bool primary) -> GPUCommandEncoderHandle;
     void destroy();
 };
