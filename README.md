@@ -6,14 +6,45 @@ NOTE: This project is still a work in progress, some of the features might be de
 This is a project develop and maintained by single person. Feedbacks and contributons are welcome, but I
 have limited time for this project after work, so please do expect slower response time and development speed.
 
-## Build
+## Dependencies
 
-Prior to build, user must specify **VCPKG_ROOT** in the environment variable.
+**Lyra Engine** is a CMake-based project. While CMake provides a comprehensive build system,
+it does not provide a mature package repository. Therefore, I resort to **vcpkg** for help.
+For well-known dependencies used in this projects, e.g. glfw, the build system will first
+search for existing installation from **vcpkg**. However, as a fallback, **Lyra Engine**
+will use CMake's FetchContent mechanism to build external packages as project dependency.
+
+Majority of the dependencies are built in the way described above. However, there are a
+number of dependencies would soly rely on **vcpkg**. This includes **usd**, **shader-slang**,
+etc. These dependencies are large and slow to build (and would often fail to build on various
+development environment). Users would need to manually install them using **vcpkg**.
+
+## Build & Install
+
+Prior to build, user must specify environment variable **VCPKG_ROOT**.
+User can specify one of the presets from **CMakePresets.json**.
+User can also overwrite the default generator (for example, switching to **Ninja**).
 
 ```bash
-cmake -S . -B Scratch --preset unix-debug       # -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug
-cmake -S . -B Scratch --preset unix-release     # -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
-cmake -S . -B Scratch --preset msvc             # -G "Visual Studio 17"
+cmake -S . -B Scratch -A x64 --preset Debug             # -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug
+cmake -S . -B Scratch -A x64 --preset Release           # -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
+cmake -S . -B Scratch -A x64 --preset RelWithDebInfo    # -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake -S . -B Scratch -A x64 --preset MSVC              # -G "Visual Studio 17"
+```
+
+After the project solution is created, users can build the project using:
+
+```bash
+cd Scratch                       # cmake --build command must be invoked in project solution directory
+cmake --build . -- -j 8          # enable multi-thread compiling for Unix Makefiles
+cmake --build . --config Release # select one of the configs if using MSVC
+```
+
+User can also install the built (release) binary into system directory:
+
+```bash
+cd Scratch                       # cmake --install command must be invoked in project solution directory
+cmake --install .                # copy the built libraries and headers into system directory
 ```
 
 ## Components
@@ -38,19 +69,6 @@ the descriptor would store a vector of objects at some level. Since the user-lev
 follows C++ interface, it would require extra work to transform the descriptor into C ABI form.
 Given that **Lyra Engine** is a small project that users would often compile the project as a whole,
 this wouldn't be a big issue.
-
-## Dependencies
-
-**Lyra Engine** is a CMake-based project. While CMake provides a comprehensive build system,
-it does not provide a mature package repository. Therefore, I resort to **vcpkg** for help.
-For well-known dependencies used in this projects, e.g. glfw, the build system will first
-search for existing installation from **vcpkg**. However, as a fallback, **Lyra Engine**
-will use CMake's FetchContent mechanism to build external packages as project dependency.
-
-Majority of the dependencies are built in the way described above. However, there are a
-number of dependencies would soly rely on **vcpkg**. This includes **usd**, **shader-slang**,
-etc. These dependencies are large and slow to build (and would often fail to build on various
-development environment). Users would need to manually install them using **vcpkg**.
 
 ## Graphics API
 
@@ -99,11 +117,11 @@ However, the ECS-based scene management does not naturally support walking the s
 like walking down a tree. Common operations such as frustum culling might be not as efficient.
 Therefore we might want to implement an OctTree as well for culling purpose.
 
-## Asset Management
+## Material System
 
 Not started yet.
 
-## Material System
+## Asset Management
 
 Not started yet.
 
