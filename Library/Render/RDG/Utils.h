@@ -88,6 +88,7 @@ namespace lyra::rdg
                 return true;
             case RDGTextureAction::WRITE:
             case RDGTextureAction::PRESENT:
+            default:
                 return false;
         }
     }

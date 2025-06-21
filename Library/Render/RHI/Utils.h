@@ -1,8 +1,7 @@
 #ifndef LYRA_LIBRARY_RENDER_RHI_UTILS_H
 #define LYRA_LIBRARY_RENDER_RHI_UTILS_H
 
-#include <cassert>
-
+#include <Common/Assert.h>
 #include <Common/String.h>
 #include <Common/Handle.h>
 #include <Common/BitFlags.h>
