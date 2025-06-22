@@ -1,20 +1,27 @@
-include(FetchContent)
+find_package(magic_enum CONFIG)
 
-# define external project
-FetchContent_Declare(
-  magic_enum
-  GIT_REPOSITORY https://github.com/Neargye/magic_enum.git
-  GIT_TAG        v0.9.7
-)
+if(NOT ${magic_enum_FOUND})
+  include(FetchContent)
 
-# get properties
-FetchContent_GetProperties(magic_enum)
+  # define external project
+  FetchContent_Declare(
+    magic_enum
+    GIT_REPOSITORY https://github.com/Neargye/magic_enum.git
+    GIT_TAG        v0.9.7
+  )
 
-# build magic_enum when needed
-FetchContent_MakeAvailable(magic_enum)
+  # get properties
+  FetchContent_GetProperties(magic_enum)
 
-# mark magic_enum as found
-set(magic_enum_FOUND TRUE)
+  # build magic_enum when needed
+  set(MAGIC_ENUM_OPT_BUILD_EXAMPLES  OFF CACHE BOOL "" FORCE)
+  set(MAGIC_ENUM_OPT_BUILD_TESTS     OFF CACHE BOOL "" FORCE)
+  set(MAGIC_ENUM_OPT_INSTALL         ON  CACHE BOOL "" FORCE)
+  FetchContent_MakeAvailable(magic_enum)
 
-# put magic_enum under folder
-set_target_properties(magic_enum PROPERTIES FOLDER "Vendors")
+  # mark magic_enum as found
+  set(magic_enum_FOUND TRUE)
+
+  # put magic_enum under folder
+  set_target_properties(magic_enum PROPERTIES FOLDER "Vendors")
+endif()

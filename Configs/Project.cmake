@@ -1,3 +1,5 @@
+include(GNUInstallDirs)
+
 set(PROJECT_NAME "lyra")
 set(PROJECT_PREFIX "")
 set(PROJECT_COMMON_LIB "lyra::engine")
@@ -31,8 +33,14 @@ macro(lyra_shared NAME)
     set_target_properties(${TARGET_NAME} PROPERTIES PREFIX "")
     set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "Plugins")
 
-    # install shared library object
-    install(TARGETS ${TARGET_NAME} DESTINATION lib)
+    # install shared library
+    install(
+        TARGETS ${TARGET_NAME}
+        EXPORT ${TARGET_NAME}-targets
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 endmacro()
 
 # define a macro for plugin registration
@@ -57,8 +65,12 @@ macro(lyra_plugin NAME)
     set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "Plugins")
     target_link_libraries(${TARGET_NAME} PUBLIC ${PROJECT_COMMON_LIB})
 
-    # install shared library object
-    install(TARGETS ${TARGET_NAME} DESTINATION lib)
+    # install shared library
+    install(
+        TARGETS ${TARGET_NAME}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endmacro()
 
 # define a macro for sample registration

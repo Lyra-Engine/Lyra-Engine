@@ -1,16 +1,20 @@
-include(FetchContent)
+find_package(libassert CONFIG)
 
-FetchContent_Declare(
-  libassert
-  GIT_REPOSITORY https://github.com/jeremy-rifkin/libassert.git
-  GIT_TAG        v2.2.0 # <HASH or TAG>
-)
+if(NOT ${libassert_FOUND})
+  include(FetchContent)
 
-FetchContent_MakeAvailable(libassert)
+  FetchContent_Declare(
+    libassert
+    GIT_REPOSITORY https://github.com/jeremy-rifkin/libassert.git
+    GIT_TAG        v2.2.0 # <HASH or TAG>
+  )
 
-# mark libassert as found
-set(libassert_FOUND TRUE)
+  FetchContent_MakeAvailable(libassert)
 
-# put libassert under folder
-set_target_properties(libassert-lib PROPERTIES FOLDER "Vendors")
-set_target_properties(cpptrace-lib PROPERTIES FOLDER "Vendors")
+  # mark libassert as found
+  set(libassert_FOUND TRUE)
+
+  # put libassert under folder
+  set_target_properties(libassert-lib PROPERTIES FOLDER "Vendors")
+  set_target_properties(cpptrace-lib PROPERTIES FOLDER "Vendors")
+endif()

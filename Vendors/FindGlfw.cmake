@@ -1,8 +1,8 @@
-include(FetchContent)
-
 find_package(glfw3 CONFIG)
 
 if(NOT ${glfw3_FOUND})
+  include(FetchContent)
+
   # define external project
   FetchContent_Declare(
     glfw

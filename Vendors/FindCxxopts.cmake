@@ -1,21 +1,25 @@
-include(FetchContent)
+find_package(cxxopts CONFIG)
 
-# define external project
-FetchContent_Declare(
-  cxxopts
-  GIT_REPOSITORY https://github.com/jarro2783/cxxopts.git
-  GIT_TAG        v3.1.1
-)
+if(NOT ${cxxopts_FOUND})
+  include(FetchContent)
 
-# get properties
-FetchContent_GetProperties(cxxopts)
+  # define external project
+  FetchContent_Declare(
+    cxxopts
+    GIT_REPOSITORY https://github.com/jarro2783/cxxopts.git
+    GIT_TAG        v3.1.1
+  )
 
-# build cxxopts when needed
-set(CXXOPTS_BUILD_EXAMPLES  OFF CACHE BOOL "" FORCE)
-set(CXXOPTS_BUILD_TESTS     OFF CACHE BOOL "" FORCE)
-set(CXXOPTS_ENABLE_INSTALL  OFF CACHE BOOL "" FORCE)
-set(CXXOPTS_ENABLE_WARNINGS OFF CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(cxxopts)
+  # get properties
+  FetchContent_GetProperties(cxxopts)
 
-# mark cxxopts as found
-set(cxxopts_FOUND TRUE)
+  # build cxxopts when needed
+  set(CXXOPTS_BUILD_EXAMPLES  OFF CACHE BOOL "" FORCE)
+  set(CXXOPTS_BUILD_TESTS     OFF CACHE BOOL "" FORCE)
+  set(CXXOPTS_ENABLE_INSTALL  OFF CACHE BOOL "" FORCE)
+  set(CXXOPTS_ENABLE_WARNINGS OFF CACHE BOOL "" FORCE)
+  FetchContent_MakeAvailable(cxxopts)
+
+  # mark cxxopts as found
+  set(cxxopts_FOUND TRUE)
+endif()

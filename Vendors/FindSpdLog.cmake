@@ -1,23 +1,28 @@
-include(FetchContent)
+find_package(spdlog CONFIG)
 
-# define external project
-FetchContent_Declare(
-  spdlog
-  GIT_REPOSITORY https://github.com/gabime/spdlog.git
-  GIT_TAG        v1.15.3
-)
+if(NOT ${spdlog_FOUND})
+  include(FetchContent)
 
-# get properties
-FetchContent_GetProperties(spdlog)
+  # define external project
+  FetchContent_Declare(
+    spdlog
+    GIT_REPOSITORY https://github.com/gabime/spdlog.git
+    GIT_TAG        v1.15.3
+  )
 
-# build spdlog when needed
-set(SPDLOG_BUILD_ALL     OFF CACHE BOOL "" FORCE)
-set(SPDLOG_BUILD_SHARED  OFF CACHE BOOL "" FORCE)
-set(SPDLOG_BUILD_EXAMPLE OFF CACHE BOOL "" FORCE)
-set(SPDLOG_BUILD_TESTS   OFF CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(spdlog)
+  # get properties
+  FetchContent_GetProperties(spdlog)
 
-# mark spdlog as found
-set(spdlog_FOUND TRUE)
+  # build spdlog when needed (enable install)
+  set(SPDLOG_BUILD_ALL     OFF CACHE BOOL "" FORCE)
+  set(SPDLOG_BUILD_SHARED  OFF CACHE BOOL "" FORCE)
+  set(SPDLOG_BUILD_EXAMPLE OFF CACHE BOOL "" FORCE)
+  set(SPDLOG_BUILD_TESTS   OFF CACHE BOOL "" FORCE)
+  set(SPDLOG_INSTALL       ON  CACHE BOOL "" FORCE)
+  FetchContent_MakeAvailable(spdlog)
 
-set_target_properties(spdlog PROPERTIES FOLDER "Vendors")
+  # mark spdlog as found
+  set(spdlog_FOUND TRUE)
+
+  set_target_properties(spdlog PROPERTIES FOLDER "Vendors")
+endif()

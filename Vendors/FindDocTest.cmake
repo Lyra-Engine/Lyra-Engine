@@ -1,8 +1,7 @@
-include(FetchContent)
-
 find_package(doctest CONFIG)
 
 if(NOT ${doctest_FOUND})
+  include(FetchContent)
   # define external project
   FetchContent_Declare(
     doctest
