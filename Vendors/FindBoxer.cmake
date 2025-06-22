@@ -10,10 +10,6 @@ FetchContent_Declare(
 # get properties
 FetchContent_GetProperties(boxer)
 
-# boxer's CMakeLists.txt does not provide an install option,
-# therefore I have to unfortunately write one, and avoid
-# directly using FetchContent_MakeAvailable
-
 # populate boxer
 if(NOT boxer_POPULATED)
   FetchContent_Populate(boxer)
@@ -48,36 +44,3 @@ add_library(boxer::boxer ALIAS boxer)
 
 # move boxer under folder
 set_target_properties(boxer PROPERTIES FOLDER "Vendors")
-
-# add install rules for Boxer
-install(TARGETS boxer
-    EXPORT boxer-targets
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-)
-
-install(DIRECTORY ${boxer_SOURCE_DIR}/include/
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-    FILES_MATCHING PATTERN "*.h"
-)
-
-install(EXPORT boxer-targets
-    FILE boxer-targets.cmake
-    NAMESPACE boxer::
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/boxer
-)
-
-# config file if you want to allow find_package(boxer)
-include(CMakePackageConfigHelpers)
-configure_package_config_file(
-    ${PROJECT_SOURCE_DIR}/Targets/BoxerConfig.cmake.in
-    ${CMAKE_CURRENT_BINARY_DIR}/BoxerConfig.cmake
-    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/boxer
-)
-
-install(FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/BoxerConfig.cmake
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Boxer
-)

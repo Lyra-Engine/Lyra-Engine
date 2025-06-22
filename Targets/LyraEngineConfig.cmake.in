@@ -1,3 +1,51 @@
 @PACKAGE_INIT@
 
+# determine correct shared library suffix
+set(LYRA_LIB_SUFFIX "so")
+set(LYRA_DLL_SUFFIX "so")
+
+if(WIN32)
+  set(LYRA_LIB_SUFFIX "lib")
+  set(LYRA_DLL_SUFFIX "dll")
+endif()
+
+if(APPLE)
+  set(LYRA_LIB_SUFFIX "dylib")
+  set(LYRA_DLL_SUFFIX "dylib")
+endif()
+
+# include exported target check
 include("${CMAKE_CURRENT_LIST_DIR}/lyra-engine-targets.cmake")
+check_required_components(Lyra-Engine)
+
+# find install prefix
+get_filename_component(LYRA_IMPORT_PREFIX "${CMAKE_CURRENT_LIST_FILE}" PATH)
+cmake_path(GET LYRA_IMPORT_PREFIX PARENT_PATH LYRA_IMPORT_PREFIX)
+cmake_path(GET LYRA_IMPORT_PREFIX PARENT_PATH LYRA_IMPORT_PREFIX)
+cmake_path(GET LYRA_IMPORT_PREFIX PARENT_PATH LYRA_IMPORT_PREFIX)
+
+# lyra-engine dll
+add_library(lyra::engine SHARED IMPORTED)
+target_include_directories(lyra::engine INTERFACE ${LYRA_IMPORT_PREFIX}/include)
+set_target_properties(lyra::engine PROPERTIES IMPORTED_LOCATION "${LYRA_IMPORT_PREFIX}/lib/lyra-engine.${LYRA_DLL_SUFFIX}")
+if(WIN32)
+  # windows additionally support IMPLIB
+  set_target_properties(lyra::engine PROPERTIES IMPORTED_IMPLIB "${LYRA_IMPORT_PREFIX}/lib/lyra-engine.${LYRA_LIB_SUFFIX}")
+endif()
+
+# lyra engine/plugin dlls
+function(lyra_setup TARGET_NAME)
+  file(GLOB LYRA_ENGINE_DLLS "${LYRA_IMPORT_PREFIX}/lib/*.${LYRA_DLL_SUFFIX}")
+  add_custom_command(
+    TARGET ${TARGET_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LYRA_ENGINE_DLLS} $<TARGET_FILE_DIR:${TARGET_NAME}>
+    COMMENT "Copying Lyra-Engine DLLs to output directory!")
+  if(WIN32)
+    # windows additionally support IMPLIB
+    file(GLOB LYRA_ENGINE_LIBS "${LYRA_IMPORT_PREFIX}/lib/*.${LYRA_LIB_SUFFIX}")
+    add_custom_command(
+      TARGET ${TARGET_NAME} POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LYRA_ENGINE_LIBS} $<TARGET_FILE_DIR:${TARGET_NAME}>
+      COMMENT "Copying Lyra-Engine LIBs to output directory!")
+  endif()
+endfunction()
