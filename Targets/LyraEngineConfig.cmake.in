@@ -26,6 +26,8 @@ cmake_path(GET LYRA_IMPORT_PREFIX PARENT_PATH LYRA_IMPORT_PREFIX)
 
 # lyra-engine dll
 add_library(lyra::engine SHARED IMPORTED)
+target_compile_options(lyra::engine INTERFACE "$<$<C_COMPILER_ID:MSVC>:/utf-8>")
+target_compile_options(lyra::engine INTERFACE "$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 target_include_directories(lyra::engine INTERFACE ${LYRA_IMPORT_PREFIX}/include)
 set_target_properties(lyra::engine PROPERTIES
   IMPORTED_LOCATION_DEBUG          "${LYRA_IMPORT_PREFIX}/lib/Debug/lyra-engine.${LYRA_DLL_SUFFIX}"
