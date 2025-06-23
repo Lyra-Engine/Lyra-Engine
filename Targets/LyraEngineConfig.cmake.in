@@ -27,25 +27,26 @@ cmake_path(GET LYRA_IMPORT_PREFIX PARENT_PATH LYRA_IMPORT_PREFIX)
 # lyra-engine dll
 add_library(lyra::engine SHARED IMPORTED)
 target_include_directories(lyra::engine INTERFACE ${LYRA_IMPORT_PREFIX}/include)
-set_target_properties(lyra::engine PROPERTIES IMPORTED_LOCATION "${LYRA_IMPORT_PREFIX}/lib/lyra-engine.${LYRA_DLL_SUFFIX}")
+set_target_properties(lyra::engine PROPERTIES
+  IMPORTED_LOCATION_DEBUG          "${LYRA_IMPORT_PREFIX}/lib/Debug/lyra-engine.${LYRA_DLL_SUFFIX}"
+  IMPORTED_LOCATION_RELEASE        "${LYRA_IMPORT_PREFIX}/lib/Release/lyra-engine.${LYRA_DLL_SUFFIX}"
+  IMPORTED_LOCATION_MINSIZEREL     "${LYRA_IMPORT_PREFIX}/lib/Release/lyra-engine.${LYRA_DLL_SUFFIX}"
+  IMPORTED_LOCATION_RELWITHDEBINFO "${LYRA_IMPORT_PREFIX}/lib/Release/lyra-engine.${LYRA_DLL_SUFFIX}")
 if(WIN32)
   # windows additionally support IMPLIB
-  set_target_properties(lyra::engine PROPERTIES IMPORTED_IMPLIB "${LYRA_IMPORT_PREFIX}/lib/lyra-engine.${LYRA_LIB_SUFFIX}")
+  set_target_properties(lyra::engine PROPERTIES
+    IMPORTED_IMPLIB_DEBUG          "${LYRA_IMPORT_PREFIX}/lib/Debug/lyra-engine.${LYRA_LIB_SUFFIX}"
+    IMPORTED_IMPLIB_RELEASE        "${LYRA_IMPORT_PREFIX}/lib/Release/lyra-engine.${LYRA_LIB_SUFFIX}"
+    IMPORTED_IMPLIB_MINSIZEREL     "${LYRA_IMPORT_PREFIX}/lib/Release/lyra-engine.${LYRA_LIB_SUFFIX}"
+    IMPORTED_IMPLIB_RELWITHDEBINFO "${LYRA_IMPORT_PREFIX}/lib/Release/lyra-engine.${LYRA_LIB_SUFFIX}")
 endif()
 
 # lyra engine/plugin dlls
 function(lyra_setup TARGET_NAME)
-  file(GLOB LYRA_ENGINE_DLLS "${LYRA_IMPORT_PREFIX}/lib/*.${LYRA_DLL_SUFFIX}")
   add_custom_command(
     TARGET ${TARGET_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LYRA_ENGINE_DLLS} $<TARGET_FILE_DIR:${TARGET_NAME}>
-    COMMENT "Copying Lyra-Engine DLLs to output directory!")
-  if(WIN32)
-    # windows additionally support IMPLIB
-    file(GLOB LYRA_ENGINE_LIBS "${LYRA_IMPORT_PREFIX}/lib/*.${LYRA_LIB_SUFFIX}")
-    add_custom_command(
-      TARGET ${TARGET_NAME} POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LYRA_ENGINE_LIBS} $<TARGET_FILE_DIR:${TARGET_NAME}>
-      COMMENT "Copying Lyra-Engine LIBs to output directory!")
-  endif()
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${LYRA_IMPORT_PREFIX}/lib/$<$<CONFIG:Debug>:Debug>$<$<NOT:$<CONFIG:Debug>>:Release>/
+            $<TARGET_FILE_DIR:${TARGET_NAME}>
+    COMMENT "Copying Lyra Engine DLLs!")
 endfunction()

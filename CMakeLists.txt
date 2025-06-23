@@ -26,10 +26,10 @@ install(
         PATTERN "*.h"
         PATTERN "*.hpp")
 
-# install shared library objects (dependency libraries)
+# install shared library libraries
 install(
     DIRECTORY $<TARGET_FILE_DIR:lyra-engine>/
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/$<CONFIG>/
     FILES_MATCHING
         PATTERN "*.dll"
         PATTERN "*.lib")
