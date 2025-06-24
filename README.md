@@ -26,10 +26,10 @@ User can specify one of the presets from **CMakePresets.json**.
 User can also overwrite the default generator (for example, switching to **Ninja**).
 
 ```bash
-cmake -S . -B Scratch -A x64 --preset Debug             # -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug
-cmake -S . -B Scratch -A x64 --preset Release           # -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
-cmake -S . -B Scratch -A x64 --preset RelWithDebInfo    # -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo
-cmake -S . -B Scratch -A x64 --preset MSVC              # -G "Visual Studio 17"
+cmake -S . -B Scratch --preset Debug             # -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug
+cmake -S . -B Scratch --preset Release           # -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
+cmake -S . -B Scratch --preset RelWithDebInfo    # -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake -S . -B Scratch -A x64 --preset MSVC       # -G "Visual Studio 17"
 ```
 
 After the project solution is created, users can build the project using:

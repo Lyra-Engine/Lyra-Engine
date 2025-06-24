@@ -12,6 +12,9 @@ include(Compiler)
 include(Project)
 include(System)
 
+# cmrc
+include(CMakeRC)
+
 # project components
 add_subdirectory(Library)
 add_subdirectory(Plugins)
@@ -29,8 +32,10 @@ install(
 # install shared library libraries
 install(
     DIRECTORY $<TARGET_FILE_DIR:lyra-engine>/
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/$<CONFIG>/
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/$<$<BOOL:${WIN32}>:$<CONFIG>>
     FILES_MATCHING
+        PATTERN "*.so"
+        PATTERN "*.dylib"
         PATTERN "*.dll"
         PATTERN "*.lib")
 

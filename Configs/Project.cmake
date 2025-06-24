@@ -37,10 +37,8 @@ macro(lyra_shared NAME)
     install(
         TARGETS ${TARGET_NAME}
         EXPORT ${TARGET_NAME}-targets
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/$<CONFIG>
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/$<CONFIG>
-        RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}/$<CONFIG>
-        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+        DESTINATION ${CMAKE_INSTALL_LIBDIR})
+
 endmacro()
 
 # define a macro for plugin registration
@@ -65,12 +63,6 @@ macro(lyra_plugin NAME)
     set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "Plugins")
     target_link_libraries(${TARGET_NAME} PUBLIC ${PROJECT_COMMON_LIB})
 
-    # install shared library
-    install(
-        TARGETS ${TARGET_NAME}
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/$<CONFIG>
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/$<CONFIG>
-        RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}/$<CONFIG>)
 endmacro()
 
 # define a macro for sample registration

@@ -29,11 +29,15 @@ endif()
 
 # add boxer target
 if(NOT TARGET boxer)
-  add_library(boxer ${BOXER_SOURCES})
+  add_library(boxer STATIC ${BOXER_SOURCES})
   target_include_directories(boxer PUBLIC
     $<BUILD_INTERFACE:${boxer_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
   )
+  if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    find_library(COCOA_LIBRARY Cocoa)
+    target_link_libraries(boxer PRIVATE ${COCOA_LIBRARY})
+  endif()
 endif()
 
 # mark boxer as found

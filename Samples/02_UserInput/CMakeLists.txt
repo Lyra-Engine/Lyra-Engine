@@ -1,4 +1,3 @@
-find_package(cmrc REQUIRED)
 cmrc_add_resource_library(user-input-resources shader.slang NAMESPACE resources)
 
 lyra_sample(user-input)
