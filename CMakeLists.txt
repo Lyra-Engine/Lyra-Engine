@@ -35,9 +35,9 @@ install(
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/$<$<BOOL:${WIN32}>:$<CONFIG>>
     FILES_MATCHING
         PATTERN "*.so"
-        PATTERN "*.dylib"
         PATTERN "*.dll"
-        PATTERN "*.lib")
+        PATTERN "*.lib"
+        PATTERN "*.dylib")
 
 # install the target file
 install(
