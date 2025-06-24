@@ -30,3 +30,8 @@
 *.exe
 *.out
 *.app
+
+Scratch/
+Build/
+build/
+.DS_Store

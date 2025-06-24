@@ -1,0 +1,62 @@
+@PACKAGE_INIT@
+
+# determine correct shared library suffix
+set(LYRA_LIB_SUFFIX "so")
+set(LYRA_DLL_SUFFIX "so")
+
+if(WIN32)
+  set(LYRA_LIB_SUFFIX "lib")
+  set(LYRA_DLL_SUFFIX "dll")
+endif()
+
+if(APPLE)
+  set(LYRA_LIB_SUFFIX "dylib")
+  set(LYRA_DLL_SUFFIX "dylib")
+endif()
+
+# include exported target check
+include("${CMAKE_CURRENT_LIST_DIR}/lyra-engine-targets.cmake")
+check_required_components(Lyra-Engine)
+
+# find install prefix
+get_filename_component(LYRA_IMPORT_PREFIX "${CMAKE_CURRENT_LIST_FILE}" PATH)
+cmake_path(GET LYRA_IMPORT_PREFIX PARENT_PATH LYRA_IMPORT_PREFIX)
+cmake_path(GET LYRA_IMPORT_PREFIX PARENT_PATH LYRA_IMPORT_PREFIX)
+cmake_path(GET LYRA_IMPORT_PREFIX PARENT_PATH LYRA_IMPORT_PREFIX)
+
+# lyra-engine dll
+add_library(lyra::engine SHARED IMPORTED)
+target_compile_options(lyra::engine INTERFACE "$<$<C_COMPILER_ID:MSVC>:/utf-8>")
+target_compile_options(lyra::engine INTERFACE "$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+target_include_directories(lyra::engine INTERFACE ${LYRA_IMPORT_PREFIX}/include)
+if(WIN32)
+  set_target_properties(lyra::engine PROPERTIES
+    IMPORTED_LOCATION_DEBUG          "${LYRA_IMPORT_PREFIX}/lib/Debug/lyra-engine.${LYRA_DLL_SUFFIX}"
+    IMPORTED_LOCATION_RELEASE        "${LYRA_IMPORT_PREFIX}/lib/Release/lyra-engine.${LYRA_DLL_SUFFIX}"
+    IMPORTED_LOCATION_MINSIZEREL     "${LYRA_IMPORT_PREFIX}/lib/Release/lyra-engine.${LYRA_DLL_SUFFIX}"
+    IMPORTED_LOCATION_RELWITHDEBINFO "${LYRA_IMPORT_PREFIX}/lib/Release/lyra-engine.${LYRA_DLL_SUFFIX}")
+  set_target_properties(lyra::engine PROPERTIES
+    IMPORTED_IMPLIB_DEBUG          "${LYRA_IMPORT_PREFIX}/lib/Debug/lyra-engine.${LYRA_LIB_SUFFIX}"
+    IMPORTED_IMPLIB_RELEASE        "${LYRA_IMPORT_PREFIX}/lib/Release/lyra-engine.${LYRA_LIB_SUFFIX}"
+    IMPORTED_IMPLIB_MINSIZEREL     "${LYRA_IMPORT_PREFIX}/lib/Release/lyra-engine.${LYRA_LIB_SUFFIX}"
+    IMPORTED_IMPLIB_RELWITHDEBINFO "${LYRA_IMPORT_PREFIX}/lib/Release/lyra-engine.${LYRA_LIB_SUFFIX}")
+
+else()
+  set_target_properties(lyra::engine PROPERTIES
+    IMPORTED_LOCATION "${LYRA_IMPORT_PREFIX}/lib/lyra-engine.${LYRA_DLL_SUFFIX}")
+endif()
+
+# lyra engine/plugin dlls
+function(add_lyra_executable TARGET_NAME)
+  add_executable(${TARGET_NAME})
+
+  # only copy for Windows (MacOS and Linux should be able to find it in /usr/local/lib)
+  if(WIN32)
+    add_custom_command(
+      TARGET ${TARGET_NAME} POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_directory
+              ${LYRA_IMPORT_PREFIX}/lib/$<IF:$<CONFIG:Debug>,Debug,Release>/
+              $<TARGET_FILE_DIR:${TARGET_NAME}>
+      COMMENT "Copying Lyra Engine DLLs!")
+  endif()
+endfunction()

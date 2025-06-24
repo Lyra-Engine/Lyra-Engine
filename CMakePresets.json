@@ -1,0 +1,43 @@
+{
+  "version": 2,
+  "configurePresets": [
+    {
+      "name": "Base",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/Scratch",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+      }
+    },
+    {
+      "name": "Debug",
+      "inherits": "Base",
+      "binaryDir": "${sourceDir}/Scratch",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "Release",
+      "inherits": "Base",
+      "binaryDir": "${sourceDir}/Scratch",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "RelWithDebInfo",
+      "inherits": "Base",
+      "binaryDir": "${sourceDir}/Scratch",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
+    },
+    {
+      "name": "MSVC",
+      "inherits": "Base",
+      "generator": "Visual Studio 17",
+      "cacheVariables": {}
+    }
+  ]
+}
