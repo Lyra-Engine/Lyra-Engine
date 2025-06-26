@@ -148,6 +148,11 @@ void VulkanSwapFrame::destroy()
     fetch_resource(rhi->textures, texture).destroy();
     fetch_resource(rhi->views, view).destroy();
     fetch_resource(rhi->fences, render_complete_semaphore).destroy();
+
+    // remove from slotmap
+    rhi->views.remove(view.value);
+    rhi->textures.remove(texture.value);
+    rhi->fences.remove(render_complete_semaphore.value);
 }
 
 SwapchainSupportDetails query_swapchain_support(VkPhysicalDevice adapter, VkSurfaceKHR surface)

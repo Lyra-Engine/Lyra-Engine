@@ -715,7 +715,7 @@ VkBufferUsageFlags vkenum(GPUBufferUsageFlags usages)
     return flags;
 }
 
-VkImageUsageFlags vkenum(GPUTextureUsageFlags usages)
+VkImageUsageFlags vkenum(GPUTextureUsageFlags usages, GPUTextureFormat format)
 {
     VkImageUsageFlags flags = 0;
 
@@ -724,9 +724,16 @@ VkImageUsageFlags vkenum(GPUTextureUsageFlags usages)
     if (usages.contains(GPUTextureUsage::COPY_DST))          flags |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     if (usages.contains(GPUTextureUsage::TEXTURE_BINDING))   flags |= VK_IMAGE_USAGE_SAMPLED_BIT;
     if (usages.contains(GPUTextureUsage::STORAGE_BINDING))   flags |= VK_IMAGE_USAGE_STORAGE_BIT;
-    if (usages.contains(GPUTextureUsage::RENDER_ATTACHMENT)) flags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     // clang-format on
 
+    // render target requires format checking
+    if (usages.contains(GPUTextureUsage::RENDER_ATTACHMENT)) {
+        if (is_depth_format(format) || is_stencil_format(format)) {
+            flags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        } else {
+            flags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        }
+    }
     return flags;
 }
 

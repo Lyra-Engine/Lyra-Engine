@@ -1,5 +1,5 @@
-#ifndef LYRA_PLUGIN_VULKAN_VKINCLUDE_H
-#define LYRA_PLUGIN_VULKAN_VKINCLUDE_H
+#ifndef LYRA_PLUGIN_VULKAN_VKUTILS_H
+#define LYRA_PLUGIN_VULKAN_VKUTILS_H
 
 #ifdef _WIN32
 #define VK_USE_PLATFORM_WIN32_KHR
@@ -148,10 +148,10 @@ struct VulkanFence
 {
     VkFence fence = VK_NULL_HANDLE;
 
+    // implementation in VkFence.cpp
     explicit VulkanFence();
     explicit VulkanFence(bool signaled);
 
-    // implementation in VkFence.cpp
     void wait(uint64_t timeout = UINT64_MAX);
     void reset();
     void destroy();
@@ -173,7 +173,7 @@ struct VulkanSemaphore
     explicit VulkanSemaphore();
     explicit VulkanSemaphore(VkSemaphoreType type);
 
-    void wait();
+    void wait(uint64_t timeout = UINT64_MAX);
     void reset();
     bool ready();
     void signal(uint64_t value);
@@ -400,8 +400,8 @@ struct VulkanSwapFrame
 
 struct VulkanFrame
 {
-    // used to check vulkan buffer usage,
-    // vulkan command buffers are short-lived, only usable within the frame.
+    // used to check command buffer usage,
+    // command buffers are short-lived, only usable within the frame.
     // frame id must match VulkanFrame's id
     uint32_t frame_id = 0u;
 
@@ -672,7 +672,7 @@ auto vkenum(GPUBlasType type) -> VkGeometryTypeKHR;
 auto vkenum(GPUBVHUpdateMode mode) -> VkBuildAccelerationStructureModeKHR;
 auto vkenum(GPUColorWriteFlags color) -> VkColorComponentFlags;
 auto vkenum(GPUBufferUsageFlags usages) -> VkBufferUsageFlags;
-auto vkenum(GPUTextureUsageFlags usages) -> VkImageUsageFlags;
+auto vkenum(GPUTextureUsageFlags usages, GPUTextureFormat format) -> VkImageUsageFlags;
 auto vkenum(GPUShaderStageFlags stages) -> VkShaderStageFlags;
 auto vkenum(GPUBarrierSyncFlags flags) -> VkPipelineStageFlags2;
 auto vkenum(GPUBarrierAccessFlags flags) -> VkAccessFlags2;
@@ -757,4 +757,4 @@ inline VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_callback(
         }                                                     \
     }
 
-#endif // LYRA_PLUGIN_VULKAN_VKINCLUDE_H
+#endif // LYRA_PLUGIN_VULKAN_VKUTILS_H

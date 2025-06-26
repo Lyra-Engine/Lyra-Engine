@@ -353,6 +353,7 @@ LYRA_EXPORT auto cleanup() -> void
 LYRA_EXPORT auto create() -> RenderAPI
 {
     auto api                             = RenderAPI{};
+    api.get_api_name                     = get_api_name;
     api.create_instance                  = api::create_instance;
     api.delete_instance                  = api::delete_instance;
     api.create_adapter                   = api::create_adapter;
