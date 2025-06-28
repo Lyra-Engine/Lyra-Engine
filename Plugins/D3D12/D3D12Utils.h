@@ -36,12 +36,21 @@ struct D3D12Destroyer
 template <typename T>
 using D3D12ResourceManager = Slotmap<T, D3D12Destroyer<T>>;
 
-struct D3D12Descriptor
+struct D3D12CPUDescriptor
 {
-    D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle;
-    D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle;
+    D3D12_CPU_DESCRIPTOR_HANDLE handle;
     uint                        pool  = 0; // pool index
     uint                        index = 0; // index within pool
+
+    bool valid() const { return handle.ptr != 0; }
+};
+
+// GPU descriptors are temporal (no need to recycle individual descriptor)
+struct D3D12GPUDescriptor
+{
+    D3D12_GPU_DESCRIPTOR_HANDLE handle;
+
+    bool valid() const { return handle.ptr != 0; }
 };
 
 struct D3D12Heap
@@ -57,7 +66,8 @@ struct D3D12Heap
         void init(uint capacity, D3D12_DESCRIPTOR_HEAP_TYPE type, D3D12_DESCRIPTOR_HEAP_FLAGS flags);
         void reset();
         void destroy();
-        auto allocate() -> D3D12Descriptor;
+        auto allocate_cpu() -> D3D12CPUDescriptor;
+        auto allocate_gpu() -> D3D12GPUDescriptor;
         void recycle(uint index);
     };
 
@@ -70,8 +80,11 @@ struct D3D12Heap
     void init(uint capacity, D3D12_DESCRIPTOR_HEAP_TYPE type, D3D12_DESCRIPTOR_HEAP_FLAGS flags);
     void reset();
     void destroy();
-    auto allocate() -> D3D12Descriptor;
-    void recycle(const D3D12Descriptor& descriptor);
+    auto allocate_cpu() -> D3D12CPUDescriptor;
+    auto allocate_gpu() -> D3D12GPUDescriptor;
+    void recycle(const D3D12CPUDescriptor& descriptor);
+
+private:
     uint find_pool_index();
 };
 
@@ -131,7 +144,10 @@ struct D3D12Buffer
 struct D3D12TextureView;
 struct D3D12Texture
 {
-    ID3D12Resource* texture = nullptr;
+    ID3D12Resource*      texture = nullptr;
+    GPUExtent2D          area    = {};
+    GPUTextureUsageFlags usages  = 0;
+    uint                 samples = 1;
 
     // implementation in D3D12Texture.cpp
     explicit D3D12Texture();
@@ -145,26 +161,100 @@ struct D3D12Texture
 
 struct D3D12TextureView
 {
-    D3D12Descriptor view;
+    // unlike vulkan's VkImageView, D3D12 does not have native concept for it.
+    // It treats image view as descriptors directly. VkImageView does not
+    // differentiate between different usages, so the same image view can
+    // be bound for different usages. For D3D12 we will have to create multiple
+    // descriptors if there are multiple usages.
+    D3D12CPUDescriptor rtv_view; // rtv and dsv share the same view
+    D3D12CPUDescriptor srv_view;
+    D3D12CPUDescriptor uav_view;
 
-    void init();
+    GPUExtent2D area; // used only for RenderArea
+
+    // implementation in D3D12Texture.cpp
+    explicit D3D12TextureView();
+    explicit D3D12TextureView(const D3D12Texture& texture, const GPUTextureViewDescriptor& desc);
+
+    void init_rtv(const D3D12Texture& texture, const GPUTextureViewDescriptor& desc);
+    void init_dsv(const D3D12Texture& texture, const GPUTextureViewDescriptor& desc);
+    void init_srv(const D3D12Texture& texture, const GPUTextureViewDescriptor& desc);
+    void init_uav(const D3D12Texture& texture, const GPUTextureViewDescriptor& desc);
 
     void destroy();
 
-    bool valid() const { return view.cpu_handle.ptr != 0; }
+    bool valid() const
+    {
+        return rtv_view.valid() || srv_view.valid() || uav_view.valid();
+    }
 };
 
 struct D3D12Sampler
 {
-    D3D12Descriptor sampler;
+    D3D12CPUDescriptor sampler;
 
-    // implementation in VkSampler.cpp
+    // implementation in D3D12Sampler.cpp
     explicit D3D12Sampler();
     explicit D3D12Sampler(const GPUSamplerDescriptor& desc);
 
     void destroy();
 
-    bool valid() const { return sampler.cpu_handle.ptr != 0; }
+    bool valid() const { return sampler.valid(); }
+};
+
+struct D3D12Shader
+{
+    std::vector<uint8_t> binary;
+
+    // implementation in D3D12Shader.cpp
+    explicit D3D12Shader();
+    explicit D3D12Shader(const GPUShaderModuleDescriptor& desc);
+
+    void destroy();
+
+    bool valid() const { return !binary.empty(); }
+};
+
+struct D3D12BindGroupLayout
+{
+    Vector<D3D12_DESCRIPTOR_RANGE1> ranges     = {};
+    D3D12_SHADER_VISIBILITY         visibility = D3D12_SHADER_VISIBILITY_ALL;
+
+    // implementation in D3D12Layout.cpp
+    explicit D3D12BindGroupLayout();
+    explicit D3D12BindGroupLayout(const GPUBindGroupLayoutDescriptor& desc);
+
+    void destroy();
+
+    bool valid() const { return !ranges.empty(); }
+};
+
+struct D3D12PipelineLayout
+{
+    ID3D12RootSignature* layout = nullptr;
+
+    // implementation in D3D12Layout.cpp
+    explicit D3D12PipelineLayout();
+    explicit D3D12PipelineLayout(const GPUPipelineLayoutDescriptor& desc);
+
+    void destroy();
+
+    bool valid() const { return layout != nullptr; }
+};
+
+struct D3D12Pipeline
+{
+    ID3D12PipelineState* pipeline = nullptr;
+
+    // implementation in D3D12Pipeline.cpp
+    explicit D3D12Pipeline();
+    explicit D3D12Pipeline(const GPURenderPipelineDescriptor& desc);
+    explicit D3D12Pipeline(const GPUComputePipelineDescriptor& desc);
+    explicit D3D12Pipeline(const GPURayTracingPipelineDescriptor& desc);
+
+    void destroy();
+
+    bool valid() const { return pipeline != nullptr; }
 };
 
 struct D3D12CommandPool
@@ -182,7 +272,7 @@ struct D3D12SwapFrame
     GPUFenceHandle       render_complete_semaphore;
 
     // implementation in vkSwapchain.cpp
-    void init(int backbuffer_index);
+    void init(uint backbuffer_index, uint width, uint height);
     void destroy();
 };
 
@@ -225,7 +315,9 @@ struct D3D12RHI
     D3D12Heap cbv_srv_uav_heap;
 
     // objects for swapchain recreation
-    GPUSurfaceDescriptor surface_desc = {};
+    GPUSurfaceDescriptor surface_desc   = {};
+    GPUExtent2D          surface_extent = {};
+    GPUTextureFormat     surface_format = GPUTextureFormat::BGRA8UNORM_SRGB;
 
     // frame objects
     Vector<D3D12Frame>     frames           = {};
@@ -241,13 +333,13 @@ struct D3D12RHI
     D3D12ResourceManager<D3D12Texture>     textures;
     D3D12ResourceManager<D3D12TextureView> views;
     D3D12ResourceManager<D3D12Sampler>     samplers;
-    // D3D12ResourceManager<D3D12Shader>          shaders;
+    D3D12ResourceManager<D3D12Shader>      shaders;
     // D3D12ResourceManager<D3D12Tlas>            tlases;
     // D3D12ResourceManager<D3D12Blas>            blases;
     // D3D12ResourceManager<D3D12QuerySet>        query_sets;
-    // D3D12ResourceManager<D3D12Pipeline>        pipelines;
-    // D3D12ResourceManager<D3D12PipelineLayout>  pipeline_layouts;
-    // D3D12ResourceManager<D3D12BindGroupLayout> bind_group_layouts;
+    D3D12ResourceManager<D3D12Pipeline>        pipelines;
+    D3D12ResourceManager<D3D12PipelineLayout>  pipeline_layouts;
+    D3D12ResourceManager<D3D12BindGroupLayout> bind_group_layouts;
 };
 
 // These are the functions that implements the plugin.
@@ -390,9 +482,21 @@ void set_rhi(D3D12RHI* instance);
 auto get_rhi() -> D3D12RHI*;
 
 // helpers
-D3D12_HEAP_TYPE      infer_heap_type(GPUBufferUsageFlags usages);
-D3D12_RESOURCE_FLAGS infer_buffer_flags(GPUBufferUsageFlags usages);
-D3D12_RESOURCE_FLAGS infer_texture_flags(GPUTextureUsageFlags usages, GPUTextureFormat format);
+auto infer_heap_type(GPUBufferUsageFlags usages) -> D3D12_HEAP_TYPE;
+auto infer_buffer_flags(GPUBufferUsageFlags usages) -> D3D12_RESOURCE_FLAGS;
+auto infer_texture_flags(GPUTextureUsageFlags usages, GPUTextureFormat format) -> D3D12_RESOURCE_FLAGS;
+auto infer_texture_format(GPUTextureFormat format) -> DXGI_FORMAT;
+auto infer_topology_type(GPUPrimitiveTopology topology) -> D3D12_PRIMITIVE_TOPOLOGY_TYPE;
+auto infer_topology(GPUPrimitiveTopology topology) -> D3D12_PRIMITIVE_TOPOLOGY;
+auto d3d12enum(GPUCompareFunction compare, bool enable) -> D3D12_COMPARISON_FUNC;
+auto d3d12enum(GPUFilterMode min, GPUFilterMode mag, GPUMipmapFilterMode mip) -> D3D12_FILTER;
+auto d3d12enum(GPUAddressMode mode) -> D3D12_TEXTURE_ADDRESS_MODE;
+auto d3d12enum(GPUVertexFormat format) -> DXGI_FORMAT;
+auto d3d12enum(GPUVertexStepMode format) -> D3D12_INPUT_CLASSIFICATION;
+auto d3d12enum(GPUCullMode cull) -> D3D12_CULL_MODE;
+auto d3d12enum(GPUStencilOperation cull) -> D3D12_STENCIL_OP;
+auto d3d12enum(GPUBlendOperation op) -> D3D12_BLEND_OP;
+auto d3d12enum(GPUBlendFactor factor) -> D3D12_BLEND;
 
 template <typename T, typename Handle>
 T& fetch_resource(D3D12ResourceManager<T>& manager, Handle handle)

@@ -84,7 +84,7 @@ namespace lyra::rhi
     {
         GPUTextureFormat        format;
         GPUTextureViewDimension dimension;
-        GPUTextureUsageFlags    usage             = 0;
+        GPUTextureUsageFlags    usage             = 0; // if specified as 0, use texture's usage
         GPUTextureAspect        aspect            = GPUTextureAspect::ALL;
         GPUIntegerCoordinate    base_mip_level    = 0;
         GPUIntegerCoordinate    mip_level_count   = 1;
@@ -152,8 +152,8 @@ namespace lyra::rhi
 
     struct GPURayTracingPipelineDescriptor : public GPUObjectDescriptorBase
     {
-        // more stuff in here
         GPUPipelineLayoutHandle layout;
+        uint                    max_recursion_depth = 5;
     };
 
     struct GPURenderPassLayout : public GPUObjectDescriptorBase

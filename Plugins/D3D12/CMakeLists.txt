@@ -16,6 +16,10 @@ target_sources(lyra-d3d12 PRIVATE
     D3D12Fence.cpp
     D3D12Buffer.cpp
     D3D12Texture.cpp
+    D3D12Sampler.cpp
+    D3D12Shader.cpp
+    D3D12Pipeline.cpp
+    D3D12Layout.cpp
 )
 
 # link with D3D12

@@ -520,63 +520,109 @@ VkFormat vkenum(GPUTextureFormat format)
         case GPUTextureFormat::DEPTH32FLOAT_STENCIL8:
             return VK_FORMAT_D32_SFLOAT_S8_UINT;
         case GPUTextureFormat::BC1_RGBA_UNORM:
+            return VK_FORMAT_BC1_RGBA_UNORM_BLOCK;
         case GPUTextureFormat::BC1_RGBA_UNORM_SRGB:
+            return VK_FORMAT_BC1_RGBA_SRGB_BLOCK;
         case GPUTextureFormat::BC2_RGBA_UNORM:
+            return VK_FORMAT_BC2_UNORM_BLOCK;
         case GPUTextureFormat::BC2_RGBA_UNORM_SRGB:
+            return VK_FORMAT_BC2_SRGB_BLOCK;
         case GPUTextureFormat::BC3_RGBA_UNORM:
+            return VK_FORMAT_BC3_UNORM_BLOCK;
         case GPUTextureFormat::BC3_RGBA_UNORM_SRGB:
+            return VK_FORMAT_BC3_SRGB_BLOCK;
         case GPUTextureFormat::BC4_R_UNORM:
+            return VK_FORMAT_BC4_UNORM_BLOCK;
         case GPUTextureFormat::BC4_R_SNORM:
+            return VK_FORMAT_BC4_SNORM_BLOCK;
         case GPUTextureFormat::BC5_RG_UNORM:
+            return VK_FORMAT_BC5_UNORM_BLOCK;
         case GPUTextureFormat::BC5_RG_SNORM:
+            return VK_FORMAT_BC5_SNORM_BLOCK;
         case GPUTextureFormat::BC6H_RGB_UFLOAT:
+            return VK_FORMAT_BC6H_UFLOAT_BLOCK;
         case GPUTextureFormat::BC6H_RGB_FLOAT:
+            return VK_FORMAT_BC6H_SFLOAT_BLOCK;
         case GPUTextureFormat::BC7_RGBA_UNORM:
+            return VK_FORMAT_BC7_UNORM_BLOCK;
         case GPUTextureFormat::BC7_RGBA_UNORM_SRGB:
-            assert(!!!"BC formats are temporarily NOT supported!");
-            return VK_FORMAT_UNDEFINED;
+            return VK_FORMAT_BC7_SRGB_BLOCK;
         case GPUTextureFormat::ETC2_RGB8UNORM:
+            return VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK;
         case GPUTextureFormat::ETC2_RGB8UNORM_SRGB:
+            return VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK;
         case GPUTextureFormat::ETC2_RGB8A1UNORM:
+            return VK_FORMAT_ETC2_R8G8B8A1_UNORM_BLOCK;
         case GPUTextureFormat::ETC2_RGB8A1UNORM_SRGB:
+            return VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK;
         case GPUTextureFormat::ETC2_RGBA8UNORM:
+            return VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK;
         case GPUTextureFormat::ETC2_RGBA8UNORM_SRGB:
+            return VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK;
         case GPUTextureFormat::EAC_R11UNORM:
+            return VK_FORMAT_EAC_R11_UNORM_BLOCK;
         case GPUTextureFormat::EAC_R11SNORM:
+            return VK_FORMAT_EAC_R11_SNORM_BLOCK;
         case GPUTextureFormat::EAC_RG11UNORM:
+            return VK_FORMAT_EAC_R11G11_UNORM_BLOCK;
         case GPUTextureFormat::EAC_RG11SNORM:
-            assert(!!!"EAC formats are temporarily NOT supported!");
-            return VK_FORMAT_UNDEFINED;
+            return VK_FORMAT_EAC_R11G11_SNORM_BLOCK;
         case GPUTextureFormat::ASTC_4X4_UNORM:
+            return VK_FORMAT_ASTC_4x4_UNORM_BLOCK;
         case GPUTextureFormat::ASTC_4X4_UNORM_SRGB:
+            return VK_FORMAT_ASTC_4x4_SRGB_BLOCK;
         case GPUTextureFormat::ASTC_5X4_UNORM:
+            return VK_FORMAT_ASTC_5x4_UNORM_BLOCK;
         case GPUTextureFormat::ASTC_5X4_UNORM_SRGB:
+            return VK_FORMAT_ASTC_5x4_SRGB_BLOCK;
         case GPUTextureFormat::ASTC_5X5_UNORM:
+            return VK_FORMAT_ASTC_5x5_UNORM_BLOCK;
         case GPUTextureFormat::ASTC_5X5_UNORM_SRGB:
+            return VK_FORMAT_ASTC_5x5_SRGB_BLOCK;
         case GPUTextureFormat::ASTC_6X5_UNORM:
+            return VK_FORMAT_ASTC_6x5_UNORM_BLOCK;
         case GPUTextureFormat::ASTC_6X5_UNORM_SRGB:
+            return VK_FORMAT_ASTC_6x5_SRGB_BLOCK;
         case GPUTextureFormat::ASTC_6X6_UNORM:
+            return VK_FORMAT_ASTC_6x6_UNORM_BLOCK;
         case GPUTextureFormat::ASTC_6X6_UNORM_SRGB:
+            return VK_FORMAT_ASTC_6x6_SRGB_BLOCK;
         case GPUTextureFormat::ASTC_8X5_UNORM:
+            return VK_FORMAT_ASTC_8x5_UNORM_BLOCK;
         case GPUTextureFormat::ASTC_8X5_UNORM_SRGB:
+            return VK_FORMAT_ASTC_8x5_SRGB_BLOCK;
         case GPUTextureFormat::ASTC_8X6_UNORM:
+            return VK_FORMAT_ASTC_8x6_UNORM_BLOCK;
         case GPUTextureFormat::ASTC_8X6_UNORM_SRGB:
+            return VK_FORMAT_ASTC_8x6_SRGB_BLOCK;
         case GPUTextureFormat::ASTC_8X8_UNORM:
+            return VK_FORMAT_ASTC_8x8_UNORM_BLOCK;
         case GPUTextureFormat::ASTC_8X8_UNORM_SRGB:
+            return VK_FORMAT_ASTC_8x8_SRGB_BLOCK;
         case GPUTextureFormat::ASTC_10X5_UNORM:
+            return VK_FORMAT_ASTC_10x5_UNORM_BLOCK;
         case GPUTextureFormat::ASTC_10X5_UNORM_SRGB:
+            return VK_FORMAT_ASTC_10x5_SRGB_BLOCK;
         case GPUTextureFormat::ASTC_10X6_UNORM:
+            return VK_FORMAT_ASTC_10x6_UNORM_BLOCK;
         case GPUTextureFormat::ASTC_10X6_UNORM_SRGB:
+            return VK_FORMAT_ASTC_10x6_SRGB_BLOCK;
         case GPUTextureFormat::ASTC_10X8_UNORM:
+            return VK_FORMAT_ASTC_10x8_UNORM_BLOCK;
         case GPUTextureFormat::ASTC_10X8_UNORM_SRGB:
+            return VK_FORMAT_ASTC_10x8_SRGB_BLOCK;
         case GPUTextureFormat::ASTC_10X10_UNORM:
+            return VK_FORMAT_ASTC_10x10_UNORM_BLOCK;
         case GPUTextureFormat::ASTC_10X10_UNORM_SRGB:
+            return VK_FORMAT_ASTC_10x10_SRGB_BLOCK;
         case GPUTextureFormat::ASTC_12X10_UNORM:
+            return VK_FORMAT_ASTC_12x10_UNORM_BLOCK;
         case GPUTextureFormat::ASTC_12X10_UNORM_SRGB:
+            return VK_FORMAT_ASTC_12x10_SRGB_BLOCK;
         case GPUTextureFormat::ASTC_12X12_UNORM:
+            return VK_FORMAT_ASTC_12x12_UNORM_BLOCK;
         case GPUTextureFormat::ASTC_12X12_UNORM_SRGB:
-            assert(!!!"ASTC formats are temporarily NOT supported!");
-            return VK_FORMAT_UNDEFINED;
+            return VK_FORMAT_ASTC_12x12_SRGB_BLOCK;
     }
     throw std::invalid_argument("invalid argument for GPUTextureFormat");
 }
@@ -625,20 +671,40 @@ VkImageLayout vkenum(GPUBarrierLayout layout)
             return VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR;
         case GPUBarrierLayout::VIDEO_PROCESS_WRITE:
             return VK_IMAGE_LAYOUT_VIDEO_ENCODE_DST_KHR;
+
+        // Direct queue layouts - map to their semantic equivalents
         case GPUBarrierLayout::DIRECT_QUEUE_COMMON:
+            return VK_IMAGE_LAYOUT_GENERAL;
         case GPUBarrierLayout::DIRECT_QUEUE_GENERIC_READ:
+            return VK_IMAGE_LAYOUT_GENERAL;
         case GPUBarrierLayout::DIRECT_QUEUE_UNORDERED_ACCESS:
+            return VK_IMAGE_LAYOUT_GENERAL;
         case GPUBarrierLayout::DIRECT_QUEUE_SHADER_RESOURCE:
+            return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         case GPUBarrierLayout::DIRECT_QUEUE_COPY_SOURCE:
+            return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
         case GPUBarrierLayout::DIRECT_QUEUE_COPY_DEST:
+            return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+
+        // Compute queue layouts - map to their semantic equivalents
         case GPUBarrierLayout::COMPUTE_QUEUE_COMMON:
+            return VK_IMAGE_LAYOUT_GENERAL;
         case GPUBarrierLayout::COMPUTE_QUEUE_GENERIC_READ:
+            return VK_IMAGE_LAYOUT_GENERAL;
         case GPUBarrierLayout::COMPUTE_QUEUE_UNORDERED_ACCESS:
+            return VK_IMAGE_LAYOUT_GENERAL;
         case GPUBarrierLayout::COMPUTE_QUEUE_SHADER_RESOURCE:
+            return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         case GPUBarrierLayout::COMPUTE_QUEUE_COPY_SOURCE:
+            return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
         case GPUBarrierLayout::COMPUTE_QUEUE_COPY_DEST:
+            return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+
+        // Video queue common layout
         case GPUBarrierLayout::VIDEO_QUEUE_COMMON:
-            assert(!!!"Unsuported barrier layout in Vulkan!");
+            return VK_IMAGE_LAYOUT_GENERAL;
+
+        default:
             return VK_IMAGE_LAYOUT_GENERAL;
     }
     throw std::invalid_argument("invalid argument for GPUBarrierLayout");

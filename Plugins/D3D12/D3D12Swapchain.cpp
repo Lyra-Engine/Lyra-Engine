@@ -4,7 +4,7 @@
 
 #include "D3D12Utils.h"
 
-void D3D12SwapFrame::init(int backbuffer_index)
+void D3D12SwapFrame::init(uint backbuffer_index, uint width, uint height)
 {
     auto rhi = get_rhi();
 
@@ -13,6 +13,9 @@ void D3D12SwapFrame::init(int backbuffer_index)
 
     // create texture
     D3D12Texture texture;
+    texture.samples     = 1;
+    texture.area.width  = width;
+    texture.area.height = height;
     ThrowIfFailed(rhi->swapchain->GetBuffer(backbuffer_index, IID_PPV_ARGS(&texture.texture)));
 
     // TODO: create texture view
@@ -57,12 +60,15 @@ bool api::create_surface(GPUSurface& surface, const GPUSurfaceDescriptor& desc)
     // query window size
     uint width, height;
     Window::api()->get_window_size(desc.window, width, height);
+    rhi->surface_extent.width  = width;
+    rhi->surface_extent.height = height;
 
     // query number of backbuffers
     uint num_backbuffers = desc.frames_inflight;
 
     // query compatible backbuffer format
-    auto format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    rhi->surface_format = GPUTextureFormat::BGRA8UNORM_SRGB;
+    auto format         = infer_texture_format(rhi->surface_format);
 
     // check if swapchain creation if necessary
     if (rhi->swapchain != nullptr) {
@@ -93,7 +99,7 @@ bool api::create_surface(GPUSurface& surface, const GPUSurfaceDescriptor& desc)
     rhi->swapchain_frames.clear();
     rhi->swapchain_frames.resize(num_backbuffers);
     for (uint i = 0; i < num_backbuffers; i++)
-        rhi->swapchain_frames.at(i).init(i);
+        rhi->swapchain_frames.at(i).init(i, width, height);
 
     // initialize frame
     uint num_frames = static_cast<uint>(rhi->frames.size());

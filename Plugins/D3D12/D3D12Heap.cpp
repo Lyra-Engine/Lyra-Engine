@@ -20,7 +20,7 @@ void D3D12Heap::Heap::init(uint capacity, D3D12_DESCRIPTOR_HEAP_TYPE type, D3D12
     reset();
 }
 
-D3D12Descriptor D3D12Heap::Heap::allocate()
+D3D12CPUDescriptor D3D12Heap::Heap::allocate_cpu()
 {
     uint index = count;
     if (index++ >= capacity) {
@@ -29,11 +29,25 @@ D3D12Descriptor D3D12Heap::Heap::allocate()
         freed.pop_back();
     }
 
-    D3D12Descriptor descriptor = {};
-    descriptor.cpu_handle      = heap->GetCPUDescriptorHandleForHeapStart();
-    descriptor.gpu_handle      = heap->GetGPUDescriptorHandleForHeapStart();
-    descriptor.cpu_handle.ptr += increment * index;
-    descriptor.gpu_handle.ptr += increment * index;
+    D3D12CPUDescriptor descriptor{};
+    descriptor.index  = index; // record the descriptor index
+    descriptor.handle = heap->GetCPUDescriptorHandleForHeapStart();
+    descriptor.handle.ptr += increment * index;
+    return descriptor;
+}
+
+D3D12GPUDescriptor D3D12Heap::Heap::allocate_gpu()
+{
+    uint index = count;
+    if (index++ >= capacity) {
+        assert(!freed.empty());
+        index = freed.back();
+        freed.pop_back();
+    }
+
+    D3D12GPUDescriptor descriptor{};
+    descriptor.handle = heap->GetGPUDescriptorHandleForHeapStart();
+    descriptor.handle.ptr += increment * index;
     return descriptor;
 }
 
@@ -87,13 +101,23 @@ void D3D12Heap::destroy()
     heap_index = 0;
 }
 
-D3D12Descriptor D3D12Heap::allocate()
+D3D12CPUDescriptor D3D12Heap::allocate_cpu()
 {
     heap_index = find_pool_index();
-    return heaps.at(heap_index).allocate();
+
+    // record the pool/heap index
+    auto descriptor = heaps.at(heap_index).allocate_cpu();
+    descriptor.pool = heap_index;
+    return descriptor;
 }
 
-void D3D12Heap::recycle(const D3D12Descriptor& descriptor)
+D3D12GPUDescriptor D3D12Heap::allocate_gpu()
+{
+    heap_index = find_pool_index();
+    return heaps.at(heap_index).allocate_gpu();
+}
+
+void D3D12Heap::recycle(const D3D12CPUDescriptor& descriptor)
 {
     auto& heap = heaps.at(descriptor.pool);
     heap.recycle(descriptor.index);
