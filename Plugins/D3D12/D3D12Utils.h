@@ -48,30 +48,60 @@ struct D3D12CPUDescriptor
 // GPU descriptors are temporal (no need to recycle individual descriptor)
 struct D3D12GPUDescriptor
 {
-    D3D12_GPU_DESCRIPTOR_HANDLE handle;
+    D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle;
+    D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle;
+    uint                        increment = 0;
 
-    bool valid() const { return handle.ptr != 0; }
+    bool valid() const { return gpu_handle.ptr != 0; }
 };
 
-struct D3D12Heap
+struct D3D12HeapGPUUtils
 {
-    struct Heap
-    {
-        ID3D12DescriptorHeap* heap      = nullptr;
-        uint                  increment = 0;
-        uint                  capacity  = 0;
-        uint                  count     = 0;
-        Vector<uint>          freed     = {};
+    ID3D12DescriptorHeap* heap      = nullptr;
+    uint                  increment = 0;
+    uint                  capacity  = 0;
+    uint                  count     = 0;
 
-        void init(uint capacity, D3D12_DESCRIPTOR_HEAP_TYPE type, D3D12_DESCRIPTOR_HEAP_FLAGS flags);
-        void reset();
-        void destroy();
-        auto allocate_cpu() -> D3D12CPUDescriptor;
-        auto allocate_gpu() -> D3D12GPUDescriptor;
-        void recycle(uint index);
-    };
+    void init(uint capacity, D3D12_DESCRIPTOR_HEAP_TYPE type, D3D12_DESCRIPTOR_HEAP_FLAGS flags);
+    void reset();
+    void destroy();
+    auto allocate(uint allocate_count = 1) -> D3D12GPUDescriptor;
+};
 
-    Vector<Heap>                heaps      = {};
+struct D3D12HeapCPUUtils
+{
+    ID3D12DescriptorHeap* heap      = nullptr;
+    uint                  increment = 0;
+    uint                  capacity  = 0;
+    uint                  count     = 0;
+    Vector<uint>          freed     = {};
+
+    void init(uint capacity, D3D12_DESCRIPTOR_HEAP_TYPE type, D3D12_DESCRIPTOR_HEAP_FLAGS flags);
+    void reset();
+    void destroy();
+    auto allocate() -> D3D12CPUDescriptor;
+    void recycle(uint index);
+};
+
+struct D3D12HeapGPU
+{
+    Vector<D3D12HeapGPUUtils>   heaps      = {};
+    uint                        heap_index = 0;
+    uint                        capacity   = 0;
+    D3D12_DESCRIPTOR_HEAP_TYPE  heap_type  = D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES;
+    D3D12_DESCRIPTOR_HEAP_FLAGS heap_flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+
+    void init(uint capacity, D3D12_DESCRIPTOR_HEAP_TYPE type, D3D12_DESCRIPTOR_HEAP_FLAGS flags);
+    void reset();
+    void destroy();
+    auto allocate(uint count) -> D3D12GPUDescriptor;
+    void recycle(const D3D12CPUDescriptor& descriptor);
+    uint find_pool_index(uint count);
+};
+
+struct D3D12HeapCPU
+{
+    Vector<D3D12HeapCPUUtils>   heaps      = {};
     uint                        heap_index = 0;
     uint                        capacity   = 0;
     D3D12_DESCRIPTOR_HEAP_TYPE  heap_type  = D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES;
@@ -80,27 +110,24 @@ struct D3D12Heap
     void init(uint capacity, D3D12_DESCRIPTOR_HEAP_TYPE type, D3D12_DESCRIPTOR_HEAP_FLAGS flags);
     void reset();
     void destroy();
-    auto allocate_cpu() -> D3D12CPUDescriptor;
-    auto allocate_gpu() -> D3D12GPUDescriptor;
+    auto allocate() -> D3D12CPUDescriptor;
     void recycle(const D3D12CPUDescriptor& descriptor);
-
-private:
     uint find_pool_index();
 };
 
-// D3D12's Fence is similar to Vulkan's Timeline Semaphore,
+// D3D12's Fence is similar to d3d12's Timeline Semaphore,
 // it can be used for both CPU/GPU, and GPU/GPU synchronization.
 struct D3D12Fence
 {
     ID3D12Fence* fence = nullptr;
-    HANDLE       fence_event;
 
-    uint64_t target = 0ull;
+    mutable uint64_t target = 0ull;
 
     // implementation in D3D12Fence.cpp
     explicit D3D12Fence();
     explicit D3D12Fence(bool signaled);
 
+    void init(bool signaled);
     void wait(uint64_t timeout = UINT64_MAX);
     void reset();
     bool ready();
@@ -161,7 +188,7 @@ struct D3D12Texture
 
 struct D3D12TextureView
 {
-    // unlike vulkan's VkImageView, D3D12 does not have native concept for it.
+    // unlike d3d12's VkImageView, D3D12 does not have native concept for it.
     // It treats image view as descriptors directly. VkImageView does not
     // differentiate between different usages, so the same image view can
     // be bound for different usages. For D3D12 we will have to create multiple
@@ -219,6 +246,7 @@ struct D3D12BindGroupLayout
 {
     Vector<D3D12_DESCRIPTOR_RANGE1> ranges     = {};
     D3D12_SHADER_VISIBILITY         visibility = D3D12_SHADER_VISIBILITY_ALL;
+    bool                            bindless   = false;
 
     // implementation in D3D12Layout.cpp
     explicit D3D12BindGroupLayout();
@@ -226,7 +254,12 @@ struct D3D12BindGroupLayout
 
     void destroy();
 
+    auto create(D3D12HeapGPU& heap, const GPUBindGroupDescriptor& desc) -> D3D12_GPU_DESCRIPTOR_HANDLE;
+
     bool valid() const { return !ranges.empty(); }
+
+    // helper methods
+    void copy_regular_descriptors(const GPUBindGroupEntry& entry, D3D12GPUDescriptor& descriptor);
 };
 
 struct D3D12PipelineLayout
@@ -257,12 +290,77 @@ struct D3D12Pipeline
     bool valid() const { return pipeline != nullptr; }
 };
 
+struct D3D12Tlas
+{
+    ID3D12Resource* tlas = nullptr;
+
+    // implementation in D3D12Tlas.cpp
+    explicit D3D12Tlas();
+    explicit D3D12Tlas(const GPUTlasDescriptor& desc);
+
+    void destroy();
+
+    bool valid() const { return tlas != nullptr; }
+};
+
+struct D3D12Blas
+{
+    ID3D12Resource* blas = nullptr;
+
+    // implementation in D3D12Blas.cpp
+    explicit D3D12Blas();
+    explicit D3D12Blas(const GPUBlasDescriptor& desc, const Vector<GPUBlasGeometrySizeDescriptor>& sizes);
+
+    void destroy();
+
+    bool valid() const { return blas != nullptr; }
+};
+
+struct D3D12QuerySet
+{
+    ID3D12QueryHeap* pool = nullptr;
+
+    // implementation in D3D12QuerySet.cpp
+    explicit D3D12QuerySet();
+    explicit D3D12QuerySet(const GPUQuerySetDescriptor& desc);
+
+    void destroy();
+
+    bool valid() const { return pool != nullptr; }
+};
+
+struct D3D12CommandBuffer
+{
+    ID3D12GraphicsCommandList* command_buffer    = nullptr;
+    ID3D12CommandAllocator*    command_allocator = nullptr;
+    ID3D12CommandQueue*        command_queue     = nullptr;
+
+    struct FenceOps
+    {
+        ID3D12Fence* fence = nullptr;
+        uint64_t     value = 0ull;
+    };
+
+    Vector<FenceOps> wait_fences;
+    Vector<FenceOps> signal_fences;
+
+    // implementation in D3D12CommandBuffer.cpp
+    void wait(const D3D12Fence& fence, GPUBarrierSyncFlags sync);
+    void signal(const D3D12Fence& fence, GPUBarrierSyncFlags sync);
+    void submit();
+    void begin();
+    void end();
+};
+
 struct D3D12CommandPool
 {
     ID3D12CommandAllocator* command_allocator = nullptr;
+    D3D12_COMMAND_LIST_TYPE command_type;
 
-    void init();
+    void init(D3D12_COMMAND_LIST_TYPE type);
+    void reset();
     void destroy();
+    auto allocate() -> ID3D12GraphicsCommandList*;
 };
 
 struct D3D12SwapFrame
@@ -271,7 +369,7 @@ struct D3D12SwapFrame
     GPUTextureViewHandle view;
     GPUFenceHandle       render_complete_semaphore;
 
-    // implementation in vkSwapchain.cpp
+    // implementation in D3D12Swapchain.cpp
     void init(uint backbuffer_index, uint width, uint height);
     void destroy();
 };
@@ -283,14 +381,38 @@ struct D3D12Frame
     // frame id must match D3D12Frame's id
     uint32_t frame_id = 0u;
 
-    GPUFenceHandle   inflight_fence;
-    GPUFenceHandle   image_available_semaphore; // must be binary semaphores
+    GPUFenceHandle   image_available_semaphore;
     GPUFenceHandle   render_complete_semaphore; // NOTE: D3D12Frame does NOT own this.
+    D3D12CommandPool bundle_command_pool;
     D3D12CommandPool compute_command_pool;
     D3D12CommandPool graphics_command_pool;
     D3D12CommandPool transfer_command_pool;
 
+    // descriptor heap for runtime bound descriptors
+    D3D12HeapGPU                        descriptor_heap;
+    Vector<D3D12_GPU_DESCRIPTOR_HANDLE> allocated_descriptors;
+
+    // allocate command buffers
+    Vector<D3D12CommandBuffer> allocated_command_buffers;
+
+    // shortcut for cmd buffer
+    auto& command(GPUCommandEncoderHandle handle)
+    {
+        return allocated_command_buffers.at(handle.value);
+    }
+
+    // shortcut for descriptor set
+    auto descriptor(GPUBindGroupHandle handle)
+    {
+        return allocated_descriptors.at(handle.value);
+    }
+
+    // impementation in D3D12Frame.cpp
     void init();
+    void wait();
+    void reset();
+    auto allocate(GPUQueueType type, bool primary) -> GPUCommandEncoderHandle;
+    auto create(const GPUBindGroupDescriptor& desc) -> GPUBindGroupHandle;
     void destroy();
 };
 
@@ -308,11 +430,14 @@ struct D3D12RHI
     ID3D12CommandQueue* graphics_queue = nullptr;
     ID3D12CommandQueue* compute_queue  = nullptr;
 
+    // fence used to wait on queues for completion
+    D3D12Fence idle_fence;
+
     // heap objects
-    D3D12Heap rtv_heap;
-    D3D12Heap dsv_heap;
-    D3D12Heap sampler_heap;
-    D3D12Heap cbv_srv_uav_heap;
+    D3D12HeapCPU rtv_heap;
+    D3D12HeapCPU dsv_heap;
+    D3D12HeapCPU sampler_heap;
+    D3D12HeapCPU cbv_srv_uav_heap;
 
     // objects for swapchain recreation
     GPUSurfaceDescriptor surface_desc   = {};
@@ -328,18 +453,33 @@ struct D3D12RHI
     uint current_image_index = 0;
 
     // collection of objects
-    D3D12ResourceManager<D3D12Fence>       fences;
-    D3D12ResourceManager<D3D12Buffer>      buffers;
-    D3D12ResourceManager<D3D12Texture>     textures;
-    D3D12ResourceManager<D3D12TextureView> views;
-    D3D12ResourceManager<D3D12Sampler>     samplers;
-    D3D12ResourceManager<D3D12Shader>      shaders;
-    // D3D12ResourceManager<D3D12Tlas>            tlases;
-    // D3D12ResourceManager<D3D12Blas>            blases;
-    // D3D12ResourceManager<D3D12QuerySet>        query_sets;
+    D3D12ResourceManager<D3D12Fence>           fences;
+    D3D12ResourceManager<D3D12Buffer>          buffers;
+    D3D12ResourceManager<D3D12Texture>         textures;
+    D3D12ResourceManager<D3D12TextureView>     views;
+    D3D12ResourceManager<D3D12Sampler>         samplers;
+    D3D12ResourceManager<D3D12Shader>          shaders;
+    D3D12ResourceManager<D3D12Tlas>            tlases;
+    D3D12ResourceManager<D3D12Blas>            blases;
+    D3D12ResourceManager<D3D12QuerySet>        query_sets;
     D3D12ResourceManager<D3D12Pipeline>        pipelines;
     D3D12ResourceManager<D3D12PipelineLayout>  pipeline_layouts;
     D3D12ResourceManager<D3D12BindGroupLayout> bind_group_layouts;
+
+    auto current_frame() -> D3D12Frame& { return frames.at(current_frame_index % frames.size()); }
+    auto current_image() -> D3D12SwapFrame& { return swapchain_frames.at(current_image_index); }
+
+    void wait_idle()
+    {
+        idle_fence.signal(graphics_queue, idle_fence.target++);
+        idle_fence.wait();
+
+        idle_fence.signal(compute_queue, idle_fence.target++);
+        idle_fence.wait();
+
+        idle_fence.signal(transfer_queue, idle_fence.target++);
+        idle_fence.wait();
+    }
 };
 
 // These are the functions that implements the plugin.
@@ -417,11 +557,11 @@ namespace api
     bool create_raytracing_pipeline(GPURayTracingPipelineHandle& handle, const GPURayTracingPipelineDescriptor& desc);
     void delete_raytracing_pipeline(GPURayTracingPipelineHandle pipeline);
 
-    // vulkan swapchain
+    // d3d12 swapchain
     bool acquire_next_frame(GPUTextureHandle& texture, GPUTextureViewHandle& view, GPUFenceHandle& image_available_fence, GPUFenceHandle& render_complete_fence, bool& suboptimal);
     bool present_curr_frame();
 
-    // vulkan desciprtor
+    // d3d12 desciprtor
     bool create_bind_group(GPUBindGroupHandle& bind_group, const GPUBindGroupDescriptor& desc);
 
     // command buffer
@@ -435,7 +575,7 @@ namespace api
 
 } // namespace api
 
-// vulkan command buffer recording
+// d3d12 command buffer recording
 namespace cmd
 {
     void wait_fence(GPUCommandEncoderHandle cmdbuffer, GPUFenceHandle fence, GPUBarrierSyncFlags sync);

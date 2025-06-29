@@ -28,7 +28,7 @@ void VulkanDescriptorPool::reset()
         reset_descriptor_pool(pool);
 }
 
-GPUBindGroupHandle VulkanDescriptorPool::allocate(VkDescriptorSet& descriptor, VkDescriptorSetLayout layout, uint defined_count, uint varying_count)
+GPUBindGroupHandle VulkanDescriptorPool::allocate(VkDescriptorSet& descriptor, VkDescriptorSetLayout layout, uint set_count, uint bindless_count)
 {
     auto rhi = get_rhi();
 
@@ -37,14 +37,14 @@ GPUBindGroupHandle VulkanDescriptorPool::allocate(VkDescriptorSet& descriptor, V
     auto alloc_info               = VkDescriptorSetAllocateInfo{};
     alloc_info.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     alloc_info.descriptorPool     = pools.at(poolindex);
-    alloc_info.descriptorSetCount = defined_count;
+    alloc_info.descriptorSetCount = set_count;
     alloc_info.pSetLayouts        = &layout;
 
     VkDescriptorSetVariableDescriptorCountAllocateInfo set_counts;
-    if (varying_count) {
+    if (bindless_count) {
         set_counts.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO;
         set_counts.descriptorSetCount = 1;
-        set_counts.pDescriptorCounts  = &varying_count;
+        set_counts.pDescriptorCounts  = &bindless_count;
         set_counts.pNext              = nullptr;
         alloc_info.pNext              = &set_counts;
     }
@@ -74,7 +74,7 @@ uint VulkanDescriptorPool::find_pool_index(uint index)
     return find_pool_index(index + 1);
 }
 
-void fill_descriptor_write(VkWriteDescriptorSet& write, DescriptorObjects& objects, VkDescriptorSet descriptor, const VulkanBindGroupLayout& layout, const GPUBindGroupEntry& entry)
+void fill_descriptor_write(VkWriteDescriptorSet& write, DescriptorObjects& objects, VkDescriptorSet descriptor, const VulkanBindGroupLayout& layout, const GPUBindGroupEntry& entry, uint index)
 {
     auto rhi = get_rhi();
 
@@ -82,7 +82,7 @@ void fill_descriptor_write(VkWriteDescriptorSet& write, DescriptorObjects& objec
     write.sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     write.descriptorCount  = 1;
     write.descriptorType   = layout.binding_types.at(entry.binding);
-    write.dstArrayElement  = entry.index;
+    write.dstArrayElement  = index;
     write.dstBinding       = entry.binding;
     write.dstSet           = descriptor;
     write.pBufferInfo      = nullptr;
@@ -143,26 +143,17 @@ GPUBindGroupHandle create_bind_group(const GPUBindGroupDescriptor& desc)
     auto& frame  = rhi->current_frame();
     auto  layout = fetch_resource(rhi->bind_group_layouts, desc.layout);
 
-    // find out descriiptor count
-    uint defined_count = 1;
-    uint varying_count = 0;
-    for (auto& entry : desc.entries) {
-        if (layout.is_bindless.at(entry.binding))
-            varying_count = std::max(varying_count, entry.count);
-        else
-            defined_count = std::max(defined_count, entry.count);
-    }
-
     // allocate descriptor set
     VkDescriptorSet    descriptor;
-    GPUBindGroupHandle handle = frame.descriptor_pool.allocate(descriptor, layout.layout, defined_count, varying_count);
+    GPUBindGroupHandle handle = frame.descriptor_pool.allocate(descriptor, layout.layout, 1, 0);
 
     // prepare descriptor writes
     DescriptorObjects            objects;
     Vector<VkWriteDescriptorSet> writes;
+    uint                         i = 0;
     for (auto& entry : desc.entries) {
         writes.push_back(VkWriteDescriptorSet{});
-        fill_descriptor_write(writes.back(), objects, descriptor, layout, entry);
+        fill_descriptor_write(writes.back(), objects, descriptor, layout, entry, i++);
     }
 
     // update descriptor sets

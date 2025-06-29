@@ -138,7 +138,7 @@ void D3D12TextureView::init_rtv(const D3D12Texture& texture, const GPUTextureVie
     }
 
     auto rhi = get_rhi();
-    rtv_view = rhi->rtv_heap.allocate_cpu();
+    rtv_view = rhi->rtv_heap.allocate();
     rhi->device->CreateRenderTargetView(texture.texture, &view_desc, rtv_view.handle);
 }
 
@@ -182,7 +182,7 @@ void D3D12TextureView::init_dsv(const D3D12Texture& texture, const GPUTextureVie
 
     // RTV and DSV share the same view (because a texture cannot be both RTV and DSV)
     auto rhi = get_rhi();
-    rtv_view = rhi->dsv_heap.allocate_cpu();
+    rtv_view = rhi->dsv_heap.allocate();
     rhi->device->CreateDepthStencilView(texture.texture, &view_desc, rtv_view.handle);
 }
 
@@ -249,7 +249,7 @@ void D3D12TextureView::init_srv(const D3D12Texture& texture, const GPUTextureVie
     }
 
     auto rhi = get_rhi();
-    srv_view = rhi->cbv_srv_uav_heap.allocate_cpu();
+    srv_view = rhi->cbv_srv_uav_heap.allocate();
     rhi->device->CreateShaderResourceView(texture.texture, &view_desc, srv_view.handle);
 }
 
@@ -291,6 +291,6 @@ void D3D12TextureView::init_uav(const D3D12Texture& texture, const GPUTextureVie
     }
 
     auto rhi = get_rhi();
-    uav_view = rhi->cbv_srv_uav_heap.allocate_cpu();
+    uav_view = rhi->cbv_srv_uav_heap.allocate();
     rhi->device->CreateUnorderedAccessView(texture.texture, nullptr, &view_desc, uav_view.handle);
 }

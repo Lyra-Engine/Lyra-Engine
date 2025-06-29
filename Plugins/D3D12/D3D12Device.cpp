@@ -28,10 +28,13 @@ bool api::create_device(const GPUDeviceDescriptor& desc)
     queue_desc.Type = D3D12_COMMAND_LIST_TYPE_COPY;
     ThrowIfFailed(rhi->device->CreateCommandQueue(&queue_desc, IID_PPV_ARGS(&rhi->transfer_queue)));
 
+    // create fence
+    rhi->idle_fence.init(false);
+
     // create descriptor heaps
-    rhi->rtv_heap.init(512, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
-    rhi->dsv_heap.init(512, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
-    rhi->sampler_heap.init(512, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
+    rhi->rtv_heap.init(32, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
+    rhi->dsv_heap.init(32, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
+    rhi->sampler_heap.init(32, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
     rhi->cbv_srv_uav_heap.init(512, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
 
     return true;

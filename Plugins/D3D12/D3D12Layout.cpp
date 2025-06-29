@@ -52,68 +52,7 @@ D3D12_DESCRIPTOR_RANGE_TYPE infer_descriptor_type(const GPUBindGroupLayoutEntry&
     }
 }
 
-D3D12BindGroupLayout::D3D12BindGroupLayout()
-{
-    ranges.clear();
-    visibility = D3D12_SHADER_VISIBILITY_ALL;
-}
-
-D3D12BindGroupLayout::D3D12BindGroupLayout(const GPUBindGroupLayoutDescriptor& desc)
-{
-    // initialize ranges vector based on descriptor entries
-    ranges.reserve(desc.entries.size());
-
-    // determine overall shader visibility
-    visibility = D3D12_SHADER_VISIBILITY_ALL;
-
-    // record requires stages
-    GPUShaderStageFlags stages = 0;
-
-    for (const auto& entry : desc.entries) {
-        ranges.push_back(D3D12_DESCRIPTOR_RANGE1{});
-
-        auto& range = ranges.back();
-
-        // set binding information
-        range.BaseShaderRegister                = entry.binding;
-        range.NumDescriptors                    = entry.count;
-        range.RegisterSpace                     = 0;
-        range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-        range.Flags                             = D3D12_DESCRIPTOR_RANGE_FLAG_NONE;
-        range.RangeType                         = infer_descriptor_type(entry);
-
-        // additional special processing
-        if (entry.type == GPUBindingResourceType::BUFFER) {
-            if (entry.buffer.type == GPUBufferBindingType::READ_ONLY_STORAGE) {
-                range.Flags |= D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE;
-            }
-        }
-
-        stages = stages | entry.visibility;
-    }
-
-    // optimize shader visibility if possible
-    bool has_compute  = stages.contains(GPUShaderStage::COMPUTE);
-    bool has_vertex   = stages.contains(GPUShaderStage::VERTEX);
-    bool has_fragment = stages.contains(GPUShaderStage::FRAGMENT);
-
-    if (has_compute) {
-        visibility = D3D12_SHADER_VISIBILITY_ALL; // Compute uses ALL
-    } else if (has_vertex && !has_fragment && !has_compute) {
-        visibility = D3D12_SHADER_VISIBILITY_VERTEX;
-    } else if (has_fragment && !has_vertex && !has_compute) {
-        visibility = D3D12_SHADER_VISIBILITY_PIXEL;
-    } else {
-        visibility = D3D12_SHADER_VISIBILITY_ALL; // Multiple stages or mixed usage
-    }
-}
-
-void D3D12BindGroupLayout::destroy()
-{
-    ranges.clear();
-    visibility = D3D12_SHADER_VISIBILITY_ALL;
-}
-
+#pragma region D3D12PipelineLayout
 D3D12PipelineLayout::D3D12PipelineLayout()
 {
     layout = nullptr;
@@ -186,3 +125,115 @@ void D3D12PipelineLayout::destroy()
         layout = nullptr;
     }
 }
+#pragma endregion D3D12PipelineLayout
+
+#pragma region D3D12BindGroupLayout
+D3D12BindGroupLayout::D3D12BindGroupLayout()
+{
+    ranges.clear();
+    visibility = D3D12_SHADER_VISIBILITY_ALL;
+}
+
+D3D12BindGroupLayout::D3D12BindGroupLayout(const GPUBindGroupLayoutDescriptor& desc)
+{
+    bindless = desc.bindless;
+
+    // initialize ranges vector based on descriptor entries
+    ranges.reserve(desc.entries.size());
+
+    // determine overall shader visibility
+    visibility = D3D12_SHADER_VISIBILITY_ALL;
+
+    // record requires stages
+    GPUShaderStageFlags stages = 0;
+
+    for (const auto& entry : desc.entries) {
+        ranges.push_back(D3D12_DESCRIPTOR_RANGE1{});
+
+        auto& range = ranges.back();
+
+        // set binding information
+        range.BaseShaderRegister                = entry.binding;
+        range.NumDescriptors                    = entry.count;
+        range.RegisterSpace                     = 0;
+        range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+        range.Flags                             = D3D12_DESCRIPTOR_RANGE_FLAG_NONE;
+        range.RangeType                         = infer_descriptor_type(entry);
+
+        // additional special processing
+        if (entry.type == GPUBindingResourceType::BUFFER)
+            if (entry.buffer.type == GPUBufferBindingType::READ_ONLY_STORAGE)
+                range.Flags |= D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE;
+
+        stages = stages | entry.visibility;
+    }
+
+    // optimize shader visibility if possible
+    bool has_compute  = stages.contains(GPUShaderStage::COMPUTE);
+    bool has_vertex   = stages.contains(GPUShaderStage::VERTEX);
+    bool has_fragment = stages.contains(GPUShaderStage::FRAGMENT);
+
+    if (has_compute) {
+        visibility = D3D12_SHADER_VISIBILITY_ALL; // Compute uses ALL
+    } else if (has_vertex && !has_fragment && !has_compute) {
+        visibility = D3D12_SHADER_VISIBILITY_VERTEX;
+    } else if (has_fragment && !has_vertex && !has_compute) {
+        visibility = D3D12_SHADER_VISIBILITY_PIXEL;
+    } else {
+        visibility = D3D12_SHADER_VISIBILITY_ALL; // Multiple stages or mixed usage
+    }
+}
+
+void D3D12BindGroupLayout::destroy()
+{
+    ranges.clear();
+    visibility = D3D12_SHADER_VISIBILITY_ALL;
+}
+
+D3D12_GPU_DESCRIPTOR_HANDLE D3D12BindGroupLayout::create(D3D12HeapGPU& heap, const GPUBindGroupDescriptor& desc)
+{
+    assert(!bindless && "Cannot create bindless descriptor using bound descriptor entries!");
+
+    // find out descriptor count
+    uint descriptor_count = static_cast<uint>(desc.entries.size());
+
+    // allocate descriptors
+    auto descriptor = heap.allocate(descriptor_count);
+
+    // write to descriptors
+    auto current = descriptor;
+    for (auto& entry : desc.entries)
+        copy_regular_descriptors(entry, current);
+
+    // save gpu descriptor for future reference
+    return descriptor.gpu_handle;
+}
+
+void D3D12BindGroupLayout::copy_regular_descriptors(const GPUBindGroupEntry& entry, D3D12GPUDescriptor& descriptor)
+{
+    auto rhi = get_rhi();
+
+    // auto create_buffer_descriptor = [&](const GPUBindGroupEntry& entry) {
+    //     auto& buf = fetch_resource(rhi->buffers, entry.buffer.buffer);
+    //
+    //     D3D12_CONSTANT_BUFFER_VIEW_DESC buffer_desc = {};
+    //     buffer_desc.BufferLocation                  = buf.buffer->GetGPUVirtualAddress();
+    //     buffer_desc.SizeInBytes                     = entry.buffer.size == 0 ? buf.;
+    //
+    //     D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc = {};
+    // };
+
+    switch (entry.type) {
+        case GPUBindingResourceType::BUFFER:
+            break;
+        case GPUBindingResourceType::SAMPLER:
+            break;
+        case GPUBindingResourceType::TEXTURE:
+            break;
+        case GPUBindingResourceType::STORAGE_TEXTURE:
+            break;
+        case GPUBindingResourceType::ACCELERATION_STRUCTURE:
+            break;
+    }
+}
+#pragma endregion D3D12BindGroupLayout

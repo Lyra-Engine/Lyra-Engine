@@ -212,10 +212,10 @@ struct VulkanShader
 
 struct VulkanBindGroupLayout
 {
-    VkDescriptorSetLayout layout = VK_NULL_HANDLE;
+    VkDescriptorSetLayout layout   = VK_NULL_HANDLE;
+    bool                  bindless = false;
 
     Vector<VkDescriptorType> binding_types = {};
-    Vector<uint>             is_bindless   = {};
 
     // implementation in VkLayout.cpp
     explicit VulkanBindGroupLayout();
@@ -320,8 +320,8 @@ struct VulkanDescriptorPool
     auto allocate(
         VkDescriptorSet&      descriptor,
         VkDescriptorSetLayout layout,
-        uint                  defined_count = 1,
-        uint                  varying_count = 0) -> GPUBindGroupHandle;
+        uint                  set_count      = 1,
+        uint                  bindless_count = 0) -> GPUBindGroupHandle;
 
     uint find_pool_index(uint index);
 };

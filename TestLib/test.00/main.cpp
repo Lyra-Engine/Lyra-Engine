@@ -168,14 +168,11 @@ struct TestApp00 : public TestApp
             auto entry          = GPUBindGroupEntry{};
             entry.type          = GPUBindingResourceType::BUFFER;
             entry.binding       = 0;
-            entry.count         = 1;
-            entry.index         = 0;
             entry.buffer.buffer = uniform.ubuffer;
             entry.buffer.offset = 0;
             entry.buffer.size   = 0;
 
             auto desc   = GPUBindGroupDescriptor{};
-            desc.count  = 1;
             desc.layout = blayout;
             desc.entries.push_back(entry);
             return device.create_bind_group(desc);

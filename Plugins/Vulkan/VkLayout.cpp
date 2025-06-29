@@ -51,18 +51,6 @@ VkDescriptorType infer_descriptor_type(const GPUBindGroupLayoutEntry& entry)
     }
 }
 
-bool is_bindgroup_bindless(const GPUBindGroupLayoutEntry& entry)
-{
-    switch (entry.type) {
-        case GPUBindingResourceType::SAMPLER:
-            return entry.sampler.bindless;
-        case GPUBindingResourceType::TEXTURE:
-            return entry.texture.bindless;
-        default:
-            return false;
-    }
-}
-
 // NOTE: A possible optimization is that we could hash the layout
 // to avoid creating identical layouts, not sure if this is useful.
 
@@ -85,7 +73,6 @@ VulkanBindGroupLayout::VulkanBindGroupLayout(const GPUBindGroupLayoutDescriptor&
     Vector<VkDescriptorSetLayoutBinding> bindings;
     for (auto& entry : desc.entries) {
         auto type                  = infer_descriptor_type(entry);
-        auto bindless              = is_bindgroup_bindless(entry);
         auto binding               = VkDescriptorSetLayoutBinding{};
         binding.binding            = entry.binding;
         binding.descriptorCount    = entry.count;
@@ -95,7 +82,6 @@ VulkanBindGroupLayout::VulkanBindGroupLayout(const GPUBindGroupLayoutDescriptor&
         bindings.push_back(binding);
 
         // keep track of basic properties for bind group layout
-        is_bindless.push_back(bindless);
         binding_types.push_back(binding.descriptorType);
 
         // variable size descriptor binding
@@ -103,7 +89,8 @@ VulkanBindGroupLayout::VulkanBindGroupLayout(const GPUBindGroupLayoutDescriptor&
             bindingflags_info.pBindingFlags = flags;
     }
 
-    layout = VK_NULL_HANDLE;
+    layout   = VK_NULL_HANDLE;
+    bindless = desc.bindless;
 
     if (!bindings.empty()) {
         // prepare create info

@@ -104,12 +104,14 @@ namespace lyra::rhi
         GPUSize32    count;
     };
 
+    // NOTE: Non-WebGPU standard API
     struct GPUBlasDescriptor : public GPUObjectDescriptorBase
     {
         GPUBVHFlags      flags       = 0;
         GPUBVHUpdateMode update_mode = GPUBVHUpdateMode::BUILD;
     };
 
+    // NOTE: Non-WebGPU standard API
     struct GPUTlasDescriptor : public GPUObjectDescriptorBase
     {
         uint             max_instances = 0;
@@ -119,14 +121,21 @@ namespace lyra::rhi
 
     struct GPUBindGroupDescriptor : public GPUObjectDescriptorBase
     {
-        GPUSize32                 count = 0;
         GPUBindGroupLayoutHandle  layout;
         Vector<GPUBindGroupEntry> entries;
     };
 
+    // NOTE: Non-WebGPU standard API
+    struct GPUBindlessDescriptor : public GPUObjectDescriptorBase
+    {
+        GPUBindGroupLayoutHandle layout;
+        GPUBindlessEntry         entry;
+    };
+
     struct GPUBindGroupLayoutDescriptor : public GPUObjectDescriptorBase
     {
-        Vector<GPUBindGroupLayoutEntry> entries = {};
+        bool                            bindless = false;
+        Vector<GPUBindGroupLayoutEntry> entries  = {};
     };
 
     struct GPUPipelineLayoutDescriptor : public GPUObjectDescriptorBase

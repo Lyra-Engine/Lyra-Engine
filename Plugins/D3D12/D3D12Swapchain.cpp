@@ -11,18 +11,29 @@ void D3D12SwapFrame::init(uint backbuffer_index, uint width, uint height)
     // destroy existing handles
     destroy();
 
+    // create fence
+    D3D12Fence fence(true);
+
     // create texture
     D3D12Texture texture;
     texture.samples     = 1;
     texture.area.width  = width;
     texture.area.height = height;
+    texture.usages      = GPUTextureUsage::RENDER_ATTACHMENT | GPUTextureUsage::COPY_DST | GPUTextureUsage::COPY_DST | GPUTextureUsage::STORAGE_BINDING;
     ThrowIfFailed(rhi->swapchain->GetBuffer(backbuffer_index, IID_PPV_ARGS(&texture.texture)));
 
-    // TODO: create texture view
-    D3D12TextureView view;
-
-    // create fence
-    D3D12Fence fence(true);
+    // create texture view
+    GPUTextureViewDescriptor view_desc = {};
+    view_desc.format                   = rhi->surface_format;
+    view_desc.dimension                = GPUTextureViewDimension::x2D;
+    view_desc.aspect                   = GPUTextureAspect::COLOR;
+    view_desc.array_layer_count        = 1;
+    view_desc.base_array_layer         = 0;
+    view_desc.base_mip_level           = 0;
+    view_desc.mip_level_count          = 1;
+    view_desc.usage                    = 0;
+    view_desc.label                    = "swapchain-view";
+    D3D12TextureView view(texture, view_desc);
 
     // fill in swap frame
     this->texture                   = GPUTextureHandle(rhi->textures.add(texture));

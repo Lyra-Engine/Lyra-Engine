@@ -66,6 +66,7 @@ namespace lyra::rhi
         void (*delete_raytracing_pipeline)(GPURayTracingPipelineHandle texture);
 
         bool (*create_bind_group)(GPUBindGroupHandle& layout, const GPUBindGroupDescriptor& descriptor);
+        bool (*create_bind_group_bindless)(GPUBindGroupHandle& layout, const GPUBindlessDescriptor& descriptor);
         bool (*create_bind_group_layout)(GPUBindGroupLayoutHandle& layout, const GPUBindGroupLayoutDescriptor& descriptor);
         void (*delete_bind_group_layout)(GPUBindGroupLayoutHandle layout);
 

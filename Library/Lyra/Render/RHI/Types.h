@@ -363,6 +363,8 @@ namespace lyra::rhi
 
         auto create_bind_group(const GPUBindGroupDescriptor& descriptor) const -> GPUBindGroup;
 
+        auto create_bind_group(const GPUBindlessDescriptor& descriptor) const -> GPUBindGroup;
+
         auto create_bind_group_layout(const GPUBindGroupLayoutDescriptor& descriptor) const -> GPUBindGroupLayout;
 
         auto create_pipeline_layout(const GPUPipelineLayoutDescriptor& descriptor) const -> GPUPipelineLayout;

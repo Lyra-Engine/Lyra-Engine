@@ -24,7 +24,7 @@ D3D12Sampler::D3D12Sampler(const GPUSamplerDescriptor& desc)
     sampler_desc.BorderColor[3] = 0.0f;
 
     auto rhi = get_rhi();
-    sampler  = rhi->sampler_heap.allocate_cpu();
+    sampler  = rhi->sampler_heap.allocate();
     rhi->device->CreateSampler(&sampler_desc, sampler.handle);
 }
 

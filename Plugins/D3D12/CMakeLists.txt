@@ -18,8 +18,14 @@ target_sources(lyra-d3d12 PRIVATE
     D3D12Texture.cpp
     D3D12Sampler.cpp
     D3D12Shader.cpp
+    D3D12Tlas.cpp
+    D3D12Blas.cpp
+    D3D12QuerySet.cpp
     D3D12Pipeline.cpp
     D3D12Layout.cpp
+    D3D12Frame.cpp
+    D3D12CommandPool.cpp
+    D3D12CommandBuffer.cpp
 )
 
 # link with D3D12

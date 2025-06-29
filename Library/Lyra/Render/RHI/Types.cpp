@@ -190,6 +190,13 @@ GPUBindGroup GPUDevice::create_bind_group(const GPUBindGroupDescriptor& desc) co
     return bind_group;
 }
 
+GPUBindGroup GPUDevice::create_bind_group(const GPUBindlessDescriptor& desc) const
+{
+    GPUBindGroup bind_group;
+    RHI::api()->create_bind_group_bindless(bind_group.handle, desc);
+    return bind_group;
+}
+
 GPUBindGroupLayout GPUDevice::create_bind_group_layout(const GPUBindGroupLayoutDescriptor& desc) const
 {
     GPUBindGroupLayout layout;

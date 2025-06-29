@@ -64,13 +64,13 @@ D3D12Pipeline::D3D12Pipeline(const GPURenderPipelineDescriptor& desc)
     for (auto& buffer : desc.vertex.buffers) {
         for (const auto& attribute : buffer.attributes) {
             D3D12_INPUT_ELEMENT_DESC element = {};
-            element.SemanticName             = get_semantic_name(attribute.shader_location);
-            element.SemanticIndex            = 0;
-            element.Format                   = d3d12enum(attribute.format);
-            element.InputSlot                = static_cast<UINT>(buffer_index++);
-            element.AlignedByteOffset        = static_cast<UINT>(attribute.offset);
-            element.InputSlotClass           = d3d12enum(buffer.step_mode);
-            element.InstanceDataStepRate     = (buffer.step_mode == GPUVertexStepMode::INSTANCE) ? 1 : 0;
+            // element.SemanticName             = get_semantic_name(attribute.shader_location);
+            element.SemanticIndex        = 0;
+            element.Format               = d3d12enum(attribute.format);
+            element.InputSlot            = static_cast<UINT>(buffer_index++);
+            element.AlignedByteOffset    = static_cast<UINT>(attribute.offset);
+            element.InputSlotClass       = d3d12enum(buffer.step_mode);
+            element.InstanceDataStepRate = (buffer.step_mode == GPUVertexStepMode::INSTANCE) ? 1 : 0;
 
             input_elements.push_back(element);
         }
