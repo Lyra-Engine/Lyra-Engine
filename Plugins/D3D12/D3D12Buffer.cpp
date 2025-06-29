@@ -10,6 +10,8 @@ D3D12Buffer::D3D12Buffer(const GPUBufferDescriptor& desc)
 {
     // TODO: to examine if buffer usages are set correctly.
 
+    this->size = desc.size;
+
     D3D12_HEAP_PROPERTIES heap_props = {};
     heap_props.Type                  = infer_heap_type(desc.usage);
     heap_props.CPUPageProperty       = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;

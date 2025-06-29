@@ -211,29 +211,86 @@ D3D12_GPU_DESCRIPTOR_HANDLE D3D12BindGroupLayout::create(D3D12HeapGPU& heap, con
 
 void D3D12BindGroupLayout::copy_regular_descriptors(const GPUBindGroupEntry& entry, D3D12GPUDescriptor& descriptor)
 {
-    auto rhi = get_rhi();
-
-    // auto create_buffer_descriptor = [&](const GPUBindGroupEntry& entry) {
-    //     auto& buf = fetch_resource(rhi->buffers, entry.buffer.buffer);
-    //
-    //     D3D12_CONSTANT_BUFFER_VIEW_DESC buffer_desc = {};
-    //     buffer_desc.BufferLocation                  = buf.buffer->GetGPUVirtualAddress();
-    //     buffer_desc.SizeInBytes                     = entry.buffer.size == 0 ? buf.;
-    //
-    //     D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc = {};
-    // };
-
     switch (entry.type) {
         case GPUBindingResourceType::BUFFER:
+            create_buffer_descriptor(entry, descriptor);
             break;
         case GPUBindingResourceType::SAMPLER:
+            copy_sampler_descriptor(entry, descriptor);
             break;
         case GPUBindingResourceType::TEXTURE:
-            break;
         case GPUBindingResourceType::STORAGE_TEXTURE:
+            copy_texture_descriptor(entry, descriptor);
             break;
         case GPUBindingResourceType::ACCELERATION_STRUCTURE:
             break;
+        default:
+            assert(!!!"Invaid GPUBindingResourceType");
     }
+
+    descriptor.cpu_handle.ptr += descriptor.increment;
+    descriptor.gpu_handle.ptr += descriptor.increment;
+}
+
+void D3D12BindGroupLayout::copy_sampler_descriptor(const GPUBindGroupEntry& entry, D3D12GPUDescriptor& descriptor)
+{
+    auto  rhi = get_rhi();
+    auto& smp = fetch_resource(rhi->samplers, entry.sampler);
+    rhi->device->CopyDescriptorsSimple(1, descriptor.cpu_handle, smp.sampler.handle, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+}
+
+void D3D12BindGroupLayout::copy_texture_descriptor(const GPUBindGroupEntry& entry, D3D12GPUDescriptor& descriptor)
+{
+    auto  rhi = get_rhi();
+    auto& tex = fetch_resource(rhi->views, entry.texture);
+
+    D3D12_CPU_DESCRIPTOR_HANDLE dst_handle = descriptor.cpu_handle;
+    D3D12_CPU_DESCRIPTOR_HANDLE src_handle = entry.type == GPUBindingResourceType::TEXTURE ? tex.srv_view.handle : tex.uav_view.handle;
+    rhi->device->CopyDescriptorsSimple(1, src_handle, src_handle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+}
+
+void D3D12BindGroupLayout::create_buffer_descriptor(const GPUBindGroupEntry& entry, D3D12GPUDescriptor& descriptor)
+{
+    auto type = ranges.at(entry.binding).RangeType;
+    switch (type) {
+        case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
+            create_buffer_cbv_descriptor(entry, descriptor);
+            break;
+        case D3D12_DESCRIPTOR_RANGE_TYPE_UAV:
+            create_buffer_uav_descriptor(entry, descriptor);
+            break;
+        default:
+            assert(!!!"Buffer descriptor only supports CBV and UAV!");
+    }
+}
+
+void D3D12BindGroupLayout::create_buffer_cbv_descriptor(const GPUBindGroupEntry& entry, D3D12GPUDescriptor& descriptor)
+{
+    auto  rhi = get_rhi();
+    auto& buf = fetch_resource(rhi->buffers, entry.buffer.buffer);
+
+    D3D12_CONSTANT_BUFFER_VIEW_DESC cbv_desc{};
+    cbv_desc.BufferLocation = buf.buffer->GetGPUVirtualAddress() + entry.buffer.offset;
+    cbv_desc.SizeInBytes    = entry.buffer.size == 0 ? buf.size : entry.buffer.size;
+    cbv_desc.SizeInBytes    = (cbv_desc.SizeInBytes + 255) & ~255; // CBV alignment
+
+    rhi->device->CreateConstantBufferView(&cbv_desc, descriptor.cpu_handle);
+}
+
+void D3D12BindGroupLayout::create_buffer_uav_descriptor(const GPUBindGroupEntry& entry, D3D12GPUDescriptor& descriptor)
+{
+    auto  rhi = get_rhi();
+    auto& buf = fetch_resource(rhi->buffers, entry.buffer.buffer);
+
+    D3D12_UNORDERED_ACCESS_VIEW_DESC uav_desc{};
+    uav_desc.Format                      = DXGI_FORMAT_R8_UINT;
+    uav_desc.ViewDimension               = D3D12_UAV_DIMENSION_BUFFER;
+    uav_desc.Buffer.FirstElement         = entry.buffer.offset;
+    uav_desc.Buffer.NumElements          = entry.buffer.size == 0 ? buf.size : entry.buffer.size;
+    uav_desc.Buffer.StructureByteStride  = 1;
+    uav_desc.Buffer.CounterOffsetInBytes = 0;
+    uav_desc.Buffer.Flags                = D3D12_BUFFER_UAV_FLAG_NONE;
+
+    rhi->device->CreateUnorderedAccessView(buf.buffer, nullptr, &uav_desc, descriptor.cpu_handle);
 }
 #pragma endregion D3D12BindGroupLayout

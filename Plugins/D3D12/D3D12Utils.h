@@ -140,6 +140,7 @@ struct D3D12Fence
 struct D3D12Buffer
 {
     ID3D12Resource* buffer = nullptr;
+    uint64_t        size   = 0ull;
 
     uint8_t* mapped_data = nullptr;
     uint64_t mapped_size = 0ull;
@@ -260,6 +261,11 @@ struct D3D12BindGroupLayout
 
     // helper methods
     void copy_regular_descriptors(const GPUBindGroupEntry& entry, D3D12GPUDescriptor& descriptor);
+    void copy_sampler_descriptor(const GPUBindGroupEntry& entry, D3D12GPUDescriptor& descriptor);
+    void copy_texture_descriptor(const GPUBindGroupEntry& entry, D3D12GPUDescriptor& descriptor);
+    void create_buffer_descriptor(const GPUBindGroupEntry& entry, D3D12GPUDescriptor& descriptor);
+    void create_buffer_cbv_descriptor(const GPUBindGroupEntry& entry, D3D12GPUDescriptor& descriptor);
+    void create_buffer_uav_descriptor(const GPUBindGroupEntry& entry, D3D12GPUDescriptor& descriptor);
 };
 
 struct D3D12PipelineLayout
