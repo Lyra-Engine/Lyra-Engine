@@ -131,6 +131,55 @@ void D3D12PipelineLayout::destroy()
         layout = nullptr;
     }
 }
+
+void D3D12PipelineLayout::create_dispatch_indirect_signature()
+{
+    if (signatures.dispatch_indirect) return;
+
+    D3D12_INDIRECT_ARGUMENT_DESC args[1];
+    args[0].Type = D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH;
+
+    D3D12_COMMAND_SIGNATURE_DESC program_desc{};
+    program_desc.ByteStride       = 12;
+    program_desc.NumArgumentDescs = 1;
+    program_desc.pArgumentDescs   = args;
+
+    auto rhi = get_rhi();
+    ThrowIfFailed(rhi->device->CreateCommandSignature(&program_desc, layout, IID_PPV_ARGS(&signatures.dispatch_indirect)));
+}
+
+void D3D12PipelineLayout::create_draw_indirect_signature()
+{
+    if (signatures.draw_indirect) return;
+
+    D3D12_INDIRECT_ARGUMENT_DESC args[1];
+    args[0].Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW;
+
+    D3D12_COMMAND_SIGNATURE_DESC program_desc{};
+    program_desc.ByteStride       = 16;
+    program_desc.NumArgumentDescs = 1;
+    program_desc.pArgumentDescs   = args;
+
+    auto rhi = get_rhi();
+    ThrowIfFailed(rhi->device->CreateCommandSignature(&program_desc, layout, IID_PPV_ARGS(&signatures.draw_indirect)));
+}
+
+void D3D12PipelineLayout::create_draw_indexed_indirect_signature()
+{
+    if (signatures.draw_indexed_indirect) return;
+
+    D3D12_INDIRECT_ARGUMENT_DESC args[1];
+    args[0].Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED;
+
+    D3D12_COMMAND_SIGNATURE_DESC program_desc{};
+    program_desc.ByteStride       = 20;
+    program_desc.NumArgumentDescs = 1;
+    program_desc.pArgumentDescs   = args;
+
+    auto rhi = get_rhi();
+    ThrowIfFailed(rhi->device->CreateCommandSignature(&program_desc, layout, IID_PPV_ARGS(&signatures.draw_indexed_indirect)));
+}
+
 #pragma endregion D3D12PipelineLayout
 
 #pragma region D3D12BindGroupLayout

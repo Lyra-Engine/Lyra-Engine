@@ -183,10 +183,10 @@ void cmd::set_render_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURenderPipeli
     auto& pip = fetch_resource(rhi->pipelines, pipeline);
 
     if (cmd.last_bound.pipeline != pip.pipeline) {
-        cmd.last_bound.pipeline    = pip.pipeline;
-        cmd.last_bound.layouts     = pip.layout.bind_group_layouts.data();
-        cmd.last_bound.num_layouts = static_cast<uint>(pip.layout.bind_group_layouts.size());
-        cmd.command_buffer->SetGraphicsRootSignature(pip.layout.layout);
+        cmd.last_bound.pipeline = pip.pipeline;
+        cmd.last_bound.layout   = pip.layout;
+        auto& lay               = fetch_resource(rhi->pipeline_layouts, cmd.last_bound.layout);
+        cmd.command_buffer->SetGraphicsRootSignature(lay.layout);
         cmd.command_buffer->SetPipelineState(pip.pipeline);
     }
 }
@@ -198,10 +198,10 @@ void cmd::set_compute_pipeline(GPUCommandEncoderHandle cmdbuffer, GPUComputePipe
     auto& pip = fetch_resource(rhi->pipelines, pipeline);
 
     if (cmd.last_bound.pipeline != pip.pipeline) {
-        cmd.last_bound.pipeline    = pip.pipeline;
-        cmd.last_bound.layouts     = pip.layout.bind_group_layouts.data();
-        cmd.last_bound.num_layouts = static_cast<uint>(pip.layout.bind_group_layouts.size());
-        cmd.command_buffer->SetComputeRootSignature(pip.layout.layout);
+        cmd.last_bound.pipeline = pip.pipeline;
+        cmd.last_bound.layout   = pip.layout;
+        auto& lay               = fetch_resource(rhi->pipeline_layouts, cmd.last_bound.layout);
+        cmd.command_buffer->SetComputeRootSignature(lay.layout);
         cmd.command_buffer->SetPipelineState(pip.pipeline);
     }
 }
@@ -213,10 +213,9 @@ void cmd::set_raytracing_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURayTraci
     auto& pip = fetch_resource(rhi->pipelines, pipeline);
 
     if (cmd.last_bound.pipeline != pip.pipeline) {
-        cmd.last_bound.pipeline    = pip.pipeline;
-        cmd.last_bound.layouts     = pip.layout.bind_group_layouts.data();
-        cmd.last_bound.num_layouts = static_cast<uint>(pip.layout.bind_group_layouts.size());
-        cmd.command_buffer->SetComputeRootSignature(pip.layout.layout);
+        cmd.last_bound.pipeline = pip.pipeline;
+        auto& lay               = fetch_resource(rhi->pipeline_layouts, cmd.last_bound.layout);
+        cmd.command_buffer->SetComputeRootSignature(lay.layout);
         cmd.command_buffer->SetPipelineState(pip.pipeline);
     }
 }
@@ -226,11 +225,12 @@ void cmd::set_bind_group(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 index, GP
     auto  rhi = get_rhi();
     auto& frm = rhi->current_frame();
     auto& cmd = frm.command(cmdbuffer);
+    auto& lay = fetch_resource(rhi->pipeline_layouts, cmd.last_bound.layout);
     auto  des = frm.descriptor(bind_group);
 
-    assert(index < cmd.last_bound.num_layouts);
-    auto& lay = cmd.last_bound.layouts[index];
-    for (auto& binding : lay.bindings) {
+    assert(index < lay.bind_group_layouts.size());
+    auto& layout = lay.bind_group_layouts.at(index);
+    for (auto& binding : layout.bindings) {
         if (binding.heap_type == D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER) {
             auto handle = des.sampler_base.value().gpu_handle;
             handle.ptr += binding.base_offset * frm.sampler_heap.increment;
@@ -279,51 +279,60 @@ void cmd::set_vertex_buffer(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 slot, 
     cmd.command_buffer->IASetVertexBuffers(slot, 1, &vertex_buffer_view);
 }
 
-// void cmd::draw(GPUCommandEncoderHandle cmdbuffer, GPUSize32 vertex_count, GPUSize32 instance_count, GPUSize32 first_vertex, GPUSize32 first_instance)
-// {
-//     auto  rhi = get_rhi();
-//     auto& cmd = rhi->current_frame().command(cmdbuffer);
-//     rhi->vtable.vkCmdDraw(cmd.command_buffer, vertex_count, instance_count, first_vertex, first_instance);
-// }
-//
-// void cmd::draw_indexed(GPUCommandEncoderHandle cmdbuffer, GPUSize32 index_count, GPUSize32 instance_count, GPUSize32 first_index, GPUSignedOffset32 base_vertex, GPUSize32 first_instance)
-// {
-//     auto  rhi = get_rhi();
-//     auto& cmd = rhi->current_frame().command(cmdbuffer);
-//     rhi->vtable.vkCmdDrawIndexed(cmd.command_buffer, index_count, instance_count, first_index, base_vertex, first_instance);
-// }
-//
-// void cmd::draw_indirect(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle indirect_buffer, GPUSize64 indirect_offset, GPUSize32 draw_count)
-// {
-//     auto  rhi = get_rhi();
-//     auto& cmd = rhi->current_frame().command(cmdbuffer);
-//     auto& buf = fetch_resource(rhi->buffers, indirect_buffer);
-//     rhi->vtable.vkCmdDrawIndirect(cmd.command_buffer, buf.buffer, indirect_offset, draw_count, static_cast<uint32_t>(sizeof(VkDrawIndirectCommand)));
-// }
-//
-// void cmd::draw_indexed_indirect(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle indirect_buffer, GPUSize64 indirect_offset, GPUSize32 draw_count)
-// {
-//     auto  rhi = get_rhi();
-//     auto& cmd = rhi->current_frame().command(cmdbuffer);
-//     auto& buf = fetch_resource(rhi->buffers, indirect_buffer);
-//     rhi->vtable.vkCmdDrawIndexedIndirect(cmd.command_buffer, buf.buffer, indirect_offset, draw_count, static_cast<uint32_t>(sizeof(VkDrawIndexedIndirectCommand)));
-// }
-//
-// void cmd::dispatch_workgroups(GPUCommandEncoderHandle cmdbuffer, GPUSize32 x, GPUSize32 y, GPUSize32 z)
-// {
-//     auto  rhi = get_rhi();
-//     auto& cmd = rhi->current_frame().command(cmdbuffer);
-//     rhi->vtable.vkCmdDispatch(cmd.command_buffer, x, y, z);
-// }
-//
-// void cmd::dispatch_workgroups_indirect(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle indirect_buffer, GPUSize64 indirect_offset)
-// {
-//     auto  rhi = get_rhi();
-//     auto& cmd = rhi->current_frame().command(cmdbuffer);
-//     auto& buf = fetch_resource(rhi->buffers, indirect_buffer);
-//     rhi->vtable.vkCmdDispatchIndirect(cmd.command_buffer, buf.buffer, indirect_offset);
-// }
-//
+void cmd::draw(GPUCommandEncoderHandle cmdbuffer, GPUSize32 vertex_count, GPUSize32 instance_count, GPUSize32 first_vertex, GPUSize32 first_instance)
+{
+    auto  rhi = get_rhi();
+    auto& cmd = rhi->current_frame().command(cmdbuffer);
+    cmd.command_buffer->DrawInstanced(vertex_count, instance_count, first_vertex, first_instance);
+}
+
+void cmd::draw_indexed(GPUCommandEncoderHandle cmdbuffer, GPUSize32 index_count, GPUSize32 instance_count, GPUSize32 first_index, GPUSignedOffset32 base_vertex, GPUSize32 first_instance)
+{
+    auto  rhi = get_rhi();
+    auto& cmd = rhi->current_frame().command(cmdbuffer);
+    cmd.command_buffer->DrawIndexedInstanced(index_count, instance_count, first_index, base_vertex, first_instance);
+}
+
+void cmd::draw_indirect(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle indirect_buffer, GPUSize64 indirect_offset, GPUSize32 draw_count)
+{
+    auto  rhi = get_rhi();
+    auto& cmd = rhi->current_frame().command(cmdbuffer);
+    auto& buf = fetch_resource(rhi->buffers, indirect_buffer);
+    auto& lay = fetch_resource(rhi->pipeline_layouts, cmd.last_bound.layout);
+
+    lay.create_draw_indirect_signature();
+    cmd.command_buffer->ExecuteIndirect(lay.signatures.draw_indirect.Get(), draw_count, buf.buffer, indirect_offset, nullptr, 0);
+}
+
+void cmd::draw_indexed_indirect(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle indirect_buffer, GPUSize64 indirect_offset, GPUSize32 draw_count)
+{
+    auto  rhi = get_rhi();
+    auto& cmd = rhi->current_frame().command(cmdbuffer);
+    auto& buf = fetch_resource(rhi->buffers, indirect_buffer);
+    auto& lay = fetch_resource(rhi->pipeline_layouts, cmd.last_bound.layout);
+
+    lay.create_draw_indexed_indirect_signature();
+    cmd.command_buffer->ExecuteIndirect(lay.signatures.draw_indexed_indirect.Get(), draw_count, buf.buffer, indirect_offset, nullptr, 0);
+}
+
+void cmd::dispatch_workgroups(GPUCommandEncoderHandle cmdbuffer, GPUSize32 x, GPUSize32 y, GPUSize32 z)
+{
+    auto  rhi = get_rhi();
+    auto& cmd = rhi->current_frame().command(cmdbuffer);
+    cmd.command_buffer->Dispatch(x, y, z);
+}
+
+void cmd::dispatch_workgroups_indirect(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle indirect_buffer, GPUSize64 indirect_offset)
+{
+    auto  rhi = get_rhi();
+    auto& cmd = rhi->current_frame().command(cmdbuffer);
+    auto& buf = fetch_resource(rhi->buffers, indirect_buffer);
+    auto& lay = fetch_resource(rhi->pipeline_layouts, cmd.last_bound.layout);
+
+    lay.create_dispatch_indirect_signature();
+    cmd.command_buffer->ExecuteIndirect(lay.signatures.dispatch_indirect.Get(), 1, buf.buffer, indirect_offset, nullptr, 0);
+}
+
 // void cmd::copy_buffer_to_buffer(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle source, GPUSize64 source_offset, GPUBufferHandle destination, GPUSize64 destination_offset, GPUSize64 size)
 // {
 //     auto  rhi = get_rhi();

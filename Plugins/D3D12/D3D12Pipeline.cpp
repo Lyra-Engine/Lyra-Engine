@@ -23,7 +23,7 @@ D3D12Pipeline::D3D12Pipeline(const GPUComputePipelineDescriptor& desc)
     pso_desc.CS.pShaderBytecode = shader.binary.data();
     pso_desc.CS.BytecodeLength  = static_cast<UINT>(shader.binary.size());
 
-    this->layout = layout;
+    this->layout = desc.layout;
     ThrowIfFailed(rhi->device->CreateComputePipelineState(&pso_desc, IID_PPV_ARGS(&pipeline)));
 }
 
@@ -127,7 +127,7 @@ D3D12Pipeline::D3D12Pipeline(const GPURenderPipelineDescriptor& desc)
         pso_desc.BlendState.RenderTarget[i].LogicOpEnable         = false;
     }
 
-    this->layout = layout;
+    this->layout = desc.layout;
     ThrowIfFailed(rhi->device->CreateGraphicsPipelineState(&pso_desc, IID_PPV_ARGS(&pipeline)));
 }
 

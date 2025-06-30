@@ -4,6 +4,8 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <exception>
+#include <wrl/client.h>
+using Microsoft::WRL::ComPtr;
 
 #include <Lyra/Common/Logger.h>
 #include <Lyra/Common/Msgbox.h>
@@ -281,6 +283,14 @@ struct D3D12PipelineLayout
 
     Vector<D3D12BindGroupLayout> bind_group_layouts;
 
+    // really awkward design, but I have no choice
+    struct
+    {
+        ComPtr<ID3D12CommandSignature> dispatch_indirect;
+        ComPtr<ID3D12CommandSignature> draw_indirect;
+        ComPtr<ID3D12CommandSignature> draw_indexed_indirect;
+    } signatures;
+
     // implementation in D3D12Layout.cpp
     explicit D3D12PipelineLayout();
     explicit D3D12PipelineLayout(const GPUPipelineLayoutDescriptor& desc);
@@ -288,13 +298,18 @@ struct D3D12PipelineLayout
     void destroy();
 
     bool valid() const { return layout != nullptr; }
+
+    // helper methods
+    void create_dispatch_indirect_signature();
+    void create_draw_indirect_signature();
+    void create_draw_indexed_indirect_signature();
 };
 
 struct D3D12Pipeline
 {
     ID3D12PipelineState* pipeline = nullptr;
 
-    D3D12PipelineLayout layout; // D3D12Pipeline does NOT own this!
+    GPUPipelineLayoutHandle layout; // D3D12Pipeline does NOT own this!
 
     // implementation in D3D12Pipeline.cpp
     explicit D3D12Pipeline();
@@ -354,9 +369,8 @@ struct D3D12CommandBuffer
 
     struct PSOStatus
     {
-        ID3D12PipelineState*  pipeline    = nullptr;
-        D3D12BindGroupLayout* layouts     = nullptr;
-        uint                  num_layouts = 0;
+        ID3D12PipelineState*    pipeline = nullptr;
+        GPUPipelineLayoutHandle layout;
     };
 
     struct FenceOps
