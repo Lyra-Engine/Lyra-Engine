@@ -385,6 +385,7 @@ namespace lyra::rhi
     struct GPUBindGroupEntry
     {
         GPUIndex32             binding;
+        GPUIndex32             index = 0; // NOTE: Non-WebGPU standard API
         GPUBindingResourceType type;
         union
         {
@@ -417,7 +418,7 @@ namespace lyra::rhi
     struct GPUBindGroupLayoutEntry
     {
         GPUIndex32             binding;
-        GPUIndex32             count = 1;
+        GPUIndex32             count = 1; // NOTE: Non-WebGPU standard API
         GPUShaderStageFlags    visibility;
         GPUBindingResourceType type;
         union
@@ -509,6 +510,7 @@ namespace lyra::rhi
         GPUSize32 array_layers     = 1;
     };
 
+    // NOTE: Non-WebGPU standard API
     struct GPUMemoryBarrier
     {
         GPUBarrierSync   src_sync;
@@ -517,6 +519,7 @@ namespace lyra::rhi
         GPUBarrierAccess dst_access;
     };
 
+    // NOTE: Non-WebGPU standard API
     struct GPUBufferBarrier
     {
         GPUBarrierSync   src_sync;
@@ -528,6 +531,7 @@ namespace lyra::rhi
         GPUSize64        size;
     };
 
+    // NOTE: Non-WebGPU standard API
     struct GPUTextureBarrier
     {
         GPUBarrierSync             src_sync;

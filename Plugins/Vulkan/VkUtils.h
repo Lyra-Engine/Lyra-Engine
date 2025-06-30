@@ -241,8 +241,9 @@ struct VulkanPipelineLayout
 
 struct VulkanPipeline
 {
-    VkPipeline      pipeline = VK_NULL_HANDLE;
-    VkPipelineCache cache    = VK_NULL_HANDLE;
+    VkPipeline       pipeline = VK_NULL_HANDLE;
+    VkPipelineCache  cache    = VK_NULL_HANDLE;
+    VkPipelineLayout layout   = VK_NULL_HANDLE; // VulkanPipeline does NOT own this.
 
     // implementation in VkPipeline.cpp
     explicit VulkanPipeline();
@@ -602,9 +603,9 @@ namespace cmd
     void signal_fence(GPUCommandEncoderHandle cmdbuffer, GPUFenceHandle fence, GPUBarrierSyncFlags sync);
     void begin_render_pass(GPUCommandEncoderHandle cmdbuffer, const GPURenderPassDescriptor& descriptor);
     void end_render_pass(GPUCommandEncoderHandle cmdbuffer);
-    void set_render_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURenderPipelineHandle pipeline, GPUPipelineLayoutHandle layout);
-    void set_compute_pipeline(GPUCommandEncoderHandle cmdbuffer, GPUComputePipelineHandle pipeline, GPUPipelineLayoutHandle layout);
-    void set_raytracing_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURayTracingPipelineHandle pipeline, GPUPipelineLayoutHandle layout);
+    void set_render_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURenderPipelineHandle pipeline);
+    void set_compute_pipeline(GPUCommandEncoderHandle cmdbuffer, GPUComputePipelineHandle pipeline);
+    void set_raytracing_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURayTracingPipelineHandle pipeline);
     void set_bind_group(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 index, GPUBindGroupHandle bind_group, const Vector<GPUBufferDynamicOffset>& dynamic_offsets);
     void set_index_buffer(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle buffer, GPUIndexFormat format, GPUSize64 offset, GPUSize64 size);
     void set_vertex_buffer(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 slot, GPUBufferHandle buffer, GPUSize64 offset, GPUSize64 size);

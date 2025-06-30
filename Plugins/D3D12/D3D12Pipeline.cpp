@@ -15,18 +15,15 @@ D3D12Pipeline::D3D12Pipeline(const GPUComputePipelineDescriptor& desc)
     D3D12_COMPUTE_PIPELINE_STATE_DESC pso_desc = {};
 
     // root signature
-    if (desc.layout.valid()) {
-        D3D12PipelineLayout& layout = fetch_resource(rhi->pipeline_layouts, desc.layout);
-        pso_desc.pRootSignature     = layout.layout;
-    }
+    D3D12PipelineLayout& layout = fetch_resource(rhi->pipeline_layouts, desc.layout);
+    pso_desc.pRootSignature     = layout.layout;
 
     // compute shader
-    if (desc.compute.module.valid()) {
-        D3D12Shader& shader         = fetch_resource(rhi->shaders, desc.compute.module);
-        pso_desc.CS.pShaderBytecode = shader.binary.data();
-        pso_desc.CS.BytecodeLength  = static_cast<UINT>(shader.binary.size());
-    }
+    D3D12Shader& shader         = fetch_resource(rhi->shaders, desc.compute.module);
+    pso_desc.CS.pShaderBytecode = shader.binary.data();
+    pso_desc.CS.BytecodeLength  = static_cast<UINT>(shader.binary.size());
 
+    this->layout = layout;
     ThrowIfFailed(rhi->device->CreateComputePipelineState(&pso_desc, IID_PPV_ARGS(&pipeline)));
 }
 
@@ -39,24 +36,18 @@ D3D12Pipeline::D3D12Pipeline(const GPURenderPipelineDescriptor& desc)
     D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc = {};
 
     // root signature
-    if (desc.layout.valid()) {
-        D3D12PipelineLayout& layout = fetch_resource(rhi->pipeline_layouts, desc.layout);
-        pso_desc.pRootSignature     = layout.layout;
-    }
+    D3D12PipelineLayout& layout = fetch_resource(rhi->pipeline_layouts, desc.layout);
+    pso_desc.pRootSignature     = layout.layout;
 
     // vertex shader
-    if (desc.vertex.module.valid()) {
-        D3D12Shader& shader         = fetch_resource(rhi->shaders, desc.vertex.module);
-        pso_desc.VS.pShaderBytecode = shader.binary.data();
-        pso_desc.VS.BytecodeLength  = static_cast<UINT>(shader.binary.size());
-    }
+    D3D12Shader& vs_shader      = fetch_resource(rhi->shaders, desc.vertex.module);
+    pso_desc.VS.pShaderBytecode = vs_shader.binary.data();
+    pso_desc.VS.BytecodeLength  = static_cast<UINT>(vs_shader.binary.size());
 
     // fragment shader
-    if (desc.fragment.module.valid()) {
-        D3D12Shader& shader         = fetch_resource(rhi->shaders, desc.fragment.module);
-        pso_desc.PS.pShaderBytecode = shader.binary.data();
-        pso_desc.PS.BytecodeLength  = static_cast<UINT>(shader.binary.size());
-    }
+    D3D12Shader& fs_shader      = fetch_resource(rhi->shaders, desc.fragment.module);
+    pso_desc.PS.pShaderBytecode = fs_shader.binary.data();
+    pso_desc.PS.BytecodeLength  = static_cast<UINT>(fs_shader.binary.size());
 
     // vertex input layouts
     uint                             buffer_index = 0;
@@ -136,6 +127,7 @@ D3D12Pipeline::D3D12Pipeline(const GPURenderPipelineDescriptor& desc)
         pso_desc.BlendState.RenderTarget[i].LogicOpEnable         = false;
     }
 
+    this->layout = layout;
     ThrowIfFailed(rhi->device->CreateGraphicsPipelineState(&pso_desc, IID_PPV_ARGS(&pipeline)));
 }
 

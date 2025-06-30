@@ -143,11 +143,3 @@ void api::delete_surface()
         rhi->swapchain = nullptr;
     }
 }
-
-// bool api::get_surface_extent(GPUExtent2D& extent)
-// {
-// }
-//
-// bool api::get_surface_format(GPUTextureFormat& format)
-// {
-// }

@@ -74,7 +74,7 @@ uint VulkanDescriptorPool::find_pool_index(uint index)
     return find_pool_index(index + 1);
 }
 
-void fill_descriptor_write(VkWriteDescriptorSet& write, DescriptorObjects& objects, VkDescriptorSet descriptor, const VulkanBindGroupLayout& layout, const GPUBindGroupEntry& entry, uint index)
+void fill_descriptor_write(VkWriteDescriptorSet& write, DescriptorObjects& objects, VkDescriptorSet descriptor, const VulkanBindGroupLayout& layout, const GPUBindGroupEntry& entry)
 {
     auto rhi = get_rhi();
 
@@ -82,7 +82,7 @@ void fill_descriptor_write(VkWriteDescriptorSet& write, DescriptorObjects& objec
     write.sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     write.descriptorCount  = 1;
     write.descriptorType   = layout.binding_types.at(entry.binding);
-    write.dstArrayElement  = index;
+    write.dstArrayElement  = entry.index;
     write.dstBinding       = entry.binding;
     write.dstSet           = descriptor;
     write.pBufferInfo      = nullptr;
@@ -150,10 +150,9 @@ GPUBindGroupHandle create_bind_group(const GPUBindGroupDescriptor& desc)
     // prepare descriptor writes
     DescriptorObjects            objects;
     Vector<VkWriteDescriptorSet> writes;
-    uint                         i = 0;
     for (auto& entry : desc.entries) {
         writes.push_back(VkWriteDescriptorSet{});
-        fill_descriptor_write(writes.back(), objects, descriptor, layout, entry, i++);
+        fill_descriptor_write(writes.back(), objects, descriptor, layout, entry);
     }
 
     // update descriptor sets

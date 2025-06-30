@@ -50,22 +50,8 @@ struct D3D12GPUDescriptor
 {
     D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle;
     D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle;
-    uint                        increment = 0;
 
     bool valid() const { return gpu_handle.ptr != 0; }
-};
-
-struct D3D12HeapGPUUtils
-{
-    ID3D12DescriptorHeap* heap      = nullptr;
-    uint                  increment = 0;
-    uint                  capacity  = 0;
-    uint                  count     = 0;
-
-    void init(uint capacity, D3D12_DESCRIPTOR_HEAP_TYPE type, D3D12_DESCRIPTOR_HEAP_FLAGS flags);
-    void reset();
-    void destroy();
-    auto allocate(uint allocate_count = 1) -> D3D12GPUDescriptor;
 };
 
 struct D3D12HeapCPUUtils
@@ -83,22 +69,6 @@ struct D3D12HeapCPUUtils
     void recycle(uint index);
 };
 
-struct D3D12HeapGPU
-{
-    Vector<D3D12HeapGPUUtils>   heaps      = {};
-    uint                        heap_index = 0;
-    uint                        capacity   = 0;
-    D3D12_DESCRIPTOR_HEAP_TYPE  heap_type  = D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES;
-    D3D12_DESCRIPTOR_HEAP_FLAGS heap_flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-
-    void init(uint capacity, D3D12_DESCRIPTOR_HEAP_TYPE type, D3D12_DESCRIPTOR_HEAP_FLAGS flags);
-    void reset();
-    void destroy();
-    auto allocate(uint count) -> D3D12GPUDescriptor;
-    void recycle(const D3D12CPUDescriptor& descriptor);
-    uint find_pool_index(uint count);
-};
-
 struct D3D12HeapCPU
 {
     Vector<D3D12HeapCPUUtils>   heaps      = {};
@@ -113,6 +83,19 @@ struct D3D12HeapCPU
     auto allocate() -> D3D12CPUDescriptor;
     void recycle(const D3D12CPUDescriptor& descriptor);
     uint find_pool_index();
+};
+
+struct D3D12HeapGPU
+{
+    ID3D12DescriptorHeap* heap      = nullptr;
+    uint                  increment = 0;
+    uint                  capacity  = 0;
+    uint                  count     = 0;
+
+    void init(uint capacity, D3D12_DESCRIPTOR_HEAP_TYPE type, D3D12_DESCRIPTOR_HEAP_FLAGS flags);
+    void reset();
+    void destroy();
+    auto allocate(uint allocate_count = 1) -> D3D12GPUDescriptor;
 };
 
 // D3D12's Fence is similar to d3d12's Timeline Semaphore,
@@ -194,7 +177,12 @@ struct D3D12TextureView
     // differentiate between different usages, so the same image view can
     // be bound for different usages. For D3D12 we will have to create multiple
     // descriptors if there are multiple usages.
-    D3D12CPUDescriptor rtv_view; // rtv and dsv share the same view
+    union
+    {
+        // rtv and dsv share the same view
+        D3D12CPUDescriptor rtv_view;
+        D3D12CPUDescriptor dsv_view;
+    };
     D3D12CPUDescriptor srv_view;
     D3D12CPUDescriptor uav_view;
 
@@ -243,11 +231,30 @@ struct D3D12Shader
     bool valid() const { return !binary.empty(); }
 };
 
+struct D3D12BindGroup
+{
+    // NOTE: A single bindgroup might contain both types of descriptor,
+    // we will have to store both unfortunately.
+    Optional<D3D12GPUDescriptor> cbv_srv_uav_base;
+    Optional<D3D12GPUDescriptor> sampler_base;
+};
+
+struct D3D12BindInfo
+{
+    D3D12_DESCRIPTOR_HEAP_TYPE heap_type;
+    uint                       binding_index;
+    uint                       binding_count;
+    uint                       root_param_index;
+    uint                       base_offset;
+};
+
+struct D3D12Frame;
 struct D3D12BindGroupLayout
 {
     Vector<D3D12_DESCRIPTOR_RANGE1> ranges     = {};
     D3D12_SHADER_VISIBILITY         visibility = D3D12_SHADER_VISIBILITY_ALL;
     bool                            bindless   = false;
+    Vector<D3D12BindInfo>           bindings   = {};
 
     // implementation in D3D12Layout.cpp
     explicit D3D12BindGroupLayout();
@@ -255,22 +262,24 @@ struct D3D12BindGroupLayout
 
     void destroy();
 
-    auto create(D3D12HeapGPU& heap, const GPUBindGroupDescriptor& desc) -> D3D12_GPU_DESCRIPTOR_HANDLE;
+    auto create(D3D12Frame& frame, const GPUBindGroupDescriptor& desc) -> D3D12BindGroup;
 
     bool valid() const { return !ranges.empty(); }
 
     // helper methods
-    void copy_regular_descriptors(const GPUBindGroupEntry& entry, D3D12GPUDescriptor& descriptor);
-    void copy_sampler_descriptor(const GPUBindGroupEntry& entry, D3D12GPUDescriptor& descriptor);
-    void copy_texture_descriptor(const GPUBindGroupEntry& entry, D3D12GPUDescriptor& descriptor);
-    void create_buffer_descriptor(const GPUBindGroupEntry& entry, D3D12GPUDescriptor& descriptor);
-    void create_buffer_cbv_descriptor(const GPUBindGroupEntry& entry, D3D12GPUDescriptor& descriptor);
-    void create_buffer_uav_descriptor(const GPUBindGroupEntry& entry, D3D12GPUDescriptor& descriptor);
+    void copy_regular_descriptors(const D3D12Frame& frame, const GPUBindGroupEntry& entry, D3D12BindGroup& bind_group, uint offset);
+    void copy_sampler_descriptor(const D3D12Frame& frame, const GPUBindGroupEntry& entry, D3D12BindGroup& bind_group, uint offset);
+    void copy_texture_descriptor(const D3D12Frame& frame, const GPUBindGroupEntry& entry, D3D12BindGroup& bind_group, uint offset);
+    void create_buffer_descriptor(const D3D12Frame& frame, const GPUBindGroupEntry& entry, D3D12BindGroup& bind_group, uint offset);
+    void create_buffer_cbv_descriptor(const D3D12Frame& frame, const GPUBindGroupEntry& entry, D3D12BindGroup& bind_group, uint offset);
+    void create_buffer_uav_descriptor(const D3D12Frame& frame, const GPUBindGroupEntry& entry, D3D12BindGroup& bind_group, uint offset);
 };
 
 struct D3D12PipelineLayout
 {
     ID3D12RootSignature* layout = nullptr;
+
+    Vector<D3D12BindGroupLayout> bind_group_layouts;
 
     // implementation in D3D12Layout.cpp
     explicit D3D12PipelineLayout();
@@ -284,6 +293,8 @@ struct D3D12PipelineLayout
 struct D3D12Pipeline
 {
     ID3D12PipelineState* pipeline = nullptr;
+
+    D3D12PipelineLayout layout; // D3D12Pipeline does NOT own this!
 
     // implementation in D3D12Pipeline.cpp
     explicit D3D12Pipeline();
@@ -341,11 +352,20 @@ struct D3D12CommandBuffer
     ID3D12CommandAllocator*    command_allocator = nullptr;
     ID3D12CommandQueue*        command_queue     = nullptr;
 
+    struct PSOStatus
+    {
+        ID3D12PipelineState*  pipeline    = nullptr;
+        D3D12BindGroupLayout* layouts     = nullptr;
+        uint                  num_layouts = 0;
+    };
+
     struct FenceOps
     {
         ID3D12Fence* fence = nullptr;
         uint64_t     value = 0ull;
     };
+
+    PSOStatus last_bound;
 
     Vector<FenceOps> wait_fences;
     Vector<FenceOps> signal_fences;
@@ -395,8 +415,9 @@ struct D3D12Frame
     D3D12CommandPool transfer_command_pool;
 
     // descriptor heap for runtime bound descriptors
-    D3D12HeapGPU                        descriptor_heap;
-    Vector<D3D12_GPU_DESCRIPTOR_HANDLE> allocated_descriptors;
+    D3D12HeapGPU           sampler_heap;
+    D3D12HeapGPU           cbv_srv_uav_heap;
+    Vector<D3D12BindGroup> allocated_descriptors;
 
     // allocate command buffers
     Vector<D3D12CommandBuffer> allocated_command_buffers;
@@ -588,9 +609,9 @@ namespace cmd
     void signal_fence(GPUCommandEncoderHandle cmdbuffer, GPUFenceHandle fence, GPUBarrierSyncFlags sync);
     void begin_render_pass(GPUCommandEncoderHandle cmdbuffer, const GPURenderPassDescriptor& descriptor);
     void end_render_pass(GPUCommandEncoderHandle cmdbuffer);
-    void set_render_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURenderPipelineHandle pipeline, GPUPipelineLayoutHandle layout);
-    void set_compute_pipeline(GPUCommandEncoderHandle cmdbuffer, GPUComputePipelineHandle pipeline, GPUPipelineLayoutHandle layout);
-    void set_raytracing_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURayTracingPipelineHandle pipeline, GPUPipelineLayoutHandle layout);
+    void set_render_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURenderPipelineHandle pipeline);
+    void set_compute_pipeline(GPUCommandEncoderHandle cmdbuffer, GPUComputePipelineHandle pipeline);
+    void set_raytracing_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURayTracingPipelineHandle pipeline);
     void set_bind_group(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 index, GPUBindGroupHandle bind_group, const Vector<GPUBufferDynamicOffset>& dynamic_offsets);
     void set_index_buffer(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle buffer, GPUIndexFormat format, GPUSize64 offset, GPUSize64 size);
     void set_vertex_buffer(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 slot, GPUBufferHandle buffer, GPUSize64 offset, GPUSize64 size);
@@ -643,6 +664,7 @@ auto d3d12enum(GPUCullMode cull) -> D3D12_CULL_MODE;
 auto d3d12enum(GPUStencilOperation cull) -> D3D12_STENCIL_OP;
 auto d3d12enum(GPUBlendOperation op) -> D3D12_BLEND_OP;
 auto d3d12enum(GPUBlendFactor factor) -> D3D12_BLEND;
+auto d3d12enum(GPUIndexFormat format) -> DXGI_FORMAT;
 
 template <typename T, typename Handle>
 T& fetch_resource(D3D12ResourceManager<T>& manager, Handle handle)

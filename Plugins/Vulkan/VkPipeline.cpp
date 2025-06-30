@@ -201,6 +201,7 @@ VulkanPipeline::VulkanPipeline(const GPURenderPipelineDescriptor& desc)
                                                       //
     // TODO: support specialization constants
 
+    this->layout = layout.layout; // record the pipeline layout
     vk_check(rhi->vtable.vkCreateGraphicsPipelines(rhi->device, cache, 1, &create_info, nullptr, &pipeline));
 
     if (desc.label)
@@ -222,6 +223,7 @@ VulkanPipeline::VulkanPipeline(const GPUComputePipelineDescriptor& desc)
 
     // TODO: support specialization constants
 
+    this->layout = layout.layout; // record the pipeline layout
     vk_check(rhi->vtable.vkCreateComputePipelines(rhi->device, cache, 1, &create_info, nullptr, &pipeline));
 
     if (desc.label)

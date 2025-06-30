@@ -1,5 +1,6 @@
 #include "D3D12Utils.h"
 #include "d3d12.h"
+#include "dxgiformat.h"
 
 static Logger logger = init_stderr_logger("D3D12", LogLevel::trace);
 
@@ -519,5 +520,17 @@ D3D12_BLEND d3d12enum(GPUBlendFactor factor)
             return D3D12_BLEND_INV_BLEND_FACTOR;
         default:
             return D3D12_BLEND_ONE;
+    }
+}
+
+DXGI_FORMAT d3d12enum(GPUIndexFormat format)
+{
+    switch (format) {
+        case GPUIndexFormat::UINT16:
+            return DXGI_FORMAT_R16_UINT;
+        case GPUIndexFormat::UINT32:
+            return DXGI_FORMAT_R32_UINT;
+        default:
+            return DXGI_FORMAT_R32_UINT;
     }
 }

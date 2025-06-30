@@ -143,26 +143,28 @@ namespace lyra::rhi
         Vector<GPUBindGroupLayoutHandle> bind_group_layouts;
     };
 
-    struct GPUComputePipelineDescriptor : public GPUObjectDescriptorBase
+    struct GPUPipelineDescriptorBase : public GPUObjectDescriptorBase
     {
         GPUPipelineLayoutHandle layout;
-        GPUProgrammableStage    compute;
     };
 
-    struct GPURenderPipelineDescriptor : public GPUObjectDescriptorBase
+    struct GPUComputePipelineDescriptor : public GPUPipelineDescriptorBase
     {
-        GPUPipelineLayoutHandle layout;
-        GPUVertexState          vertex        = {};
-        GPUPrimitiveState       primitive     = {};
-        GPUDepthStencilState    depth_stencil = {};
-        GPUMultisampleState     multisample   = {};
-        GPUFragmentState        fragment      = {};
+        GPUProgrammableStage compute;
     };
 
-    struct GPURayTracingPipelineDescriptor : public GPUObjectDescriptorBase
+    struct GPURenderPipelineDescriptor : public GPUPipelineDescriptorBase
     {
-        GPUPipelineLayoutHandle layout;
-        uint                    max_recursion_depth = 5;
+        GPUVertexState       vertex        = {};
+        GPUPrimitiveState    primitive     = {};
+        GPUDepthStencilState depth_stencil = {};
+        GPUMultisampleState  multisample   = {};
+        GPUFragmentState     fragment      = {};
+    };
+
+    struct GPURayTracingPipelineDescriptor : public GPUPipelineDescriptorBase
+    {
+        uint max_recursion_depth = 5;
     };
 
     struct GPURenderPassLayout : public GPUObjectDescriptorBase

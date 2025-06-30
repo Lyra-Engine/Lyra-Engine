@@ -1,5 +1,8 @@
 #include "D3D12Utils.h"
 
+constexpr uint MAX_SAMPLERS_HEAP_SIZE    = 2048u;
+constexpr uint MAX_CBV_SRV_UAV_HEAP_SIZE = 1u << 16;
+
 void D3D12Frame::init()
 {
     auto rhi = get_rhi();
@@ -14,7 +17,8 @@ void D3D12Frame::init()
     transfer_command_pool.init(D3D12_COMMAND_LIST_TYPE_COPY);
 
     // initialize descriptor heap
-    descriptor_heap.init(1024, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+    sampler_heap.init(MAX_SAMPLERS_HEAP_SIZE, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+    cbv_srv_uav_heap.init(MAX_CBV_SRV_UAV_HEAP_SIZE, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 }
 
 void D3D12Frame::wait()
@@ -34,7 +38,8 @@ void D3D12Frame::reset()
     transfer_command_pool.reset();
 
     // clean up descriptor heap
-    descriptor_heap.reset();
+    sampler_heap.reset();
+    cbv_srv_uav_heap.reset();
 }
 
 void D3D12Frame::destroy()
@@ -48,7 +53,8 @@ void D3D12Frame::destroy()
     transfer_command_pool.destroy();
 
     // destroy descriptor heap
-    descriptor_heap.destroy();
+    sampler_heap.destroy();
+    cbv_srv_uav_heap.destroy();
 
     auto rhi = get_rhi();
 
@@ -95,6 +101,11 @@ GPUCommandEncoderHandle D3D12Frame::allocate(GPUQueueType type, bool primary)
             break;
     }
 
+    // set default descriptor heaps
+    ID3D12DescriptorHeap* descriptor_heaps[] = {cbv_srv_uav_heap.heap, sampler_heap.heap};
+    command_buffer.command_buffer->SetDescriptorHeaps(2, descriptor_heaps);
+
+    // save the command buffer to allow retrieval by handle
     uint handle = allocated_command_buffers.size();
     allocated_command_buffers.push_back(command_buffer);
     return GPUCommandEncoderHandle(handle);
@@ -104,7 +115,7 @@ GPUBindGroupHandle D3D12Frame::create(const GPUBindGroupDescriptor& desc)
 {
     auto rhi        = get_rhi();
     auto layout     = fetch_resource(rhi->bind_group_layouts, desc.layout);
-    auto descriptor = layout.create(descriptor_heap, desc);
+    auto descriptor = layout.create(*this, desc);
 
     uint handle = static_cast<uint>(allocated_descriptors.size());
     allocated_descriptors.push_back(descriptor);

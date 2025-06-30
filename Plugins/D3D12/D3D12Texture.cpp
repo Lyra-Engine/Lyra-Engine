@@ -182,8 +182,8 @@ void D3D12TextureView::init_dsv(const D3D12Texture& texture, const GPUTextureVie
 
     // RTV and DSV share the same view (because a texture cannot be both RTV and DSV)
     auto rhi = get_rhi();
-    rtv_view = rhi->dsv_heap.allocate();
-    rhi->device->CreateDepthStencilView(texture.texture, &view_desc, rtv_view.handle);
+    dsv_view = rhi->dsv_heap.allocate();
+    rhi->device->CreateDepthStencilView(texture.texture, &view_desc, dsv_view.handle);
 }
 
 void D3D12TextureView::init_srv(const D3D12Texture& texture, const GPUTextureViewDescriptor& desc)
