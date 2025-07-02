@@ -68,7 +68,8 @@ D3D12PipelineLayout::D3D12PipelineLayout(const GPUPipelineLayoutDescriptor& desc
     bind_group_layouts.reserve(desc.bind_group_layouts.size());
 
     // collect all descriptor ranges from bind group layouts
-    Vector<D3D12_ROOT_PARAMETER1> root_parameters(desc.bind_group_layouts.size());
+    Vector<D3D12_ROOT_PARAMETER1> root_parameters;
+    root_parameters.reserve(desc.bind_group_layouts.size());
     for (auto& bind_group_layout : desc.bind_group_layouts) {
         auto& layout = fetch_resource(rhi->bind_group_layouts, bind_group_layout);
 

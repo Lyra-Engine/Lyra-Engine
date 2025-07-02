@@ -63,16 +63,22 @@ D3D12_RESOURCE_FLAGS infer_texture_flags(GPUTextureUsageFlags usages, GPUTexture
 {
     D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
 
+    bool is_depth_stencil = is_depth_format(format) || is_stencil_format(format);
+
     if (usages.contains(GPUTextureUsage::RENDER_ATTACHMENT)) {
-        if (is_depth_format(format) || is_stencil_format(format)) {
+        if (is_depth_stencil) {
             flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
         } else {
             flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
         }
     }
 
-    if (usages.contains(GPUTextureUsage::TEXTURE_BINDING)) {
+    if (usages.contains(GPUTextureUsage::STORAGE_BINDING)) {
         flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+    }
+
+    if (!usages.contains(GPUTextureUsage::TEXTURE_BINDING)) {
+        flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
     }
 
     return flags;

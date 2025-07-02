@@ -711,10 +711,19 @@ T& fetch_resource(D3D12ResourceManager<T>& manager, Handle handle)
 }
 
 // helper method for error checking
+inline std::string get_hresult_message(HRESULT hr)
+{
+    std::error_code ec(hr, std::system_category());
+    return ec.message();
+}
+
+// helper method for error checking
 inline void ThrowIfFailed(HRESULT hr)
 {
     if (FAILED(hr)) {
-        // Set a breakpoint on this line to catch DirectX API errors
+        // set a breakpoint on this line to catch DirectX API errors
+        auto err = get_hresult_message(hr);
+        fprintf(stderr, "error: %s\n", err.c_str());
         throw std::exception();
     }
 }

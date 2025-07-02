@@ -17,7 +17,7 @@ void D3D12SwapFrame::init(uint backbuffer_index, uint width, uint height)
     texture.format      = infer_texture_format(rhi->surface_format);
     texture.area.width  = width;
     texture.area.height = height;
-    texture.usages      = GPUTextureUsage::RENDER_ATTACHMENT | GPUTextureUsage::COPY_DST | GPUTextureUsage::COPY_DST | GPUTextureUsage::STORAGE_BINDING;
+    texture.usages      = GPUTextureUsage::RENDER_ATTACHMENT | GPUTextureUsage::COPY_DST | GPUTextureUsage::COPY_DST;
     ThrowIfFailed(rhi->swapchain->GetBuffer(backbuffer_index, IID_PPV_ARGS(&texture.texture)));
 
     // create texture view
@@ -69,8 +69,11 @@ bool api::create_surface(GPUSurface& surface, const GPUSurfaceDescriptor& desc)
     uint num_backbuffers = desc.frames_inflight;
 
     // query compatible backbuffer format
-    rhi->surface_format = GPUTextureFormat::BGRA8UNORM_SRGB;
+    rhi->surface_format = GPUTextureFormat::RGBA8UNORM;
     auto format         = infer_texture_format(rhi->surface_format);
+
+    // present mode
+    rhi->present_mode = infer_present_mode(desc.present_mode);
 
     // check if swapchain creation if necessary
     if (rhi->swapchain != nullptr) {
@@ -79,17 +82,20 @@ bool api::create_surface(GPUSurface& surface, const GPUSurfaceDescriptor& desc)
     } else {
         // create swapchain
         DXGI_SWAP_CHAIN_DESC1 swapchain_desc = {};
-        swapchain_desc.BufferCount           = num_backbuffers;
         swapchain_desc.Width                 = width;
         swapchain_desc.Height                = height;
         swapchain_desc.Format                = format;
-        swapchain_desc.BufferUsage           = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+        swapchain_desc.Stereo                = false;
+        swapchain_desc.BufferUsage           = DXGI_USAGE_RENDER_TARGET_OUTPUT; // D3D12 disallows UAV access on back buffer textures (no direct compute shader write)
+        swapchain_desc.BufferCount           = num_backbuffers;
+        swapchain_desc.AlphaMode             = DXGI_ALPHA_MODE_UNSPECIFIED;
         swapchain_desc.SwapEffect            = DXGI_SWAP_EFFECT_FLIP_DISCARD;
         swapchain_desc.SampleDesc.Count      = 1;
+        swapchain_desc.SampleDesc.Quality    = 0;
 
         IDXGISwapChain1* swapchain;
-        ThrowIfFailed(rhi->factory->CreateSwapChainForHwnd(rhi->device, (HWND)desc.window.native, &swapchain_desc, nullptr, nullptr, &swapchain));
-        ThrowIfFailed(rhi->swapchain->QueryInterface(__uuidof(IDXGISwapChain3), (void**)&swapchain));
+        ThrowIfFailed(rhi->factory->CreateSwapChainForHwnd(rhi->graphics_queue, (HWND)desc.window.native, &swapchain_desc, nullptr, nullptr, &swapchain));
+        ThrowIfFailed(swapchain->QueryInterface(__uuidof(IDXGISwapChain3), (void**)&swapchain));
         rhi->swapchain = (IDXGISwapChain3*)swapchain;
     }
 

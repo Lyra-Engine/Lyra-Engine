@@ -9,7 +9,7 @@ D3D12Shader::D3D12Shader()
 D3D12Shader::D3D12Shader(const GPUShaderModuleDescriptor& desc)
 {
     binary.clear();
-
+    binary.reserve(desc.size);
     std::copy(desc.data, desc.data + desc.size, std::back_inserter(binary));
 }
 

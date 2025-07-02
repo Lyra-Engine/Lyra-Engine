@@ -56,9 +56,10 @@ void D3D12Buffer::map(GPUSize64 offset, GPUSize64 size)
     range.Begin       = offset;
     range.End         = offset + size;
 
-    void* mapped = reinterpret_cast<void*>(mapped_data);
+    void* mapped;
     buffer->Map(0, &range, &mapped);
-    mapped_size = size;
+    mapped_data = reinterpret_cast<uint8_t*>(mapped);
+    mapped_size = size == 0 ? this->size : size;
 }
 
 void D3D12Buffer::unmap()

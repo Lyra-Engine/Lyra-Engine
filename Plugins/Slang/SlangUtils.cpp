@@ -24,7 +24,7 @@ void CompilerWrapper::init()
 CompilerWrapper::CompilerWrapper(const CompilerDescriptor& descriptor)
 {
     auto target_desc    = slang::TargetDesc{};
-    target_desc.format  = SLANG_SPIRV;
+    target_desc.format  = select_target(descriptor);
     target_desc.profile = select_profile(descriptor);
 
     auto session_desc        = slang::SessionDesc{};
@@ -67,12 +67,22 @@ CompilerWrapper::CompilerWrapper(const CompilerDescriptor& descriptor)
 SlangProfileID CompilerWrapper::select_profile(const CompilerDescriptor& descriptor) const
 {
     switch (descriptor.target) {
-        case CompileTarget::SPIRV:
-            return GLOBAL_SESSION->findProfile("spirv_1_5");
         case CompileTarget::DXIL:
-            return GLOBAL_SESSION->findProfile("sm_6_0");
+            return GLOBAL_SESSION->findProfile("sm_6_5");
+        case CompileTarget::SPIRV:
         default: // fallback for invalid arguments
             return GLOBAL_SESSION->findProfile("spirv_1_5");
+    }
+}
+
+SlangCompileTarget CompilerWrapper::select_target(const CompilerDescriptor& descriptor) const
+{
+    switch (descriptor.target) {
+        case CompileTarget::DXIL:
+            return SLANG_DXIL;
+        case CompileTarget::SPIRV:
+        default:
+            return SLANG_SPIRV;
     }
 }
 
