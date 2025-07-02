@@ -21,6 +21,20 @@ Logger get_logger()
     return logger;
 }
 
+D3D12PresentMode infer_present_mode(GPUPresentMode mode)
+{
+    switch (mode) {
+        case GPUPresentMode::Immediate:
+            return D3D12PresentMode{0, DXGI_PRESENT_ALLOW_TEARING};
+        case GPUPresentMode::Mailbox:
+            return D3D12PresentMode{1, DXGI_PRESENT_DO_NOT_WAIT};
+        case GPUPresentMode::Fifo:
+        case GPUPresentMode::FifoRelaxed: // not supported, fallback to regular vsync
+        default:
+            return D3D12PresentMode{1, 0};
+    }
+}
+
 D3D12_HEAP_TYPE infer_heap_type(GPUBufferUsageFlags usages)
 {
     D3D12_HEAP_TYPE type = D3D12_HEAP_TYPE_DEFAULT;
@@ -533,4 +547,136 @@ DXGI_FORMAT d3d12enum(GPUIndexFormat format)
         default:
             return DXGI_FORMAT_R32_UINT;
     }
+}
+
+D3D12_BARRIER_LAYOUT d3d12enum(GPUBarrierLayout layout)
+{
+    switch (layout) {
+        case GPUBarrierLayout::UNDEFINED:
+            return D3D12_BARRIER_LAYOUT_UNDEFINED;
+        case GPUBarrierLayout::COMMON:
+            return D3D12_BARRIER_LAYOUT_COMMON;
+        case GPUBarrierLayout::PRESENT:
+            return D3D12_BARRIER_LAYOUT_PRESENT;
+        case GPUBarrierLayout::GENERIC_READ:
+            return D3D12_BARRIER_LAYOUT_GENERIC_READ;
+        case GPUBarrierLayout::RENDER_TARGET:
+            return D3D12_BARRIER_LAYOUT_RENDER_TARGET;
+        case GPUBarrierLayout::UNORDERED_ACCESS:
+            return D3D12_BARRIER_LAYOUT_UNORDERED_ACCESS;
+        case GPUBarrierLayout::DEPTH_STENCIL_WRITE:
+            return D3D12_BARRIER_LAYOUT_DEPTH_STENCIL_WRITE;
+        case GPUBarrierLayout::DEPTH_STENCIL_READ:
+            return D3D12_BARRIER_LAYOUT_DEPTH_STENCIL_READ;
+        case GPUBarrierLayout::SHADER_RESOURCE:
+            return D3D12_BARRIER_LAYOUT_SHADER_RESOURCE;
+        case GPUBarrierLayout::COPY_SOURCE:
+            return D3D12_BARRIER_LAYOUT_COPY_SOURCE;
+        case GPUBarrierLayout::COPY_DEST:
+            return D3D12_BARRIER_LAYOUT_COPY_DEST;
+        case GPUBarrierLayout::RESOLVE_SOURCE:
+            return D3D12_BARRIER_LAYOUT_RESOLVE_SOURCE;
+        case GPUBarrierLayout::RESOLVE_DEST:
+            return D3D12_BARRIER_LAYOUT_RESOLVE_DEST;
+        case GPUBarrierLayout::SHADING_RATE_SOURCE:
+            return D3D12_BARRIER_LAYOUT_SHADING_RATE_SOURCE;
+        case GPUBarrierLayout::VIDEO_DECODE_READ:
+            return D3D12_BARRIER_LAYOUT_VIDEO_DECODE_READ;
+        case GPUBarrierLayout::VIDEO_DECODE_WRITE:
+            return D3D12_BARRIER_LAYOUT_VIDEO_DECODE_WRITE;
+        case GPUBarrierLayout::VIDEO_PROCESS_READ:
+            return D3D12_BARRIER_LAYOUT_VIDEO_PROCESS_READ;
+        case GPUBarrierLayout::VIDEO_PROCESS_WRITE:
+            return D3D12_BARRIER_LAYOUT_VIDEO_PROCESS_WRITE;
+        case GPUBarrierLayout::VIDEO_ENCODE_READ:
+            return D3D12_BARRIER_LAYOUT_VIDEO_ENCODE_READ;
+        case GPUBarrierLayout::VIDEO_ENCODE_WRITE:
+            return D3D12_BARRIER_LAYOUT_VIDEO_ENCODE_WRITE;
+        case GPUBarrierLayout::DIRECT_QUEUE_COMMON:
+            return D3D12_BARRIER_LAYOUT_DIRECT_QUEUE_COMMON;
+        case GPUBarrierLayout::DIRECT_QUEUE_GENERIC_READ:
+            return D3D12_BARRIER_LAYOUT_DIRECT_QUEUE_GENERIC_READ;
+        case GPUBarrierLayout::DIRECT_QUEUE_UNORDERED_ACCESS:
+            return D3D12_BARRIER_LAYOUT_DIRECT_QUEUE_UNORDERED_ACCESS;
+        case GPUBarrierLayout::DIRECT_QUEUE_SHADER_RESOURCE:
+            return D3D12_BARRIER_LAYOUT_DIRECT_QUEUE_SHADER_RESOURCE;
+        case GPUBarrierLayout::DIRECT_QUEUE_COPY_SOURCE:
+            return D3D12_BARRIER_LAYOUT_DIRECT_QUEUE_COPY_SOURCE;
+        case GPUBarrierLayout::DIRECT_QUEUE_COPY_DEST:
+            return D3D12_BARRIER_LAYOUT_DIRECT_QUEUE_COPY_DEST;
+        case GPUBarrierLayout::COMPUTE_QUEUE_COMMON:
+            return D3D12_BARRIER_LAYOUT_COMPUTE_QUEUE_COMMON;
+        case GPUBarrierLayout::COMPUTE_QUEUE_GENERIC_READ:
+            return D3D12_BARRIER_LAYOUT_COMPUTE_QUEUE_GENERIC_READ;
+        case GPUBarrierLayout::COMPUTE_QUEUE_UNORDERED_ACCESS:
+            return D3D12_BARRIER_LAYOUT_COMPUTE_QUEUE_UNORDERED_ACCESS;
+        case GPUBarrierLayout::COMPUTE_QUEUE_SHADER_RESOURCE:
+            return D3D12_BARRIER_LAYOUT_COMPUTE_QUEUE_SHADER_RESOURCE;
+        case GPUBarrierLayout::COMPUTE_QUEUE_COPY_SOURCE:
+            return D3D12_BARRIER_LAYOUT_COMPUTE_QUEUE_COPY_SOURCE;
+        case GPUBarrierLayout::COMPUTE_QUEUE_COPY_DEST:
+            return D3D12_BARRIER_LAYOUT_COMPUTE_QUEUE_COPY_DEST;
+        default:
+            // handle invalid enum value - could throw or return undefined
+            return D3D12_BARRIER_LAYOUT_UNDEFINED;
+    }
+}
+
+D3D12_BARRIER_SYNC d3d12enum(GPUBarrierSyncFlags sync)
+{
+    D3D12_BARRIER_SYNC result = D3D12_BARRIER_SYNC_NONE;
+
+    // clang-format off
+    if (sync.contains(GPUBarrierSync::ALL))                          result |= D3D12_BARRIER_SYNC_ALL;
+    if (sync.contains(GPUBarrierSync::DRAW))                         result |= D3D12_BARRIER_SYNC_DRAW;
+    if (sync.contains(GPUBarrierSync::VERTEX_SHADING))               result |= D3D12_BARRIER_SYNC_VERTEX_SHADING;
+    if (sync.contains(GPUBarrierSync::PIXEL_SHADING))                result |= D3D12_BARRIER_SYNC_PIXEL_SHADING;
+    if (sync.contains(GPUBarrierSync::DEPTH_STENCIL))                result |= D3D12_BARRIER_SYNC_DEPTH_STENCIL;
+    if (sync.contains(GPUBarrierSync::RENDER_TARGET))                result |= D3D12_BARRIER_SYNC_RENDER_TARGET;
+    if (sync.contains(GPUBarrierSync::COMPUTE))                      result |= D3D12_BARRIER_SYNC_COMPUTE_SHADING;
+    if (sync.contains(GPUBarrierSync::RAYTRACING))                   result |= D3D12_BARRIER_SYNC_RAYTRACING;
+    if (sync.contains(GPUBarrierSync::COPY))                         result |= D3D12_BARRIER_SYNC_COPY;
+    if (sync.contains(GPUBarrierSync::RESOLVE))                      result |= D3D12_BARRIER_SYNC_RESOLVE;
+    if (sync.contains(GPUBarrierSync::EXECUTE_INDIRECT))             result |= D3D12_BARRIER_SYNC_EXECUTE_INDIRECT;
+    if (sync.contains(GPUBarrierSync::ALL_SHADING))                  result |= D3D12_BARRIER_SYNC_ALL_SHADING;
+    if (sync.contains(GPUBarrierSync::VIDEO_DECODE))                 result |= D3D12_BARRIER_SYNC_VIDEO_DECODE;
+    if (sync.contains(GPUBarrierSync::VIDEO_ENCODE))                 result |= D3D12_BARRIER_SYNC_VIDEO_ENCODE;
+    if (sync.contains(GPUBarrierSync::ACCELERATION_STRUCTURE_BUILD)) result |= D3D12_BARRIER_SYNC_BUILD_RAYTRACING_ACCELERATION_STRUCTURE;
+    if (sync.contains(GPUBarrierSync::ACCELERATION_STRUCTURE_COPY))  result |= D3D12_BARRIER_SYNC_COPY_RAYTRACING_ACCELERATION_STRUCTURE;
+    // clang-format on
+
+    return result;
+}
+
+D3D12_BARRIER_ACCESS d3d12enum(GPUBarrierAccessFlags access)
+{
+    D3D12_BARRIER_ACCESS result = D3D12_BARRIER_ACCESS_COMMON;
+
+    // clang-format off
+    if (access.contains(GPUBarrierAccess::VERTEX_BUFFER))                result |= D3D12_BARRIER_ACCESS_VERTEX_BUFFER;
+    if (access.contains(GPUBarrierAccess::INDEX_BUFFER))                 result |= D3D12_BARRIER_ACCESS_INDEX_BUFFER;
+    if (access.contains(GPUBarrierAccess::RENDER_TARGET))                result |= D3D12_BARRIER_ACCESS_RENDER_TARGET;
+    if (access.contains(GPUBarrierAccess::UNORDERED_ACCESS))             result |= D3D12_BARRIER_ACCESS_UNORDERED_ACCESS;
+    if (access.contains(GPUBarrierAccess::DEPTH_STENCIL_WRITE))          result |= D3D12_BARRIER_ACCESS_DEPTH_STENCIL_WRITE;
+    if (access.contains(GPUBarrierAccess::DEPTH_STENCIL_READ))           result |= D3D12_BARRIER_ACCESS_DEPTH_STENCIL_READ;
+    if (access.contains(GPUBarrierAccess::SHADER_RESOURCE))              result |= D3D12_BARRIER_ACCESS_SHADER_RESOURCE;
+    if (access.contains(GPUBarrierAccess::STREAM_OUTPUT))                result |= D3D12_BARRIER_ACCESS_STREAM_OUTPUT;
+    if (access.contains(GPUBarrierAccess::INDIRECT_ARGUMENT))            result |= D3D12_BARRIER_ACCESS_INDIRECT_ARGUMENT;
+    if (access.contains(GPUBarrierAccess::COPY_DEST))                    result |= D3D12_BARRIER_ACCESS_COPY_DEST;
+    if (access.contains(GPUBarrierAccess::COPY_SOURCE))                  result |= D3D12_BARRIER_ACCESS_COPY_SOURCE;
+    if (access.contains(GPUBarrierAccess::RESOLVE_DEST))                 result |= D3D12_BARRIER_ACCESS_RESOLVE_DEST;
+    if (access.contains(GPUBarrierAccess::RESOLVE_SOURCE))               result |= D3D12_BARRIER_ACCESS_RESOLVE_SOURCE;
+    if (access.contains(GPUBarrierAccess::ACCELERATION_STRUCTURE_READ))  result |= D3D12_BARRIER_ACCESS_RAYTRACING_ACCELERATION_STRUCTURE_READ;
+    if (access.contains(GPUBarrierAccess::ACCELERATION_STRUCTURE_WRITE)) result |= D3D12_BARRIER_ACCESS_RAYTRACING_ACCELERATION_STRUCTURE_WRITE;
+    if (access.contains(GPUBarrierAccess::SHADING_RATE_SOURCE))          result |= D3D12_BARRIER_ACCESS_SHADING_RATE_SOURCE;
+    if (access.contains(GPUBarrierAccess::VIDEO_DECODE_READ))            result |= D3D12_BARRIER_ACCESS_VIDEO_DECODE_READ;
+    if (access.contains(GPUBarrierAccess::VIDEO_DECODE_WRITE))           result |= D3D12_BARRIER_ACCESS_VIDEO_DECODE_WRITE;
+    if (access.contains(GPUBarrierAccess::VIDEO_PROCESS_READ))           result |= D3D12_BARRIER_ACCESS_VIDEO_PROCESS_READ;
+    if (access.contains(GPUBarrierAccess::VIDEO_PROCESS_WRITE))          result |= D3D12_BARRIER_ACCESS_VIDEO_PROCESS_WRITE;
+    if (access.contains(GPUBarrierAccess::VIDEO_ENCODE_READ))            result |= D3D12_BARRIER_ACCESS_VIDEO_ENCODE_READ;
+    if (access.contains(GPUBarrierAccess::VIDEO_ENCODE_WRITE))           result |= D3D12_BARRIER_ACCESS_VIDEO_ENCODE_WRITE;
+    if (access.contains(GPUBarrierAccess::NO_ACCESS))                    result |= D3D12_BARRIER_ACCESS_NO_ACCESS;
+    // clang-format on
+
+    return result;
 }

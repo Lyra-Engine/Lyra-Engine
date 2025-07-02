@@ -137,68 +137,89 @@ void api::delete_fence(GPUFenceHandle fence)
     get_rhi()->fences.remove(fence.value);
 }
 
-// bool api::create_blas(GPUBlasHandle& blas, const GPUBlasDescriptor& desc, const Vector<GPUBlasGeometrySizeDescriptor>& sizes)
-// {
-//     auto obj = D3D12Blas(desc, sizes);
-//     auto rhi = get_rhi();
-//     auto ind = rhi->blases.add(obj);
-//
-//     blas = GPUBlasHandle(ind);
-//     return true;
-// }
-//
-// void api::delete_blas(GPUBlasHandle blas)
-// {
-//     get_rhi()->blases.remove(blas.value);
-// }
-//
-// bool api::create_tlas(GPUTlasHandle& tlas, const GPUTlasDescriptor& desc)
-// {
-//     auto obj = D3D12Tlas(desc);
-//     auto rhi = get_rhi();
-//     auto ind = rhi->tlases.add(obj);
-//
-//     tlas = GPUTlasHandle(ind);
-//     return true;
-// }
-//
-// void api::delete_tlas(GPUTlasHandle tlas)
-// {
-//     get_rhi()->tlases.remove(tlas.value);
-// }
-//
-// bool api::get_blas_sizes(GPUBlasHandle blas, GPUBVHSizes& sizes)
-// {
-//     auto& size_info   = fetch_resource(get_rhi()->blases, blas).sizes;
-//     sizes.bvh_size    = size_info.accelerationStructureSize;
-//     sizes.build_size  = size_info.buildScratchSize;
-//     sizes.update_size = size_info.updateScratchSize;
-//     return true;
-// }
-//
-// bool api::get_tlas_sizes(GPUTlasHandle tlas, GPUBVHSizes& sizes)
-// {
-//     auto& size_info   = fetch_resource(get_rhi()->tlases, tlas).sizes;
-//     sizes.bvh_size    = size_info.accelerationStructureSize;
-//     sizes.build_size  = size_info.buildScratchSize;
-//     sizes.update_size = size_info.updateScratchSize;
-//     return true;
-// }
-//
-// bool api::create_query_set(GPUQuerySetHandle& query_set, const GPUQuerySetDescriptor& desc)
-// {
-//     auto obj = D3D12QuerySet(desc);
-//     auto rhi = get_rhi();
-//     auto ind = rhi->query_sets.add(obj);
-//
-//     query_set = GPUQuerySetHandle(ind);
-//     return true;
-// }
-//
-// void api::delete_query_set(GPUQuerySetHandle query_set)
-// {
-//     get_rhi()->query_sets.remove(query_set.value);
-// }
+bool api::create_blas(GPUBlasHandle& blas, const GPUBlasDescriptor& desc, const Vector<GPUBlasGeometrySizeDescriptor>& sizes)
+{
+    assert(!!!"api::create_blas(...) is not implemented!");
+    return false;
+
+    // auto obj = D3D12Blas(desc, sizes);
+    // auto rhi = get_rhi();
+    // auto ind = rhi->blases.add(obj);
+    //
+    // blas = GPUBlasHandle(ind);
+    // return true;
+}
+
+void api::delete_blas(GPUBlasHandle blas)
+{
+    assert(!!!"api::delete_blas(...) is not implemented!");
+
+    // get_rhi()->blases.remove(blas.value);
+}
+
+bool api::create_tlas(GPUTlasHandle& tlas, const GPUTlasDescriptor& desc)
+{
+    assert(!!!"api::create_tlas(...) is not implemented!");
+    return false;
+
+    // auto obj = D3D12Tlas(desc);
+    // auto rhi = get_rhi();
+    // auto ind = rhi->tlases.add(obj);
+    //
+    // tlas = GPUTlasHandle(ind);
+    // return true;
+}
+
+void api::delete_tlas(GPUTlasHandle tlas)
+{
+    assert(!!!"api::delete_tlas(...) is not implemented!");
+
+    // get_rhi()->tlases.remove(tlas.value);
+}
+
+bool api::get_blas_sizes(GPUBlasHandle blas, GPUBVHSizes& sizes)
+{
+    assert(!!!"api::get_blas_sizes(...) is not implemented!");
+    return false;
+
+    // auto& size_info   = fetch_resource(get_rhi()->blases, blas).sizes;
+    // sizes.bvh_size    = size_info.accelerationStructureSize;
+    // sizes.build_size  = size_info.buildScratchSize;
+    // sizes.update_size = size_info.updateScratchSize;
+    // return true;
+}
+
+bool api::get_tlas_sizes(GPUTlasHandle tlas, GPUBVHSizes& sizes)
+{
+    assert(!!!"api::get_tlas_sizes(...) is not implemented!");
+    return false;
+
+    // auto& size_info   = fetch_resource(get_rhi()->tlases, tlas).sizes;
+    // sizes.bvh_size    = size_info.accelerationStructureSize;
+    // sizes.build_size  = size_info.buildScratchSize;
+    // sizes.update_size = size_info.updateScratchSize;
+    // return true;
+}
+
+bool api::create_query_set(GPUQuerySetHandle& query_set, const GPUQuerySetDescriptor& desc)
+{
+    assert(!!!"api::create_query_set(...) is not implemented!");
+    return false;
+
+    // auto obj = D3D12QuerySet(desc);
+    // auto rhi = get_rhi();
+    // auto ind = rhi->query_sets.add(obj);
+    //
+    // query_set = GPUQuerySetHandle(ind);
+    // return true;
+}
+
+void api::delete_query_set(GPUQuerySetHandle query_set)
+{
+    assert(!!!"api::delete_query_set(...) is not implemented!");
+
+    // get_rhi()->query_sets.remove(query_set.value);
+}
 
 bool api::create_bind_group_layout(GPUBindGroupLayoutHandle& layout, const GPUBindGroupLayoutDescriptor& desc)
 {
@@ -275,11 +296,13 @@ void api::delete_raytracing_pipeline(GPURayTracingPipelineHandle pipeline)
     get_rhi()->pipelines.remove(pipeline.value);
 }
 
-// bool api::create_bind_group(GPUBindGroupHandle& bind_group, const GPUBindGroupDescriptor& desc)
-// {
-//     bind_group = ::create_bind_group(desc);
-//     return true;
-// }
+bool api::create_bind_group(GPUBindGroupHandle& bind_group, const GPUBindGroupDescriptor& desc)
+{
+    auto  rhi  = get_rhi();
+    auto& frm  = rhi->current_frame();
+    bind_group = frm.create(desc);
+    return true;
+}
 
 bool api::create_command_buffer(GPUCommandEncoderHandle& cmdbuffer, const GPUCommandBufferDescriptor& descriptor)
 {
@@ -337,88 +360,88 @@ LYRA_EXPORT auto cleanup() -> void
 
 LYRA_EXPORT auto create() -> RenderAPI
 {
-    auto api                 = RenderAPI{};
-    api.get_api_name         = get_api_name;
-    api.create_instance      = api::create_instance;
-    api.delete_instance      = api::delete_instance;
-    api.create_adapter       = api::create_adapter;
-    api.delete_adapter       = api::delete_adapter;
-    api.create_device        = api::create_device;
-    api.delete_device        = api::delete_device;
-    api.create_surface       = api::create_surface;
-    api.delete_surface       = api::delete_surface;
-    api.get_surface_extent   = api::get_surface_extent;
-    api.get_surface_format   = api::get_surface_format;
-    api.create_buffer        = api::create_buffer;
-    api.delete_buffer        = api::delete_buffer;
-    api.create_texture       = api::create_texture;
-    api.delete_texture       = api::delete_texture;
-    api.create_texture_view  = api::create_texture_view;
-    api.create_sampler       = api::create_sampler;
-    api.delete_sampler       = api::delete_sampler;
-    api.create_fence         = api::create_fence;
-    api.delete_fence         = api::delete_fence;
-    api.create_shader_module = api::create_shader_module;
-    api.delete_shader_module = api::delete_shader_module;
-    // api.create_blas                      = api::create_blas;
-    // api.delete_blas                      = api::delete_blas;
-    // api.create_tlas                      = api::create_tlas;
-    // api.delete_tlas                      = api::delete_tlas;
-    api.create_pipeline_layout     = api::create_pipeline_layout;
-    api.delete_pipeline_layout     = api::delete_pipeline_layout;
-    api.create_render_pipeline     = api::create_render_pipeline;
-    api.delete_render_pipeline     = api::delete_render_pipeline;
-    api.create_compute_pipeline    = api::create_compute_pipeline;
-    api.delete_compute_pipeline    = api::delete_compute_pipeline;
-    api.create_raytracing_pipeline = api::create_raytracing_pipeline;
-    api.delete_raytracing_pipeline = api::delete_raytracing_pipeline;
-    // api.create_bind_group                = api::create_bind_group;
-    api.create_bind_group_layout = api::create_bind_group_layout;
-    api.delete_bind_group_layout = api::delete_bind_group_layout;
-    api.wait_idle                = api::wait_idle;
-    api.wait_fence               = api::wait_fence;
-    api.map_buffer               = api::map_buffer;
-    api.unmap_buffer             = api::unmap_buffer;
-    api.get_mapped_range         = api::get_mapped_range;
-    api.create_command_buffer    = api::create_command_buffer;
-    api.create_command_bundle    = api::create_command_bundle;
-    api.submit_command_buffer    = api::submit_command_buffer;
-    // api.get_blas_sizes                   = api::get_blas_sizes;
-    // api.get_tlas_sizes                   = api::get_tlas_sizes;
-    // api.acquire_next_frame = api::acquire_next_frame;
-    // api.present_curr_frame = api::present_curr_frame;
-    // api.cmd_wait_fence                   = cmd::wait_fence;
-    // api.cmd_signal_fence                 = cmd::signal_fence;
-    // api.cmd_begin_render_pass            = cmd::begin_render_pass;
-    // api.cmd_end_render_pass              = cmd::end_render_pass;
-    // api.cmd_set_render_pipeline          = cmd::set_render_pipeline;
-    // api.cmd_set_compute_pipeline         = cmd::set_compute_pipeline;
-    // api.cmd_set_raytracing_pipeline      = cmd::set_raytracing_pipeline;
-    // api.cmd_set_bind_group               = cmd::set_bind_group;
-    // api.cmd_set_index_buffer             = cmd::set_index_buffer;
-    // api.cmd_set_vertex_buffer            = cmd::set_vertex_buffer;
-    // api.cmd_draw                         = cmd::draw;
-    // api.cmd_draw_indexed                 = cmd::draw_indexed;
-    // api.cmd_draw_indirect                = cmd::draw_indirect;
-    // api.cmd_draw_indexed_indirect        = cmd::draw_indexed_indirect;
-    // api.cmd_dispatch_workgroups          = cmd::dispatch_workgroups;
-    // api.cmd_dispatch_workgroups_indirect = cmd::dispatch_workgroups_indirect;
-    // api.cmd_copy_buffer_to_buffer        = cmd::copy_buffer_to_buffer;
-    // api.cmd_copy_buffer_to_texture       = cmd::copy_buffer_to_texture;
-    // api.cmd_copy_texture_to_buffer       = cmd::copy_texture_to_buffer;
-    // api.cmd_copy_texture_to_texture      = cmd::copy_texture_to_texture;
-    // api.cmd_clear_buffer                 = cmd::clear_buffer;
-    // api.cmd_set_viewport                 = cmd::set_viewport;
-    // api.cmd_set_scissor_rect             = cmd::set_scissor_rect;
-    // api.cmd_set_blend_constant           = cmd::set_blend_constant;
-    // api.cmd_set_stencil_reference        = cmd::set_stencil_reference;
-    // api.cmd_begin_occlusion_query        = cmd::begin_occlusion_query;
-    // api.cmd_end_occlusion_query          = cmd::end_occlusion_query;
-    // api.cmd_write_timestamp              = cmd::write_timestamp;
-    // api.cmd_write_blas_properties        = cmd::write_blas_properties;
-    // api.cmd_resolve_query_set            = cmd::resolve_query_set;
-    // api.cmd_memory_barrier               = cmd::memory_barrier;
-    // api.cmd_buffer_barrier               = cmd::buffer_barrier;
-    // api.cmd_texture_barrier              = cmd::texture_barrier;
+    auto api                             = RenderAPI{};
+    api.get_api_name                     = get_api_name;
+    api.create_instance                  = api::create_instance;
+    api.delete_instance                  = api::delete_instance;
+    api.create_adapter                   = api::create_adapter;
+    api.delete_adapter                   = api::delete_adapter;
+    api.create_device                    = api::create_device;
+    api.delete_device                    = api::delete_device;
+    api.create_surface                   = api::create_surface;
+    api.delete_surface                   = api::delete_surface;
+    api.get_surface_extent               = api::get_surface_extent;
+    api.get_surface_format               = api::get_surface_format;
+    api.create_buffer                    = api::create_buffer;
+    api.delete_buffer                    = api::delete_buffer;
+    api.create_texture                   = api::create_texture;
+    api.delete_texture                   = api::delete_texture;
+    api.create_texture_view              = api::create_texture_view;
+    api.create_sampler                   = api::create_sampler;
+    api.delete_sampler                   = api::delete_sampler;
+    api.create_fence                     = api::create_fence;
+    api.delete_fence                     = api::delete_fence;
+    api.create_shader_module             = api::create_shader_module;
+    api.delete_shader_module             = api::delete_shader_module;
+    api.create_blas                      = api::create_blas;
+    api.delete_blas                      = api::delete_blas;
+    api.create_tlas                      = api::create_tlas;
+    api.delete_tlas                      = api::delete_tlas;
+    api.create_pipeline_layout           = api::create_pipeline_layout;
+    api.delete_pipeline_layout           = api::delete_pipeline_layout;
+    api.create_render_pipeline           = api::create_render_pipeline;
+    api.delete_render_pipeline           = api::delete_render_pipeline;
+    api.create_compute_pipeline          = api::create_compute_pipeline;
+    api.delete_compute_pipeline          = api::delete_compute_pipeline;
+    api.create_raytracing_pipeline       = api::create_raytracing_pipeline;
+    api.delete_raytracing_pipeline       = api::delete_raytracing_pipeline;
+    api.create_bind_group                = api::create_bind_group;
+    api.create_bind_group_layout         = api::create_bind_group_layout;
+    api.delete_bind_group_layout         = api::delete_bind_group_layout;
+    api.wait_idle                        = api::wait_idle;
+    api.wait_fence                       = api::wait_fence;
+    api.map_buffer                       = api::map_buffer;
+    api.unmap_buffer                     = api::unmap_buffer;
+    api.get_mapped_range                 = api::get_mapped_range;
+    api.create_command_buffer            = api::create_command_buffer;
+    api.create_command_bundle            = api::create_command_bundle;
+    api.submit_command_buffer            = api::submit_command_buffer;
+    api.get_blas_sizes                   = api::get_blas_sizes;
+    api.get_tlas_sizes                   = api::get_tlas_sizes;
+    api.acquire_next_frame               = api::acquire_next_frame;
+    api.present_curr_frame               = api::present_curr_frame;
+    api.cmd_wait_fence                   = cmd::wait_fence;
+    api.cmd_signal_fence                 = cmd::signal_fence;
+    api.cmd_begin_render_pass            = cmd::begin_render_pass;
+    api.cmd_end_render_pass              = cmd::end_render_pass;
+    api.cmd_set_render_pipeline          = cmd::set_render_pipeline;
+    api.cmd_set_compute_pipeline         = cmd::set_compute_pipeline;
+    api.cmd_set_raytracing_pipeline      = cmd::set_raytracing_pipeline;
+    api.cmd_set_bind_group               = cmd::set_bind_group;
+    api.cmd_set_index_buffer             = cmd::set_index_buffer;
+    api.cmd_set_vertex_buffer            = cmd::set_vertex_buffer;
+    api.cmd_draw                         = cmd::draw;
+    api.cmd_draw_indexed                 = cmd::draw_indexed;
+    api.cmd_draw_indirect                = cmd::draw_indirect;
+    api.cmd_draw_indexed_indirect        = cmd::draw_indexed_indirect;
+    api.cmd_dispatch_workgroups          = cmd::dispatch_workgroups;
+    api.cmd_dispatch_workgroups_indirect = cmd::dispatch_workgroups_indirect;
+    api.cmd_copy_buffer_to_buffer        = cmd::copy_buffer_to_buffer;
+    api.cmd_copy_buffer_to_texture       = cmd::copy_buffer_to_texture;
+    api.cmd_copy_texture_to_buffer       = cmd::copy_texture_to_buffer;
+    api.cmd_copy_texture_to_texture      = cmd::copy_texture_to_texture;
+    api.cmd_clear_buffer                 = cmd::clear_buffer;
+    api.cmd_set_viewport                 = cmd::set_viewport;
+    api.cmd_set_scissor_rect             = cmd::set_scissor_rect;
+    api.cmd_set_blend_constant           = cmd::set_blend_constant;
+    api.cmd_set_stencil_reference        = cmd::set_stencil_reference;
+    api.cmd_begin_occlusion_query        = cmd::begin_occlusion_query;
+    api.cmd_end_occlusion_query          = cmd::end_occlusion_query;
+    api.cmd_write_timestamp              = cmd::write_timestamp;
+    api.cmd_write_blas_properties        = cmd::write_blas_properties;
+    api.cmd_resolve_query_set            = cmd::resolve_query_set;
+    api.cmd_memory_barrier               = cmd::memory_barrier;
+    api.cmd_buffer_barrier               = cmd::buffer_barrier;
+    api.cmd_texture_barrier              = cmd::texture_barrier;
     return api;
 }

@@ -22,7 +22,7 @@ D3D12Texture::D3D12Texture(const GPUTextureDescriptor& desc)
     tex_desc.Height              = desc.size.height;
     tex_desc.DepthOrArraySize    = 1;
     tex_desc.MipLevels           = 1;
-    tex_desc.Format              = DXGI_FORMAT_R8G8B8A8_UNORM;
+    tex_desc.Format              = infer_texture_format(desc.format);
     tex_desc.SampleDesc.Count    = 1;
     tex_desc.Layout              = D3D12_TEXTURE_LAYOUT_UNKNOWN;
     tex_desc.Flags               = infer_texture_flags(desc.usage, desc.format);
@@ -37,6 +37,7 @@ D3D12Texture::D3D12Texture(const GPUTextureDescriptor& desc)
         IID_PPV_ARGS(&texture)));
 
     // record basic information
+    format      = tex_desc.Format;
     samples     = desc.sample_count;
     usages      = desc.usage;
     area.width  = desc.size.width;

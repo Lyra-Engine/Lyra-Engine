@@ -22,8 +22,8 @@ using namespace lyra::rhi;
 // but it is a combination of swap effect and sync interval.
 struct D3D12PresentMode
 {
-    DXGI_SWAP_EFFECT swap_effect;
-    uint             sync_interval;
+    uint sync_interval = 1;
+    uint sync_flags    = 0;
 };
 
 template <typename T>
@@ -105,6 +105,7 @@ struct D3D12HeapGPU
 struct D3D12Fence
 {
     ID3D12Fence* fence = nullptr;
+    HANDLE       event;
 
     mutable uint64_t target = 0ull;
 
@@ -158,6 +159,7 @@ struct D3D12TextureView;
 struct D3D12Texture
 {
     ID3D12Resource*      texture = nullptr;
+    DXGI_FORMAT          format  = DXGI_FORMAT_UNKNOWN;
     GPUExtent2D          area    = {};
     GPUTextureUsageFlags usages  = 0;
     uint                 samples = 1;
@@ -407,7 +409,6 @@ struct D3D12SwapFrame
 {
     GPUTextureHandle     texture;
     GPUTextureViewHandle view;
-    GPUFenceHandle       render_complete_semaphore;
 
     // implementation in D3D12Swapchain.cpp
     void init(uint backbuffer_index, uint width, uint height);
@@ -421,8 +422,7 @@ struct D3D12Frame
     // frame id must match D3D12Frame's id
     uint32_t frame_id = 0u;
 
-    GPUFenceHandle   image_available_semaphore;
-    GPUFenceHandle   render_complete_semaphore; // NOTE: D3D12Frame does NOT own this.
+    GPUFenceHandle   render_complete_fence;
     D3D12CommandPool bundle_command_pool;
     D3D12CommandPool compute_command_pool;
     D3D12CommandPool graphics_command_pool;
@@ -470,6 +470,9 @@ struct D3D12RHI
     ID3D12CommandQueue* transfer_queue = nullptr;
     ID3D12CommandQueue* graphics_queue = nullptr;
     ID3D12CommandQueue* compute_queue  = nullptr;
+
+    // similar to Vulkan's VkPresentModeKHR
+    D3D12PresentMode present_mode = {};
 
     // fence used to wait on queues for completion
     D3D12Fence idle_fence;
@@ -663,6 +666,7 @@ void set_rhi(D3D12RHI* instance);
 auto get_rhi() -> D3D12RHI*;
 
 // helpers
+auto infer_present_mode(GPUPresentMode mode) -> D3D12PresentMode;
 auto infer_heap_type(GPUBufferUsageFlags usages) -> D3D12_HEAP_TYPE;
 auto infer_buffer_flags(GPUBufferUsageFlags usages) -> D3D12_RESOURCE_FLAGS;
 auto infer_texture_flags(GPUTextureUsageFlags usages, GPUTextureFormat format) -> D3D12_RESOURCE_FLAGS;
@@ -679,6 +683,9 @@ auto d3d12enum(GPUStencilOperation cull) -> D3D12_STENCIL_OP;
 auto d3d12enum(GPUBlendOperation op) -> D3D12_BLEND_OP;
 auto d3d12enum(GPUBlendFactor factor) -> D3D12_BLEND;
 auto d3d12enum(GPUIndexFormat format) -> DXGI_FORMAT;
+auto d3d12enum(GPUBarrierLayout layout) -> D3D12_BARRIER_LAYOUT;
+auto d3d12enum(GPUBarrierSyncFlags sync) -> D3D12_BARRIER_SYNC;
+auto d3d12enum(GPUBarrierAccessFlags access) -> D3D12_BARRIER_ACCESS;
 
 template <typename T, typename Handle>
 T& fetch_resource(D3D12ResourceManager<T>& manager, Handle handle)

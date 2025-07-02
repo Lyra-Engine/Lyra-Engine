@@ -11,12 +11,10 @@ void D3D12SwapFrame::init(uint backbuffer_index, uint width, uint height)
     // destroy existing handles
     destroy();
 
-    // create fence
-    D3D12Fence fence(true);
-
     // create texture
     D3D12Texture texture;
     texture.samples     = 1;
+    texture.format      = infer_texture_format(rhi->surface_format);
     texture.area.width  = width;
     texture.area.height = height;
     texture.usages      = GPUTextureUsage::RENDER_ATTACHMENT | GPUTextureUsage::COPY_DST | GPUTextureUsage::COPY_DST | GPUTextureUsage::STORAGE_BINDING;
@@ -36,9 +34,8 @@ void D3D12SwapFrame::init(uint backbuffer_index, uint width, uint height)
     D3D12TextureView view(texture, view_desc);
 
     // fill in swap frame
-    this->texture                   = GPUTextureHandle(rhi->textures.add(texture));
-    this->view                      = GPUTextureViewHandle(rhi->views.add(view));
-    this->render_complete_semaphore = GPUFenceHandle(rhi->fences.add(fence));
+    this->texture = GPUTextureHandle(rhi->textures.add(texture));
+    this->view    = GPUTextureViewHandle(rhi->views.add(view));
 }
 
 void D3D12SwapFrame::destroy()
@@ -54,12 +51,6 @@ void D3D12SwapFrame::destroy()
     // clean up existing texture view
     if (view.valid()) {
         fetch_resource(rhi->views, view).destroy();
-        rhi->views.remove(view.value);
-    }
-
-    // clean up existing fence
-    if (render_complete_semaphore.valid()) {
-        fetch_resource(rhi->fences, render_complete_semaphore).destroy();
         rhi->views.remove(view.value);
     }
 }
@@ -130,6 +121,24 @@ bool api::create_surface(GPUSurface& surface, const GPUSurfaceDescriptor& desc)
     return true;
 }
 
+void default_swapchain_image_barrier(ID3D12GraphicsCommandList* command_buffer)
+{
+    auto rhi = get_rhi();
+
+    auto& frame   = rhi->swapchain_frames.at(rhi->current_image_index);
+    auto& texture = fetch_resource(rhi->textures, frame.texture);
+
+    D3D12_RESOURCE_BARRIER barrier = {};
+    barrier.Type                   = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    barrier.Flags                  = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+    barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+    barrier.Transition.StateAfter  = D3D12_RESOURCE_STATE_PRESENT;
+    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+    barrier.Transition.pResource   = texture.texture;
+
+    command_buffer->ResourceBarrier(1, &barrier);
+}
+
 void api::delete_surface()
 {
     auto rhi = get_rhi();
@@ -142,4 +151,59 @@ void api::delete_surface()
         rhi->swapchain->Release();
         rhi->swapchain = nullptr;
     }
+}
+
+bool api::acquire_next_frame(GPUTextureHandle& texture, GPUTextureViewHandle& view, GPUFenceHandle& image_available_fence, GPUFenceHandle& render_complete_fence, bool& suboptimal)
+{
+    auto rhi = get_rhi();
+
+    // initialize suboptimal
+    suboptimal = false;
+
+    // acquire next frame
+    rhi->current_image_index = rhi->swapchain->GetCurrentBackBufferIndex();
+
+    auto& backbuffer = rhi->swapchain_frames.at(rhi->current_image_index);
+
+    // query the current frame
+    auto& frame    = rhi->current_frame();
+    frame.frame_id = rhi->current_frame_index;
+
+    // wait for inflght frame to complete
+    frame.wait();
+    frame.reset();
+
+    // update swapchain view (this must be done after current_image_index is updated)
+    texture               = backbuffer.texture;
+    view                  = backbuffer.view;
+    render_complete_fence = frame.render_complete_fence;
+
+    return true;
+}
+
+bool api::present_curr_frame()
+{
+    auto rhi = get_rhi();
+
+    // query the current frame (also update the frame index)
+    auto& frame = rhi->current_frame();
+
+    // query the semaphores
+    auto& render_complete_fence = fetch_resource(rhi->fences, frame.render_complete_fence);
+
+    // check if nothing has been down, insert dummy workloads if needed
+    if (frame.allocated_command_buffers.empty()) {
+        auto  command_buffer_handle = frame.allocate(GPUQueueType::COMPUTE, true);
+        auto& command_buffer        = frame.allocated_command_buffers.at(command_buffer_handle.value);
+        command_buffer.begin();
+        default_swapchain_image_barrier(command_buffer.command_buffer);
+        command_buffer.end();
+        command_buffer.signal(render_complete_fence, GPUBarrierSync::ALL);
+        command_buffer.submit();
+    }
+
+    // present to swapchain
+    rhi->swapchain->Present(rhi->present_mode.sync_interval, rhi->present_mode.sync_flags);
+    rhi->current_frame_index++;
+    return true;
 }

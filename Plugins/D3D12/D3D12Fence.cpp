@@ -17,15 +17,16 @@ void D3D12Fence::init(bool signaled)
 
     auto rhi = get_rhi();
     ThrowIfFailed(rhi->device->CreateFence(signaled ? 1 : 0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence)));
+
+    // create an event to allow it to be waitable on CPU
+    event = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 }
 
 void D3D12Fence::wait(uint64_t timeout)
 {
     if (fence->GetCompletedValue() < target) {
-        HANDLE event = CreateEvent(nullptr, FALSE, FALSE, nullptr);
         fence->SetEventOnCompletion(target, event);
         WaitForSingleObject(event, timeout);
-        CloseHandle(event);
     }
 }
 
@@ -49,5 +50,7 @@ void D3D12Fence::destroy()
     if (fence) {
         fence->Release();
         fence = nullptr;
+
+        CloseHandle(event);
     }
 }

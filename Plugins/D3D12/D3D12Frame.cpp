@@ -5,11 +5,6 @@ constexpr uint MAX_CBV_SRV_UAV_HEAP_SIZE = 1u << 16;
 
 void D3D12Frame::init()
 {
-    auto rhi = get_rhi();
-
-    // init synchronization primitives
-    image_available_semaphore = GPUFenceHandle(rhi->fences.add(D3D12Fence(true)));
-
     // initialize command pools / allocators
     bundle_command_pool.init(D3D12_COMMAND_LIST_TYPE_BUNDLE);
     compute_command_pool.init(D3D12_COMMAND_LIST_TYPE_COMPUTE);
@@ -19,13 +14,16 @@ void D3D12Frame::init()
     // initialize descriptor heap
     sampler_heap.init(MAX_SAMPLERS_HEAP_SIZE, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
     cbv_srv_uav_heap.init(MAX_CBV_SRV_UAV_HEAP_SIZE, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+
+    D3D12Fence fence(true);
+    render_complete_fence = GPUFenceHandle(get_rhi()->fences.add(fence));
 }
 
 void D3D12Frame::wait()
 {
-    if (render_complete_semaphore.valid()) {
+    if (render_complete_fence.valid()) {
         auto rhi = get_rhi();
-        fetch_resource(rhi->fences, render_complete_semaphore).wait();
+        fetch_resource(rhi->fences, render_complete_fence).wait();
     }
 }
 
@@ -40,6 +38,9 @@ void D3D12Frame::reset()
     // clean up descriptor heap
     sampler_heap.reset();
     cbv_srv_uav_heap.reset();
+
+    // reset fence
+    fetch_resource(get_rhi()->fences, render_complete_fence).reset();
 }
 
 void D3D12Frame::destroy()
@@ -55,11 +56,6 @@ void D3D12Frame::destroy()
     // destroy descriptor heap
     sampler_heap.destroy();
     cbv_srv_uav_heap.destroy();
-
-    auto rhi = get_rhi();
-
-    // destroy synchronization primitives
-    fetch_resource(rhi->fences, image_available_semaphore).destroy();
 }
 
 GPUCommandEncoderHandle D3D12Frame::allocate(GPUQueueType type, bool primary)
