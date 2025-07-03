@@ -413,6 +413,7 @@ struct D3D12CommandPool
 
 struct D3D12SwapFrame
 {
+    GPUFenceHandle       image_available_fence;
     GPUTextureHandle     texture;
     GPUTextureViewHandle view;
 
@@ -442,6 +443,7 @@ struct D3D12Frame
     // frame id must match D3D12Frame's id
     uint32_t frame_id = 0u;
 
+    GPUFenceHandle   image_available_fence; // D3D12Frame does NOT own this!!!
     GPUFenceHandle   render_complete_fence;
     D3D12CommandPool bundle_command_pool;
     D3D12CommandPool compute_command_pool;
@@ -535,14 +537,17 @@ struct D3D12RHI
 
     void wait_idle()
     {
-        idle_fence.signal(graphics_queue, idle_fence.target++);
+        idle_fence.signal(graphics_queue, idle_fence.target);
         idle_fence.wait();
+        idle_fence.reset();
 
-        idle_fence.signal(compute_queue, idle_fence.target++);
+        idle_fence.signal(compute_queue, idle_fence.target);
         idle_fence.wait();
+        idle_fence.reset();
 
-        idle_fence.signal(transfer_queue, idle_fence.target++);
+        idle_fence.signal(transfer_queue, idle_fence.target);
         idle_fence.wait();
+        idle_fence.reset();
     }
 };
 

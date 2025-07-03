@@ -85,7 +85,7 @@ GPUCommandEncoderHandle D3D12Frame::allocate(GPUQueueType type, bool primary)
         if (!cmd.used && cmd.type == type && cmd.primary == primary) {
             cmd.used = true;
             set_descriptor_heap(cmd.cmd);
-            return GPUCommandEncoderHandle(allocated_command_buffers.size());
+            return GPUCommandEncoderHandle(i);
         }
     }
 

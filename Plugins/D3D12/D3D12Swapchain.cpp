@@ -14,6 +14,9 @@ void D3D12SwapFrame::init(uint backbuffer_index, uint width, uint height)
     // destroy existing handles
     destroy();
 
+    // create fence handle
+    D3D12Fence fence(true);
+
     // create texture
     D3D12Texture texture;
     texture.samples     = 1;
@@ -38,13 +41,20 @@ void D3D12SwapFrame::init(uint backbuffer_index, uint width, uint height)
     D3D12TextureView view(texture, view_desc);
 
     // fill in swap frame
-    this->texture = GPUTextureHandle(rhi->textures.add(texture));
-    this->view    = GPUTextureViewHandle(rhi->views.add(view));
+    this->image_available_fence = GPUFenceHandle(rhi->fences.add(fence));
+    this->texture               = GPUTextureHandle(rhi->textures.add(texture));
+    this->view                  = GPUTextureViewHandle(rhi->views.add(view));
 }
 
 void D3D12SwapFrame::destroy()
 {
     auto rhi = get_rhi();
+
+    // clean up existing fence
+    if (image_available_fence.valid()) {
+        fetch_resource(rhi->fences, image_available_fence).destroy();
+        rhi->fences.remove(image_available_fence.value);
+    }
 
     // clean up existing texture
     if (texture.valid()) {
@@ -56,21 +66,6 @@ void D3D12SwapFrame::destroy()
     if (view.valid()) {
         fetch_resource(rhi->views, view).destroy();
         rhi->views.remove(view.value);
-    }
-}
-
-void set_swapchain_name(IDXGISwapChain3* swapchain, const wchar_t* name)
-{
-    ID3D12Object* d3d12_object = nullptr;
-
-    HRESULT hr = swapchain->QueryInterface(__uuidof(ID3D12Object), (void**)&d3d12_object);
-    if (SUCCEEDED(hr)) {
-        hr = d3d12_object->SetName(name);
-        if (FAILED(hr))
-            get_logger()->error("Failed to set swapchain name!");
-        d3d12_object->Release();
-    } else {
-        get_logger()->error("Failed to query interface for swapchain!");
     }
 }
 
@@ -116,7 +111,6 @@ bool api::create_surface(GPUSurface& surface, const GPUSurfaceDescriptor& desc)
         ThrowIfFailed(rhi->factory->CreateSwapChainForHwnd(rhi->graphics_queue, (HWND)desc.window.native, &swapchain_desc, nullptr, nullptr, &swapchain));
         ThrowIfFailed(swapchain->QueryInterface(__uuidof(IDXGISwapChain3), (void**)&swapchain));
         rhi->swapchain = (IDXGISwapChain3*)swapchain;
-        set_swapchain_name(rhi->swapchain, L"Swapchain");
     }
 
     // destroy swap frames
@@ -186,21 +180,19 @@ bool api::acquire_next_frame(GPUTextureHandle& texture, GPUTextureViewHandle& vi
     // initialize suboptimal
     suboptimal = false;
 
-    // previous frame
-    auto& previous_frame    = rhi->current_frame();
-    previous_frame.frame_id = rhi->current_frame_index++;
-    image_available_fence   = previous_frame.render_complete_fence;
+    // image available from swapchain frame
+    image_available_fence = rhi->swapchain_frames.at(rhi->current_image_index).image_available_fence;
 
-    // current frame
-    auto& current_frame    = rhi->current_frame();
-    current_frame.frame_id = rhi->current_frame_index;
-    render_complete_fence  = current_frame.render_complete_fence;
+    // render complete from current frame
+    auto& current_frame                 = rhi->current_frame();
+    current_frame.frame_id              = rhi->current_frame_index;
+    current_frame.image_available_fence = image_available_fence;
+    render_complete_fence               = current_frame.render_complete_fence;
 
     // backbuffer
     uint  backbuffer_index   = rhi->swapchain->GetCurrentBackBufferIndex();
     auto& backbuffer         = rhi->swapchain_frames.at(backbuffer_index);
     rhi->current_image_index = backbuffer_index;
-    get_logger()->info("current image index: {}", rhi->current_image_index);
 
     // wait before current frame is usable again
     current_frame.wait();
@@ -220,7 +212,8 @@ bool api::present_curr_frame()
     // query the current frame (also update the frame index)
     auto& frame = rhi->current_frame();
 
-    // query the semaphores
+    // query the fences
+    auto& image_available_fence = fetch_resource(rhi->fences, frame.image_available_fence);
     auto& render_complete_fence = fetch_resource(rhi->fences, frame.render_complete_fence);
 
     // check if nothing has been down, insert dummy workloads if needed
@@ -230,11 +223,18 @@ bool api::present_curr_frame()
         command_buffer.begin();
         default_swapchain_image_barrier(command_buffer.command_buffer);
         command_buffer.end();
+        command_buffer.wait(image_available_fence, GPUBarrierSync::NONE);
         command_buffer.signal(render_complete_fence, GPUBarrierSync::ALL);
         command_buffer.submit();
     }
 
+    // signal the image available for current frame
+    auto& backbuffer = rhi->swapchain_frames.at(rhi->current_image_index);
+    auto& fence      = fetch_resource(rhi->fences, backbuffer.image_available_fence);
+    rhi->graphics_queue->Signal(fence.fence, fence.target);
+
     // present to swapchain
     rhi->swapchain->Present(rhi->present_mode.sync_interval, rhi->present_mode.sync_flags);
+    rhi->current_frame_index++;
     return true;
 }

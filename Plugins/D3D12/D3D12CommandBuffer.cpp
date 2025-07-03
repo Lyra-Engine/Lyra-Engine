@@ -19,7 +19,7 @@ void D3D12CommandBuffer::signal(const D3D12Fence& fence, GPUBarrierSyncFlags)
 
     signal_fences.push_back(FenceOps{
         fence.fence,
-        fence.target++,
+        fence.target,
     });
 }
 
