@@ -27,7 +27,7 @@ void D3D12Frame::wait()
     }
 }
 
-void D3D12Frame::reset()
+void D3D12Frame::reset(bool free)
 {
     // clean up command pools
     bundle_command_pool.reset();
@@ -41,6 +41,17 @@ void D3D12Frame::reset()
 
     // reset fence
     fetch_resource(get_rhi()->fences, render_complete_fence).reset();
+
+    if (free) {
+        // delete command buffers
+        for (auto& cmd : allocated_command_buffers)
+            cmd.cmd.command_buffer->Release();
+        allocated_command_buffers.clear();
+    } else {
+        // reset command buffers
+        for (auto& cmd : allocated_command_buffers)
+            cmd.reset();
+    }
 }
 
 void D3D12Frame::destroy()
@@ -62,48 +73,61 @@ GPUCommandEncoderHandle D3D12Frame::allocate(GPUQueueType type, bool primary)
 {
     auto rhi = get_rhi();
 
-    D3D12CommandBuffer command_buffer;
+    // set default descriptor heaps
+    auto set_descriptor_heap = [&](D3D12CommandBuffer& command_buffer) {
+        ID3D12DescriptorHeap* descriptor_heaps[] = {cbv_srv_uav_heap.heap, sampler_heap.heap};
+        command_buffer.command_buffer->SetDescriptorHeaps(2, descriptor_heaps);
+    };
+
+    // search from existing allocations
+    for (uint i = 0; i < (uint)allocated_command_buffers.size(); i++) {
+        auto& cmd = allocated_command_buffers.at(i);
+        if (!cmd.used && cmd.type == type && cmd.primary == primary) {
+            cmd.used = true;
+            set_descriptor_heap(cmd.cmd);
+            return GPUCommandEncoderHandle(allocated_command_buffers.size());
+        }
+    }
+
+    // new command buffer allocation
+    uint handle = allocated_command_buffers.size();
+    allocated_command_buffers.push_back(CommandBuffer{});
+    CommandBuffer& cmd = allocated_command_buffers.back();
     switch (type) {
         case GPUQueueType::TRANSFER:
-            command_buffer.command_queue = rhi->transfer_queue;
+            cmd.cmd.command_queue = rhi->transfer_queue;
             if (primary) {
-                command_buffer.command_buffer    = transfer_command_pool.allocate();
-                command_buffer.command_allocator = transfer_command_pool.command_allocator;
+                cmd.cmd.command_buffer    = transfer_command_pool.allocate();
+                cmd.cmd.command_allocator = transfer_command_pool.command_allocator;
             } else {
-                command_buffer.command_buffer    = bundle_command_pool.allocate();
-                command_buffer.command_allocator = bundle_command_pool.command_allocator;
+                cmd.cmd.command_buffer    = bundle_command_pool.allocate();
+                cmd.cmd.command_allocator = bundle_command_pool.command_allocator;
             }
             break;
         case GPUQueueType::COMPUTE:
-            command_buffer.command_queue = rhi->compute_queue;
+            cmd.cmd.command_queue = rhi->compute_queue;
             if (primary) {
-                command_buffer.command_buffer    = compute_command_pool.allocate();
-                command_buffer.command_allocator = compute_command_pool.command_allocator;
+                cmd.cmd.command_buffer    = compute_command_pool.allocate();
+                cmd.cmd.command_allocator = compute_command_pool.command_allocator;
             } else {
-                command_buffer.command_buffer    = bundle_command_pool.allocate();
-                command_buffer.command_allocator = bundle_command_pool.command_allocator;
+                cmd.cmd.command_buffer    = bundle_command_pool.allocate();
+                cmd.cmd.command_allocator = bundle_command_pool.command_allocator;
             }
             break;
         case GPUQueueType::DEFAULT:
         default:
-            command_buffer.command_queue = rhi->graphics_queue;
+            cmd.cmd.command_queue = rhi->graphics_queue;
             if (primary) {
-                command_buffer.command_buffer    = graphics_command_pool.allocate();
-                command_buffer.command_allocator = graphics_command_pool.command_allocator;
+                cmd.cmd.command_buffer    = graphics_command_pool.allocate();
+                cmd.cmd.command_allocator = graphics_command_pool.command_allocator;
             } else {
-                command_buffer.command_buffer    = bundle_command_pool.allocate();
-                command_buffer.command_allocator = bundle_command_pool.command_allocator;
+                cmd.cmd.command_buffer    = bundle_command_pool.allocate();
+                cmd.cmd.command_allocator = bundle_command_pool.command_allocator;
             }
             break;
     }
 
-    // set default descriptor heaps
-    ID3D12DescriptorHeap* descriptor_heaps[] = {cbv_srv_uav_heap.heap, sampler_heap.heap};
-    command_buffer.command_buffer->SetDescriptorHeaps(2, descriptor_heaps);
-
-    // save the command buffer to allow retrieval by handle
-    uint handle = allocated_command_buffers.size();
-    allocated_command_buffers.push_back(command_buffer);
+    set_descriptor_heap(cmd.cmd);
     return GPUCommandEncoderHandle(handle);
 }
 

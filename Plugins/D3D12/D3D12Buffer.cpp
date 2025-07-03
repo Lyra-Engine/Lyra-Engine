@@ -12,6 +12,12 @@ D3D12Buffer::D3D12Buffer(const GPUBufferDescriptor& desc)
 
     this->size = desc.size;
 
+    // check if the buffer is going to be used for uniform buffer,
+    // and adjust the buffer size allocation for the uniform buffer alignment.
+    if (desc.usage.contains(GPUBufferUsage::UNIFORM)) {
+        this->size = (this->size + 255) & ~255; // CBV alignment
+    }
+
     D3D12_HEAP_PROPERTIES heap_props = {};
     heap_props.Type                  = infer_heap_type(desc.usage);
     heap_props.CPUPageProperty       = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
@@ -21,7 +27,7 @@ D3D12Buffer::D3D12Buffer(const GPUBufferDescriptor& desc)
 
     D3D12_RESOURCE_DESC resource_desc = {};
     resource_desc.Dimension           = D3D12_RESOURCE_DIMENSION_BUFFER;
-    resource_desc.Width               = desc.size;
+    resource_desc.Width               = this->size;
     resource_desc.Height              = 1;
     resource_desc.DepthOrArraySize    = 1;
     resource_desc.MipLevels           = 1;

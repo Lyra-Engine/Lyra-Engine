@@ -59,19 +59,26 @@ D3D12Pipeline::D3D12Pipeline(const GPURenderPipelineDescriptor& desc)
     // vertex input layouts
     uint                             buffer_index = 0;
     Vector<D3D12_INPUT_ELEMENT_DESC> input_elements;
-    for (auto& buffer : desc.vertex.buffers) {
-        for (const auto& attribute : buffer.attributes) {
+    input_elements.reserve(desc.vertex.buffers.size());
+    vertex_buffer_strides.reserve(desc.vertex.buffers.size());
+    for (auto& layout : desc.vertex.buffers) {
+
+        for (const auto& attribute : layout.attributes) {
             D3D12_INPUT_ELEMENT_DESC element = {};
             element.SemanticName             = "ATTRIBUTE";
             element.SemanticIndex            = attribute.shader_location;
             element.Format                   = d3d12enum(attribute.format);
             element.InputSlot                = static_cast<UINT>(buffer_index++);
             element.AlignedByteOffset        = static_cast<UINT>(attribute.offset);
-            element.InputSlotClass           = d3d12enum(buffer.step_mode);
-            element.InstanceDataStepRate     = (buffer.step_mode == GPUVertexStepMode::INSTANCE) ? 1 : 0;
+            element.InputSlotClass           = d3d12enum(layout.step_mode);
+            element.InstanceDataStepRate     = (layout.step_mode == GPUVertexStepMode::INSTANCE) ? 1 : 0;
 
+            // record vertex input elements
             input_elements.push_back(element);
         }
+
+        // record vertex buffer strides
+        vertex_buffer_strides.push_back(layout.array_stride);
     }
 
     // input assembly state
@@ -134,7 +141,8 @@ D3D12Pipeline::D3D12Pipeline(const GPURenderPipelineDescriptor& desc)
         pso_desc.BlendState.RenderTarget[i].LogicOpEnable         = false;
     }
 
-    this->layout = desc.layout;
+    this->layout   = desc.layout;
+    this->topology = infer_topology(desc.primitive.topology);
     ThrowIfFailed(rhi->device->CreateGraphicsPipelineState(&pso_desc, IID_PPV_ARGS(&pipeline)));
 }
 

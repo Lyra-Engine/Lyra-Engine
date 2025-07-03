@@ -38,9 +38,22 @@ void D3D12CommandBuffer::submit()
         command_queue->Signal(fence.fence, fence.value);
 }
 
+void D3D12CommandBuffer::reset()
+{
+    // clear fences
+    wait_fences.clear();
+    signal_fences.clear();
+
+    // clear bound pso
+    pso.pipeline = nullptr;
+
+    // reset command buffer before it can be used again
+    command_buffer->Reset(command_allocator, nullptr);
+}
+
 void D3D12CommandBuffer::begin()
 {
-    command_buffer->Reset(command_allocator, nullptr);
+    // nothing here
 }
 
 void D3D12CommandBuffer::end()
@@ -79,11 +92,10 @@ void cmd::begin_render_pass(GPUCommandEncoderHandle cmdbuffer, const GPURenderPa
     D3D12_RENDER_PASS_RENDER_TARGET_DESC rt_descs[D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT] = {};
     for (uint i = 0; i < max_render_targets; i++) {
         auto& attachment = descriptor.color_attachments[i];
-        auto  view       = fetch_resource(rhi->views, attachment.view).rtv_view.handle;
         auto& rt_desc    = rt_descs[num_render_targets];
 
         // set CPU descriptor handle for the RTV
-        rt_desc.cpuDescriptor = view;
+        rt_desc.cpuDescriptor = fetch_resource(rhi->views, attachment.view).rtv_view.handle;
 
         // set beginning access
         if (attachment.load_op == GPULoadOp::CLEAR) {
@@ -182,12 +194,12 @@ void cmd::set_render_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURenderPipeli
     auto& cmd = rhi->current_frame().command(cmdbuffer);
     auto& pip = fetch_resource(rhi->pipelines, pipeline);
 
-    if (cmd.last_bound.pipeline != pip.pipeline) {
-        cmd.last_bound.pipeline = pip.pipeline;
-        cmd.last_bound.layout   = pip.layout;
-        auto& lay               = fetch_resource(rhi->pipeline_layouts, cmd.last_bound.layout);
-        cmd.command_buffer->SetGraphicsRootSignature(lay.layout);
+    if (cmd.pso.pipeline != &pip) {
+        cmd.pso.pipeline = &pip;
+        cmd.pso.layout   = &fetch_resource(rhi->pipeline_layouts, pip.layout);
+        cmd.command_buffer->SetGraphicsRootSignature(cmd.pso.layout->layout);
         cmd.command_buffer->SetPipelineState(pip.pipeline);
+        cmd.command_buffer->IASetPrimitiveTopology(pip.topology);
     }
 }
 
@@ -197,11 +209,10 @@ void cmd::set_compute_pipeline(GPUCommandEncoderHandle cmdbuffer, GPUComputePipe
     auto& cmd = rhi->current_frame().command(cmdbuffer);
     auto& pip = fetch_resource(rhi->pipelines, pipeline);
 
-    if (cmd.last_bound.pipeline != pip.pipeline) {
-        cmd.last_bound.pipeline = pip.pipeline;
-        cmd.last_bound.layout   = pip.layout;
-        auto& lay               = fetch_resource(rhi->pipeline_layouts, cmd.last_bound.layout);
-        cmd.command_buffer->SetComputeRootSignature(lay.layout);
+    if (cmd.pso.pipeline != &pip) {
+        cmd.pso.pipeline = &pip;
+        cmd.pso.layout   = &fetch_resource(rhi->pipeline_layouts, pip.layout);
+        cmd.command_buffer->SetComputeRootSignature(cmd.pso.layout->layout);
         cmd.command_buffer->SetPipelineState(pip.pipeline);
     }
 }
@@ -212,10 +223,10 @@ void cmd::set_raytracing_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURayTraci
     auto& cmd = rhi->current_frame().command(cmdbuffer);
     auto& pip = fetch_resource(rhi->pipelines, pipeline);
 
-    if (cmd.last_bound.pipeline != pip.pipeline) {
-        cmd.last_bound.pipeline = pip.pipeline;
-        auto& lay               = fetch_resource(rhi->pipeline_layouts, cmd.last_bound.layout);
-        cmd.command_buffer->SetComputeRootSignature(lay.layout);
+    if (cmd.pso.pipeline != &pip) {
+        cmd.pso.pipeline = &pip;
+        cmd.pso.layout   = &fetch_resource(rhi->pipeline_layouts, pip.layout);
+        cmd.command_buffer->SetComputeRootSignature(cmd.pso.layout->layout);
         cmd.command_buffer->SetPipelineState(pip.pipeline);
     }
 }
@@ -225,11 +236,14 @@ void cmd::set_bind_group(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 index, GP
     auto  rhi = get_rhi();
     auto& frm = rhi->current_frame();
     auto& cmd = frm.command(cmdbuffer);
-    auto& lay = fetch_resource(rhi->pipeline_layouts, cmd.last_bound.layout);
+    auto* lay = cmd.pso.layout;
     auto  des = frm.descriptor(bind_group);
 
-    assert(index < lay.bind_group_layouts.size());
-    auto& layout = lay.bind_group_layouts.at(index);
+    if (!dynamic_offsets.empty())
+        assert(!!!"cmd::set_bind_group() with dynamic offsets is currently not implemented!");
+
+    assert(index < lay->bind_group_layouts.size());
+    auto& layout = lay->bind_group_layouts.at(index);
     for (auto& binding : layout.bindings) {
         if (binding.heap_type == D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER) {
             auto handle = des.sampler_base.value().gpu_handle;
@@ -256,7 +270,7 @@ void cmd::set_index_buffer(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle bu
     // create the index buffer view
     D3D12_INDEX_BUFFER_VIEW index_buffer_view = {};
     index_buffer_view.BufferLocation          = buf.buffer->GetGPUVirtualAddress() + offset;
-    index_buffer_view.SizeInBytes             = static_cast<UINT>(size);
+    index_buffer_view.SizeInBytes             = size == 0ull ? static_cast<UINT>(buf.size) : static_cast<UINT>(size);
     index_buffer_view.Format                  = d3d12enum(format);
 
     // set the index buffer
@@ -268,12 +282,13 @@ void cmd::set_vertex_buffer(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 slot, 
     auto  rhi = get_rhi();
     auto& cmd = rhi->current_frame().command(cmdbuffer);
     auto& buf = fetch_resource(rhi->buffers, buffer);
+    auto* pip = cmd.pso.pipeline;
 
     // create vertex buffer view
     D3D12_VERTEX_BUFFER_VIEW vertex_buffer_view = {};
     vertex_buffer_view.BufferLocation           = buf.buffer->GetGPUVirtualAddress() + offset;
-    vertex_buffer_view.SizeInBytes              = static_cast<UINT>(size);
-    vertex_buffer_view.StrideInBytes            = 0; // stride needs to be set based on vertex format
+    vertex_buffer_view.SizeInBytes              = size == 0ull ? static_cast<UINT>(buf.size) : static_cast<UINT>(size);
+    vertex_buffer_view.StrideInBytes            = pip->vertex_buffer_strides.at(slot);
 
     // set the vertex buffer at the specified slot
     cmd.command_buffer->IASetVertexBuffers(slot, 1, &vertex_buffer_view);
@@ -302,11 +317,11 @@ void cmd::draw_indirect(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle indir
     auto  rhi = get_rhi();
     auto& cmd = rhi->current_frame().command(cmdbuffer);
     auto& buf = fetch_resource(rhi->buffers, indirect_buffer);
-    auto& lay = fetch_resource(rhi->pipeline_layouts, cmd.last_bound.layout);
+    auto* lay = cmd.pso.layout;
 
     // indirect draw instanced
-    lay.create_draw_indirect_signature();
-    cmd.command_buffer->ExecuteIndirect(lay.signatures.draw_indirect.Get(), draw_count, buf.buffer, indirect_offset, nullptr, 0);
+    lay->create_draw_indirect_signature();
+    cmd.command_buffer->ExecuteIndirect(lay->signatures.draw_indirect.Get(), draw_count, buf.buffer, indirect_offset, nullptr, 0);
 }
 
 void cmd::draw_indexed_indirect(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle indirect_buffer, GPUSize64 indirect_offset, GPUSize32 draw_count)
@@ -314,11 +329,11 @@ void cmd::draw_indexed_indirect(GPUCommandEncoderHandle cmdbuffer, GPUBufferHand
     auto  rhi = get_rhi();
     auto& cmd = rhi->current_frame().command(cmdbuffer);
     auto& buf = fetch_resource(rhi->buffers, indirect_buffer);
-    auto& lay = fetch_resource(rhi->pipeline_layouts, cmd.last_bound.layout);
+    auto* lay = cmd.pso.layout;
 
     // indirect draw indexed
-    lay.create_draw_indexed_indirect_signature();
-    cmd.command_buffer->ExecuteIndirect(lay.signatures.draw_indexed_indirect.Get(), draw_count, buf.buffer, indirect_offset, nullptr, 0);
+    lay->create_draw_indexed_indirect_signature();
+    cmd.command_buffer->ExecuteIndirect(lay->signatures.draw_indexed_indirect.Get(), draw_count, buf.buffer, indirect_offset, nullptr, 0);
 }
 
 void cmd::dispatch_workgroups(GPUCommandEncoderHandle cmdbuffer, GPUSize32 x, GPUSize32 y, GPUSize32 z)
@@ -335,11 +350,11 @@ void cmd::dispatch_workgroups_indirect(GPUCommandEncoderHandle cmdbuffer, GPUBuf
     auto  rhi = get_rhi();
     auto& cmd = rhi->current_frame().command(cmdbuffer);
     auto& buf = fetch_resource(rhi->buffers, indirect_buffer);
-    auto& lay = fetch_resource(rhi->pipeline_layouts, cmd.last_bound.layout);
+    auto* lay = cmd.pso.layout;
 
     // dispatch indirect
-    lay.create_dispatch_indirect_signature();
-    cmd.command_buffer->ExecuteIndirect(lay.signatures.dispatch_indirect.Get(), 1, buf.buffer, indirect_offset, nullptr, 0);
+    lay->create_dispatch_indirect_signature();
+    cmd.command_buffer->ExecuteIndirect(lay->signatures.dispatch_indirect.Get(), 1, buf.buffer, indirect_offset, nullptr, 0);
 }
 
 void cmd::copy_buffer_to_buffer(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle source, GPUSize64 source_offset, GPUBufferHandle destination, GPUSize64 destination_offset, GPUSize64 size)
@@ -629,7 +644,7 @@ void cmd::texture_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPU
     }
 
     D3D12_BARRIER_GROUP barrier_group = {};
-    barrier_group.Type                = D3D12_BARRIER_TYPE_BUFFER;
+    barrier_group.Type                = D3D12_BARRIER_TYPE_TEXTURE;
     barrier_group.NumBarriers         = count;
     barrier_group.pTextureBarriers    = d3d12_barriers.data();
 

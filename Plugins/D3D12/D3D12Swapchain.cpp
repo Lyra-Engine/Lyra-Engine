@@ -8,6 +8,9 @@ void D3D12SwapFrame::init(uint backbuffer_index, uint width, uint height)
 {
     auto rhi = get_rhi();
 
+    // create a name for this swapchain texture
+    auto name = std::wstring(L"Swapchain Texture ") + std::to_wstring(backbuffer_index);
+
     // destroy existing handles
     destroy();
 
@@ -19,6 +22,7 @@ void D3D12SwapFrame::init(uint backbuffer_index, uint width, uint height)
     texture.area.height = height;
     texture.usages      = GPUTextureUsage::RENDER_ATTACHMENT | GPUTextureUsage::COPY_DST | GPUTextureUsage::COPY_DST;
     ThrowIfFailed(rhi->swapchain->GetBuffer(backbuffer_index, IID_PPV_ARGS(&texture.texture)));
+    texture.texture->SetName(name.c_str());
 
     // create texture view
     GPUTextureViewDescriptor view_desc = {};
@@ -52,6 +56,21 @@ void D3D12SwapFrame::destroy()
     if (view.valid()) {
         fetch_resource(rhi->views, view).destroy();
         rhi->views.remove(view.value);
+    }
+}
+
+void set_swapchain_name(IDXGISwapChain3* swapchain, const wchar_t* name)
+{
+    ID3D12Object* d3d12_object = nullptr;
+
+    HRESULT hr = swapchain->QueryInterface(__uuidof(ID3D12Object), (void**)&d3d12_object);
+    if (SUCCEEDED(hr)) {
+        hr = d3d12_object->SetName(name);
+        if (FAILED(hr))
+            get_logger()->error("Failed to set swapchain name!");
+        d3d12_object->Release();
+    } else {
+        get_logger()->error("Failed to query interface for swapchain!");
     }
 }
 
@@ -97,6 +116,7 @@ bool api::create_surface(GPUSurface& surface, const GPUSurfaceDescriptor& desc)
         ThrowIfFailed(rhi->factory->CreateSwapChainForHwnd(rhi->graphics_queue, (HWND)desc.window.native, &swapchain_desc, nullptr, nullptr, &swapchain));
         ThrowIfFailed(swapchain->QueryInterface(__uuidof(IDXGISwapChain3), (void**)&swapchain));
         rhi->swapchain = (IDXGISwapChain3*)swapchain;
+        set_swapchain_name(rhi->swapchain, L"Swapchain");
     }
 
     // destroy swap frames
@@ -166,23 +186,29 @@ bool api::acquire_next_frame(GPUTextureHandle& texture, GPUTextureViewHandle& vi
     // initialize suboptimal
     suboptimal = false;
 
-    // acquire next frame
-    rhi->current_image_index = rhi->swapchain->GetCurrentBackBufferIndex();
+    // previous frame
+    auto& previous_frame    = rhi->current_frame();
+    previous_frame.frame_id = rhi->current_frame_index++;
+    image_available_fence   = previous_frame.render_complete_fence;
 
-    auto& backbuffer = rhi->swapchain_frames.at(rhi->current_image_index);
+    // current frame
+    auto& current_frame    = rhi->current_frame();
+    current_frame.frame_id = rhi->current_frame_index;
+    render_complete_fence  = current_frame.render_complete_fence;
 
-    // query the current frame
-    auto& frame    = rhi->current_frame();
-    frame.frame_id = rhi->current_frame_index;
+    // backbuffer
+    uint  backbuffer_index   = rhi->swapchain->GetCurrentBackBufferIndex();
+    auto& backbuffer         = rhi->swapchain_frames.at(backbuffer_index);
+    rhi->current_image_index = backbuffer_index;
+    get_logger()->info("current image index: {}", rhi->current_image_index);
 
-    // wait for inflght frame to complete
-    frame.wait();
-    frame.reset();
+    // wait before current frame is usable again
+    current_frame.wait();
+    current_frame.reset();
 
     // update swapchain view (this must be done after current_image_index is updated)
-    texture               = backbuffer.texture;
-    view                  = backbuffer.view;
-    render_complete_fence = frame.render_complete_fence;
+    texture = backbuffer.texture;
+    view    = backbuffer.view;
 
     return true;
 }
@@ -200,7 +226,7 @@ bool api::present_curr_frame()
     // check if nothing has been down, insert dummy workloads if needed
     if (frame.allocated_command_buffers.empty()) {
         auto  command_buffer_handle = frame.allocate(GPUQueueType::COMPUTE, true);
-        auto& command_buffer        = frame.allocated_command_buffers.at(command_buffer_handle.value);
+        auto& command_buffer        = frame.command(command_buffer_handle.value);
         command_buffer.begin();
         default_swapchain_image_barrier(command_buffer.command_buffer);
         command_buffer.end();
@@ -210,6 +236,5 @@ bool api::present_curr_frame()
 
     // present to swapchain
     rhi->swapchain->Present(rhi->present_mode.sync_interval, rhi->present_mode.sync_flags);
-    rhi->current_frame_index++;
     return true;
 }

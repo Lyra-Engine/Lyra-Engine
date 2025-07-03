@@ -227,7 +227,7 @@ D3D12BindGroupLayout::D3D12BindGroupLayout(const GPUBindGroupLayoutDescriptor& d
 
         // prepare bind info
         bindings.push_back(D3D12BindInfo{});
-        auto binding             = bindings.back();
+        auto& binding             = bindings.back();
         binding.root_param_index = root_param_index++;
         binding.binding_index    = entry.binding;
         binding.binding_count    = entry.count;

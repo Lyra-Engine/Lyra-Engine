@@ -313,6 +313,11 @@ struct D3D12Pipeline
 
     GPUPipelineLayoutHandle layout; // D3D12Pipeline does NOT own this!
 
+    D3D12_PRIMITIVE_TOPOLOGY topology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+
+    // D3D12 does not record the vertex buffer strides during pipelien creation
+    Vector<uint> vertex_buffer_strides;
+
     // implementation in D3D12Pipeline.cpp
     explicit D3D12Pipeline();
     explicit D3D12Pipeline(const GPURenderPipelineDescriptor& desc);
@@ -371,8 +376,8 @@ struct D3D12CommandBuffer
 
     struct PSOStatus
     {
-        ID3D12PipelineState*    pipeline = nullptr;
-        GPUPipelineLayoutHandle layout;
+        D3D12Pipeline*       pipeline = nullptr;
+        D3D12PipelineLayout* layout   = nullptr;
     };
 
     struct FenceOps
@@ -381,7 +386,7 @@ struct D3D12CommandBuffer
         uint64_t     value = 0ull;
     };
 
-    PSOStatus last_bound;
+    PSOStatus pso;
 
     Vector<FenceOps> wait_fences;
     Vector<FenceOps> signal_fences;
@@ -389,6 +394,7 @@ struct D3D12CommandBuffer
     // implementation in D3D12CommandBuffer.cpp
     void wait(const D3D12Fence& fence, GPUBarrierSyncFlags sync);
     void signal(const D3D12Fence& fence, GPUBarrierSyncFlags sync);
+    void reset();
     void submit();
     void begin();
     void end();
@@ -417,6 +423,20 @@ struct D3D12SwapFrame
 
 struct D3D12Frame
 {
+    struct CommandBuffer
+    {
+        GPUQueueType       type    = GPUQueueType::DEFAULT;
+        bool               primary = true;
+        bool               used    = false;
+        D3D12CommandBuffer cmd;
+
+        void reset()
+        {
+            used = false;
+            cmd.reset();
+        }
+    };
+
     // used to check command buffer usage,
     // command buffers are short-lived, only usable within the frame.
     // frame id must match D3D12Frame's id
@@ -434,16 +454,16 @@ struct D3D12Frame
     Vector<D3D12BindGroup> allocated_descriptors;
 
     // allocate command buffers
-    Vector<D3D12CommandBuffer> allocated_command_buffers;
+    Vector<CommandBuffer> allocated_command_buffers;
 
     // shortcut for cmd buffer
     auto& command(GPUCommandEncoderHandle handle)
     {
-        return allocated_command_buffers.at(handle.value);
+        return allocated_command_buffers.at(handle.value).cmd;
     }
 
     // shortcut for descriptor set
-    auto descriptor(GPUBindGroupHandle handle)
+    auto& descriptor(GPUBindGroupHandle handle)
     {
         return allocated_descriptors.at(handle.value);
     }
@@ -451,7 +471,7 @@ struct D3D12Frame
     // impementation in D3D12Frame.cpp
     void init();
     void wait();
-    void reset();
+    void reset(bool free = false);
     auto allocate(GPUQueueType type, bool primary) -> GPUCommandEncoderHandle;
     auto create(const GPUBindGroupDescriptor& desc) -> GPUBindGroupHandle;
     void destroy();

@@ -43,8 +43,10 @@ void D3D12HeapCPUUtils::recycle(uint index)
 
 D3D12CPUDescriptor D3D12HeapCPUUtils::allocate()
 {
-    uint index = count;
-    if (!freed.empty()) {
+    uint index;
+    if (freed.empty()) {
+        index = count++; // update count
+    } else {
         index = freed.back();
         freed.pop_back();
     }
