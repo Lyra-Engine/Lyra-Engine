@@ -1,6 +1,8 @@
 #ifndef LYRA_PLUGIN_D3D12_UTILS_H
 #define LYRA_PLUGIN_D3D12_UTILS_H
 
+#include <D3D12MemAlloc.h>
+
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <exception>
@@ -40,11 +42,20 @@ using D3D12ResourceManager = Slotmap<T, D3D12Destroyer<T>>;
 
 struct D3D12CPUDescriptor
 {
-    D3D12_CPU_DESCRIPTOR_HANDLE handle;
+    D3D12_CPU_DESCRIPTOR_HANDLE handle{0};
     uint                        pool  = 0; // pool index
     uint                        index = 0; // index within pool
 
+    D3D12CPUDescriptor() { reset(); }
+
     bool valid() const { return handle.ptr != 0; }
+
+    void reset()
+    {
+        handle.ptr = 0;
+        pool       = 0;
+        index      = 0;
+    }
 };
 
 // GPU descriptors are temporal (no need to recycle individual descriptor)
@@ -125,9 +136,10 @@ struct D3D12Fence
 
 struct D3D12Buffer
 {
-    ID3D12Resource* buffer = nullptr;
-    uint64_t        size   = 0ull;
+    ID3D12Resource*      buffer     = nullptr;
+    D3D12MA::Allocation* allocation = nullptr;
 
+    uint64_t size_       = 0ull;
     uint8_t* mapped_data = nullptr;
     uint64_t mapped_size = 0ull;
 
@@ -138,6 +150,7 @@ struct D3D12Buffer
     void map(GPUSize64 offset = 0, GPUSize64 size = 0);
     void unmap();
     void destroy();
+    auto size() const -> size_t { return size_; }
 
     bool valid() const { return buffer != nullptr; }
 
@@ -158,11 +171,12 @@ struct D3D12Buffer
 struct D3D12TextureView;
 struct D3D12Texture
 {
-    ID3D12Resource*      texture = nullptr;
-    DXGI_FORMAT          format  = DXGI_FORMAT_UNKNOWN;
-    GPUExtent2D          area    = {};
-    GPUTextureUsageFlags usages  = 0;
-    uint                 samples = 1;
+    ID3D12Resource*      texture    = nullptr;
+    D3D12MA::Allocation* allocation = nullptr;
+    DXGI_FORMAT          format     = DXGI_FORMAT_UNKNOWN;
+    GPUExtent2D          area       = {};
+    GPUTextureUsageFlags usages     = 0;
+    uint                 samples    = 1;
 
     // implementation in D3D12Texture.cpp
     explicit D3D12Texture();
@@ -184,11 +198,11 @@ struct D3D12TextureView
     union
     {
         // rtv and dsv share the same view
-        D3D12CPUDescriptor rtv_view;
+        D3D12CPUDescriptor rtv_view = {};
         D3D12CPUDescriptor dsv_view;
     };
-    D3D12CPUDescriptor srv_view;
-    D3D12CPUDescriptor uav_view;
+    D3D12CPUDescriptor srv_view = {};
+    D3D12CPUDescriptor uav_view = {};
 
     GPUExtent2D area; // used only for RenderArea
 
@@ -488,6 +502,7 @@ struct D3D12RHI
     IDXGIFactory4*      factory        = nullptr; // equivalent to VkInstance
     IDXGIAdapter1*      adapter        = nullptr; // equivalent to VkPhysicalDevice
     ID3D12Device*       device         = nullptr; // equivalent to VkDevice
+    D3D12MA::Allocator* allocator      = nullptr;
     IDXGISwapChain3*    swapchain      = nullptr;
     ID3D12CommandQueue* transfer_queue = nullptr;
     ID3D12CommandQueue* graphics_queue = nullptr;
@@ -748,7 +763,8 @@ inline void ThrowIfFailed(HRESULT hr)
     if (FAILED(hr)) {
         // set a breakpoint on this line to catch DirectX API errors
         auto err = get_hresult_message(hr);
-        fprintf(stderr, "error: %s\n", err.c_str());
+        if (err.c_str())
+            get_logger()->error("error: {}\n", err.c_str());
         throw std::exception();
     }
 }

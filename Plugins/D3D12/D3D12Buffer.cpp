@@ -8,44 +8,43 @@ D3D12Buffer::D3D12Buffer()
 
 D3D12Buffer::D3D12Buffer(const GPUBufferDescriptor& desc)
 {
-    // TODO: to examine if buffer usages are set correctly.
-
-    this->size = desc.size;
+    // figure out correct size
+    size_ = desc.size;
 
     // check if the buffer is going to be used for uniform buffer,
     // and adjust the buffer size allocation for the uniform buffer alignment.
     if (desc.usage.contains(GPUBufferUsage::UNIFORM)) {
-        this->size = (this->size + 255) & ~255; // CBV alignment
+        size_ = (size_ + 255) & ~255; // CBV alignment
     }
 
-    D3D12_HEAP_PROPERTIES heap_props = {};
-    heap_props.Type                  = infer_heap_type(desc.usage);
-    heap_props.CPUPageProperty       = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-    heap_props.MemoryPoolPreference  = D3D12_MEMORY_POOL_UNKNOWN;
-    heap_props.CreationNodeMask      = 1;
-    heap_props.VisibleNodeMask       = 1;
+    D3D12MA::ALLOCATION_DESC allocation_desc{};
+    allocation_desc.HeapType = infer_heap_type(desc.usage);
 
-    D3D12_RESOURCE_DESC resource_desc = {};
-    resource_desc.Dimension           = D3D12_RESOURCE_DIMENSION_BUFFER;
-    resource_desc.Width               = this->size;
-    resource_desc.Height              = 1;
-    resource_desc.DepthOrArraySize    = 1;
-    resource_desc.MipLevels           = 1;
-    resource_desc.SampleDesc.Count    = 1;
-    resource_desc.Layout              = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-    resource_desc.Alignment           = 0;
-    resource_desc.Flags               = infer_buffer_flags(desc.usage);
+    D3D12_RESOURCE_DESC resource_desc{};
+    resource_desc.Dimension        = D3D12_RESOURCE_DIMENSION_BUFFER;
+    resource_desc.Width            = size_;
+    resource_desc.Height           = 1;
+    resource_desc.DepthOrArraySize = 1;
+    resource_desc.MipLevels        = 1;
+    resource_desc.SampleDesc.Count = 1;
+    resource_desc.Layout           = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+    resource_desc.Alignment        = 0;
+    resource_desc.Flags            = infer_buffer_flags(desc.usage);
 
     auto rhi = get_rhi();
-    ThrowIfFailed(rhi->device->CreateCommittedResource(
-        &heap_props,
-        D3D12_HEAP_FLAG_NONE,
+    ThrowIfFailed(rhi->allocator->CreateResource(
+        &allocation_desc,
         &resource_desc,
-        D3D12_RESOURCE_STATE_GENERIC_READ, // or COMMON/STATE_COPY_DEST depending on use
-        nullptr,
-        IID_PPV_ARGS(&buffer)));
+        D3D12_RESOURCE_STATE_COMMON,
+        NULL,
+        &allocation,
+        IID_NULL, NULL));
+    buffer = allocation->GetResource();
 
     if (desc.mapped_at_creation) map();
+
+    if (desc.label)
+        buffer->SetName(to_wstring(desc.label).c_str());
 }
 
 void D3D12Buffer::destroy()
@@ -53,6 +52,11 @@ void D3D12Buffer::destroy()
     if (buffer) {
         buffer->Release();
         buffer = nullptr;
+    }
+
+    if (allocation) {
+        allocation->Release();
+        allocation = nullptr;
     }
 }
 
@@ -65,7 +69,7 @@ void D3D12Buffer::map(GPUSize64 offset, GPUSize64 size)
     void* mapped;
     buffer->Map(0, &range, &mapped);
     mapped_data = reinterpret_cast<uint8_t*>(mapped);
-    mapped_size = size == 0 ? this->size : size;
+    mapped_size = size == 0 ? allocation->GetSize() : size;
 }
 
 void D3D12Buffer::unmap()

@@ -43,7 +43,7 @@ void D3D12Frame::reset(bool free)
     fetch_resource(get_rhi()->fences, render_complete_fence).reset();
 
     if (free) {
-        // delete command buffers
+        // destroy command buffers
         for (auto& cmd : allocated_command_buffers)
             cmd.cmd.command_buffer->Release();
         allocated_command_buffers.clear();
@@ -57,6 +57,11 @@ void D3D12Frame::reset(bool free)
 void D3D12Frame::destroy()
 {
     reset();
+
+    // destroy allocated command buffers
+    for (auto& cmd : allocated_command_buffers)
+        cmd.cmd.command_buffer->Release();
+    allocated_command_buffers.clear();
 
     // destroy command pools
     bundle_command_pool.destroy();

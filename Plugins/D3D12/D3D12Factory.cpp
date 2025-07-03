@@ -6,6 +6,9 @@ bool api::create_instance(const RHIDescriptor& desc)
 {
     auto rhi = std::make_unique<D3D12RHI>();
 
+    // record rhi flags
+    rhi->rhiflags = desc.flags;
+
     UINT factory_flags = 0;
 
     // create a Debug Controller to track errors
@@ -17,8 +20,10 @@ bool api::create_instance(const RHIDescriptor& desc)
         if (desc.flags.contains(RHIFlag::DEBUG))
             rhi->debug_control->EnableDebugLayer();
 
-        if (desc.flags.contains(RHIFlag::VALIDATION))
+        if (desc.flags.contains(RHIFlag::VALIDATION)) {
             rhi->debug_control->SetEnableGPUBasedValidation(true);
+            rhi->debug_control->SetEnableSynchronizedCommandQueueValidation(TRUE);
+        }
 
         factory_flags |= DXGI_CREATE_FACTORY_DEBUG;
 

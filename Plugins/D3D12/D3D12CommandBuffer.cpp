@@ -270,7 +270,7 @@ void cmd::set_index_buffer(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle bu
     // create the index buffer view
     D3D12_INDEX_BUFFER_VIEW index_buffer_view = {};
     index_buffer_view.BufferLocation          = buf.buffer->GetGPUVirtualAddress() + offset;
-    index_buffer_view.SizeInBytes             = size == 0ull ? static_cast<UINT>(buf.size) : static_cast<UINT>(size);
+    index_buffer_view.SizeInBytes             = size == 0ull ? buf.size() : size;
     index_buffer_view.Format                  = d3d12enum(format);
 
     // set the index buffer
@@ -287,7 +287,7 @@ void cmd::set_vertex_buffer(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 slot, 
     // create vertex buffer view
     D3D12_VERTEX_BUFFER_VIEW vertex_buffer_view = {};
     vertex_buffer_view.BufferLocation           = buf.buffer->GetGPUVirtualAddress() + offset;
-    vertex_buffer_view.SizeInBytes              = size == 0ull ? static_cast<UINT>(buf.size) : static_cast<UINT>(size);
+    vertex_buffer_view.SizeInBytes              = size == 0ull ? buf.size() : size;
     vertex_buffer_view.StrideInBytes            = pip->vertex_buffer_strides.at(slot);
 
     // set the vertex buffer at the specified slot

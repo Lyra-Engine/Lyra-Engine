@@ -30,10 +30,10 @@ target_sources(lyra-vulkan PRIVATE
 )
 
 # link dependencies
-find_package(vma REQUIRED)
 find_package(volk REQUIRED)
 find_package(Vulkan REQUIRED)
-target_link_libraries(lyra-vulkan PRIVATE Vulkan::Headers volk::volk volk::volk_headers VulkanMemoryAllocator)
+find_package(VulkanMemoryAllocator REQUIRED)
+target_link_libraries(lyra-vulkan PRIVATE Vulkan::Headers volk::volk volk::volk_headers GPUOpen::VulkanMemoryAllocator)
 
 # message(STATUS "CXX COMPILER: ${CMAKE_CXX_COMPILER_ID}")
 if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")

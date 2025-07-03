@@ -123,6 +123,9 @@ D3D12PipelineLayout::D3D12PipelineLayout(const GPUPipelineLayoutDescriptor& desc
     ThrowIfFailed(rhi->device->CreateRootSignature(0, signature->GetBufferPointer(),
         signature->GetBufferSize(),
         IID_PPV_ARGS(&layout)));
+
+    if (desc.label)
+        layout->SetName(to_wstring(desc.label).c_str());
 }
 
 void D3D12PipelineLayout::destroy()
@@ -227,7 +230,7 @@ D3D12BindGroupLayout::D3D12BindGroupLayout(const GPUBindGroupLayoutDescriptor& d
 
         // prepare bind info
         bindings.push_back(D3D12BindInfo{});
-        auto& binding             = bindings.back();
+        auto& binding            = bindings.back();
         binding.root_param_index = root_param_index++;
         binding.binding_index    = entry.binding;
         binding.binding_count    = entry.count;
@@ -358,7 +361,7 @@ void D3D12BindGroupLayout::create_buffer_cbv_descriptor(const D3D12Frame& frame,
 
     D3D12_CONSTANT_BUFFER_VIEW_DESC cbv_desc{};
     cbv_desc.BufferLocation = buf.buffer->GetGPUVirtualAddress() + entry.buffer.offset;
-    cbv_desc.SizeInBytes    = entry.buffer.size == 0 ? buf.size : entry.buffer.size;
+    cbv_desc.SizeInBytes    = entry.buffer.size == 0 ? buf.size() : entry.buffer.size;
     cbv_desc.SizeInBytes    = (cbv_desc.SizeInBytes + 255) & ~255; // CBV alignment
 
     auto descriptor = bind_group.cbv_srv_uav_base.value();
@@ -375,7 +378,7 @@ void D3D12BindGroupLayout::create_buffer_uav_descriptor(const D3D12Frame& frame,
     uav_desc.Format                      = DXGI_FORMAT_R8_UINT;
     uav_desc.ViewDimension               = D3D12_UAV_DIMENSION_BUFFER;
     uav_desc.Buffer.FirstElement         = entry.buffer.offset;
-    uav_desc.Buffer.NumElements          = entry.buffer.size == 0 ? buf.size : entry.buffer.size;
+    uav_desc.Buffer.NumElements          = entry.buffer.size == 0 ? buf.size() : entry.buffer.size;
     uav_desc.Buffer.StructureByteStride  = 1;
     uav_desc.Buffer.CounterOffsetInBytes = 0;
     uav_desc.Buffer.Flags                = D3D12_BUFFER_UAV_FLAG_NONE;

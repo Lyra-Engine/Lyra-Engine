@@ -28,7 +28,17 @@ target_sources(lyra-d3d12 PRIVATE
     D3D12CommandBuffer.cpp
 )
 
+# link dependencies
+find_package(D3D12MemoryAllocator REQUIRED)
+
 # link with D3D12
+target_link_libraries(lyra-d3d12 PRIVATE GPUOpen::D3D12MemoryAllocator)
 target_link_libraries(lyra-d3d12 PRIVATE ${D3D12_LIBRARIES})
 target_include_directories(lyra-d3d12 PRIVATE ${DXGI_INCLUDE_DIR})
 target_include_directories(lyra-d3d12 PRIVATE ${D3D12_INCLUDE_DIR})
+
+# message(STATUS "CXX COMPILER: ${CMAKE_CXX_COMPILER_ID}")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    # added for D3D12MemoryAllocator
+    target_compile_options(lyra-vulkan PRIVATE -Wno-nullability-completeness)
+endif()

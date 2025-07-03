@@ -68,7 +68,7 @@ D3D12Pipeline::D3D12Pipeline(const GPURenderPipelineDescriptor& desc)
             element.SemanticName             = "ATTRIBUTE";
             element.SemanticIndex            = attribute.shader_location;
             element.Format                   = d3d12enum(attribute.format);
-            element.InputSlot                = static_cast<UINT>(buffer_index++);
+            element.InputSlot                = static_cast<UINT>(buffer_index);
             element.AlignedByteOffset        = static_cast<UINT>(attribute.offset);
             element.InputSlotClass           = d3d12enum(layout.step_mode);
             element.InstanceDataStepRate     = (layout.step_mode == GPUVertexStepMode::INSTANCE) ? 1 : 0;
@@ -79,6 +79,9 @@ D3D12Pipeline::D3D12Pipeline(const GPURenderPipelineDescriptor& desc)
 
         // record vertex buffer strides
         vertex_buffer_strides.push_back(layout.array_stride);
+
+        // increment buffer layout index
+        buffer_index++;
     }
 
     // input assembly state
@@ -144,6 +147,9 @@ D3D12Pipeline::D3D12Pipeline(const GPURenderPipelineDescriptor& desc)
     this->layout   = desc.layout;
     this->topology = infer_topology(desc.primitive.topology);
     ThrowIfFailed(rhi->device->CreateGraphicsPipelineState(&pso_desc, IID_PPV_ARGS(&pipeline)));
+
+    if (desc.label)
+        pipeline->SetName(to_wstring(desc.label).c_str());
 }
 
 D3D12Pipeline::D3D12Pipeline(const GPURayTracingPipelineDescriptor& desc)

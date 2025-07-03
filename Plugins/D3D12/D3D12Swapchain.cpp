@@ -69,6 +69,24 @@ void D3D12SwapFrame::destroy()
     }
 }
 
+void default_swapchain_image_barrier(ID3D12GraphicsCommandList* command_buffer)
+{
+    auto rhi = get_rhi();
+
+    auto& frame   = rhi->swapchain_frames.at(rhi->current_image_index);
+    auto& texture = fetch_resource(rhi->textures, frame.texture);
+
+    D3D12_RESOURCE_BARRIER barrier = {};
+    barrier.Type                   = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    barrier.Flags                  = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+    barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+    barrier.Transition.StateAfter  = D3D12_RESOURCE_STATE_PRESENT;
+    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+    barrier.Transition.pResource   = texture.texture;
+
+    command_buffer->ResourceBarrier(1, &barrier);
+}
+
 bool api::create_surface(GPUSurface& surface, const GPUSurfaceDescriptor& desc)
 {
     auto rhi = get_rhi();
@@ -141,36 +159,19 @@ bool api::create_surface(GPUSurface& surface, const GPUSurfaceDescriptor& desc)
     return true;
 }
 
-void default_swapchain_image_barrier(ID3D12GraphicsCommandList* command_buffer)
-{
-    auto rhi = get_rhi();
-
-    auto& frame   = rhi->swapchain_frames.at(rhi->current_image_index);
-    auto& texture = fetch_resource(rhi->textures, frame.texture);
-
-    D3D12_RESOURCE_BARRIER barrier = {};
-    barrier.Type                   = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-    barrier.Flags                  = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-    barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
-    barrier.Transition.StateAfter  = D3D12_RESOURCE_STATE_PRESENT;
-    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-    barrier.Transition.pResource   = texture.texture;
-
-    command_buffer->ResourceBarrier(1, &barrier);
-}
-
 void api::delete_surface()
 {
     auto rhi = get_rhi();
 
     for (auto& swap_frame : rhi->swapchain_frames)
         swap_frame.destroy();
-    rhi->swapchain_frames.clear();
 
     if (rhi->swapchain) {
         rhi->swapchain->Release();
         rhi->swapchain = nullptr;
     }
+
+    rhi->swapchain_frames.clear();
 }
 
 bool api::acquire_next_frame(GPUTextureHandle& texture, GPUTextureViewHandle& view, GPUFenceHandle& image_available_fence, GPUFenceHandle& render_complete_fence, bool& suboptimal)

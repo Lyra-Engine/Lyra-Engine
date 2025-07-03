@@ -12,6 +12,13 @@ bool api::create_device(const GPUDeviceDescriptor& desc)
     if (rhi->rhiflags.contains(RHIFlag::DEBUG))
         ThrowIfFailed(rhi->device->QueryInterface(&rhi->debug_device));
 
+    // create allocator
+    D3D12MA::ALLOCATOR_DESC allocatorDesc = {};
+    allocatorDesc.pDevice                 = rhi->device;
+    allocatorDesc.pAdapter                = rhi->adapter;
+    allocatorDesc.Flags                   = D3D12MA_RECOMMENDED_ALLOCATOR_FLAGS;
+    ThrowIfFailed(D3D12MA::CreateAllocator(&allocatorDesc, &rhi->allocator));
+
     D3D12_COMMAND_QUEUE_DESC queue_desc = {};
     queue_desc.Flags                    = D3D12_COMMAND_QUEUE_FLAG_NONE;
     queue_desc.NodeMask                 = 0; // usually 0 for single GPU
@@ -42,7 +49,72 @@ bool api::create_device(const GPUDeviceDescriptor& desc)
 
 void api::delete_device()
 {
+    api::wait_idle();
+
     auto rhi = get_rhi();
+
+    // clean up remaining fences
+    for (auto& frame : rhi->frames)
+        frame.destroy();
+
+    // clean up remaining swapchain fences
+    for (auto& frame : rhi->swapchain_frames)
+        frame.destroy();
+
+    // clean up remaining blases
+    for (auto& blas : rhi->blases.data)
+        blas.destroy();
+
+    // clean up remaining tlases
+    for (auto& tlas : rhi->tlases.data)
+        tlas.destroy();
+
+    // clean up remaining fences
+    for (auto& fence : rhi->fences.data)
+        fence.destroy();
+
+    // clean up remaining buffers
+    for (auto& buffer : rhi->buffers.data)
+        buffer.destroy();
+
+    // clean up remaining texture views
+    for (auto& view : rhi->views.data)
+        view.destroy();
+
+    // clean up remaining textures
+    for (auto& texture : rhi->textures.data)
+        texture.destroy();
+
+    // clean up remaining samplers
+    for (auto& sampler : rhi->samplers.data)
+        sampler.destroy();
+
+    // clean up remaining shaders
+    for (auto& shader : rhi->shaders.data)
+        shader.destroy();
+
+    // clean up remaining bind group layouts
+    for (auto& layout : rhi->bind_group_layouts.data)
+        layout.destroy();
+
+    // clean up remaining pipeline layouts
+    for (auto& layout : rhi->pipeline_layouts.data)
+        layout.destroy();
+
+    // clean up remaining pipelines
+    for (auto& pipeline : rhi->pipelines.data)
+        pipeline.destroy();
+
+    // clean up descriptor heaps
+    rhi->rtv_heap.destroy();
+    rhi->dsv_heap.destroy();
+    rhi->sampler_heap.destroy();
+    rhi->cbv_srv_uav_heap.destroy();
+
+    if (rhi->swapchain) {
+        rhi->swapchain->Release();
+        rhi->swapchain = nullptr;
+    }
 
     if (rhi->transfer_queue) {
         rhi->transfer_queue->Release();
@@ -57,6 +129,17 @@ void api::delete_device()
     if (rhi->compute_queue) {
         rhi->compute_queue->Release();
         rhi->compute_queue = nullptr;
+    }
+
+    if (rhi->allocator) {
+        rhi->allocator->Release();
+        rhi->allocator = nullptr;
+    }
+
+    if (rhi->debug_device) {
+        rhi->debug_device->ReportLiveDeviceObjects(D3D12_RLDO_DETAIL);
+        rhi->debug_device->Release();
+        rhi->debug_device = nullptr;
     }
 
     if (rhi->device) {

@@ -13,31 +13,35 @@ D3D12Texture::D3D12Texture(ID3D12Resource* texture) : texture(texture)
 
 D3D12Texture::D3D12Texture(const GPUTextureDescriptor& desc)
 {
-    D3D12_HEAP_PROPERTIES heap_props = {};
-    heap_props.Type                  = D3D12_HEAP_TYPE_DEFAULT;
+    D3D12MA::ALLOCATION_DESC allocation_desc{};
+    allocation_desc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
 
-    D3D12_RESOURCE_DESC tex_desc = {};
-    tex_desc.Dimension           = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-    tex_desc.Width               = desc.size.width;
-    tex_desc.Height              = desc.size.height;
-    tex_desc.DepthOrArraySize    = 1;
-    tex_desc.MipLevels           = 1;
-    tex_desc.Format              = infer_texture_format(desc.format);
-    tex_desc.SampleDesc.Count    = 1;
-    tex_desc.Layout              = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-    tex_desc.Flags               = infer_texture_flags(desc.usage, desc.format);
+    D3D12_RESOURCE_DESC resource_desc{};
+    resource_desc.Dimension        = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    resource_desc.Width            = desc.size.width;
+    resource_desc.Height           = desc.size.height;
+    resource_desc.DepthOrArraySize = 1;
+    resource_desc.MipLevels        = 1;
+    resource_desc.Format           = infer_texture_format(desc.format);
+    resource_desc.SampleDesc.Count = 1;
+    resource_desc.Layout           = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+    resource_desc.Flags            = infer_texture_flags(desc.usage, desc.format);
 
     auto rhi = get_rhi();
-    ThrowIfFailed(rhi->device->CreateCommittedResource(
-        &heap_props,
-        D3D12_HEAP_FLAG_NONE,
-        &tex_desc,
+    ThrowIfFailed(rhi->allocator->CreateResource(
+        &allocation_desc,
+        &resource_desc,
         D3D12_RESOURCE_STATE_COMMON,
-        nullptr,
-        IID_PPV_ARGS(&texture)));
+        NULL,
+        &allocation,
+        IID_NULL, NULL));
+    texture = allocation->GetResource();
+
+    if (desc.label)
+        texture->SetName(to_wstring(desc.label).c_str());
 
     // record basic information
-    format      = tex_desc.Format;
+    format      = resource_desc.Format;
     samples     = desc.sample_count;
     usages      = desc.usage;
     area.width  = desc.size.width;
@@ -49,6 +53,11 @@ void D3D12Texture::destroy()
     if (texture) {
         texture->Release();
         texture = nullptr;
+    }
+
+    if (allocation) {
+        allocation->Release();
+        allocation = nullptr;
     }
 }
 
@@ -85,14 +94,20 @@ void D3D12TextureView::destroy()
 {
     auto rhi = get_rhi();
 
-    if (rtv_view.valid())
+    if (rtv_view.valid()) {
         rhi->rtv_heap.recycle(rtv_view);
+        rtv_view.reset();
+    }
 
-    if (srv_view.valid())
+    if (srv_view.valid()) {
         rhi->cbv_srv_uav_heap.recycle(srv_view);
+        srv_view.reset();
+    }
 
-    if (uav_view.valid())
+    if (uav_view.valid()) {
         rhi->cbv_srv_uav_heap.recycle(uav_view);
+        uav_view.reset();
+    }
 }
 
 void D3D12TextureView::init_rtv(const D3D12Texture& texture, const GPUTextureViewDescriptor& desc)

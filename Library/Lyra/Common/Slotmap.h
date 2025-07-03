@@ -37,6 +37,9 @@ namespace lyra
         {
             // fallback: increase the data array
             if (free.empty()) {
+                if (rear < data.size())
+                    return rear++;
+
                 resize_data();
                 return rear++;
             }
