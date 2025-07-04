@@ -59,7 +59,7 @@ VulkanSemaphore::VulkanSemaphore(VkSemaphoreType type)
     }
 }
 
-void VulkanSemaphore::wait()
+void VulkanSemaphore::wait(uint64_t timeout)
 {
     auto wait_info           = VkSemaphoreWaitInfo{};
     wait_info.sType          = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
@@ -70,7 +70,7 @@ void VulkanSemaphore::wait()
     wait_info.pValues        = &target;
 
     auto rhi = get_rhi();
-    vk_check(rhi->vtable.vkWaitSemaphores(rhi->device, &wait_info, 1000000000ULL));
+    vk_check(rhi->vtable.vkWaitSemaphores(rhi->device, &wait_info, timeout));
 
     // NOTE: It could also fail due to VK_TIMEOUT, maybe we want to tackle it.
 }
@@ -99,7 +99,7 @@ void VulkanSemaphore::signal(uint64_t value)
     signal_info.sType     = VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO;
     signal_info.pNext     = nullptr;
     signal_info.semaphore = semaphore;
-    signal_info.value     = 5;
+    signal_info.value     = value;
 
     auto rhi = get_rhi();
     vk_check(rhi->vtable.vkSignalSemaphore(rhi->device, &signal_info));

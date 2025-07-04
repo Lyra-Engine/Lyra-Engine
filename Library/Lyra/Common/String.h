@@ -14,6 +14,16 @@ namespace lyra
     // for windows compatibility
     using LPCWSTR = const wchar_t*;
 
+    // conversion from const char* to wstring
+    inline std::wstring to_wstring(const char* str)
+    {
+        size_t size = strnlen_s(str, 32);
+
+        std::vector<wchar_t> buf(size);
+        std::use_facet<std::ctype<wchar_t>>(std::locale()).widen(str, str + size, buf.data());
+        return std::wstring(buf.data(), buf.size());
+    }
+
     // conversion from string to wstring
     inline std::wstring to_wstring(const std::string& str)
     {

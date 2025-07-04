@@ -49,6 +49,7 @@ void RHI::destroy() const
 {
     RHI::api()->delete_surface();
     RHI::api()->delete_device();
+    RHI::api()->delete_adapter();
     RHI::api()->delete_instance();
 }
 
@@ -190,6 +191,13 @@ GPUBindGroup GPUDevice::create_bind_group(const GPUBindGroupDescriptor& desc) co
     return bind_group;
 }
 
+GPUBindGroup GPUDevice::create_bind_group(const GPUBindlessDescriptor& desc) const
+{
+    GPUBindGroup bind_group;
+    RHI::api()->create_bind_group_bindless(bind_group.handle, desc);
+    return bind_group;
+}
+
 GPUBindGroupLayout GPUDevice::create_bind_group_layout(const GPUBindGroupLayoutDescriptor& desc) const
 {
     GPUBindGroupLayout layout;
@@ -199,6 +207,9 @@ GPUBindGroupLayout GPUDevice::create_bind_group_layout(const GPUBindGroupLayoutD
 
 GPUPipelineLayout GPUDevice::create_pipeline_layout(const GPUPipelineLayoutDescriptor& desc) const
 {
+    for (auto& layout : desc.bind_group_layouts)
+        assert(layout.valid() && "create_pipeline_layout() requires valid bind group layout!");
+
     GPUPipelineLayout layout;
     RHI::api()->create_pipeline_layout(layout.handle, desc);
     return layout;
@@ -206,24 +217,30 @@ GPUPipelineLayout GPUDevice::create_pipeline_layout(const GPUPipelineLayoutDescr
 
 GPURenderPipeline GPUDevice::create_render_pipeline(const GPURenderPipelineDescriptor& desc) const
 {
+    assert(desc.layout.valid() && "create_render_pipeline() requires valid pipeline layout!");
+    assert(desc.vertex.module.valid() && "create_render_pipeline() requires valid vertex shader module!");
+    assert(desc.fragment.module.valid() && "create_render_pipeline() requires valid fragment shader module!");
+
     GPURenderPipeline pipeline;
-    pipeline.layout = desc.layout;
     RHI::api()->create_render_pipeline(pipeline.handle, desc);
     return pipeline;
 }
 
 GPUComputePipeline GPUDevice::create_compute_pipeline(const GPUComputePipelineDescriptor& desc) const
 {
+    assert(desc.layout.valid() && "create_compute_pipeline() requires valid pipeline layout!");
+    assert(desc.compute.module.valid() && "create_compute_pipeline() requires valid compute shader module!");
+
     GPUComputePipeline pipeline;
-    pipeline.layout = desc.layout;
     RHI::api()->create_compute_pipeline(pipeline.handle, desc);
     return pipeline;
 }
 
 GPURayTracingPipeline GPUDevice::create_raytracing_pipeline(const GPURayTracingPipelineDescriptor& desc) const
 {
+    assert(desc.layout.valid() && "create_raytracing_pipeline() requires valid pipeline layout!");
+
     GPURayTracingPipeline pipeline;
-    pipeline.layout = desc.layout;
     RHI::api()->create_raytracing_pipeline(pipeline.handle, desc);
     return pipeline;
 }
@@ -410,17 +427,17 @@ void GPUCommandEncoder::signal(const GPUFence& fence, GPUBarrierSyncFlags sync) 
 
 void GPUCommandEncoder::set_pipeline(const GPURenderPipeline& pipeline) const
 {
-    RHI::api()->cmd_set_render_pipeline(handle, pipeline.handle, pipeline.layout);
+    RHI::api()->cmd_set_render_pipeline(handle, pipeline.handle);
 }
 
 void GPUCommandEncoder::set_pipeline(const GPUComputePipeline& pipeline) const
 {
-    RHI::api()->cmd_set_compute_pipeline(handle, pipeline.handle, pipeline.layout);
+    RHI::api()->cmd_set_compute_pipeline(handle, pipeline.handle);
 }
 
 void GPUCommandEncoder::set_pipeline(const GPURayTracingPipeline& pipeline) const
 {
-    RHI::api()->cmd_set_raytracing_pipeline(handle, pipeline.handle, pipeline.layout);
+    RHI::api()->cmd_set_raytracing_pipeline(handle, pipeline.handle);
 }
 
 void GPUCommandEncoder::set_bind_group(GPUIndex32 index, const GPUBindGroup& bind_group, const Vector<GPUBufferDynamicOffset>& dynamic_offsets) const

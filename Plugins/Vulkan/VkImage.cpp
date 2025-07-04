@@ -32,7 +32,7 @@ VulkanTexture::VulkanTexture(const GPUTextureDescriptor& desc) : aspects(0)
     tex_create_info.format        = vkenum(desc.format);
     tex_create_info.tiling        = VK_IMAGE_TILING_OPTIMAL;
     tex_create_info.samples       = vkenum(desc.sample_count);
-    tex_create_info.usage         = vkenum(desc.usage);
+    tex_create_info.usage         = vkenum(desc.usage, desc.format);
     tex_create_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
     // allocation create info

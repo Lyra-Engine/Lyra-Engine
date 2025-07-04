@@ -228,8 +228,7 @@ namespace lyra::rhi
 
     struct GPUSamplerBindingLayout
     {
-        GPUSamplerBindingType type     = GPUSamplerBindingType::FILTERING;
-        bool                  bindless = false;
+        GPUSamplerBindingType type = GPUSamplerBindingType::FILTERING;
     };
 
     struct GPUTextureBindingLayout
@@ -237,7 +236,6 @@ namespace lyra::rhi
         GPUTextureSampleType    sample_type    = GPUTextureSampleType::FLOAT;
         GPUTextureViewDimension view_dimension = GPUTextureViewDimension::x2D;
         bool                    multisampled   = false;
-        bool                    bindless       = false;
     };
 
     struct GPUStorageTextureBindingLayout
@@ -276,7 +274,9 @@ namespace lyra::rhi
             GPUBlasTriangleGeometrySizeDescriptor triangles;
         };
 
-        explicit GPUBlasGeometrySizeDescriptor() {} // adding default trivial constructor
+        // default trivial constructor / destructor
+        GPUBlasGeometrySizeDescriptor() {}
+        ~GPUBlasGeometrySizeDescriptor() {}
     };
 
     // NOTE: index is optional
@@ -300,7 +300,9 @@ namespace lyra::rhi
             Vector<GPUBlasTriangleGeometry> triangles;
         };
 
-        ~GPUBlasGeometries() {} // fill in the automatically deleted destructor
+        // default trivial constructor / destructor
+        GPUBlasGeometries() {}
+        ~GPUBlasGeometries() {}
     };
 
     struct GPUBlasBuildEntry
@@ -383,21 +385,40 @@ namespace lyra::rhi
     struct GPUBindGroupEntry
     {
         GPUIndex32             binding;
+        GPUIndex32             index = 0; // NOTE: Non-WebGPU standard API
         GPUBindingResourceType type;
-        GPUSize32              count = 1;
-        GPUSize32              index = 0;
         union
         {
             GPUBufferBinding     buffer;
             GPUSamplerHandle     sampler;
             GPUTextureViewHandle texture;
         };
+
+        // default trivial constructor / destructor
+        GPUBindGroupEntry() {}
+        ~GPUBindGroupEntry() {}
+    };
+
+    struct GPUBindlessEntry
+    {
+        GPUIndex32             binding;
+        GPUBindingResourceType type;
+        union
+        {
+            Vector<GPUBufferBinding>     buffers;
+            Vector<GPUSamplerHandle>     samplers;
+            Vector<GPUTextureViewHandle> textures;
+        };
+
+        // default trivial constructor / destructor
+        GPUBindlessEntry() {}
+        ~GPUBindlessEntry() {}
     };
 
     struct GPUBindGroupLayoutEntry
     {
         GPUIndex32             binding;
-        GPUIndex32             count = 1;
+        GPUIndex32             count = 1; // NOTE: Non-WebGPU standard API
         GPUShaderStageFlags    visibility;
         GPUBindingResourceType type;
         union
@@ -408,6 +429,10 @@ namespace lyra::rhi
             GPUStorageTextureBindingLayout storage_texture;
             GPUBVHBindingLayout            bvh;
         };
+
+        // default trivial constructor / destructor
+        GPUBindGroupLayoutEntry() {}
+        ~GPUBindGroupLayoutEntry() {}
     };
 
     struct GPUVertexState : public GPUProgrammableStage
@@ -485,6 +510,7 @@ namespace lyra::rhi
         GPUSize32 array_layers     = 1;
     };
 
+    // NOTE: Non-WebGPU standard API
     struct GPUMemoryBarrier
     {
         GPUBarrierSync   src_sync;
@@ -493,6 +519,7 @@ namespace lyra::rhi
         GPUBarrierAccess dst_access;
     };
 
+    // NOTE: Non-WebGPU standard API
     struct GPUBufferBarrier
     {
         GPUBarrierSync   src_sync;
@@ -504,6 +531,7 @@ namespace lyra::rhi
         GPUSize64        size;
     };
 
+    // NOTE: Non-WebGPU standard API
     struct GPUTextureBarrier
     {
         GPUBarrierSync             src_sync;

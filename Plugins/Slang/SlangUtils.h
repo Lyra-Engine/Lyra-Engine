@@ -31,6 +31,8 @@ struct CompilerWrapper
 
     auto select_profile(const CompilerDescriptor& descriptor) const -> SlangProfileID;
 
+    auto select_target(const CompilerDescriptor& descriptor) const -> SlangCompileTarget;
+
     bool compile(const CompileDescriptor& desc, CompileResultInternal& result);
 };
 

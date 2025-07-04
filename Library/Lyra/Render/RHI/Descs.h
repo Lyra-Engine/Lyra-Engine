@@ -84,7 +84,7 @@ namespace lyra::rhi
     {
         GPUTextureFormat        format;
         GPUTextureViewDimension dimension;
-        GPUTextureUsageFlags    usage             = 0;
+        GPUTextureUsageFlags    usage             = 0; // if specified as 0, use texture's usage
         GPUTextureAspect        aspect            = GPUTextureAspect::ALL;
         GPUIntegerCoordinate    base_mip_level    = 0;
         GPUIntegerCoordinate    mip_level_count   = 1;
@@ -104,12 +104,14 @@ namespace lyra::rhi
         GPUSize32    count;
     };
 
+    // NOTE: Non-WebGPU standard API
     struct GPUBlasDescriptor : public GPUObjectDescriptorBase
     {
         GPUBVHFlags      flags       = 0;
         GPUBVHUpdateMode update_mode = GPUBVHUpdateMode::BUILD;
     };
 
+    // NOTE: Non-WebGPU standard API
     struct GPUTlasDescriptor : public GPUObjectDescriptorBase
     {
         uint             max_instances = 0;
@@ -119,14 +121,21 @@ namespace lyra::rhi
 
     struct GPUBindGroupDescriptor : public GPUObjectDescriptorBase
     {
-        GPUSize32                 count = 0;
         GPUBindGroupLayoutHandle  layout;
         Vector<GPUBindGroupEntry> entries;
     };
 
+    // NOTE: Non-WebGPU standard API
+    struct GPUBindlessDescriptor : public GPUObjectDescriptorBase
+    {
+        GPUBindGroupLayoutHandle layout;
+        GPUBindlessEntry         entry;
+    };
+
     struct GPUBindGroupLayoutDescriptor : public GPUObjectDescriptorBase
     {
-        Vector<GPUBindGroupLayoutEntry> entries = {};
+        bool                            bindless = false;
+        Vector<GPUBindGroupLayoutEntry> entries  = {};
     };
 
     struct GPUPipelineLayoutDescriptor : public GPUObjectDescriptorBase
@@ -134,26 +143,28 @@ namespace lyra::rhi
         Vector<GPUBindGroupLayoutHandle> bind_group_layouts;
     };
 
-    struct GPUComputePipelineDescriptor : public GPUObjectDescriptorBase
+    struct GPUPipelineDescriptorBase : public GPUObjectDescriptorBase
     {
         GPUPipelineLayoutHandle layout;
-        GPUProgrammableStage    compute;
     };
 
-    struct GPURenderPipelineDescriptor : public GPUObjectDescriptorBase
+    struct GPUComputePipelineDescriptor : public GPUPipelineDescriptorBase
     {
-        GPUPipelineLayoutHandle layout;
-        GPUVertexState          vertex        = {};
-        GPUPrimitiveState       primitive     = {};
-        GPUDepthStencilState    depth_stencil = {};
-        GPUMultisampleState     multisample   = {};
-        GPUFragmentState        fragment      = {};
+        GPUProgrammableStage compute;
     };
 
-    struct GPURayTracingPipelineDescriptor : public GPUObjectDescriptorBase
+    struct GPURenderPipelineDescriptor : public GPUPipelineDescriptorBase
     {
-        // more stuff in here
-        GPUPipelineLayoutHandle layout;
+        GPUVertexState       vertex        = {};
+        GPUPrimitiveState    primitive     = {};
+        GPUDepthStencilState depth_stencil = {};
+        GPUMultisampleState  multisample   = {};
+        GPUFragmentState     fragment      = {};
+    };
+
+    struct GPURayTracingPipelineDescriptor : public GPUPipelineDescriptorBase
+    {
+        uint max_recursion_depth = 5;
     };
 
     struct GPURenderPassLayout : public GPUObjectDescriptorBase

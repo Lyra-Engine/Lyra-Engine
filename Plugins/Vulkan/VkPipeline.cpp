@@ -151,7 +151,8 @@ VulkanPipeline::VulkanPipeline(const GPURenderPipelineDescriptor& desc)
     depth_stencil_state.depthCompareOp        = vkenum(desc.depth_stencil.depth_compare);
     depth_stencil_state.maxDepthBounds        = 1.0f;
     depth_stencil_state.minDepthBounds        = 0.0f;
-    depth_stencil_state.stencilTestEnable     = desc.depth_stencil.stencil_read_mask != 0 || desc.depth_stencil.stencil_write_mask != 0;
+    depth_stencil_state.stencilTestEnable     = desc.depth_stencil.stencil_front.compare != GPUCompareFunction::ALWAYS ||
+                                            desc.depth_stencil.stencil_back.compare != GPUCompareFunction::ALWAYS;
 
     auto color_blend_state            = VkPipelineColorBlendStateCreateInfo{};
     color_blend_state.sType           = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
@@ -200,6 +201,7 @@ VulkanPipeline::VulkanPipeline(const GPURenderPipelineDescriptor& desc)
                                                       //
     // TODO: support specialization constants
 
+    this->layout = layout.layout; // record the pipeline layout
     vk_check(rhi->vtable.vkCreateGraphicsPipelines(rhi->device, cache, 1, &create_info, nullptr, &pipeline));
 
     if (desc.label)
@@ -221,6 +223,7 @@ VulkanPipeline::VulkanPipeline(const GPUComputePipelineDescriptor& desc)
 
     // TODO: support specialization constants
 
+    this->layout = layout.layout; // record the pipeline layout
     vk_check(rhi->vtable.vkCreateComputePipelines(rhi->device, cache, 1, &create_info, nullptr, &pipeline));
 
     if (desc.label)

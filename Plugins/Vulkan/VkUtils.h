@@ -1,5 +1,5 @@
-#ifndef LYRA_PLUGIN_VULKAN_VKINCLUDE_H
-#define LYRA_PLUGIN_VULKAN_VKINCLUDE_H
+#ifndef LYRA_PLUGIN_VULKAN_VKUTILS_H
+#define LYRA_PLUGIN_VULKAN_VKUTILS_H
 
 #ifdef _WIN32
 #define VK_USE_PLATFORM_WIN32_KHR
@@ -148,10 +148,10 @@ struct VulkanFence
 {
     VkFence fence = VK_NULL_HANDLE;
 
+    // implementation in VkFence.cpp
     explicit VulkanFence();
     explicit VulkanFence(bool signaled);
 
-    // implementation in VkFence.cpp
     void wait(uint64_t timeout = UINT64_MAX);
     void reset();
     void destroy();
@@ -173,7 +173,7 @@ struct VulkanSemaphore
     explicit VulkanSemaphore();
     explicit VulkanSemaphore(VkSemaphoreType type);
 
-    void wait();
+    void wait(uint64_t timeout = UINT64_MAX);
     void reset();
     bool ready();
     void signal(uint64_t value);
@@ -212,10 +212,10 @@ struct VulkanShader
 
 struct VulkanBindGroupLayout
 {
-    VkDescriptorSetLayout layout = VK_NULL_HANDLE;
+    VkDescriptorSetLayout layout   = VK_NULL_HANDLE;
+    bool                  bindless = false;
 
     Vector<VkDescriptorType> binding_types = {};
-    Vector<uint>             is_bindless   = {};
 
     // implementation in VkLayout.cpp
     explicit VulkanBindGroupLayout();
@@ -241,8 +241,9 @@ struct VulkanPipelineLayout
 
 struct VulkanPipeline
 {
-    VkPipeline      pipeline = VK_NULL_HANDLE;
-    VkPipelineCache cache    = VK_NULL_HANDLE;
+    VkPipeline       pipeline = VK_NULL_HANDLE;
+    VkPipelineCache  cache    = VK_NULL_HANDLE;
+    VkPipelineLayout layout   = VK_NULL_HANDLE; // VulkanPipeline does NOT own this.
 
     // implementation in VkPipeline.cpp
     explicit VulkanPipeline();
@@ -320,8 +321,8 @@ struct VulkanDescriptorPool
     auto allocate(
         VkDescriptorSet&      descriptor,
         VkDescriptorSetLayout layout,
-        uint                  defined_count = 1,
-        uint                  varying_count = 0) -> GPUBindGroupHandle;
+        uint                  set_count      = 1,
+        uint                  bindless_count = 0) -> GPUBindGroupHandle;
 
     uint find_pool_index(uint index);
 };
@@ -400,8 +401,8 @@ struct VulkanSwapFrame
 
 struct VulkanFrame
 {
-    // used to check vulkan buffer usage,
-    // vulkan command buffers are short-lived, only usable within the frame.
+    // used to check command buffer usage,
+    // command buffers are short-lived, only usable within the frame.
     // frame id must match VulkanFrame's id
     uint32_t frame_id = 0u;
 
@@ -602,9 +603,9 @@ namespace cmd
     void signal_fence(GPUCommandEncoderHandle cmdbuffer, GPUFenceHandle fence, GPUBarrierSyncFlags sync);
     void begin_render_pass(GPUCommandEncoderHandle cmdbuffer, const GPURenderPassDescriptor& descriptor);
     void end_render_pass(GPUCommandEncoderHandle cmdbuffer);
-    void set_render_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURenderPipelineHandle pipeline, GPUPipelineLayoutHandle layout);
-    void set_compute_pipeline(GPUCommandEncoderHandle cmdbuffer, GPUComputePipelineHandle pipeline, GPUPipelineLayoutHandle layout);
-    void set_raytracing_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURayTracingPipelineHandle pipeline, GPUPipelineLayoutHandle layout);
+    void set_render_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURenderPipelineHandle pipeline);
+    void set_compute_pipeline(GPUCommandEncoderHandle cmdbuffer, GPUComputePipelineHandle pipeline);
+    void set_raytracing_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURayTracingPipelineHandle pipeline);
     void set_bind_group(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 index, GPUBindGroupHandle bind_group, const Vector<GPUBufferDynamicOffset>& dynamic_offsets);
     void set_index_buffer(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle buffer, GPUIndexFormat format, GPUSize64 offset, GPUSize64 size);
     void set_vertex_buffer(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 slot, GPUBufferHandle buffer, GPUSize64 offset, GPUSize64 size);
@@ -672,7 +673,7 @@ auto vkenum(GPUBlasType type) -> VkGeometryTypeKHR;
 auto vkenum(GPUBVHUpdateMode mode) -> VkBuildAccelerationStructureModeKHR;
 auto vkenum(GPUColorWriteFlags color) -> VkColorComponentFlags;
 auto vkenum(GPUBufferUsageFlags usages) -> VkBufferUsageFlags;
-auto vkenum(GPUTextureUsageFlags usages) -> VkImageUsageFlags;
+auto vkenum(GPUTextureUsageFlags usages, GPUTextureFormat format) -> VkImageUsageFlags;
 auto vkenum(GPUShaderStageFlags stages) -> VkShaderStageFlags;
 auto vkenum(GPUBarrierSyncFlags flags) -> VkPipelineStageFlags2;
 auto vkenum(GPUBarrierAccessFlags flags) -> VkAccessFlags2;
@@ -757,4 +758,4 @@ inline VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_callback(
         }                                                     \
     }
 
-#endif // LYRA_PLUGIN_VULKAN_VKINCLUDE_H
+#endif // LYRA_PLUGIN_VULKAN_VKUTILS_H

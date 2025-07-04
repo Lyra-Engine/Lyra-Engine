@@ -186,46 +186,46 @@ void cmd::end_render_pass(GPUCommandEncoderHandle cmdbuffer)
     rhi->vtable.vkCmdEndRenderingKHR(cmd.command_buffer);
 }
 
-void cmd::set_render_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURenderPipelineHandle pipeline, GPUPipelineLayoutHandle layout)
+void cmd::set_render_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURenderPipelineHandle pipeline)
 {
     auto  rhi = get_rhi();
     auto& cmd = rhi->current_frame().command(cmdbuffer);
     auto& pip = fetch_resource(rhi->pipelines, pipeline);
-    auto& lay = fetch_resource(rhi->pipeline_layouts, layout);
 
-    cmd.last_bound_point    = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    cmd.last_bound_layout   = lay.layout;
-    cmd.last_bound_pipeline = pip.pipeline;
-
-    rhi->vtable.vkCmdBindPipeline(cmd.command_buffer, cmd.last_bound_point, cmd.last_bound_pipeline);
+    if (pip.pipeline != cmd.last_bound_pipeline) {
+        cmd.last_bound_point    = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        cmd.last_bound_layout   = pip.layout;
+        cmd.last_bound_pipeline = pip.pipeline;
+        rhi->vtable.vkCmdBindPipeline(cmd.command_buffer, cmd.last_bound_point, cmd.last_bound_pipeline);
+    }
 }
 
-void cmd::set_compute_pipeline(GPUCommandEncoderHandle cmdbuffer, GPUComputePipelineHandle pipeline, GPUPipelineLayoutHandle layout)
+void cmd::set_compute_pipeline(GPUCommandEncoderHandle cmdbuffer, GPUComputePipelineHandle pipeline)
 {
     auto  rhi = get_rhi();
     auto& cmd = rhi->current_frame().command(cmdbuffer);
     auto& pip = fetch_resource(rhi->pipelines, pipeline);
-    auto& lay = fetch_resource(rhi->pipeline_layouts, layout);
 
-    cmd.last_bound_point    = VK_PIPELINE_BIND_POINT_COMPUTE;
-    cmd.last_bound_layout   = lay.layout;
-    cmd.last_bound_pipeline = pip.pipeline;
-
-    rhi->vtable.vkCmdBindPipeline(cmd.command_buffer, cmd.last_bound_point, cmd.last_bound_pipeline);
+    if (pip.pipeline != cmd.last_bound_pipeline) {
+        cmd.last_bound_point    = VK_PIPELINE_BIND_POINT_COMPUTE;
+        cmd.last_bound_layout   = pip.layout;
+        cmd.last_bound_pipeline = pip.pipeline;
+        rhi->vtable.vkCmdBindPipeline(cmd.command_buffer, cmd.last_bound_point, cmd.last_bound_pipeline);
+    }
 }
 
-void cmd::set_raytracing_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURayTracingPipelineHandle pipeline, GPUPipelineLayoutHandle layout)
+void cmd::set_raytracing_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURayTracingPipelineHandle pipeline)
 {
     auto  rhi = get_rhi();
     auto& cmd = rhi->current_frame().command(cmdbuffer);
     auto& pip = fetch_resource(rhi->pipelines, pipeline);
-    auto& lay = fetch_resource(rhi->pipeline_layouts, layout);
 
-    cmd.last_bound_point    = VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
-    cmd.last_bound_layout   = lay.layout;
-    cmd.last_bound_pipeline = pip.pipeline;
-
-    rhi->vtable.vkCmdBindPipeline(cmd.command_buffer, cmd.last_bound_point, cmd.last_bound_pipeline);
+    if (pip.pipeline != cmd.last_bound_pipeline) {
+        cmd.last_bound_point    = VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
+        cmd.last_bound_layout   = pip.layout;
+        cmd.last_bound_pipeline = pip.pipeline;
+        rhi->vtable.vkCmdBindPipeline(cmd.command_buffer, cmd.last_bound_point, cmd.last_bound_pipeline);
+    }
 }
 
 void cmd::set_bind_group(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 index, GPUBindGroupHandle bind_group, const Vector<GPUBufferDynamicOffset>& dynamic_offsets)

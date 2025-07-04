@@ -205,7 +205,6 @@ namespace lyra::rhi
     struct GPURenderPipeline : public GPUObjectBase
     {
         GPURenderPipelineHandle handle;
-        GPUPipelineLayoutHandle layout;
 
         void destroy();
 
@@ -215,7 +214,6 @@ namespace lyra::rhi
     struct GPUComputePipeline : public GPUObjectBase
     {
         GPUComputePipelineHandle handle;
-        GPUPipelineLayoutHandle  layout;
 
         void destroy();
 
@@ -225,7 +223,6 @@ namespace lyra::rhi
     struct GPURayTracingPipeline : public GPUObjectBase
     {
         GPURayTracingPipelineHandle handle;
-        GPUPipelineLayoutHandle     layout;
 
         void destroy();
 
@@ -362,6 +359,8 @@ namespace lyra::rhi
         auto create_tlas(const GPUTlasDescriptor& descriptor) const -> GPUTlas;
 
         auto create_bind_group(const GPUBindGroupDescriptor& descriptor) const -> GPUBindGroup;
+
+        auto create_bind_group(const GPUBindlessDescriptor& descriptor) const -> GPUBindGroup;
 
         auto create_bind_group_layout(const GPUBindGroupLayoutDescriptor& descriptor) const -> GPUBindGroupLayout;
 

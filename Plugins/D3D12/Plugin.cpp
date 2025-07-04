@@ -1,42 +1,36 @@
+#include "D3D12Utils.h"
+
 // global module headers
 #include <Lyra/Common/String.h>
 #include <Lyra/Common/Plugin.h>
 #include <Lyra/Render/RHI/API.h>
 #include <Lyra/Window/API.h>
 
-#include "VkUtils.h"
-
 using namespace lyra;
 using namespace lyra::rhi;
 using namespace lyra::wsi;
 
-auto get_api_name() -> CString { return "Vulkan"; }
+auto get_api_name() -> CString { return "D3D12"; }
 
 bool api::get_surface_extent(GPUExtent2D& extent)
 {
     auto rhi = get_rhi();
 
-    extent.width  = rhi->swapchain_extent.width;
-    extent.height = rhi->swapchain_extent.height;
+    extent.width  = rhi->surface_extent.width;
+    extent.height = rhi->surface_extent.height;
     return true;
 }
 
 bool api::get_surface_format(GPUTextureFormat& format)
 {
     auto rhi = get_rhi();
-    switch (rhi->swapchain_format) {
-        case VK_FORMAT_B8G8R8A8_SRGB:
-            format = GPUTextureFormat::BGRA8UNORM_SRGB;
-            return true;
-        default:
-            throw std::runtime_error("Failed to match the corresponding swapchain format");
-            return false;
-    }
+    format   = rhi->surface_format;
+    return true;
 }
 
 bool api::create_buffer(GPUBufferHandle& buffer, const GPUBufferDescriptor& desc)
 {
-    auto obj = VulkanBuffer(desc);
+    auto obj = D3D12Buffer(desc);
     auto rhi = get_rhi();
     auto ind = rhi->buffers.add(obj);
 
@@ -74,7 +68,7 @@ void api::get_mapped_range(GPUBufferHandle buffer, MappedBufferRange& range)
 
 bool api::create_sampler(GPUSamplerHandle& sampler, const GPUSamplerDescriptor& desc)
 {
-    auto obj = VulkanSampler(desc);
+    auto obj = D3D12Sampler(desc);
     auto rhi = get_rhi();
     auto ind = rhi->samplers.add(obj);
 
@@ -89,7 +83,7 @@ void api::delete_sampler(GPUSamplerHandle sampler)
 
 bool api::create_texture(GPUTextureHandle& texture, const GPUTextureDescriptor& desc)
 {
-    auto obj = VulkanTexture(desc);
+    auto obj = D3D12Texture(desc);
     auto rhi = get_rhi();
     auto ind = rhi->textures.add(obj);
 
@@ -106,7 +100,7 @@ bool api::create_texture_view(GPUTextureViewHandle& handle, GPUTextureHandle tex
 {
     auto  rhi = get_rhi();
     auto& tex = fetch_resource(rhi->textures, texture);
-    auto  obj = VulkanTextureView(tex, desc);
+    auto  obj = D3D12TextureView(tex, desc);
     auto  ind = rhi->views.add(obj);
 
     handle = GPUTextureViewHandle(ind);
@@ -115,7 +109,7 @@ bool api::create_texture_view(GPUTextureViewHandle& handle, GPUTextureHandle tex
 
 bool api::create_shader_module(GPUShaderModuleHandle& shader, const GPUShaderModuleDescriptor& desc)
 {
-    auto obj = VulkanShader(desc);
+    auto obj = D3D12Shader(desc);
     auto rhi = get_rhi();
     auto ind = rhi->shaders.add(obj);
 
@@ -128,19 +122,9 @@ void api::delete_shader_module(GPUShaderModuleHandle shader)
     get_rhi()->shaders.remove(shader.value);
 }
 
-bool api::create_fence(GPUFenceHandle& fence, VkSemaphoreType type)
-{
-    auto obj = VulkanSemaphore(type);
-    auto rhi = get_rhi();
-    auto ind = rhi->fences.add(obj);
-
-    fence = GPUFenceHandle(ind);
-    return true;
-}
-
 bool api::create_fence(GPUFenceHandle& fence)
 {
-    auto obj = VulkanSemaphore(VK_SEMAPHORE_TYPE_TIMELINE);
+    auto obj = D3D12Fence(false);
     auto rhi = get_rhi();
     auto ind = rhi->fences.add(obj);
 
@@ -155,70 +139,91 @@ void api::delete_fence(GPUFenceHandle fence)
 
 bool api::create_blas(GPUBlasHandle& blas, const GPUBlasDescriptor& desc, const Vector<GPUBlasGeometrySizeDescriptor>& sizes)
 {
-    auto obj = VulkanBlas(desc, sizes);
-    auto rhi = get_rhi();
-    auto ind = rhi->blases.add(obj);
+    assert(!!!"api::create_blas(...) is not implemented!");
+    return false;
 
-    blas = GPUBlasHandle(ind);
-    return true;
+    // auto obj = D3D12Blas(desc, sizes);
+    // auto rhi = get_rhi();
+    // auto ind = rhi->blases.add(obj);
+    //
+    // blas = GPUBlasHandle(ind);
+    // return true;
 }
 
 void api::delete_blas(GPUBlasHandle blas)
 {
-    get_rhi()->blases.remove(blas.value);
+    assert(!!!"api::delete_blas(...) is not implemented!");
+
+    // get_rhi()->blases.remove(blas.value);
 }
 
 bool api::create_tlas(GPUTlasHandle& tlas, const GPUTlasDescriptor& desc)
 {
-    auto obj = VulkanTlas(desc);
-    auto rhi = get_rhi();
-    auto ind = rhi->tlases.add(obj);
+    assert(!!!"api::create_tlas(...) is not implemented!");
+    return false;
 
-    tlas = GPUTlasHandle(ind);
-    return true;
+    // auto obj = D3D12Tlas(desc);
+    // auto rhi = get_rhi();
+    // auto ind = rhi->tlases.add(obj);
+    //
+    // tlas = GPUTlasHandle(ind);
+    // return true;
 }
 
 void api::delete_tlas(GPUTlasHandle tlas)
 {
-    get_rhi()->tlases.remove(tlas.value);
+    assert(!!!"api::delete_tlas(...) is not implemented!");
+
+    // get_rhi()->tlases.remove(tlas.value);
 }
 
 bool api::get_blas_sizes(GPUBlasHandle blas, GPUBVHSizes& sizes)
 {
-    auto& size_info   = fetch_resource(get_rhi()->blases, blas).sizes;
-    sizes.bvh_size    = size_info.accelerationStructureSize;
-    sizes.build_size  = size_info.buildScratchSize;
-    sizes.update_size = size_info.updateScratchSize;
-    return true;
+    assert(!!!"api::get_blas_sizes(...) is not implemented!");
+    return false;
+
+    // auto& size_info   = fetch_resource(get_rhi()->blases, blas).sizes;
+    // sizes.bvh_size    = size_info.accelerationStructureSize;
+    // sizes.build_size  = size_info.buildScratchSize;
+    // sizes.update_size = size_info.updateScratchSize;
+    // return true;
 }
 
 bool api::get_tlas_sizes(GPUTlasHandle tlas, GPUBVHSizes& sizes)
 {
-    auto& size_info   = fetch_resource(get_rhi()->tlases, tlas).sizes;
-    sizes.bvh_size    = size_info.accelerationStructureSize;
-    sizes.build_size  = size_info.buildScratchSize;
-    sizes.update_size = size_info.updateScratchSize;
-    return true;
+    assert(!!!"api::get_tlas_sizes(...) is not implemented!");
+    return false;
+
+    // auto& size_info   = fetch_resource(get_rhi()->tlases, tlas).sizes;
+    // sizes.bvh_size    = size_info.accelerationStructureSize;
+    // sizes.build_size  = size_info.buildScratchSize;
+    // sizes.update_size = size_info.updateScratchSize;
+    // return true;
 }
 
 bool api::create_query_set(GPUQuerySetHandle& query_set, const GPUQuerySetDescriptor& desc)
 {
-    auto obj = VulkanQuerySet(desc);
-    auto rhi = get_rhi();
-    auto ind = rhi->query_sets.add(obj);
+    assert(!!!"api::create_query_set(...) is not implemented!");
+    return false;
 
-    query_set = GPUQuerySetHandle(ind);
-    return true;
+    // auto obj = D3D12QuerySet(desc);
+    // auto rhi = get_rhi();
+    // auto ind = rhi->query_sets.add(obj);
+    //
+    // query_set = GPUQuerySetHandle(ind);
+    // return true;
 }
 
 void api::delete_query_set(GPUQuerySetHandle query_set)
 {
-    get_rhi()->query_sets.remove(query_set.value);
+    assert(!!!"api::delete_query_set(...) is not implemented!");
+
+    // get_rhi()->query_sets.remove(query_set.value);
 }
 
 bool api::create_bind_group_layout(GPUBindGroupLayoutHandle& layout, const GPUBindGroupLayoutDescriptor& desc)
 {
-    auto obj = VulkanBindGroupLayout(desc);
+    auto obj = D3D12BindGroupLayout(desc);
     auto rhi = get_rhi();
     auto ind = rhi->bind_group_layouts.add(obj);
 
@@ -233,7 +238,7 @@ void api::delete_bind_group_layout(GPUBindGroupLayoutHandle layout)
 
 bool api::create_pipeline_layout(GPUPipelineLayoutHandle& layout, const GPUPipelineLayoutDescriptor& desc)
 {
-    auto obj = VulkanPipelineLayout(desc);
+    auto obj = D3D12PipelineLayout(desc);
     auto rhi = get_rhi();
     auto ind = rhi->pipeline_layouts.add(obj);
 
@@ -248,7 +253,7 @@ void api::delete_pipeline_layout(GPUPipelineLayoutHandle layout)
 
 bool api::create_render_pipeline(GPURenderPipelineHandle& pipeline, const GPURenderPipelineDescriptor& desc)
 {
-    auto obj = VulkanPipeline(desc);
+    auto obj = D3D12Pipeline(desc);
     auto rhi = get_rhi();
     auto ind = rhi->pipelines.add(obj);
 
@@ -263,7 +268,7 @@ void api::delete_render_pipeline(GPURenderPipelineHandle pipeline)
 
 bool api::create_compute_pipeline(GPUComputePipelineHandle& pipeline, const GPUComputePipelineDescriptor& desc)
 {
-    auto obj = VulkanPipeline(desc);
+    auto obj = D3D12Pipeline(desc);
     auto rhi = get_rhi();
     auto ind = rhi->pipelines.add(obj);
 
@@ -278,7 +283,7 @@ void api::delete_compute_pipeline(GPUComputePipelineHandle pipeline)
 
 bool api::create_raytracing_pipeline(GPURayTracingPipelineHandle& handle, const GPURayTracingPipelineDescriptor& desc)
 {
-    auto obj = VulkanPipeline(desc);
+    auto obj = D3D12Pipeline(desc);
     auto rhi = get_rhi();
     auto ind = rhi->pipelines.add(obj);
 
@@ -293,7 +298,9 @@ void api::delete_raytracing_pipeline(GPURayTracingPipelineHandle pipeline)
 
 bool api::create_bind_group(GPUBindGroupHandle& bind_group, const GPUBindGroupDescriptor& desc)
 {
-    bind_group = ::create_bind_group(desc);
+    auto  rhi  = get_rhi();
+    auto& frm  = rhi->current_frame();
+    bind_group = frm.create(desc);
     return true;
 }
 
@@ -328,7 +335,7 @@ bool api::submit_command_buffer(GPUCommandEncoderHandle cmdbuffer)
 void api::wait_idle()
 {
     auto rhi = get_rhi();
-    vk_check(rhi->vtable.vkDeviceWaitIdle(rhi->device));
+    rhi->wait_idle();
 
     // optional: clean up all pools from all frames
     for (auto& frame : rhi->frames)
@@ -343,11 +350,12 @@ void api::wait_fence(GPUFenceHandle handle)
 
 LYRA_EXPORT auto prepare() -> void
 {
-    vk_check(volkInitialize());
+    // do nothing
 }
 
 LYRA_EXPORT auto cleanup() -> void
 {
+    // do nothing
 }
 
 LYRA_EXPORT auto create() -> RenderAPI
