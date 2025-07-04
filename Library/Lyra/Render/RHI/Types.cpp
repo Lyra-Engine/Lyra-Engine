@@ -49,6 +49,7 @@ void RHI::destroy() const
 {
     RHI::api()->delete_surface();
     RHI::api()->delete_device();
+    RHI::api()->delete_adapter();
     RHI::api()->delete_instance();
 }
 

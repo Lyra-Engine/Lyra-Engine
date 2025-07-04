@@ -125,10 +125,14 @@ bool api::create_surface(GPUSurface& surface, const GPUSurfaceDescriptor& desc)
         swapchain_desc.SampleDesc.Count      = 1;
         swapchain_desc.SampleDesc.Quality    = 0;
 
-        IDXGISwapChain1* swapchain;
-        ThrowIfFailed(rhi->factory->CreateSwapChainForHwnd(rhi->graphics_queue, (HWND)desc.window.native, &swapchain_desc, nullptr, nullptr, &swapchain));
-        ThrowIfFailed(swapchain->QueryInterface(__uuidof(IDXGISwapChain3), (void**)&swapchain));
-        rhi->swapchain = (IDXGISwapChain3*)swapchain;
+        IDXGISwapChain1* swapchain1;
+        ThrowIfFailed(rhi->factory->CreateSwapChainForHwnd(rhi->graphics_queue, (HWND)desc.window.native, &swapchain_desc, nullptr, nullptr, &swapchain1));
+
+        IDXGISwapChain3* swapchain3;
+        ThrowIfFailed(swapchain1->QueryInterface(__uuidof(IDXGISwapChain3), (void**)&swapchain3));
+
+        rhi->swapchain = (IDXGISwapChain3*)swapchain3;
+        swapchain1->Release();
     }
 
     // destroy swap frames

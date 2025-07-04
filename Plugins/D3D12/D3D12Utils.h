@@ -408,6 +408,7 @@ struct D3D12CommandBuffer
     // implementation in D3D12CommandBuffer.cpp
     void wait(const D3D12Fence& fence, GPUBarrierSyncFlags sync);
     void signal(const D3D12Fence& fence, GPUBarrierSyncFlags sync);
+    void destroy();
     void reset();
     void submit();
     void begin();
@@ -552,6 +553,8 @@ struct D3D12RHI
 
     void wait_idle()
     {
+        if (!idle_fence.valid()) return;
+
         idle_fence.signal(graphics_queue, idle_fence.target);
         idle_fence.wait();
         idle_fence.reset();
@@ -748,6 +751,13 @@ T& fetch_resource(D3D12ResourceManager<T>& manager, Handle handle)
         exit(1);
     }
     return resource;
+}
+
+template <typename T>
+void print_refcnt(T* data)
+{
+    get_logger()->info("refcnt: {}", data->AddRef() - 1);
+    data->Release();
 }
 
 // helper method for error checking

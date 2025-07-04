@@ -51,6 +51,12 @@ void D3D12CommandBuffer::reset()
     command_buffer->Reset(command_allocator, nullptr);
 }
 
+void D3D12CommandBuffer::destroy()
+{
+    command_buffer->Release();
+    command_buffer = nullptr;
+}
+
 void D3D12CommandBuffer::begin()
 {
     // nothing here

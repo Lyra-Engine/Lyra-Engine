@@ -37,6 +37,7 @@ bool api::create_device(const GPUDeviceDescriptor& desc)
 
     // create fence
     rhi->idle_fence.init(false);
+    rhi->idle_fence.fence->SetName(L"idle fence");
 
     // create descriptor heaps
     rhi->rtv_heap.init(32, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
@@ -111,6 +112,10 @@ void api::delete_device()
     rhi->sampler_heap.destroy();
     rhi->cbv_srv_uav_heap.destroy();
 
+    if (rhi->idle_fence.valid()) {
+        rhi->idle_fence.destroy();
+    }
+
     if (rhi->swapchain) {
         rhi->swapchain->Release();
         rhi->swapchain = nullptr;
@@ -136,14 +141,14 @@ void api::delete_device()
         rhi->allocator = nullptr;
     }
 
-    if (rhi->debug_device) {
-        rhi->debug_device->ReportLiveDeviceObjects(D3D12_RLDO_DETAIL);
-        rhi->debug_device->Release();
-        rhi->debug_device = nullptr;
-    }
-
     if (rhi->device) {
         rhi->device->Release();
         rhi->device = nullptr;
+    }
+
+    if (rhi->debug_device) {
+        rhi->debug_device->ReportLiveDeviceObjects(D3D12_RLDO_DETAIL | D3D12_RLDO_IGNORE_INTERNAL);
+        rhi->debug_device->Release();
+        rhi->debug_device = nullptr;
     }
 }
