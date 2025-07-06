@@ -18,7 +18,6 @@ include(CMakeRC)
 # project components
 add_subdirectory(Library)
 add_subdirectory(Plugins)
-add_subdirectory(Samples)
 add_subdirectory(TestKit)
 
 # install shared library header
