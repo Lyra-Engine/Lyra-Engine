@@ -482,14 +482,20 @@ void cmd::copy_texture_to_texture(GPUCommandEncoderHandle cmdbuffer, const GPUTe
 
 void cmd::clear_buffer(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle buffer, GPUSize64 offset, GPUSize64 size)
 {
-    // auto  rhi = get_rhi();
-    // auto& cmd = rhi->current_frame().command(cmdbuffer);
-    // auto& buf = fetch_resource(rhi->buffers, buffer);
+    auto  rhi = get_rhi();
+    auto& cmd = rhi->current_frame().command(cmdbuffer);
+    auto& buf = fetch_resource(rhi->buffers, buffer);
 
-    // NOTE: D3D12 does not directly support clearing buffer.
-    // The recommended method is to clear a buffer using a compute shader.
-    // I would like to avoid the hassle of implement buffer clearing now.
-    assert(!!!"cmd::clear_buffer(...) is currently not implemented!");
+    // for small buffers or patterns
+    D3D12_WRITEBUFFERIMMEDIATE_PARAMETER write_params{};
+    write_params.Dest  = buf.buffer->GetGPUVirtualAddress() + offset;
+    write_params.Value = 0;
+
+    D3D12_WRITEBUFFERIMMEDIATE_MODE write_mode = D3D12_WRITEBUFFERIMMEDIATE_MODE_DEFAULT;
+
+    // fill buffer
+    auto command_list = static_cast<ID3D12GraphicsCommandList2*>(cmd.command_buffer);
+    command_list->WriteBufferImmediate(1, &write_params, &write_mode);
 }
 
 void cmd::set_viewport(GPUCommandEncoderHandle cmdbuffer, float x, float y, float w, float h, float min_depth, float max_depth)
@@ -528,14 +534,27 @@ void cmd::set_scissor_rect(GPUCommandEncoderHandle cmdbuffer, GPUIntegerCoordina
 
 void cmd::set_blend_constant(GPUCommandEncoderHandle cmdbuffer, GPUColor color)
 {
-    // NOTE: No obvious way to support it now.
-    assert(!!!"cmd::set_blend_constant(...) is currently not implemented!");
+    auto  rhi = get_rhi();
+    auto& cmd = rhi->current_frame().command(cmdbuffer);
+
+    float blend_color[4] = {
+        color.r,
+        color.g,
+        color.b,
+        color.a,
+    };
+
+    // set the stencil reference value
+    cmd.command_buffer->OMSetBlendFactor(blend_color);
 }
 
 void cmd::set_stencil_reference(GPUCommandEncoderHandle cmdbuffer, GPUStencilValue reference)
 {
-    // NOTE: No obvious way to support it now.
-    assert(!!!"cmd::set_stencil_reference(...) is currently not implemented!");
+    auto  rhi = get_rhi();
+    auto& cmd = rhi->current_frame().command(cmdbuffer);
+
+    // set the stencil reference value
+    cmd.command_buffer->OMSetStencilRef(reference);
 }
 
 void cmd::begin_occlusion_query(GPUCommandEncoderHandle cmdbuffer, GPUSize32 query_index)
