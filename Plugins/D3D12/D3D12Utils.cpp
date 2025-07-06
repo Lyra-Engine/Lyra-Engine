@@ -77,8 +77,17 @@ D3D12_RESOURCE_FLAGS infer_texture_flags(GPUTextureUsageFlags usages, GPUTexture
         flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
     }
 
+    // DENY SHADER RESOURCE is allowed only when some of following flags are set
+    // D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL
+    // D3D12_RESOURCE_FLAG_VIDEO_DECODE_REFERENCE_ONLY
+    // D3D12_RESOURCE_FLAG_VIDEO_ENCODE_REFERENCE_ONLY
     if (!usages.contains(GPUTextureUsage::TEXTURE_BINDING)) {
-        flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+        if (flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)
+            flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+        if (flags & D3D12_RESOURCE_FLAG_VIDEO_DECODE_REFERENCE_ONLY)
+            flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+        if (flags & D3D12_RESOURCE_FLAG_VIDEO_ENCODE_REFERENCE_ONLY)
+            flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
     }
 
     return flags;
@@ -289,6 +298,15 @@ D3D12_PRIMITIVE_TOPOLOGY infer_topology(GPUPrimitiveTopology topology)
         default:
             return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
     }
+}
+
+uint infer_row_pitch(DXGI_FORMAT format, uint width, uint bytes_per_row)
+{
+    if (bytes_per_row != 0)
+        return bytes_per_row;
+
+    constexpr uint alignment = D3D12_TEXTURE_DATA_PITCH_ALIGNMENT; // 256 bytes
+    return (size_of(format) * width + alignment - 1) / alignment * alignment;
 }
 
 D3D12_COMPARISON_FUNC d3d12enum(GPUCompareFunction compare, bool enable)
@@ -685,4 +703,106 @@ D3D12_BARRIER_ACCESS d3d12enum(GPUBarrierAccessFlags access)
     // clang-format on
 
     return result;
+}
+
+uint size_of(DXGI_FORMAT format)
+{
+    switch (format) {
+        // 8-bit formats
+        case DXGI_FORMAT_R8_UNORM:
+        case DXGI_FORMAT_R8_SNORM:
+        case DXGI_FORMAT_R8_UINT:
+        case DXGI_FORMAT_R8_SINT:
+        case DXGI_FORMAT_A8_UNORM:
+            return 1;
+
+        // 16-bit formats
+        case DXGI_FORMAT_R16_UNORM:
+        case DXGI_FORMAT_R16_SNORM:
+        case DXGI_FORMAT_R16_UINT:
+        case DXGI_FORMAT_R16_SINT:
+        case DXGI_FORMAT_R16_FLOAT:
+        case DXGI_FORMAT_R8G8_UNORM:
+        case DXGI_FORMAT_R8G8_SNORM:
+        case DXGI_FORMAT_R8G8_UINT:
+        case DXGI_FORMAT_R8G8_SINT:
+        case DXGI_FORMAT_D16_UNORM:
+        case DXGI_FORMAT_B5G6R5_UNORM:
+        case DXGI_FORMAT_B5G5R5A1_UNORM:
+        case DXGI_FORMAT_B4G4R4A4_UNORM:
+            return 2;
+
+        // 24-bit formats
+        case DXGI_FORMAT_R8G8B8A8_UNORM:
+        case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+        case DXGI_FORMAT_R8G8B8A8_SNORM:
+        case DXGI_FORMAT_R8G8B8A8_UINT:
+        case DXGI_FORMAT_R8G8B8A8_SINT:
+        case DXGI_FORMAT_B8G8R8A8_UNORM:
+        case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
+        case DXGI_FORMAT_B8G8R8X8_UNORM:
+        case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
+        case DXGI_FORMAT_R16G16_UNORM:
+        case DXGI_FORMAT_R16G16_SNORM:
+        case DXGI_FORMAT_R16G16_UINT:
+        case DXGI_FORMAT_R16G16_SINT:
+        case DXGI_FORMAT_R16G16_FLOAT:
+        case DXGI_FORMAT_R32_UINT:
+        case DXGI_FORMAT_R32_SINT:
+        case DXGI_FORMAT_R32_FLOAT:
+        case DXGI_FORMAT_D32_FLOAT:
+        case DXGI_FORMAT_D24_UNORM_S8_UINT:
+        case DXGI_FORMAT_R10G10B10A2_UNORM:
+        case DXGI_FORMAT_R10G10B10A2_UINT:
+        case DXGI_FORMAT_R11G11B10_FLOAT:
+        case DXGI_FORMAT_R9G9B9E5_SHAREDEXP:
+            return 4;
+
+        // 64-bit formats
+        case DXGI_FORMAT_R16G16B16A16_UNORM:
+        case DXGI_FORMAT_R16G16B16A16_SNORM:
+        case DXGI_FORMAT_R16G16B16A16_UINT:
+        case DXGI_FORMAT_R16G16B16A16_SINT:
+        case DXGI_FORMAT_R16G16B16A16_FLOAT:
+        case DXGI_FORMAT_R32G32_UINT:
+        case DXGI_FORMAT_R32G32_SINT:
+        case DXGI_FORMAT_R32G32_FLOAT:
+            return 8;
+
+        // 96-bit formats
+        case DXGI_FORMAT_R32G32B32_UINT:
+        case DXGI_FORMAT_R32G32B32_SINT:
+        case DXGI_FORMAT_R32G32B32_FLOAT:
+            return 12;
+
+        // 128-bit formats
+        case DXGI_FORMAT_R32G32B32A32_UINT:
+        case DXGI_FORMAT_R32G32B32A32_SINT:
+        case DXGI_FORMAT_R32G32B32A32_FLOAT:
+            return 16;
+
+        // compressed formats - these return block size, not per-texel
+        case DXGI_FORMAT_BC1_UNORM:
+        case DXGI_FORMAT_BC1_UNORM_SRGB:
+        case DXGI_FORMAT_BC4_UNORM:
+        case DXGI_FORMAT_BC4_SNORM:
+            return 8; // 4x4 block = 64 bits = 8 bytes
+
+        case DXGI_FORMAT_BC2_UNORM:
+        case DXGI_FORMAT_BC2_UNORM_SRGB:
+        case DXGI_FORMAT_BC3_UNORM:
+        case DXGI_FORMAT_BC3_UNORM_SRGB:
+        case DXGI_FORMAT_BC5_UNORM:
+        case DXGI_FORMAT_BC5_SNORM:
+        case DXGI_FORMAT_BC6H_UF16:
+        case DXGI_FORMAT_BC6H_SF16:
+        case DXGI_FORMAT_BC7_UNORM:
+        case DXGI_FORMAT_BC7_UNORM_SRGB:
+            return 16; // 4x4 block = 128 bits = 16 bytes
+
+        // special cases
+        case DXGI_FORMAT_UNKNOWN:
+        default:
+            return 0; // unknown or unsupported format
+    }
 }

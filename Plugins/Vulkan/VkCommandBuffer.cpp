@@ -331,8 +331,8 @@ void cmd::copy_buffer_to_texture(GPUCommandEncoderHandle cmdbuffer, const GPUTex
 
     auto copy                            = VkBufferImageCopy{};
     copy.bufferOffset                    = source.offset;
-    copy.bufferRowLength                 = source.bytes_per_row;
-    copy.bufferImageHeight               = source.rows_per_image; // TODO: convert this to texels, not in bytes
+    copy.bufferRowLength                 = infer_texture_row_length(dst.format, source.bytes_per_row);
+    copy.bufferImageHeight               = source.rows_per_image;
     copy.imageOffset.x                   = destination.origin.x;
     copy.imageOffset.y                   = destination.origin.y;
     copy.imageOffset.z                   = destination.origin.z;
@@ -355,9 +355,12 @@ void cmd::copy_texture_to_buffer(GPUCommandEncoderHandle cmdbuffer, const GPUTex
     auto& src = fetch_resource(rhi->textures, source.texture);
     auto& dst = fetch_resource(rhi->buffers, destination.buffer);
 
+    if (destination.bytes_per_row != 0)
+        assert("non-zero bytes per row is currently not implemented!");
+
     auto copy                            = VkBufferImageCopy{};
     copy.bufferOffset                    = destination.offset;
-    copy.bufferRowLength                 = destination.bytes_per_row; // TODO: convert this to texels, not in bytes
+    copy.bufferRowLength                 = infer_texture_row_length(src.format, destination.bytes_per_row);
     copy.bufferImageHeight               = destination.rows_per_image;
     copy.imageOffset.x                   = source.origin.x;
     copy.imageOffset.y                   = source.origin.y;

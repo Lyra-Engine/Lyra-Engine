@@ -1,4 +1,4 @@
-#define DOCTEST_CONFIG_IMPLEMENT
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #define DOCTEST_CONFIG_NO_EXCEPTIONS
 #include <doctest/doctest.h>
 #include <iostream>
@@ -33,18 +33,5 @@ public:
     void log_message(const doctest::MessageData&) override {}
     void test_case_skipped(const doctest::TestCaseData&) override {}
 };
-
-int main(int argc, char** argv)
-{
-    doctest::Context context;
-    context.applyCommandLine(argc, argv);
-    context.setOption("reporters", "pre");
-
-    int res = context.run();
-    if (context.shouldExit())
-        return res;
-
-    return res;
-}
 
 REGISTER_REPORTER("pre", 1, PreRunReporter);

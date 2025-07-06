@@ -170,3 +170,13 @@ QueueFamilyIndices find_queue_family_indices(VkPhysicalDevice device, VkSurfaceK
     }
     return indices;
 }
+
+uint infer_texture_row_length(VkFormat format, uint bytes_per_row)
+{
+    // tightly packed
+    if (bytes_per_row == 0) return 0;
+
+    // otherwise convert it to number of texels
+    uint texel_size = size_of(format);
+    return (bytes_per_row + texel_size - 1) / texel_size;
+}

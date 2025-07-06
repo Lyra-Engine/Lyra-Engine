@@ -105,6 +105,7 @@ struct VulkanTexture
     VkImage            image = VK_NULL_HANDLE;
     VmaAllocation      allocation;
     VmaAllocationInfo  alloc_info = {};
+    VkFormat           format     = VK_FORMAT_UNDEFINED;
     VkImageAspectFlags aspects    = 0;
     VkExtent2D         area       = {}; // only used for Render Area
 
@@ -454,6 +455,9 @@ struct VulkanRHI
     VmaAllocator       alloc;
     QueueFamilyIndices queues;
 
+    // additional properties
+    VkPhysicalDeviceProperties props = {};
+
     // objects for swapchain recreation
     GPUSurfaceDescriptor surface_desc = {};
     VkExtent2D           swapchain_extent;
@@ -708,6 +712,10 @@ auto query_swapchain_support(VkPhysicalDevice adapter, VkSurfaceKHR surface) -> 
 auto choose_swap_surface_format(const Vector<VkSurfaceFormatKHR>& availableFormats) -> VkSurfaceFormatKHR;
 auto choose_swap_present_mode(const Vector<VkPresentModeKHR>& availablePresentModes) -> VkPresentModeKHR;
 auto choose_swap_extent(const GPUSurfaceDescriptor& desc, const VkSurfaceCapabilitiesKHR& capabilities) -> VkExtent2D;
+
+// size of
+uint size_of(VkFormat format);
+uint infer_texture_row_length(VkFormat format, uint bytes_per_row);
 
 template <typename T, typename Handle>
 T& fetch_resource(VulkanResourceManager<T>& manager, Handle handle)

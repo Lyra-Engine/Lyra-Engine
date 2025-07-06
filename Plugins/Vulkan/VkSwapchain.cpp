@@ -113,6 +113,7 @@ void VulkanSwapFrame::init(VkImage image, VkFormat format, VkExtent2D extent)
     // re-create texture
     auto texture    = VulkanTexture{};
     texture.image   = image;
+    texture.format  = format;
     texture.aspects = VK_IMAGE_ASPECT_COLOR_BIT;
     this->texture   = rhi->textures.add(texture);
 

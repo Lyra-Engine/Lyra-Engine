@@ -38,8 +38,7 @@ D3D12Buffer::D3D12Buffer(const GPUBufferDescriptor& desc)
         D3D12_RESOURCE_STATE_COMMON,
         NULL,
         &allocation,
-        IID_NULL, NULL));
-    buffer = allocation->GetResource();
+        IID_PPV_ARGS(&buffer)));
 
     if (desc.mapped_at_creation) map();
 

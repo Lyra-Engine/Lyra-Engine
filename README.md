@@ -19,7 +19,7 @@ number of dependencies would soly rely on **vcpkg**. This includes **usd**, **sh
 etc. These dependencies are large and slow to build (and would often fail to build on various
 development environment). Users would need to manually install them using **vcpkg**.
 
-## Build & Install
+## Build
 
 Prior to build, user must specify environment variable **VCPKG_ROOT**.
 User can specify one of the presets from **CMakePresets.json**.
@@ -40,7 +40,23 @@ cmake --build . -- -j 8          # enable multi-thread compiling for Unix Makefi
 cmake --build . --config Release # select one of the configs if using MSVC
 ```
 
-User can also install the built (release) binary into system directory:
+## Test
+
+To keep the development process robust, users can build the `testkit` target.
+This target is a custom target to launch the test script using Python3. This
+script will call the test kit binary in order and compose an HTML page for result.
+Currently there is no automatic checking, so manual check is still required.
+
+```bash
+cd Scratch
+cmake --build . --target testkit
+```
+
+## Install
+
+User can also install the built (release) binary into system directory.
+Once installed, other projects can use `find_pacakge(Lyra-Engine)` and
+use it from other projects.
 
 ```bash
 cd Scratch                       # cmake --install command must be invoked in project solution directory

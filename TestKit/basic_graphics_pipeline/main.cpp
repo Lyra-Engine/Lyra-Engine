@@ -3,8 +3,8 @@
 CString test00_program = R"""(
 struct VertexInput
 {
-    float3 position : POSITION;
-    float3 color    : COLOR0;
+    float3 position : ATTRIBUTE0;
+    float3 color    : ATTRIBUTE1;
 };
 
 struct VertexOutput
@@ -37,7 +37,7 @@ float4 fsmain(VertexOutput input) : SV_Target
 }
 )""";
 
-struct TestApp00 : public TestApp
+struct BasicGraphicsPipelineApp : public TestApp
 {
     Uniform            uniform;
     Geometry           geometry;
@@ -47,7 +47,7 @@ struct TestApp00 : public TestApp
     GPUPipelineLayout  playout;
     GPUBindGroupLayout blayout;
 
-    explicit TestApp00(const TestAppDescriptor& desc) : TestApp(desc)
+    explicit BasicGraphicsPipelineApp(const TestAppDescriptor& desc) : TestApp(desc)
     {
         setup_buffers();
         setup_pipeline();
@@ -178,12 +178,14 @@ struct TestApp00 : public TestApp
             return device.create_bind_group(desc);
         });
 
+        // color attachments
         auto color_attachment        = GPURenderPassColorAttachment{};
         color_attachment.clear_value = GPUColor{0.0f, 0.0f, 0.0f, 0.0f};
         color_attachment.load_op     = GPULoadOp::CLEAR;
         color_attachment.store_op    = GPUStoreOp::STORE;
         color_attachment.view        = backbuffer.view;
 
+        // render pass info
         auto render_pass                     = GPURenderPassDescriptor{};
         render_pass.color_attachments        = {color_attachment};
         render_pass.depth_stencil_attachment = {};
@@ -194,6 +196,7 @@ struct TestApp00 : public TestApp
             command.signal(backbuffer.complete, GPUBarrierSync::RENDER_TARGET);
         }
 
+        // commands
         command.resource_barrier(state_transition(backbuffer.texture, undefined_state(), color_attachment_state()));
         command.begin_render_pass(render_pass);
         command.set_viewport(0, 0, desc.width, desc.height);
@@ -212,13 +215,27 @@ struct TestApp00 : public TestApp
 TEST_CASE("rhi::vulkan::basic_graphics_pipeline" * doctest::description("Rendering a triangle with the most basic graphics pipeline."))
 {
     TestAppDescriptor desc{};
-    desc.name           = "test00";
+    desc.name           = "vulkan";
     desc.window         = false;
     desc.backend        = RHIBackend::VULKAN;
-    desc.width          = 1920;
-    desc.height         = 1080;
+    desc.width          = 640;
+    desc.height         = 480;
     desc.rhi_flags      = RHIFlag::DEBUG | RHIFlag::VALIDATION;
     desc.compile_target = CompileTarget::SPIRV;
     desc.compile_flags  = CompileFlag::DEBUG;
-    TestApp00(desc).run();
+    BasicGraphicsPipelineApp(desc).run();
+}
+
+TEST_CASE("rhi::d3d12::basic_graphics_pipeline" * doctest::description("Rendering a triangle with the most basic graphics pipeline."))
+{
+    TestAppDescriptor desc{};
+    desc.name           = "d3d12";
+    desc.window         = false;
+    desc.backend        = RHIBackend::D3D12;
+    desc.width          = 640;
+    desc.height         = 480;
+    desc.rhi_flags      = RHIFlag::DEBUG | RHIFlag::VALIDATION;
+    desc.compile_target = CompileTarget::DXIL;
+    desc.compile_flags  = CompileFlag::DEBUG;
+    BasicGraphicsPipelineApp(desc).run();
 }

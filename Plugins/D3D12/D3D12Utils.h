@@ -435,6 +435,8 @@ struct D3D12SwapFrame
     // implementation in D3D12Swapchain.cpp
     void init(uint backbuffer_index, uint width, uint height);
     void destroy();
+
+    bool valid() const { return texture.valid(); }
 };
 
 struct D3D12Frame
@@ -716,6 +718,7 @@ auto infer_texture_flags(GPUTextureUsageFlags usages, GPUTextureFormat format) -
 auto infer_texture_format(GPUTextureFormat format) -> DXGI_FORMAT;
 auto infer_topology_type(GPUPrimitiveTopology topology) -> D3D12_PRIMITIVE_TOPOLOGY_TYPE;
 auto infer_topology(GPUPrimitiveTopology topology) -> D3D12_PRIMITIVE_TOPOLOGY;
+auto infer_row_pitch(DXGI_FORMAT format, uint width, uint bytes_per_row) -> uint;
 auto d3d12enum(GPUCompareFunction compare, bool enable) -> D3D12_COMPARISON_FUNC;
 auto d3d12enum(GPUFilterMode min, GPUFilterMode mag, GPUMipmapFilterMode mip) -> D3D12_FILTER;
 auto d3d12enum(GPUAddressMode mode) -> D3D12_TEXTURE_ADDRESS_MODE;
@@ -729,6 +732,7 @@ auto d3d12enum(GPUIndexFormat format) -> DXGI_FORMAT;
 auto d3d12enum(GPUBarrierLayout layout) -> D3D12_BARRIER_LAYOUT;
 auto d3d12enum(GPUBarrierSyncFlags sync) -> D3D12_BARRIER_SYNC;
 auto d3d12enum(GPUBarrierAccessFlags access) -> D3D12_BARRIER_ACCESS;
+uint size_of(DXGI_FORMAT format);
 
 template <typename T, typename Handle>
 T& fetch_resource(D3D12ResourceManager<T>& manager, Handle handle)

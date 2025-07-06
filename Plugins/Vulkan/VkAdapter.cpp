@@ -13,6 +13,9 @@ bool api::create_adapter(GPUAdapter& adapter, const GPUAdapterDescriptor& descri
     // TODO: actually pick the most suitable adapter.
     rhi->adapter = devices.at(0);
 
+    // query some basic properties
+    vkGetPhysicalDeviceProperties(rhi->adapter, &rhi->props);
+
     // TODO: populate adapter info, features and limits
     return true;
 }

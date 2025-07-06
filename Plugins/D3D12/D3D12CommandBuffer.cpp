@@ -390,7 +390,7 @@ void cmd::copy_buffer_to_texture(GPUCommandEncoderHandle cmdbuffer, const GPUTex
     src_location.PlacedFootprint.Footprint.Width    = copy_size.width;
     src_location.PlacedFootprint.Footprint.Height   = copy_size.height;
     src_location.PlacedFootprint.Footprint.Depth    = copy_size.depth;
-    src_location.PlacedFootprint.Footprint.RowPitch = source.bytes_per_row;
+    src_location.PlacedFootprint.Footprint.RowPitch = infer_row_pitch(dst.format, dst.area.width, source.bytes_per_row);
 
     // setup texture copy location for destination (texture)
     D3D12_TEXTURE_COPY_LOCATION dst_location = {};
@@ -433,7 +433,7 @@ void cmd::copy_texture_to_buffer(GPUCommandEncoderHandle cmdbuffer, const GPUTex
     dst_location.PlacedFootprint.Footprint.Width    = copy_size.width;
     dst_location.PlacedFootprint.Footprint.Height   = copy_size.height;
     dst_location.PlacedFootprint.Footprint.Depth    = copy_size.depth;
-    dst_location.PlacedFootprint.Footprint.RowPitch = destination.bytes_per_row;
+    dst_location.PlacedFootprint.Footprint.RowPitch = infer_row_pitch(src.format, src.area.width, destination.bytes_per_row);
 
     // setup box for the copy region
     D3D12_BOX src_box = {};

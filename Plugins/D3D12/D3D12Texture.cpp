@@ -34,8 +34,7 @@ D3D12Texture::D3D12Texture(const GPUTextureDescriptor& desc)
         D3D12_RESOURCE_STATE_COMMON,
         NULL,
         &allocation,
-        IID_NULL, NULL));
-    texture = allocation->GetResource();
+        IID_PPV_ARGS(&texture)));
 
     if (desc.label)
         texture->SetName(to_wstring(desc.label).c_str());
@@ -56,6 +55,7 @@ void D3D12Texture::destroy()
     }
 
     if (allocation) {
+        print_refcnt(allocation);
         allocation->Release();
         allocation = nullptr;
     }
