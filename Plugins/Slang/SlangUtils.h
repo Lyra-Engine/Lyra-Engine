@@ -5,6 +5,7 @@
 #include <slang-com-ptr.h>
 #include <slang-com-helper.h>
 
+// both Slang and spdlog includes
 #include <Lyra/Common/Logger.h>
 #include <Lyra/Render/SLC/API.h>
 
