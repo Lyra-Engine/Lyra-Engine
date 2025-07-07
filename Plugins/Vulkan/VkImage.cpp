@@ -106,6 +106,9 @@ VulkanTextureView::VulkanTextureView(const VulkanTexture& texture, const GPUText
 
     // record the render area
     area = texture.area;
+
+    // record the aspect flags
+    aspects = texture.aspects;
 }
 
 void VulkanTextureView::destroy()

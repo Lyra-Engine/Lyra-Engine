@@ -120,8 +120,9 @@ struct VulkanTexture
 
 struct VulkanTextureView
 {
-    VkImageView view = VK_NULL_HANDLE;
-    VkExtent2D  area = {}; // only used for Render Area
+    VkImageView        view    = VK_NULL_HANDLE;
+    VkExtent2D         area    = {}; // only used for Render Area
+    VkImageAspectFlags aspects = 0;
 
     // implementation in VkImage.cpp
     explicit VulkanTextureView();

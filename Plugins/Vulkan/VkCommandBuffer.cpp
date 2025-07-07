@@ -128,30 +128,38 @@ void cmd::begin_render_pass(GPUCommandEncoderHandle cmdbuffer, const GPURenderPa
     }
 
     VkRenderingAttachmentInfo depth_attachment{};
-    depth_attachment.sType                         = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-    depth_attachment.pNext                         = nullptr;
-    depth_attachment.imageLayout                   = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-    depth_attachment.loadOp                        = vkenum(descriptor.depth_stencil_attachment.depth_load_op);
-    depth_attachment.storeOp                       = vkenum(descriptor.depth_stencil_attachment.depth_store_op);
-    depth_attachment.resolveImageView              = VK_NULL_HANDLE;
-    depth_attachment.resolveMode                   = VK_RESOLVE_MODE_NONE;
-    depth_attachment.clearValue.depthStencil.depth = descriptor.depth_stencil_attachment.depth_clear_value;
-    depth_attachment.imageView                     = descriptor.depth_stencil_attachment.view.valid()
-                                                         ? fetch_resource(rhi->views, descriptor.depth_stencil_attachment.view).view
-                                                         : VK_NULL_HANDLE;
-
     VkRenderingAttachmentInfo stencil_attachment{};
-    stencil_attachment.sType                           = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-    stencil_attachment.pNext                           = nullptr;
-    stencil_attachment.imageLayout                     = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-    stencil_attachment.loadOp                          = vkenum(descriptor.depth_stencil_attachment.stencil_load_op);
-    stencil_attachment.storeOp                         = vkenum(descriptor.depth_stencil_attachment.stencil_store_op);
-    stencil_attachment.resolveImageView                = VK_NULL_HANDLE;
-    stencil_attachment.resolveMode                     = VK_RESOLVE_MODE_NONE;
-    stencil_attachment.clearValue.depthStencil.stencil = descriptor.depth_stencil_attachment.stencil_clear_value;
-    stencil_attachment.imageView                       = descriptor.depth_stencil_attachment.view.valid()
-                                                             ? fetch_resource(rhi->views, descriptor.depth_stencil_attachment.view).view
-                                                             : VK_NULL_HANDLE;
+
+    bool has_depth_stencil      = descriptor.depth_stencil_attachment.view.valid();
+    bool has_depth_attachment   = false;
+    bool has_stencil_attachment = false;
+    if (has_depth_stencil) {
+        auto& view = fetch_resource(rhi->views, descriptor.depth_stencil_attachment.view);
+
+        // depth attachment
+        has_depth_attachment                           = view.aspects & VK_IMAGE_ASPECT_DEPTH_BIT;
+        depth_attachment.sType                         = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+        depth_attachment.pNext                         = nullptr;
+        depth_attachment.imageLayout                   = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+        depth_attachment.loadOp                        = vkenum(descriptor.depth_stencil_attachment.depth_load_op);
+        depth_attachment.storeOp                       = vkenum(descriptor.depth_stencil_attachment.depth_store_op);
+        depth_attachment.resolveImageView              = VK_NULL_HANDLE;
+        depth_attachment.resolveMode                   = VK_RESOLVE_MODE_NONE;
+        depth_attachment.clearValue.depthStencil.depth = descriptor.depth_stencil_attachment.depth_clear_value;
+        depth_attachment.imageView                     = view.view;
+
+        // stencil attachment
+        has_stencil_attachment                             = view.aspects & VK_IMAGE_ASPECT_STENCIL_BIT;
+        stencil_attachment.sType                           = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+        stencil_attachment.pNext                           = nullptr;
+        stencil_attachment.imageLayout                     = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL;
+        stencil_attachment.loadOp                          = vkenum(descriptor.depth_stencil_attachment.stencil_load_op);
+        stencil_attachment.storeOp                         = vkenum(descriptor.depth_stencil_attachment.stencil_store_op);
+        stencil_attachment.resolveImageView                = VK_NULL_HANDLE;
+        stencil_attachment.resolveMode                     = VK_RESOLVE_MODE_NONE;
+        stencil_attachment.clearValue.depthStencil.stencil = descriptor.depth_stencil_attachment.stencil_clear_value;
+        stencil_attachment.imageView                       = view.view;
+    }
 
     auto& view                = fetch_resource(rhi->views, descriptor.color_attachments.at(0).view);
     auto  render_area         = VkRect2D{};
@@ -167,8 +175,8 @@ void cmd::begin_render_pass(GPUCommandEncoderHandle cmdbuffer, const GPURenderPa
     rendering.layerCount           = 1;
     rendering.colorAttachmentCount = static_cast<uint32_t>(descriptor.color_attachments.size());
     rendering.pColorAttachments    = color_attachments.data();
-    rendering.pDepthAttachment     = nullptr; // &depth_attachment;
-    rendering.pStencilAttachment   = nullptr; // &stencil_attachment;
+    rendering.pDepthAttachment     = has_depth_attachment ? &depth_attachment : nullptr;
+    rendering.pStencilAttachment   = has_stencil_attachment ? &stencil_attachment : nullptr;
 
     rhi->vtable.vkCmdBeginRenderingKHR(cmd.command_buffer, &rendering);
 

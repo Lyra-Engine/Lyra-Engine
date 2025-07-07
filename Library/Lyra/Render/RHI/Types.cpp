@@ -309,12 +309,26 @@ void GPUBuffer::destroy()
 #pragma region GPUTexture
 GPUTextureView GPUTexture::create_view()
 {
+    uint aspect   = 0;
+    bool modified = false;
+    if (is_depth_format(format)) {
+        modified = true;
+        aspect |= static_cast<uint>(GPUTextureAspect::DEPTH);
+    }
+    if (is_stencil_format(format)) {
+        modified = true;
+        aspect |= static_cast<uint>(GPUTextureAspect::STENCIL);
+    }
+    if (!modified) {
+        aspect |= static_cast<uint>(GPUTextureAspect::COLOR);
+    }
+
     GPUTextureViewDescriptor desc = {};
     desc.base_array_layer         = 0;
     desc.array_layer_count        = array_layers;
     desc.base_mip_level           = 0;
     desc.mip_level_count          = std::min(mip_level_count, static_cast<GPUIntegerCoordinate>(std::log2(std::min(width, height))));
-    desc.aspect                   = GPUTextureAspect::COLOR;
+    desc.aspect                   = static_cast<GPUTextureAspect>(aspect);
     desc.format                   = format;
     desc.usage                    = usage;
     switch (dimension) {
