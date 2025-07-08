@@ -140,21 +140,6 @@ VkQueryType vkenum(GPUQueryType query)
     throw std::invalid_argument("invalid argument for GPUQueryType");
 }
 
-VkImageAspectFlags vkenum(GPUTextureAspect aspect)
-{
-    switch (aspect) {
-        case GPUTextureAspect::ALL:
-            return VK_IMAGE_ASPECT_COLOR_BIT | VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-        case GPUTextureAspect::COLOR:
-            return VK_IMAGE_ASPECT_COLOR_BIT;
-        case GPUTextureAspect::DEPTH:
-            return VK_IMAGE_ASPECT_DEPTH_BIT;
-        case GPUTextureAspect::STENCIL:
-            return VK_IMAGE_ASPECT_STENCIL_BIT;
-    }
-    throw std::invalid_argument("invalid argument for GPUTextureAspect");
-}
-
 VkImageType vkenum(GPUTextureDimension dim)
 {
     switch (dim) {
@@ -748,6 +733,19 @@ VkBuildAccelerationStructureModeKHR vkenum(GPUBVHUpdateMode mode)
     throw std::invalid_argument("invalid argument for GPUBVHUpdateMode");
 }
 
+VkImageAspectFlags vkenum(GPUTextureAspectFlags aspect)
+{
+    VkImageAspectFlags flags = 0;
+
+    // clang-format off
+    if (aspect.contains(GPUTextureAspect::COLOR))   flags |= VK_IMAGE_ASPECT_COLOR_BIT;
+    if (aspect.contains(GPUTextureAspect::DEPTH))   flags |= VK_IMAGE_ASPECT_DEPTH_BIT;
+    if (aspect.contains(GPUTextureAspect::STENCIL)) flags |= VK_IMAGE_ASPECT_STENCIL_BIT;
+    // clang-format on
+
+    return flags;
+}
+
 VkColorComponentFlags vkenum(GPUColorWriteFlags color)
 {
     VkColorComponentFlags flags = 0;
@@ -794,7 +792,7 @@ VkImageUsageFlags vkenum(GPUTextureUsageFlags usages, GPUTextureFormat format)
 
     // render target requires format checking
     if (usages.contains(GPUTextureUsage::RENDER_ATTACHMENT)) {
-        if (is_depth_format(format) || is_stencil_format(format)) {
+        if (is_depth_stencil_format(format)) {
             flags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
         } else {
             flags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;

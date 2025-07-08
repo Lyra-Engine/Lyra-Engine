@@ -136,11 +136,21 @@ void cmd::begin_render_pass(GPUCommandEncoderHandle cmdbuffer, const GPURenderPa
     if (has_depth_stencil) {
         auto& view = fetch_resource(rhi->views, descriptor.depth_stencil_attachment.view);
 
+        has_depth_attachment   = view.aspects & VK_IMAGE_ASPECT_DEPTH_BIT;
+        has_stencil_attachment = view.aspects & VK_IMAGE_ASPECT_STENCIL_BIT;
+
+        auto layout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+        // clang-format off
+        if      (has_depth_attachment && !has_stencil_attachment) layout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+        else if (!has_depth_attachment && has_stencil_attachment) layout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL;
+        else                                                      layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        // clang-format on
+
         // depth attachment
-        has_depth_attachment                           = view.aspects & VK_IMAGE_ASPECT_DEPTH_BIT;
         depth_attachment.sType                         = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
         depth_attachment.pNext                         = nullptr;
-        depth_attachment.imageLayout                   = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+        depth_attachment.imageLayout                   = layout;
         depth_attachment.loadOp                        = vkenum(descriptor.depth_stencil_attachment.depth_load_op);
         depth_attachment.storeOp                       = vkenum(descriptor.depth_stencil_attachment.depth_store_op);
         depth_attachment.resolveImageView              = VK_NULL_HANDLE;
@@ -149,10 +159,9 @@ void cmd::begin_render_pass(GPUCommandEncoderHandle cmdbuffer, const GPURenderPa
         depth_attachment.imageView                     = view.view;
 
         // stencil attachment
-        has_stencil_attachment                             = view.aspects & VK_IMAGE_ASPECT_STENCIL_BIT;
         stencil_attachment.sType                           = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
         stencil_attachment.pNext                           = nullptr;
-        stencil_attachment.imageLayout                     = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL;
+        stencil_attachment.imageLayout                     = layout;
         stencil_attachment.loadOp                          = vkenum(descriptor.depth_stencil_attachment.stencil_load_op);
         stencil_attachment.storeOp                         = vkenum(descriptor.depth_stencil_attachment.stencil_store_op);
         stencil_attachment.resolveImageView                = VK_NULL_HANDLE;
@@ -627,7 +636,7 @@ void cmd::texture_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPU
         b.oldLayout     = vkenum(barrier.src_layout);
         b.newLayout     = vkenum(barrier.dst_layout);
 
-        b.subresourceRange.aspectMask     = vkenum(t.aspects);
+        b.subresourceRange.aspectMask     = t.aspects;
         b.subresourceRange.baseArrayLayer = barrier.subresources.base_array_layer;
         b.subresourceRange.baseMipLevel   = barrier.subresources.base_mip_level;
         b.subresourceRange.layerCount     = barrier.subresources.array_layers;

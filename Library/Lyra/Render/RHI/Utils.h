@@ -44,6 +44,7 @@ namespace lyra::rhi
     using GPUBarrierAccessFlags    = BitFlags<GPUBarrierAccess>;
     using GPUBVHFlags              = BitFlags<GPUBVHFlag>;
     using GPUBVHGeometryFlags      = BitFlags<GPUBVHGeometryFlag>;
+    using GPUTextureAspectFlags    = BitFlags<GPUTextureAspect>;
 
     // typed GPU handle
     using GPUFenceHandle              = Handle<GPUObjectType, GPUObjectType::FENCE>;
@@ -213,10 +214,10 @@ namespace lyra::rhi
 
     struct GPUTexelCopyTextureInfo
     {
-        GPUTextureHandle     texture;
-        GPUIntegerCoordinate mip_level = 0;
-        GPUOrigin3D          origin    = {};
-        GPUTextureAspect     aspect    = GPUTextureAspect::ALL;
+        GPUTextureHandle      texture;
+        GPUIntegerCoordinate  mip_level = 0;
+        GPUOrigin3D           origin    = {};
+        GPUTextureAspectFlags aspect    = GPUTextureAspect::ALL;
     };
 
     struct GPUBufferBindingLayout

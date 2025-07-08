@@ -63,7 +63,7 @@ D3D12_RESOURCE_FLAGS infer_texture_flags(GPUTextureUsageFlags usages, GPUTexture
 {
     D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
 
-    bool is_depth_stencil = is_depth_format(format) || is_stencil_format(format);
+    bool is_depth_stencil = is_depth_stencil_format(format);
 
     if (usages.contains(GPUTextureUsage::RENDER_ATTACHMENT)) {
         if (is_depth_stencil) {

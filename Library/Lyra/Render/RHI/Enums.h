@@ -101,6 +101,7 @@ namespace lyra::rhi
 
     enum struct GPUColorWrite : uint
     {
+        NONE  = 0x0,
         RED   = 0x1,
         GREEN = 0x2,
         BLUE  = 0x4,
@@ -664,6 +665,11 @@ namespace lyra::rhi
             default:
                 return false;
         }
+    }
+
+    inline bool is_depth_stencil_format(GPUTextureFormat format)
+    {
+        return is_depth_format(format) || is_stencil_format(format);
     }
 
 } // namespace lyra::rhi

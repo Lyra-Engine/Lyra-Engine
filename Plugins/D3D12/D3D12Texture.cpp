@@ -72,7 +72,7 @@ D3D12TextureView::D3D12TextureView(const D3D12Texture& texture, const GPUTexture
 
     // create texture view for render target / depth stencil
     if (usage.contains(GPUTextureUsage::RENDER_ATTACHMENT)) {
-        if (is_depth_format(desc.format) || is_stencil_format(desc.format)) {
+        if (is_depth_stencil_format(desc.format)) {
             init_dsv(texture, desc);
         } else {
             init_rtv(texture, desc);

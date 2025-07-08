@@ -8,6 +8,7 @@ target_include_directories(lyra-testkit PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 # test cases
 add_subdirectory(basic_graphics_pipeline)
 add_subdirectory(depth_test)
+add_subdirectory(stencil_test)
 
 # add custom target to run test kit
 find_package(Python3 REQUIRED COMPONENTS Interpreter)

@@ -85,7 +85,7 @@ namespace lyra::rhi
         GPUTextureFormat        format;
         GPUTextureViewDimension dimension;
         GPUTextureUsageFlags    usage             = 0; // if specified as 0, use texture's usage
-        GPUTextureAspect        aspect            = GPUTextureAspect::ALL;
+        GPUTextureAspectFlags   aspect            = GPUTextureAspect::ALL;
         GPUIntegerCoordinate    base_mip_level    = 0;
         GPUIntegerCoordinate    mip_level_count   = 1;
         GPUIntegerCoordinate    base_array_layer  = 0;

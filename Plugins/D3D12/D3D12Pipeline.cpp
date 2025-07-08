@@ -109,14 +109,24 @@ D3D12Pipeline::D3D12Pipeline(const GPURenderPipelineDescriptor& desc)
         pso_desc.DepthStencilState.DepthWriteMask = desc.depth_stencil.depth_write_enabled ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
         pso_desc.DepthStencilState.DepthFunc      = d3d12enum(desc.depth_stencil.depth_compare, pso_desc.DepthStencilState.DepthEnable);
     }
-    pso_desc.DepthStencilState.StencilEnable = desc.depth_stencil.stencil_front.compare != GPUCompareFunction::ALWAYS || desc.depth_stencil.stencil_back.compare != GPUCompareFunction::ALWAYS;
+    pso_desc.DepthStencilState.StencilEnable =
+        desc.depth_stencil.stencil_front.compare != GPUCompareFunction::ALWAYS ||
+        desc.depth_stencil.stencil_front.pass_op != GPUStencilOperation::KEEP ||
+        desc.depth_stencil.stencil_front.fail_op != GPUStencilOperation::KEEP ||
+        desc.depth_stencil.stencil_back.compare != GPUCompareFunction::ALWAYS ||
+        desc.depth_stencil.stencil_back.pass_op != GPUStencilOperation::KEEP ||
+        desc.depth_stencil.stencil_back.fail_op != GPUStencilOperation::KEEP;
     if (pso_desc.DepthStencilState.StencilEnable) {
         pso_desc.DepthStencilState.StencilReadMask              = desc.depth_stencil.stencil_read_mask;
-        pso_desc.DepthStencilState.StencilWriteMask             = desc.depth_stencil.stencil_read_mask;
+        pso_desc.DepthStencilState.StencilWriteMask             = desc.depth_stencil.stencil_write_mask;
         pso_desc.DepthStencilState.FrontFace.StencilFunc        = d3d12enum(desc.depth_stencil.stencil_front.compare, true);
         pso_desc.DepthStencilState.FrontFace.StencilFailOp      = d3d12enum(desc.depth_stencil.stencil_front.fail_op);
         pso_desc.DepthStencilState.FrontFace.StencilPassOp      = d3d12enum(desc.depth_stencil.stencil_front.pass_op);
         pso_desc.DepthStencilState.FrontFace.StencilDepthFailOp = d3d12enum(desc.depth_stencil.stencil_front.depth_fail_op);
+        pso_desc.DepthStencilState.BackFace.StencilFunc         = d3d12enum(desc.depth_stencil.stencil_back.compare, true);
+        pso_desc.DepthStencilState.BackFace.StencilFailOp       = d3d12enum(desc.depth_stencil.stencil_back.fail_op);
+        pso_desc.DepthStencilState.BackFace.StencilPassOp       = d3d12enum(desc.depth_stencil.stencil_back.pass_op);
+        pso_desc.DepthStencilState.BackFace.StencilDepthFailOp  = d3d12enum(desc.depth_stencil.stencil_back.depth_fail_op);
     }
 
     // multisample state

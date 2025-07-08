@@ -47,6 +47,7 @@ RenderAPI* RHI::api()
 
 void RHI::destroy() const
 {
+    RHI::api()->wait_idle();
     RHI::api()->delete_surface();
     RHI::api()->delete_device();
     RHI::api()->delete_adapter();
