@@ -74,6 +74,12 @@ def filter_tests(tests):
     for test in tests:
         if test["components"][0] == "rhi":
             filtered_tests.append(test)
+
+    # additionally, apply a filter based on environment variable to run specific test
+    filter_key = os.environ.get("LYRA_TESTKIT_FILTER", None)
+    if filter_key:
+        filtered_tests = [test for test in filtered_tests if filter_key in test["name"]]
+
     return filtered_tests
 
 def bucketize_tests(tests):

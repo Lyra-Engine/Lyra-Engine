@@ -30,6 +30,7 @@ struct Vertex
     glm::vec3 position;
     glm::vec3 normal;
     glm::vec3 color;
+    glm::vec2 uv;
 };
 
 struct Uniform
@@ -45,6 +46,7 @@ struct Geometry
     GPUBuffer ibuffer;
 
     static auto create_triangle() -> Geometry;
+    static auto create_overlapping_triangles() -> Geometry;
 };
 
 struct RenderTarget

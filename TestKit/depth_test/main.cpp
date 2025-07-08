@@ -1,6 +1,6 @@
 #include "helper.h"
 
-CString basic_graphics_pipeline_program = R"""(
+CString depth_test_program = R"""(
 struct VertexInput
 {
     float3 position : ATTRIBUTE0;
@@ -37,7 +37,7 @@ float4 fsmain(VertexOutput input) : SV_Target
 }
 )""";
 
-struct BasicGraphicsPipelineApp : public TestApp
+struct DepthTestApp : public TestApp
 {
     Uniform            uniform;
     Geometry           geometry;
@@ -46,11 +46,34 @@ struct BasicGraphicsPipelineApp : public TestApp
     GPURenderPipeline  pipeline;
     GPUPipelineLayout  playout;
     GPUBindGroupLayout blayout;
+    GPUTexture         dbuffer;
+    GPUTextureView     dview;
 
-    explicit BasicGraphicsPipelineApp(const TestAppDescriptor& desc) : TestApp(desc)
+    explicit DepthTestApp(const TestAppDescriptor& desc) : TestApp(desc)
     {
+        setup_depth();
         setup_buffers();
         setup_pipeline();
+    }
+
+    void setup_depth()
+    {
+        auto& device = RHI::get_current_device();
+
+        dbuffer = execute([&]() {
+            auto desc            = GPUTextureDescriptor{};
+            desc.format          = GPUTextureFormat::DEPTH16UNORM;
+            desc.size.width      = this->desc.width;
+            desc.size.height     = this->desc.height;
+            desc.size.depth      = 1;
+            desc.array_layers    = 1;
+            desc.mip_level_count = 1;
+            desc.usage           = GPUTextureUsage::RENDER_ATTACHMENT;
+            desc.label           = "depth_buffer";
+            return device.create_texture(desc);
+        });
+
+        dview = dbuffer.create_view();
     }
 
     void setup_buffers()
@@ -60,7 +83,7 @@ struct BasicGraphicsPipelineApp : public TestApp
         float fovy   = 1.05;
         float aspect = float(width) / float(height);
 
-        geometry = Geometry::create_triangle();
+        geometry = Geometry::create_overlapping_triangles();
         uniform  = Uniform::create(fovy, aspect, glm::vec3(0.0, 0.0, 3.0));
     }
 
@@ -72,7 +95,7 @@ struct BasicGraphicsPipelineApp : public TestApp
             auto desc   = CompileDescriptor{};
             desc.module = "test";
             desc.path   = "test.slang";
-            desc.source = basic_graphics_pipeline_program;
+            desc.source = depth_test_program;
             return compiler->compile(desc);
         });
 
@@ -139,8 +162,9 @@ struct BasicGraphicsPipelineApp : public TestApp
             desc.primitive.topology                    = GPUPrimitiveTopology::TRIANGLE_LIST;
             desc.primitive.front_face                  = GPUFrontFace::CCW;
             desc.primitive.strip_index_format          = GPUIndexFormat::UINT32;
-            desc.depth_stencil.depth_compare           = GPUCompareFunction::ALWAYS;
-            desc.depth_stencil.depth_write_enabled     = false;
+            desc.depth_stencil.format                  = GPUTextureFormat::DEPTH16UNORM;
+            desc.depth_stencil.depth_compare           = GPUCompareFunction::LESS;
+            desc.depth_stencil.depth_write_enabled     = true;
             desc.multisample.alpha_to_coverage_enabled = false;
             desc.multisample.count                     = 1;
             desc.vertex.module                         = vshader;
@@ -185,10 +209,17 @@ struct BasicGraphicsPipelineApp : public TestApp
         color_attachment.store_op    = GPUStoreOp::STORE;
         color_attachment.view        = backbuffer.view;
 
+        auto depth_attachment              = GPURenderPassDepthStencilAttachment{};
+        depth_attachment.view              = dview;
+        depth_attachment.depth_clear_value = 1.0f;
+        depth_attachment.depth_load_op     = GPULoadOp::CLEAR;
+        depth_attachment.depth_store_op    = GPUStoreOp::STORE;
+        depth_attachment.depth_read_only   = false;
+
         // render pass info
         auto render_pass                     = GPURenderPassDescriptor{};
         render_pass.color_attachments        = {color_attachment};
-        render_pass.depth_stencil_attachment = {};
+        render_pass.depth_stencil_attachment = depth_attachment;
 
         // synchronization when window is enabled
         if (desc.window) {
@@ -205,14 +236,14 @@ struct BasicGraphicsPipelineApp : public TestApp
         command.set_vertex_buffer(0, geometry.vbuffer);
         command.set_index_buffer(geometry.ibuffer, GPUIndexFormat::UINT32);
         command.set_bind_group(0, bind_group);
-        command.draw_indexed(3, 1, 0, 0, 0);
+        command.draw_indexed(6, 1, 0, 0, 0);
         command.end_render_pass();
         postprocessing(command, backbuffer.texture);
         command.submit();
     }
 };
 
-TEST_CASE("rhi::vulkan::basic_graphics_pipeline" * doctest::description("Rendering a triangle with the most basic graphics pipeline."))
+TEST_CASE("rhi::vulkan::depth_test" * doctest::description("Rendering a triangle with depth test enabled."))
 {
     TestAppDescriptor desc{};
     desc.name           = "vulkan";
@@ -223,11 +254,11 @@ TEST_CASE("rhi::vulkan::basic_graphics_pipeline" * doctest::description("Renderi
     desc.rhi_flags      = RHIFlag::DEBUG | RHIFlag::VALIDATION;
     desc.compile_target = CompileTarget::SPIRV;
     desc.compile_flags  = CompileFlag::DEBUG;
-    BasicGraphicsPipelineApp(desc).run();
+    DepthTestApp(desc).run();
 }
 
 #ifdef WIN32
-TEST_CASE("rhi::d3d12::basic_graphics_pipeline" * doctest::description("Rendering a triangle with the most basic graphics pipeline."))
+TEST_CASE("rhi::d3d12::depth_test" * doctest::description("Rendering a triangle with depth test enabled."))
 {
     TestAppDescriptor desc{};
     desc.name           = "d3d12";
@@ -238,6 +269,6 @@ TEST_CASE("rhi::d3d12::basic_graphics_pipeline" * doctest::description("Renderin
     desc.rhi_flags      = RHIFlag::DEBUG | RHIFlag::VALIDATION;
     desc.compile_target = CompileTarget::DXIL;
     desc.compile_flags  = CompileFlag::DEBUG;
-    BasicGraphicsPipelineApp(desc).run();
+    DepthTestApp(desc).run();
 }
 #endif
