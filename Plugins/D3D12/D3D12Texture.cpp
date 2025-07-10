@@ -207,6 +207,13 @@ void D3D12TextureView::init_srv(const D3D12Texture& texture, const GPUTextureVie
     D3D12_SHADER_RESOURCE_VIEW_DESC view_desc = {};
 
     view_desc.Format = infer_texture_format(desc.format);
+
+    view_desc.Shader4ComponentMapping = D3D12_ENCODE_SHADER_4_COMPONENT_MAPPING(
+        D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_0,
+        D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_1,
+        D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_2,
+        D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_3);
+
     switch (desc.dimension) {
         case GPUTextureViewDimension::x1D:
             view_desc.ViewDimension                 = D3D12_SRV_DIMENSION_TEXTURE1D;

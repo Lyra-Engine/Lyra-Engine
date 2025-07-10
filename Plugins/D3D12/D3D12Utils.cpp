@@ -312,7 +312,7 @@ uint infer_row_pitch(DXGI_FORMAT format, uint width, uint bytes_per_row)
 D3D12_COMPARISON_FUNC d3d12enum(GPUCompareFunction compare, bool enable)
 {
     if (!enable)
-        return D3D12_COMPARISON_FUNC_ALWAYS;
+        return D3D12_COMPARISON_FUNC_NONE;
 
     switch (compare) {
         case GPUCompareFunction::NEVER:

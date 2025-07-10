@@ -81,8 +81,11 @@ GPUCommandEncoderHandle D3D12Frame::allocate(GPUQueueType type, bool primary)
 
     // set default descriptor heaps
     auto set_descriptor_heap = [&](D3D12CommandBuffer& command_buffer) {
-        ID3D12DescriptorHeap* descriptor_heaps[] = {cbv_srv_uav_heap.heap, sampler_heap.heap};
-        command_buffer.command_buffer->SetDescriptorHeaps(2, descriptor_heaps);
+        // D3D12 COPY QUEUE does not support SetDescriptorHeaps
+        if (type != GPUQueueType::TRANSFER) {
+            ID3D12DescriptorHeap* descriptor_heaps[] = {cbv_srv_uav_heap.heap, sampler_heap.heap};
+            command_buffer.command_buffer->SetDescriptorHeaps(2, descriptor_heaps);
+        }
     };
 
     // search from existing allocations

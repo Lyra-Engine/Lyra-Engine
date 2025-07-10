@@ -61,6 +61,12 @@ void VulkanRHI::create_swapchain()
     Vector<VkImage> swapchain_images(count);
     vk_check(rhi->vtable.vkGetSwapchainImagesKHR(rhi->device, rhi->swapchain, &count, swapchain_images.data()));
 
+    // set names for swapchain images
+    for (uint i = 0; i < count; i++) {
+        String name = "swapchain-" + std::to_string(i);
+        rhi->set_debug_label(VK_OBJECT_TYPE_IMAGE, (uint64_t)swapchain_images.at(i), name.c_str());
+    }
+
     // clean up swapchain data if mismatching size
     if (rhi->swapchain_frames.size() != count) {
         for (auto& swap_frame : rhi->swapchain_frames)
@@ -262,7 +268,7 @@ bool api::acquire_next_frame(GPUTextureHandle& texture, GPUTextureViewHandle& vi
     auto& frame    = rhi->current_frame();
     frame.frame_id = rhi->current_frame_index;
 
-    // wait for inflght frame to complete
+    // wait for inflight frame to complete
     frame.wait();
     frame.reset();
 

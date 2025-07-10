@@ -435,7 +435,8 @@ struct VulkanFrame
     // implementation in VkFrame.cpp
     void init();
     void wait();
-    void reset(bool free = false);
+    void reset();
+    void free();
     auto allocate(GPUQueueType type, bool primary) -> GPUCommandEncoderHandle;
     void destroy();
 };

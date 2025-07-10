@@ -22,7 +22,7 @@ void VulkanFrame::wait()
     inflight_fence.wait();
 }
 
-void VulkanFrame::reset(bool free)
+void VulkanFrame::reset()
 {
     // release any resources that is owned by this command buffer
     for (auto& command_buffer : allocated_command_buffers)
@@ -30,9 +30,22 @@ void VulkanFrame::reset(bool free)
 
     inflight_fence.reset();
     descriptor_pool.reset();
-    compute_command_pool.reset(free);
-    graphics_command_pool.reset(free);
-    transfer_command_pool.reset(free);
+    compute_command_pool.reset();
+    graphics_command_pool.reset();
+    transfer_command_pool.reset();
+    allocated_command_buffers.clear();
+}
+
+void VulkanFrame::free()
+{
+    // release any resources that is owned by this command buffer
+    for (auto& command_buffer : allocated_command_buffers)
+        command_buffer.reset();
+
+    descriptor_pool.reset();
+    compute_command_pool.reset(true);
+    graphics_command_pool.reset(true);
+    transfer_command_pool.reset(true);
     allocated_command_buffers.clear();
 }
 

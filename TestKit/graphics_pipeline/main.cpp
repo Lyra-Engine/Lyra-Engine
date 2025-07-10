@@ -1,6 +1,6 @@
 #include "helper.h"
 
-CString basic_graphics_pipeline_program = R"""(
+CString graphics_pipeline_program = R"""(
 struct VertexInput
 {
     float3 position : ATTRIBUTE0;
@@ -37,7 +37,7 @@ float4 fsmain(VertexOutput input) : SV_Target
 }
 )""";
 
-struct BasicGraphicsPipelineApp : public TestApp
+struct GraphicsPipelineApp : public TestApp
 {
     Uniform            uniform;
     Geometry           geometry;
@@ -47,7 +47,7 @@ struct BasicGraphicsPipelineApp : public TestApp
     GPUPipelineLayout  playout;
     GPUBindGroupLayout blayout;
 
-    explicit BasicGraphicsPipelineApp(const TestAppDescriptor& desc) : TestApp(desc)
+    explicit GraphicsPipelineApp(const TestAppDescriptor& desc) : TestApp(desc)
     {
         setup_buffers();
         setup_pipeline();
@@ -72,7 +72,7 @@ struct BasicGraphicsPipelineApp : public TestApp
             auto desc   = CompileDescriptor{};
             desc.module = "test";
             desc.path   = "test.slang";
-            desc.source = basic_graphics_pipeline_program;
+            desc.source = graphics_pipeline_program;
             return compiler->compile(desc);
         });
 
@@ -212,7 +212,7 @@ struct BasicGraphicsPipelineApp : public TestApp
     }
 };
 
-TEST_CASE("rhi::vulkan::basic_graphics_pipeline" * doctest::description("Rendering a triangle with the most basic graphics pipeline."))
+TEST_CASE("rhi::vulkan::graphics_pipeline" * doctest::description("Rendering a triangle with the most basic graphics pipeline."))
 {
     TestAppDescriptor desc{};
     desc.name           = "vulkan";
@@ -223,11 +223,11 @@ TEST_CASE("rhi::vulkan::basic_graphics_pipeline" * doctest::description("Renderi
     desc.rhi_flags      = RHIFlag::DEBUG | RHIFlag::VALIDATION;
     desc.compile_target = CompileTarget::SPIRV;
     desc.compile_flags  = CompileFlag::DEBUG;
-    BasicGraphicsPipelineApp(desc).run();
+    GraphicsPipelineApp(desc).run();
 }
 
 #ifdef WIN32
-TEST_CASE("rhi::d3d12::basic_graphics_pipeline" * doctest::description("Rendering a triangle with the most basic graphics pipeline."))
+TEST_CASE("rhi::d3d12::graphics_pipeline" * doctest::description("Rendering a triangle with the most basic graphics pipeline."))
 {
     TestAppDescriptor desc{};
     desc.name           = "d3d12";
@@ -238,6 +238,6 @@ TEST_CASE("rhi::d3d12::basic_graphics_pipeline" * doctest::description("Renderin
     desc.rhi_flags      = RHIFlag::DEBUG | RHIFlag::VALIDATION;
     desc.compile_target = CompileTarget::DXIL;
     desc.compile_flags  = CompileFlag::DEBUG;
-    BasicGraphicsPipelineApp(desc).run();
+    GraphicsPipelineApp(desc).run();
 }
 #endif

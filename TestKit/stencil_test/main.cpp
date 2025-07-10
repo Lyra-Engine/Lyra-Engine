@@ -45,7 +45,7 @@ struct StencilTestApp : public TestApp
     GPUShaderModule    vshader;
     GPUShaderModule    fshader;
     GPURenderPipeline  pipeline_mask;
-    GPURenderPipeline  pipeline_color;
+    GPURenderPipeline  pipeline_draw;
     GPUPipelineLayout  playout;
     GPUBindGroupLayout blayout;
     GPUTexture         dsbuffer;
@@ -186,7 +186,7 @@ struct StencilTestApp : public TestApp
             return device.create_render_pipeline(desc);
         });
 
-        pipeline_color = execute([&]() {
+        pipeline_draw = execute([&]() {
             auto position            = GPUVertexAttribute{};
             position.format          = GPUVertexFormat::FLOAT32x3;
             position.offset          = offsetof(Vertex, position);
@@ -300,7 +300,7 @@ struct StencilTestApp : public TestApp
         command.begin_render_pass(render_pass);
         command.set_viewport(0, 0, desc.width, desc.height);
         command.set_scissor_rect(0, 0, desc.width, desc.height);
-        command.set_pipeline(pipeline_color);
+        command.set_pipeline(pipeline_draw);
         command.set_vertex_buffer(0, geometry.vbuffer);
         command.set_index_buffer(geometry.ibuffer, GPUIndexFormat::UINT32);
         command.set_bind_group(0, bind_group);
