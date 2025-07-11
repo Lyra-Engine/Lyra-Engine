@@ -247,8 +247,15 @@ void cmd::set_bind_group(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 index, GP
     if (!dynamic_offsets.empty())
         assert(!!!"cmd::set_bind_group() with dynamic offsets is currently not implemented!");
 
-    auto handle = des.descriptor.gpu_handle;
-    cmd.command_buffer->SetGraphicsRootDescriptorTable(index, handle);
+    const auto& info = cmd.pso.layout->bindgroups.at(index);
+    if (info.has_default_root_parameter()) {
+        auto handle = frm.default_heap.gpu(des.default_index);
+        cmd.command_buffer->SetGraphicsRootDescriptorTable(info.default_root_parameter, handle);
+    }
+    if (info.has_sampler_root_parameter()) {
+        auto handle = frm.sampler_heap.gpu(des.sampler_index);
+        cmd.command_buffer->SetGraphicsRootDescriptorTable(info.sampler_root_parameter, handle);
+    }
 }
 
 void cmd::set_index_buffer(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle buffer, GPUIndexFormat format, GPUSize64 offset, GPUSize64 size)

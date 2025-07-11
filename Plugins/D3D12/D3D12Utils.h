@@ -108,7 +108,10 @@ struct D3D12HeapGPU
     void init(uint capacity, D3D12_DESCRIPTOR_HEAP_TYPE type, D3D12_DESCRIPTOR_HEAP_FLAGS flags);
     void reset();
     void destroy();
-    auto allocate(uint allocate_count = 1) -> D3D12GPUDescriptor;
+    auto allocate(uint allocate_count = 1) -> uint;
+
+    auto cpu(uint index) const -> D3D12_CPU_DESCRIPTOR_HANDLE;
+    auto gpu(uint index) const -> D3D12_GPU_DESCRIPTOR_HANDLE;
 };
 
 // D3D12's Fence is similar to d3d12's Timeline Semaphore,
@@ -251,25 +254,44 @@ struct D3D12Shader
 
 struct D3D12BindGroup
 {
-    // NOTE: D3D12 requires an explicit separation of cbv_srv_uav vs sampler heap.
-    // Therefore we don't have to store both.
-    D3D12GPUDescriptor descriptor;
+    // NOTE: D3D12 requires an explicit separation of cbv_srv_uav vs sampler heap,
+    // but a single bindgroup is allowed to contain both. We only need to record
+    // the index into the heap though
+    uint default_index = -1;
+    uint sampler_index = -1;
+
+    bool valid() const
+    {
+        bool default_valid = default_index != -1u;
+        bool sampler_valid = sampler_index != -1u;
+        return default_valid || sampler_valid;
+    }
 };
 
 struct D3D12BindInfo
 {
-    uint binding_index;
-    uint binding_count;
-    uint base_offset;
+    D3D12_DESCRIPTOR_RANGE_TYPE type  = (D3D12_DESCRIPTOR_RANGE_TYPE)0;
+    uint                        start = 0;
+    uint                        count = 0;
+};
+
+struct D3D12BindGroupInfo
+{
+    uint default_root_parameter = -1;
+    uint sampler_root_parameter = -1;
+
+    bool has_default_root_parameter() const { return default_root_parameter != -1; }
+    bool has_sampler_root_parameter() const { return sampler_root_parameter != -1; }
 };
 
 struct D3D12Frame;
 struct D3D12BindGroupLayout
 {
-    Vector<D3D12_DESCRIPTOR_RANGE1> ranges     = {};
-    D3D12_SHADER_VISIBILITY         visibility = D3D12_SHADER_VISIBILITY_ALL;
-    bool                            bindless   = false;
-    Vector<D3D12BindInfo>           bindings   = {};
+    Vector<D3D12_DESCRIPTOR_RANGE1> sampler_ranges = {};
+    Vector<D3D12_DESCRIPTOR_RANGE1> default_ranges = {};
+    Vector<D3D12BindInfo>           bindings       = {};
+    D3D12_SHADER_VISIBILITY         visibility     = D3D12_SHADER_VISIBILITY_ALL;
+    bool                            bindless       = false;
 
     // implementation in D3D12Layout.cpp
     explicit D3D12BindGroupLayout();
@@ -279,7 +301,7 @@ struct D3D12BindGroupLayout
 
     auto create(D3D12Frame& frame, const GPUBindGroupDescriptor& desc) -> D3D12BindGroup;
 
-    bool valid() const { return !ranges.empty(); }
+    bool valid() const { return !(default_ranges.empty() && sampler_ranges.empty()); }
 
     // helper methods
     void copy_regular_descriptors(const D3D12Frame& frame, const GPUBindGroupEntry& entry, D3D12BindGroup& bind_group, uint offset);
@@ -294,7 +316,7 @@ struct D3D12PipelineLayout
 {
     ID3D12RootSignature* layout = nullptr;
 
-    Vector<D3D12BindGroupLayout> bind_group_layouts;
+    Vector<D3D12BindGroupInfo> bindgroups = {};
 
     // really awkward design, but I have no choice
     struct
@@ -465,8 +487,8 @@ struct D3D12Frame
     D3D12CommandPool transfer_command_pool;
 
     // descriptor heap for runtime bound descriptors
+    D3D12HeapGPU           default_heap;
     D3D12HeapGPU           sampler_heap;
-    D3D12HeapGPU           cbv_srv_uav_heap;
     Vector<D3D12BindGroup> allocated_descriptors;
 
     // allocate command buffers
