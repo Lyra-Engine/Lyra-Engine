@@ -306,7 +306,7 @@ uint infer_row_pitch(DXGI_FORMAT format, uint width, uint bytes_per_row)
         return bytes_per_row;
 
     constexpr uint alignment = D3D12_TEXTURE_DATA_PITCH_ALIGNMENT; // 256 bytes
-    return (size_of(format) * width + alignment - 1) / alignment * alignment;
+    return (size_of(format) * width + alignment - 1) & ~(alignment - 1);
 }
 
 D3D12_COMPARISON_FUNC d3d12enum(GPUCompareFunction compare, bool enable)

@@ -396,9 +396,10 @@ namespace lyra::rhi
 
     struct GPUAdapter : public GPUObjectBase
     {
-        GPUAdapterInfo       info     = {};
-        GPUSupportedFeatures features = {};
-        GPUSupportedLimits   limits   = {};
+        GPUAdapterInfo       info       = {};
+        GPUSupportedFeatures features   = {};
+        GPUSupportedLimits   limits     = {};
+        GPUProperties        properties = {};
 
         auto request_device(const GPUDeviceDescriptor& descriptor) -> GPUDevice;
     };
@@ -409,17 +410,11 @@ namespace lyra::rhi
         RHIBackend   backend;
         WindowHandle window = {};
 
-        static GPUDevice& get_current_device()
-        {
-            static GPUDevice DEVICE = {};
-            return DEVICE;
-        }
+        static auto get_current_adapter() -> GPUAdapter&;
 
-        static GPUSurface& get_current_surface()
-        {
-            static GPUSurface SURFACE = {};
-            return SURFACE;
-        }
+        static auto get_current_device() -> GPUDevice&;
+
+        static auto get_current_surface() -> GPUSurface&;
 
         static auto init(const RHIDescriptor& descriptor) -> OwnedResource<RHI>;
 

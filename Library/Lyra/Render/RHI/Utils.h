@@ -156,14 +156,19 @@ namespace lyra::rhi
         uint max_compute_workgroups_per_dimension            = 65535;
     };
 
+    struct GPUProperties
+    {
+        uint subgroup_max_size           = 0;
+        uint subgroup_min_size           = 0;
+        uint texture_row_pitch_alignment = 0;
+    };
+
     struct GPUAdapterInfo
     {
-        String architecture      = "";
-        String descrition        = "";
-        String device            = "";
-        String vendor            = "";
-        uint   subgroup_max_size = 0;
-        uint   subgroup_min_size = 0;
+        String architecture = "";
+        String descrition   = "";
+        String device       = "";
+        String vendor       = "";
     };
 
     struct GPUColor

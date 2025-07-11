@@ -751,7 +751,7 @@ T& fetch_resource(D3D12ResourceManager<T>& manager, Handle handle)
 
     T& resource = manager.data.at(handle.value);
     if (!resource.valid()) {
-        get_logger()->error("Resource handle {} with value={} has invalid Vk object!", typeid(Handle).name(), handle.value);
+        get_logger()->error("Resource handle {} with value={} has invalid D3D12 object!", typeid(Handle).name(), handle.value);
         exit(1);
     }
     return resource;

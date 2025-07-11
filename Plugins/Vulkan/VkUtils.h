@@ -458,7 +458,8 @@ struct VulkanRHI
     QueueFamilyIndices queues;
 
     // additional properties
-    VkPhysicalDeviceProperties props = {};
+    VkPhysicalDeviceProperties  props  = {};
+    VkPhysicalDeviceProperties2 props2 = {};
 
     // objects for swapchain recreation
     GPUSurfaceDescriptor surface_desc = {};

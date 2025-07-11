@@ -1,3 +1,4 @@
+#include <iostream>
 #include <Lyra/Common/Plugin.h>
 #include <Lyra/Render/RHI/API.h>
 #include <Lyra/Render/RHI/Types.h>
@@ -54,9 +55,27 @@ void RHI::destroy() const
     RHI::api()->delete_instance();
 }
 
+GPUAdapter& RHI::get_current_adapter()
+{
+    static GPUAdapter ADAPTER = {};
+    return ADAPTER;
+}
+
+GPUDevice& RHI::get_current_device()
+{
+    static GPUDevice DEVICE = {};
+    return DEVICE;
+}
+
+GPUSurface& RHI::get_current_surface()
+{
+    static GPUSurface SURFACE = {};
+    return SURFACE;
+}
+
 GPUAdapter RHI::request_adapter(const GPUAdapterDescriptor& descriptor) const
 {
-    GPUAdapter adapter = {};
+    auto& adapter = RHI::get_current_adapter();
     RHI::api()->create_adapter(adapter, descriptor);
     return adapter;
 }
