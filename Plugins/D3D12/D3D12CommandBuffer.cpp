@@ -242,29 +242,13 @@ void cmd::set_bind_group(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 index, GP
     auto  rhi = get_rhi();
     auto& frm = rhi->current_frame();
     auto& cmd = frm.command(cmdbuffer);
-    auto* lay = cmd.pso.layout;
     auto  des = frm.descriptor(bind_group);
 
     if (!dynamic_offsets.empty())
         assert(!!!"cmd::set_bind_group() with dynamic offsets is currently not implemented!");
 
-    assert(index < lay->bind_group_layouts.size());
-    auto& layout = lay->bind_group_layouts.at(index);
-    for (auto& binding : layout.bindings) {
-        if (binding.heap_type == D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER) {
-            auto handle = des.sampler_base.value().gpu_handle;
-            handle.ptr += binding.base_offset * frm.sampler_heap.increment;
-            cmd.command_buffer->SetGraphicsRootDescriptorTable(
-                binding.root_param_index,
-                handle);
-        } else {
-            auto handle = des.cbv_srv_uav_base.value().gpu_handle;
-            handle.ptr += binding.base_offset * frm.cbv_srv_uav_heap.increment;
-            cmd.command_buffer->SetGraphicsRootDescriptorTable(
-                binding.root_param_index,
-                handle);
-        }
-    }
+    auto handle = des.descriptor.gpu_handle;
+    cmd.command_buffer->SetGraphicsRootDescriptorTable(index, handle);
 }
 
 void cmd::set_index_buffer(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle buffer, GPUIndexFormat format, GPUSize64 offset, GPUSize64 size)

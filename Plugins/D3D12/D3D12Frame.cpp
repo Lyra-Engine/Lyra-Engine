@@ -27,7 +27,27 @@ void D3D12Frame::wait()
     }
 }
 
-void D3D12Frame::reset(bool free)
+void D3D12Frame::reset()
+{
+    // reset fence
+    fetch_resource(get_rhi()->fences, render_complete_fence).reset();
+
+    // clean up command pools
+    bundle_command_pool.reset();
+    compute_command_pool.reset();
+    graphics_command_pool.reset();
+    transfer_command_pool.reset();
+
+    // clean up descriptor heap
+    sampler_heap.reset();
+    cbv_srv_uav_heap.reset();
+
+    // reset command buffers
+    for (auto& cmd : allocated_command_buffers)
+        cmd.reset();
+}
+
+void D3D12Frame::free()
 {
     // clean up command pools
     bundle_command_pool.reset();
@@ -39,24 +59,16 @@ void D3D12Frame::reset(bool free)
     sampler_heap.reset();
     cbv_srv_uav_heap.reset();
 
-    // reset fence
-    fetch_resource(get_rhi()->fences, render_complete_fence).reset();
+    // destroy command buffers
+    for (auto& cmd : allocated_command_buffers)
+        cmd.cmd.destroy();
 
-    if (free) {
-        // destroy command buffers
-        for (auto& cmd : allocated_command_buffers)
-            cmd.cmd.destroy();
-        allocated_command_buffers.clear();
-    } else {
-        // reset command buffers
-        for (auto& cmd : allocated_command_buffers)
-            cmd.reset();
-    }
+    allocated_command_buffers.clear();
 }
 
 void D3D12Frame::destroy()
 {
-    reset(true);
+    free();
 
     auto rhi = get_rhi();
 

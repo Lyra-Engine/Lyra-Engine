@@ -19,11 +19,15 @@ struct Camera
     float4x4 view;
 };
 
-ConstantBuffer<Camera> camera;
+[[vk::binding(0, 0)]]
+ConstantBuffer<Camera> camera : register(b0, space0);
 
-// used to do texture sampling
-Texture2D<float4> main_texture;
-SamplerState      main_sampler;
+[[vk::binding(1, 0)]]
+Texture2D<float4> main_texture : register(t1, space0);
+
+// unfortunately have to break the binding groups due to D3D12 requirement
+[[vk::binding(0, 1)]]
+SamplerState main_sampler : register(s0, space1);
 
 [shader("vertex")]
 VertexOutput vsmain(VertexInput input)
@@ -49,7 +53,8 @@ struct TextureSamplingApp : public TestApp
     GPUShaderModule    fshader;
     GPURenderPipeline  pipeline;
     GPUPipelineLayout  playout;
-    GPUBindGroupLayout blayout;
+    GPUBindGroupLayout blayout0;
+    GPUBindGroupLayout blayout1;
     GPUBuffer          staging;
     GPUTexture         texture;
     GPUTextureView     texview;
@@ -136,7 +141,7 @@ struct TextureSamplingApp : public TestApp
             return device.create_shader_module(desc);
         });
 
-        blayout = execute([&]() {
+        blayout0 = execute([&]() {
             auto desc = GPUBindGroupLayoutDescriptor{};
 
             // camera
@@ -163,12 +168,18 @@ struct TextureSamplingApp : public TestApp
                 entry.texture.multisampled   = false;
             }
 
+            return device.create_bind_group_layout(desc);
+        });
+
+        blayout1 = execute([&]() {
+            auto desc = GPUBindGroupLayoutDescriptor{};
+
             // sampler
             {
                 desc.entries.push_back(GPUBindGroupLayoutEntry{});
                 auto& entry        = desc.entries.back();
                 entry.type         = GPUBindingResourceType::SAMPLER;
-                entry.binding      = 2;
+                entry.binding      = 0;
                 entry.count        = 1;
                 entry.visibility   = GPUShaderStage::FRAGMENT;
                 entry.sampler.type = GPUSamplerBindingType::FILTERING;
@@ -179,7 +190,7 @@ struct TextureSamplingApp : public TestApp
 
         playout = execute([&]() {
             auto desc               = GPUPipelineLayoutDescriptor{};
-            desc.bind_group_layouts = {blayout};
+            desc.bind_group_layouts = {blayout0, blayout1};
             return device.create_pipeline_layout(desc);
         });
 
@@ -234,9 +245,9 @@ struct TextureSamplingApp : public TestApp
         });
 
         // create bind group
-        auto bind_group = execute([&]() {
+        auto bind_group0 = execute([&]() {
             auto desc   = GPUBindGroupDescriptor{};
-            desc.layout = blayout;
+            desc.layout = blayout0;
 
             // camera
             {
@@ -258,12 +269,20 @@ struct TextureSamplingApp : public TestApp
                 entry.texture = texview;
             }
 
+            return device.create_bind_group(desc);
+        });
+
+        // create bind group
+        auto bind_group1 = execute([&]() {
+            auto desc   = GPUBindGroupDescriptor{};
+            desc.layout = blayout1;
+
             // sampler
             {
                 desc.entries.push_back(GPUBindGroupEntry{});
                 auto& entry   = desc.entries.back();
                 entry.type    = GPUBindingResourceType::SAMPLER;
-                entry.binding = 2;
+                entry.binding = 0;
                 entry.sampler = sampler;
             }
 
@@ -296,7 +315,8 @@ struct TextureSamplingApp : public TestApp
         command.set_pipeline(pipeline);
         command.set_vertex_buffer(0, geometry.vbuffer);
         command.set_index_buffer(geometry.ibuffer, GPUIndexFormat::UINT32);
-        command.set_bind_group(0, bind_group);
+        command.set_bind_group(0, bind_group0);
+        command.set_bind_group(1, bind_group1);
         command.draw_indexed(3, 1, 0, 0, 0);
         command.end_render_pass();
         postprocessing(command, backbuffer.texture);
@@ -304,26 +324,26 @@ struct TextureSamplingApp : public TestApp
     }
 };
 
-// TEST_CASE("rhi::vulkan::texture_sampling" * doctest::description("Rendering a textured triangle with the most basic graphics pipeline."))
-// {
-//     TestAppDescriptor desc{};
-//     desc.name           = "vulkan";
-//     desc.window         = false;
-//     desc.backend        = RHIBackend::VULKAN;
-//     desc.width          = 640;
-//     desc.height         = 480;
-//     desc.rhi_flags      = RHIFlag::DEBUG | RHIFlag::VALIDATION;
-//     desc.compile_target = CompileTarget::SPIRV;
-//     desc.compile_flags  = CompileFlag::DEBUG;
-//     TextureSamplingApp(desc).run();
-// }
+TEST_CASE("rhi::vulkan::texture_sampling" * doctest::description("Rendering a textured triangle with the most basic graphics pipeline."))
+{
+    TestAppDescriptor desc{};
+    desc.name           = "vulkan";
+    desc.window         = false;
+    desc.backend        = RHIBackend::VULKAN;
+    desc.width          = 640;
+    desc.height         = 480;
+    desc.rhi_flags      = RHIFlag::DEBUG | RHIFlag::VALIDATION;
+    desc.compile_target = CompileTarget::SPIRV;
+    desc.compile_flags  = CompileFlag::DEBUG;
+    TextureSamplingApp(desc).run();
+}
 
 #ifdef WIN32
 TEST_CASE("rhi::d3d12::texture_sampling" * doctest::description("Rendering a textured triangle with the most basic graphics pipeline."))
 {
     TestAppDescriptor desc{};
     desc.name           = "d3d12";
-    desc.window         = true;
+    desc.window         = false;
     desc.backend        = RHIBackend::D3D12;
     desc.width          = 640;
     desc.height         = 480;

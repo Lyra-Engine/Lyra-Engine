@@ -14,10 +14,10 @@ target_link_libraries(lyra-testkit PRIVATE stb doctest::doctest)
 target_include_directories(lyra-testkit PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/common)
 
 # test cases
-# add_subdirectory(depth_test)
-# add_subdirectory(stencil_test)
+add_subdirectory(depth_test)
+add_subdirectory(stencil_test)
 add_subdirectory(texture_sampling)
-# add_subdirectory(graphics_pipeline)
+add_subdirectory(graphics_pipeline)
 
 # add custom target to run test kit
 find_package(Python3 REQUIRED COMPONENTS Interpreter)

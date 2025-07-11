@@ -1,13 +1,6 @@
 // reference: https://alain.xyz/blog/raw-directx12
 #include "D3D12Utils.h"
 
-// const char* get_semantic_name(uint32_t location)
-// {
-//     static thread_local char semantic_buffer[32];
-//     snprintf(semantic_buffer, sizeof(semantic_buffer), "TEXCOORD%u", location);
-//     return semantic_buffer;
-// }
-
 D3D12Pipeline::D3D12Pipeline()
 {
     pipeline = nullptr;

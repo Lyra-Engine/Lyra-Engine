@@ -339,7 +339,7 @@ void api::wait_idle()
 
     // optional: clean up all pools from all frames
     for (auto& frame : rhi->frames)
-        frame.reset(true);
+        frame.free();
 }
 
 void api::wait_fence(GPUFenceHandle handle)

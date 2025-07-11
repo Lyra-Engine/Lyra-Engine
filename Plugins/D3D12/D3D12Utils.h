@@ -251,19 +251,16 @@ struct D3D12Shader
 
 struct D3D12BindGroup
 {
-    // NOTE: A single bindgroup might contain both types of descriptor,
-    // we will have to store both unfortunately.
-    Optional<D3D12GPUDescriptor> cbv_srv_uav_base;
-    Optional<D3D12GPUDescriptor> sampler_base;
+    // NOTE: D3D12 requires an explicit separation of cbv_srv_uav vs sampler heap.
+    // Therefore we don't have to store both.
+    D3D12GPUDescriptor descriptor;
 };
 
 struct D3D12BindInfo
 {
-    D3D12_DESCRIPTOR_HEAP_TYPE heap_type;
-    uint                       binding_index;
-    uint                       binding_count;
-    uint                       root_param_index;
-    uint                       base_offset;
+    uint binding_index;
+    uint binding_count;
+    uint base_offset;
 };
 
 struct D3D12Frame;
@@ -490,7 +487,8 @@ struct D3D12Frame
     // impementation in D3D12Frame.cpp
     void init();
     void wait();
-    void reset(bool free = false);
+    void reset();
+    void free();
     auto allocate(GPUQueueType type, bool primary) -> GPUCommandEncoderHandle;
     auto create(const GPUBindGroupDescriptor& desc) -> GPUBindGroupHandle;
     void destroy();

@@ -55,7 +55,6 @@ void D3D12Texture::destroy()
     }
 
     if (allocation) {
-        print_refcnt(allocation);
         allocation->Release();
         allocation = nullptr;
     }
