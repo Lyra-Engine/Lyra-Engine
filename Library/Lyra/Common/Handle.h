@@ -1,7 +1,8 @@
 #ifndef LYRA_LIBRARY_COMMON_HANDLE_H
 #define LYRA_LIBRARY_COMMON_HANDLE_H
 
-#include <cstdint>
+#include <Lyra/Common/Stdint.h>
+#include <Lyra/Common/String.h>
 
 namespace lyra
 {
@@ -20,6 +21,11 @@ namespace lyra
         bool valid() const { return value != T(-1); }
 
         void reset() { value = T(-1); }
+
+        constexpr static auto type_name() -> CString
+        {
+            return to_string(TYPE);
+        }
     };
 
     template <typename T>

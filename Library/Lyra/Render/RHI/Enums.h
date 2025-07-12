@@ -1,6 +1,7 @@
 #ifndef LYRA_LIBRARY_RENDER_RHI_ENUMS_H
 #define LYRA_LIBRARY_RENDER_RHI_ENUMS_H
 
+#include <Lyra/Common/String.h>
 #include <Lyra/Common/Stdint.h>
 #include <Lyra/Common/Compatibility.h>
 
@@ -670,6 +671,31 @@ namespace lyra::rhi
     inline bool is_depth_stencil_format(GPUTextureFormat format)
     {
         return is_depth_format(format) || is_stencil_format(format);
+    }
+
+    inline constexpr CString to_string(GPUObjectType type)
+    {
+        // clang-format off
+        switch (type) {
+            case GPUObjectType::FENCE:               return "GPUFence";
+            case GPUObjectType::BUFFER:              return "GPUBuffer";
+            case GPUObjectType::SAMPLER:             return "GPUSampler";
+            case GPUObjectType::TEXTURE:             return "GPUTexture";
+            case GPUObjectType::TEXTURE_VIEW:        return "GPUTextureView";
+            case GPUObjectType::SHADER_MODULE:       return "GPUShaderModule";
+            case GPUObjectType::COMMAND_ENCODER:     return "GPUCommandEncoder";
+            case GPUObjectType::BIND_GROUP:          return "GPUBindGroup";
+            case GPUObjectType::BIND_GROUP_LAYOUT:   return "GPUBindGroupLayout";
+            case GPUObjectType::PIPELINE_LAYOUT:     return "GPUPipelineLayout";
+            case GPUObjectType::RENDER_PIPELINE:     return "GPURenderPipeline";
+            case GPUObjectType::COMPUTE_PIPELINE:    return "GPUComputePipeline";
+            case GPUObjectType::RAYTRACING_PIPELINE: return "GPURayTracingPipeline";
+            case GPUObjectType::QUERY_SET:           return "GPUQuerySet";
+            case GPUObjectType::TLAS:                return "GPUTlas";
+            case GPUObjectType::BLAS:                return "GPUBlas";
+            default:                                 return "Unknown";
+        }
+        // clang-format on
     }
 
 } // namespace lyra::rhi

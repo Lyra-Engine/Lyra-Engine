@@ -46,23 +46,26 @@ namespace lyra::rhi
     using GPUBVHGeometryFlags      = BitFlags<GPUBVHGeometryFlag>;
     using GPUTextureAspectFlags    = BitFlags<GPUTextureAspect>;
 
+    template <GPUObjectType E>
+    using GPUHandle = Handle<GPUObjectType, E>;
+
     // typed GPU handle
-    using GPUFenceHandle              = Handle<GPUObjectType, GPUObjectType::FENCE>;
-    using GPUCommandEncoderHandle     = Handle<GPUObjectType, GPUObjectType::COMMAND_ENCODER>;
-    using GPUBufferHandle             = Handle<GPUObjectType, GPUObjectType::BUFFER>;
-    using GPUSamplerHandle            = Handle<GPUObjectType, GPUObjectType::SAMPLER>;
-    using GPUTextureHandle            = Handle<GPUObjectType, GPUObjectType::TEXTURE>;
-    using GPUTextureViewHandle        = Handle<GPUObjectType, GPUObjectType::TEXTURE_VIEW>;
-    using GPUShaderModuleHandle       = Handle<GPUObjectType, GPUObjectType::SHADER_MODULE>;
-    using GPUQuerySetHandle           = Handle<GPUObjectType, GPUObjectType::QUERY_SET>;
-    using GPUTlasHandle               = Handle<GPUObjectType, GPUObjectType::TLAS>;
-    using GPUBlasHandle               = Handle<GPUObjectType, GPUObjectType::BLAS>;
-    using GPUBindGroupHandle          = Handle<GPUObjectType, GPUObjectType::BIND_GROUP>;
-    using GPUBindGroupLayoutHandle    = Handle<GPUObjectType, GPUObjectType::BIND_GROUP_LAYOUT>;
-    using GPUPipelineLayoutHandle     = Handle<GPUObjectType, GPUObjectType::PIPELINE_LAYOUT>;
-    using GPURenderPipelineHandle     = Handle<GPUObjectType, GPUObjectType::RENDER_PIPELINE>;
-    using GPUComputePipelineHandle    = Handle<GPUObjectType, GPUObjectType::COMPUTE_PIPELINE>;
-    using GPURayTracingPipelineHandle = Handle<GPUObjectType, GPUObjectType::RAYTRACING_PIPELINE>;
+    using GPUFenceHandle              = GPUHandle<GPUObjectType::FENCE>;
+    using GPUCommandEncoderHandle     = GPUHandle<GPUObjectType::COMMAND_ENCODER>;
+    using GPUBufferHandle             = GPUHandle<GPUObjectType::BUFFER>;
+    using GPUSamplerHandle            = GPUHandle<GPUObjectType::SAMPLER>;
+    using GPUTextureHandle            = GPUHandle<GPUObjectType::TEXTURE>;
+    using GPUTextureViewHandle        = GPUHandle<GPUObjectType::TEXTURE_VIEW>;
+    using GPUShaderModuleHandle       = GPUHandle<GPUObjectType::SHADER_MODULE>;
+    using GPUQuerySetHandle           = GPUHandle<GPUObjectType::QUERY_SET>;
+    using GPUTlasHandle               = GPUHandle<GPUObjectType::TLAS>;
+    using GPUBlasHandle               = GPUHandle<GPUObjectType::BLAS>;
+    using GPUBindGroupHandle          = GPUHandle<GPUObjectType::BIND_GROUP>;
+    using GPUBindGroupLayoutHandle    = GPUHandle<GPUObjectType::BIND_GROUP_LAYOUT>;
+    using GPUPipelineLayoutHandle     = GPUHandle<GPUObjectType::PIPELINE_LAYOUT>;
+    using GPURenderPipelineHandle     = GPUHandle<GPUObjectType::RENDER_PIPELINE>;
+    using GPUComputePipelineHandle    = GPUHandle<GPUObjectType::COMPUTE_PIPELINE>;
+    using GPURayTracingPipelineHandle = GPUHandle<GPUObjectType::RAYTRACING_PIPELINE>;
 
     struct MappedBufferRange
     {
