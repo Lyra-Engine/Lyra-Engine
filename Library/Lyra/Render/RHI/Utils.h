@@ -1,11 +1,11 @@
 #ifndef LYRA_LIBRARY_RENDER_RHI_UTILS_H
 #define LYRA_LIBRARY_RENDER_RHI_UTILS_H
 
+#include <Lyra/Common/View.h>
 #include <Lyra/Common/Assert.h>
 #include <Lyra/Common/String.h>
 #include <Lyra/Common/Handle.h>
 #include <Lyra/Common/BitFlags.h>
-#include <Lyra/Common/Container.h>
 #include <Lyra/Render/RHI/Enums.h>
 
 ENABLE_BIT_FLAGS(lyra::rhi::RHIFlag);
@@ -66,6 +66,60 @@ namespace lyra::rhi
     using GPURenderPipelineHandle     = GPUHandle<GPUObjectType::RENDER_PIPELINE>;
     using GPUComputePipelineHandle    = GPUHandle<GPUObjectType::COMPUTE_PIPELINE>;
     using GPURayTracingPipelineHandle = GPUHandle<GPUObjectType::RAYTRACING_PIPELINE>;
+
+    // forward declarations
+    using GPUFeatureNames   = TypedView<GPUFeatureName>;
+    using GPUTextureFormats = TypedView<GPUTextureFormat>;
+
+    struct GPUTlasInstance;
+    using GPUTlasInstances = TypedView<GPUTlasInstance>;
+
+    struct GPUBlasTriangleGeometry;
+    using GPUBlasTriangleGeometries = TypedView<GPUBlasTriangleGeometry>;
+
+    struct GPUBindGroupEntry;
+    using GPUBindGroupEntries = TypedView<GPUBindGroupEntry>;
+
+    struct GPUBindGroupLayoutEntry;
+    using GPUBindGroupLayoutEntries = TypedView<GPUBindGroupLayoutEntry>;
+    using GPUBindGroupLayoutHandles = TypedView<GPUBindGroupLayoutHandle>;
+
+    struct GPUVertexAttribute;
+    using GPUVertexAttributes = TypedView<GPUVertexAttribute>;
+
+    struct GPUVertexBufferLayout;
+    using GPUVertexBufferLayouts = TypedView<GPUVertexBufferLayout>;
+
+    struct GPUColorTargetState;
+    using GPUColorTargetStates = TypedView<GPUColorTargetState>;
+
+    struct GPURenderPassColorAttachment;
+    using GPURenderPassColorAttachments = TypedView<GPURenderPassColorAttachment>;
+
+    struct GPUBlasGeometrySizeDescriptor;
+    using GPUBlasGeometrySizeDescriptors = TypedView<GPUBlasGeometrySizeDescriptor>;
+
+    struct GPUTlasBuildEntry;
+    using GPUTlasBuildEntries = TypedView<GPUTlasBuildEntry>;
+
+    struct GPUBlasBuildEntry;
+    using GPUBlasBuildEntries = TypedView<GPUBlasBuildEntry>;
+
+    struct GPUMemoryBarrier;
+    using GPUMemoryBarriers = TypedView<GPUMemoryBarrier>;
+
+    struct GPUBufferBarrier;
+    using GPUBufferBarriers = TypedView<GPUBufferBarrier>;
+
+    struct GPUTextureBarrier;
+    using GPUTextureBarriers = TypedView<GPUTextureBarrier>;
+
+    struct GPUBufferBinding;
+    using GPUBufferBindings     = TypedView<GPUBufferBinding>;
+    using GPUSamplerHandles     = TypedView<GPUSamplerHandle>;
+    using GPUTextureViewHandles = TypedView<GPUTextureViewHandle>;
+
+    using GPUBufferDynamicOffsets = TypedView<GPUBufferDynamicOffset>;
 
     struct MappedBufferRange
     {
@@ -306,7 +360,7 @@ namespace lyra::rhi
         GPUBlasType type;
         union
         {
-            Vector<GPUBlasTriangleGeometry> triangles;
+            GPUBlasTriangleGeometries triangles;
         };
 
         // default trivial constructor / destructor
@@ -330,8 +384,8 @@ namespace lyra::rhi
 
     struct GPUTlasBuildEntry
     {
-        GPUTlasHandle           tlas;
-        Vector<GPUTlasInstance> instances;
+        GPUTlasHandle    tlas;
+        GPUTlasInstances instances;
     };
 
     struct GPUBlendComponent
@@ -356,9 +410,9 @@ namespace lyra::rhi
 
     struct GPUVertexBufferLayout
     {
-        GPUSize64                  array_stride;
-        GPUVertexStepMode          step_mode = GPUVertexStepMode::VERTEX;
-        Vector<GPUVertexAttribute> attributes;
+        GPUSize64           array_stride;
+        GPUVertexStepMode   step_mode = GPUVertexStepMode::VERTEX;
+        GPUVertexAttributes attributes;
     };
 
     struct GPUStencilFaceState
@@ -414,9 +468,9 @@ namespace lyra::rhi
         GPUBindingResourceType type;
         union
         {
-            Vector<GPUBufferBinding>     buffers;
-            Vector<GPUSamplerHandle>     samplers;
-            Vector<GPUTextureViewHandle> textures;
+            GPUBufferBindings     buffers;
+            GPUSamplerHandles     samplers;
+            GPUTextureViewHandles textures;
         };
 
         // default trivial constructor / destructor
@@ -446,12 +500,12 @@ namespace lyra::rhi
 
     struct GPUVertexState : public GPUProgrammableStage
     {
-        Vector<GPUVertexBufferLayout> buffers = {};
+        GPUVertexBufferLayouts buffers;
     };
 
     struct GPUFragmentState : public GPUProgrammableStage
     {
-        Vector<GPUColorTargetState> targets = {};
+        GPUColorTargetStates targets;
     };
 
     struct GPUPrimitiveState

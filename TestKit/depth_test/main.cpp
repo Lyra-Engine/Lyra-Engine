@@ -118,7 +118,6 @@ struct DepthTestApp : public TestApp
         });
 
         blayout = execute([&]() {
-            auto desc                       = GPUBindGroupLayoutDescriptor{};
             auto entry                      = GPUBindGroupLayoutEntry{};
             entry.type                      = GPUBindingResourceType::BUFFER;
             entry.binding                   = 0;
@@ -126,29 +125,33 @@ struct DepthTestApp : public TestApp
             entry.visibility                = GPUShaderStage::VERTEX;
             entry.buffer.type               = GPUBufferBindingType::UNIFORM;
             entry.buffer.has_dynamic_offset = false;
-            desc.entries.push_back(entry);
+
+            auto desc    = GPUBindGroupLayoutDescriptor{};
+            desc.entries = entry;
             return device.create_bind_group_layout(desc);
         });
 
         playout = execute([&]() {
             auto desc               = GPUPipelineLayoutDescriptor{};
-            desc.bind_group_layouts = {blayout};
+            desc.bind_group_layouts = blayout.handle;
             return device.create_pipeline_layout(desc);
         });
 
         pipeline = execute([&]() {
-            auto position            = GPUVertexAttribute{};
+            Array<GPUVertexAttribute, 2> attributes;
+
+            auto& position           = attributes.at(0);
             position.format          = GPUVertexFormat::FLOAT32x3;
             position.offset          = offsetof(Vertex, position);
             position.shader_location = 0;
 
-            auto color            = GPUVertexAttribute{};
+            auto& color           = attributes.at(1);
             color.format          = GPUVertexFormat::FLOAT32x3;
             color.offset          = offsetof(Vertex, color);
             color.shader_location = 1;
 
             auto layout         = GPUVertexBufferLayout{};
-            layout.attributes   = {position, color};
+            layout.attributes   = attributes;
             layout.array_stride = sizeof(Vertex);
             layout.step_mode    = GPUVertexStepMode::VERTEX;
 
@@ -169,8 +172,8 @@ struct DepthTestApp : public TestApp
             desc.multisample.count                     = 1;
             desc.vertex.module                         = vshader;
             desc.fragment.module                       = fshader;
-            desc.vertex.buffers.push_back(layout);
-            desc.fragment.targets.push_back(target);
+            desc.vertex.buffers                        = layout;
+            desc.fragment.targets                      = target;
 
             return device.create_render_pipeline(desc);
         });
@@ -189,16 +192,18 @@ struct DepthTestApp : public TestApp
 
         // create bind group
         auto bind_group = execute([&]() {
-            auto entry          = GPUBindGroupEntry{};
+            Array<GPUBindGroupEntry, 1> entries = {};
+
+            auto& entry         = entries.at(0);
             entry.type          = GPUBindingResourceType::BUFFER;
             entry.binding       = 0;
             entry.buffer.buffer = uniform.ubuffer;
             entry.buffer.offset = 0;
             entry.buffer.size   = 0;
 
-            auto desc   = GPUBindGroupDescriptor{};
-            desc.layout = blayout;
-            desc.entries.push_back(entry);
+            auto desc    = GPUBindGroupDescriptor{};
+            desc.layout  = blayout;
+            desc.entries = entries;
             return device.create_bind_group(desc);
         });
 
@@ -218,7 +223,7 @@ struct DepthTestApp : public TestApp
 
         // render pass info
         auto render_pass                     = GPURenderPassDescriptor{};
-        render_pass.color_attachments        = {color_attachment};
+        render_pass.color_attachments        = color_attachment;
         render_pass.depth_stencil_attachment = depth_attachment;
 
         // synchronization when window is enabled

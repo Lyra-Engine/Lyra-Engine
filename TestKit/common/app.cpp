@@ -31,8 +31,6 @@ TestApp::TestApp(const TestAppDescriptor& app_desc) : desc(app_desc)
     auto device = execute([&]() {
         auto desc  = GPUDeviceDescriptor{};
         desc.label = "main_device";
-        desc.required_features.push_back(GPUFeatureName::SHADER_F16);
-        desc.required_features.push_back(GPUFeatureName::FLOAT32_BLENDABLE);
         return adapter.request_device(desc);
     });
 

@@ -245,7 +245,7 @@ void cmd::set_raytracing_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURayTraci
     }
 }
 
-void cmd::set_bind_group(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 index, GPUBindGroupHandle bind_group, const Vector<GPUBufferDynamicOffset>& dynamic_offsets)
+void cmd::set_bind_group(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 index, GPUBindGroupHandle bind_group, GPUBufferDynamicOffsets dynamic_offsets)
 {
     auto  rhi = get_rhi();
     auto& cmd = rhi->current_frame().command(cmdbuffer);
@@ -546,12 +546,10 @@ void cmd::resolve_query_set(GPUCommandEncoderHandle cmdbuffer, GPUQuerySetHandle
     rhi->vtable.vkCmdCopyQueryPoolResults(cmd.command_buffer, qry.pool, first_query, query_count, buf.buffer, destination_offset, stride, 0);
 }
 
-void cmd::memory_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUMemoryBarrier* barriers)
+void cmd::memory_barrier(GPUCommandEncoderHandle cmdbuffer, GPUMemoryBarriers barriers)
 {
     Vector<VkMemoryBarrier2KHR> bars;
-    for (uint32_t i = 0; i < count; i++) {
-        auto& barrier = barriers[i];
-
+    for (auto& barrier : barriers) {
         auto b          = VkMemoryBarrier2KHR{};
         b.sType         = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2_KHR;
         b.pNext         = nullptr;
@@ -578,15 +576,13 @@ void cmd::memory_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUM
     rhi->vtable.vkCmdPipelineBarrier2KHR(cmd.command_buffer, &dependency);
 }
 
-void cmd::buffer_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUBufferBarrier* barriers)
+void cmd::buffer_barrier(GPUCommandEncoderHandle cmdbuffer, GPUBufferBarriers barriers)
 {
     auto  rhi = get_rhi();
     auto& cmd = rhi->current_frame().command(cmdbuffer);
 
     Vector<VkBufferMemoryBarrier2KHR> bars;
-    for (uint32_t i = 0; i < count; i++) {
-        auto& barrier = barriers[i];
-
+    for (auto& barrier : barriers) {
         auto b                = VkBufferMemoryBarrier2KHR{};
         b.sType               = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2_KHR;
         b.pNext               = nullptr;
@@ -615,15 +611,13 @@ void cmd::buffer_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUB
     rhi->vtable.vkCmdPipelineBarrier2KHR(cmd.command_buffer, &dependency);
 }
 
-void cmd::texture_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUTextureBarrier* barriers)
+void cmd::texture_barrier(GPUCommandEncoderHandle cmdbuffer, GPUTextureBarriers barriers)
 {
     auto  rhi = get_rhi();
     auto& cmd = rhi->current_frame().command(cmdbuffer);
 
     Vector<VkImageMemoryBarrier2KHR> bars;
-    for (uint32_t i = 0; i < count; i++) {
-        auto& barrier = barriers[i];
-
+    for (auto& barrier : barriers) {
         auto& t         = fetch_resource(rhi->textures, barrier.texture);
         auto  b         = VkImageMemoryBarrier2KHR{};
         b.sType         = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2_KHR;
@@ -658,7 +652,7 @@ void cmd::texture_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPU
     rhi->vtable.vkCmdPipelineBarrier2KHR(cmd.command_buffer, &dependency);
 }
 
-void cmd::build_tlases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, uint32_t count, GPUTlasBuildEntry* entries)
+void cmd::build_tlases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, GPUTlasBuildEntries entries)
 {
     auto  rhi = get_rhi();
     auto& cmd = rhi->current_frame().command(cmdbuffer);
@@ -668,14 +662,13 @@ void cmd::build_tlases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratc
     Vector<VkAccelerationStructureBuildGeometryInfoKHR> build_infos  = {};
     Vector<VkAccelerationStructureBuildRangeInfoKHR*>   build_ranges = {};
 
-    barriers.reserve(count);
-    build_infos.reserve(count);
-    build_ranges.reserve(count);
+    barriers.reserve(entries.size());
+    build_infos.reserve(entries.size());
+    build_ranges.reserve(entries.size());
 
     VkDeviceAddress scratch_address = buf.device_address;
-    for (uint i = 0; i < count; i++) {
-        auto& entry = entries[i];
-        auto& tlas  = fetch_resource(rhi->tlases, entry.tlas);
+    for (auto& entry : entries) {
+        auto& tlas = fetch_resource(rhi->tlases, entry.tlas);
 
         // create VkAccelerationStructureInstanceKHR on the fly
         auto address = tlas.staging.map<VkAccelerationStructureInstanceKHR>();
@@ -756,7 +749,7 @@ void cmd::build_tlases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratc
         build_ranges.data());
 }
 
-void cmd::build_blases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, uint32_t count, GPUBlasBuildEntry* entries)
+void cmd::build_blases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, GPUBlasBuildEntries entries)
 {
     auto  rhi = get_rhi();
     auto& cmd = rhi->current_frame().command(cmdbuffer);
@@ -765,21 +758,20 @@ void cmd::build_blases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratc
     Vector<VkAccelerationStructureBuildGeometryInfoKHR> build_infos  = {};
     Vector<VkAccelerationStructureBuildRangeInfoKHR*>   build_ranges = {};
 
-    build_infos.reserve(count);
-    build_ranges.reserve(count);
+    build_infos.reserve(entries.size());
+    build_ranges.reserve(entries.size());
 
     VkDeviceAddress scratch_address = buf.device_address;
-    for (uint i = 0; i < count; i++) {
-        auto& entry = entries[i];
-        auto& blas  = fetch_resource(rhi->blases, entry.blas);
+    for (auto& entry : entries) {
+        auto& blas = fetch_resource(rhi->blases, entry.blas);
 
         // geometry count check
-        if (entries->geometries.triangles.size() > blas.geometries.size()) {
+        if (entry.geometries.triangles.size() > blas.geometries.size()) {
             get_logger()->error("Trying to build more geometries than BVH could hold!");
         }
 
         // update geometries and ranges
-        uint geometry_count = std::min(entries->geometries.triangles.size(), blas.geometries.size());
+        uint geometry_count = std::min(entry.geometries.triangles.size(), blas.geometries.size());
         for (uint k = 0; k < geometry_count; k++) {
             auto& src_geometry = entry.geometries.triangles.at(k);
             auto& dst_geometry = blas.geometries.at(k);

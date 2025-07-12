@@ -2,6 +2,7 @@
 #define LYRA_LIBRARY_COMMON_HPP
 
 #include <Lyra/Common/Path.h>
+#include <Lyra/Common/View.h>
 #include <Lyra/Common/Enums.h>
 #include <Lyra/Common/Assert.h>
 #include <Lyra/Common/Logger.h>

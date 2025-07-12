@@ -5,7 +5,7 @@ VulkanBlas::VulkanBlas() : blas(VK_NULL_HANDLE)
     // do nothing
 }
 
-VulkanBlas::VulkanBlas(const GPUBlasDescriptor& desc, const Vector<GPUBlasGeometrySizeDescriptor>& sizes)
+VulkanBlas::VulkanBlas(const GPUBlasDescriptor& desc, GPUBlasGeometrySizeDescriptors sizes)
 {
     auto rhi = get_rhi();
 

@@ -15,7 +15,7 @@ bool is_supported(const Vector<CString>& extensions, CString name)
     return false;
 }
 
-bool is_required(const Vector<GPUFeatureName>& features, GPUFeatureName feature)
+bool is_required(GPUFeatureNames features, GPUFeatureName feature)
 {
     return std::find(features.begin(), features.end(), feature) != features.end();
 }

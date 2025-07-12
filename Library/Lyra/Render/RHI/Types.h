@@ -301,11 +301,11 @@ namespace lyra::rhi
 
         void resolve_query_set(GPUQuerySet query_set, GPUSize32 first_query, GPUSize32 query_count, const GPUBuffer& destination, GPUSize64 destination_offset) const;
 
-        void resource_barrier(const GPUBufferBarrier& barrier) const;
+        void resource_barrier(GPUBufferBarrier barrier) const;
+
+        void resource_barrier(GPUTextureBarrier barrier) const;
 
         void resource_barrier(const Vector<GPUBufferBarrier>& barriers) const;
-
-        void resource_barrier(const GPUTextureBarrier& barrier) const;
 
         void resource_barrier(const Vector<GPUTextureBarrier>& barriers) const;
     };

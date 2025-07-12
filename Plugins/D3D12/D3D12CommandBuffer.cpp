@@ -237,7 +237,7 @@ void cmd::set_raytracing_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURayTraci
     }
 }
 
-void cmd::set_bind_group(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 index, GPUBindGroupHandle bind_group, const Vector<GPUBufferDynamicOffset>& dynamic_offsets)
+void cmd::set_bind_group(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 index, GPUBindGroupHandle bind_group, GPUBufferDynamicOffsets dynamic_offsets)
 {
     auto  rhi = get_rhi();
     auto& frm = rhi->current_frame();
@@ -578,7 +578,7 @@ void cmd::resolve_query_set(GPUCommandEncoderHandle cmdbuffer, GPUQuerySetHandle
     assert(!!!"cmd::resolve_query_set(...) is currently not implemented!");
 }
 
-void cmd::memory_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUMemoryBarrier* barriers)
+void cmd::memory_barrier(GPUCommandEncoderHandle cmdbuffer, GPUMemoryBarriers barriers)
 {
     auto  rhi = get_rhi();
     auto& cmd = rhi->current_frame().command(cmdbuffer);
@@ -599,17 +599,19 @@ void cmd::memory_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUM
     // multiple webgpu barriers collapse to a single global d3d12 barrier
 }
 
-void cmd::buffer_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUBufferBarrier* barriers)
+void cmd::buffer_barrier(GPUCommandEncoderHandle cmdbuffer, GPUBufferBarriers barriers)
 {
     auto  rhi = get_rhi();
     auto& cmd = rhi->current_frame().command(cmdbuffer);
 
     // allocate array for d3d12 resource barriers
-    Vector<D3D12_BUFFER_BARRIER> d3d12_barriers(count);
+    Vector<D3D12_BUFFER_BARRIER> d3d12_barriers;
+    d3d12_barriers.reserve(barriers.size());
 
-    for (uint32_t i = 0; i < count; ++i) {
-        const GPUBufferBarrier& barrier       = barriers[i];
-        D3D12_BUFFER_BARRIER&   d3d12_barrier = d3d12_barriers[i];
+    for (auto& barrier : barriers) {
+        d3d12_barriers.emplace_back();
+
+        auto& d3d12_barrier = d3d12_barriers.back();
 
         // setup enhanced buffer barrier
         d3d12_barrier.SyncBefore   = d3d12enum(barrier.src_sync);
@@ -623,7 +625,7 @@ void cmd::buffer_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUB
 
     D3D12_BARRIER_GROUP barrier_group = {};
     barrier_group.Type                = D3D12_BARRIER_TYPE_BUFFER;
-    barrier_group.NumBarriers         = count;
+    barrier_group.NumBarriers         = barriers.size();
     barrier_group.pBufferBarriers     = d3d12_barriers.data();
 
     // issue the resource barriers
@@ -631,17 +633,19 @@ void cmd::buffer_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUB
     command_list->Barrier(1, &barrier_group);
 }
 
-void cmd::texture_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUTextureBarrier* barriers)
+void cmd::texture_barrier(GPUCommandEncoderHandle cmdbuffer, GPUTextureBarriers barriers)
 {
     auto  rhi = get_rhi();
     auto& cmd = rhi->current_frame().command(cmdbuffer);
 
     // allocate array for d3d12 resource barriers
-    Vector<D3D12_TEXTURE_BARRIER> d3d12_barriers(count);
+    Vector<D3D12_TEXTURE_BARRIER> d3d12_barriers;
+    d3d12_barriers.reserve(barriers.size());
 
-    for (uint32_t i = 0; i < count; ++i) {
-        const GPUTextureBarrier& barrier       = barriers[i];
-        D3D12_TEXTURE_BARRIER&   d3d12_barrier = d3d12_barriers[i];
+    for (auto& barrier : barriers) {
+        d3d12_barriers.emplace_back();
+
+        auto& d3d12_barrier = d3d12_barriers.back();
 
         // setup enhanced buffer barrier
         d3d12_barrier.SyncBefore                        = d3d12enum(barrier.src_sync);
@@ -661,7 +665,7 @@ void cmd::texture_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPU
 
     D3D12_BARRIER_GROUP barrier_group = {};
     barrier_group.Type                = D3D12_BARRIER_TYPE_TEXTURE;
-    barrier_group.NumBarriers         = count;
+    barrier_group.NumBarriers         = barriers.size();
     barrier_group.pTextureBarriers    = d3d12_barriers.data();
 
     // issue the resource barriers
@@ -669,12 +673,12 @@ void cmd::texture_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPU
     command_list->Barrier(1, &barrier_group);
 }
 
-void cmd::build_tlases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, uint32_t count, GPUTlasBuildEntry* entries)
+void cmd::build_tlases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, GPUTlasBuildEntries entries)
 {
     assert(!!!"cmd::build_tlases(...) is currently not implemented!");
 }
 
-void cmd::build_blases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, uint32_t count, GPUBlasBuildEntry* entries)
+void cmd::build_blases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, GPUBlasBuildEntries entries)
 {
     assert(!!!"cmd::build_blases(...) is currently not implemented!");
 }

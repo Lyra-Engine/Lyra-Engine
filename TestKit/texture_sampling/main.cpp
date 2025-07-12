@@ -141,12 +141,11 @@ struct TextureSamplingApp : public TestApp
         });
 
         blayout = execute([&]() {
-            auto desc = GPUBindGroupLayoutDescriptor{};
+            Array<GPUBindGroupLayoutEntry, 3> entries;
 
             // camera
             {
-                desc.entries.push_back(GPUBindGroupLayoutEntry{});
-                auto& entry                     = desc.entries.back();
+                auto& entry                     = entries.at(0);
                 entry.type                      = GPUBindingResourceType::BUFFER;
                 entry.binding                   = 0;
                 entry.count                     = 1;
@@ -157,8 +156,7 @@ struct TextureSamplingApp : public TestApp
 
             // texture
             {
-                desc.entries.push_back(GPUBindGroupLayoutEntry{});
-                auto& entry                  = desc.entries.back();
+                auto& entry                  = entries.at(1);
                 entry.type                   = GPUBindingResourceType::TEXTURE;
                 entry.binding                = 1;
                 entry.count                  = 1;
@@ -169,8 +167,7 @@ struct TextureSamplingApp : public TestApp
 
             // sampler
             {
-                desc.entries.push_back(GPUBindGroupLayoutEntry{});
-                auto& entry        = desc.entries.back();
+                auto& entry        = entries.at(2);
                 entry.type         = GPUBindingResourceType::SAMPLER;
                 entry.binding      = 2;
                 entry.count        = 1;
@@ -178,32 +175,40 @@ struct TextureSamplingApp : public TestApp
                 entry.sampler.type = GPUSamplerBindingType::FILTERING;
             }
 
+            auto desc    = GPUBindGroupLayoutDescriptor{};
+            desc.entries = entries;
             return device.create_bind_group_layout(desc);
         });
 
         playout = execute([&]() {
+            Array<GPUBindGroupLayoutHandle, 1> layouts = {blayout};
+
             auto desc               = GPUPipelineLayoutDescriptor{};
-            desc.bind_group_layouts = {blayout};
+            desc.bind_group_layouts = layouts;
             return device.create_pipeline_layout(desc);
         });
 
         pipeline = execute([&]() {
-            auto position            = GPUVertexAttribute{};
+            Array<GPUVertexAttribute, 2>    attributes;
+            Array<GPUVertexBufferLayout, 1> layouts;
+            Array<GPUColorTargetState, 1>   targets;
+
+            auto& position           = attributes.at(0);
             position.format          = GPUVertexFormat::FLOAT32x3;
             position.offset          = offsetof(Vertex, position);
             position.shader_location = 0;
 
-            auto texcoord            = GPUVertexAttribute{};
+            auto& texcoord           = attributes.at(1);
             texcoord.format          = GPUVertexFormat::FLOAT32x2;
             texcoord.offset          = offsetof(Vertex, uv);
             texcoord.shader_location = 1;
 
-            auto layout         = GPUVertexBufferLayout{};
-            layout.attributes   = {position, texcoord};
+            auto& layout        = layouts.at(0);
+            layout.attributes   = attributes;
             layout.array_stride = sizeof(Vertex);
             layout.step_mode    = GPUVertexStepMode::VERTEX;
 
-            auto target         = GPUColorTargetState{};
+            auto& target        = targets.at(0);
             target.format       = get_backbuffer_format();
             target.blend_enable = false;
 
@@ -219,8 +224,8 @@ struct TextureSamplingApp : public TestApp
             desc.multisample.count                     = 1;
             desc.vertex.module                         = vshader;
             desc.fragment.module                       = fshader;
-            desc.vertex.buffers.push_back(layout);
-            desc.fragment.targets.push_back(target);
+            desc.vertex.buffers                        = layout;
+            desc.fragment.targets                      = targets;
 
             return device.create_render_pipeline(desc);
         });
@@ -239,13 +244,11 @@ struct TextureSamplingApp : public TestApp
 
         // create bind group
         auto bind_group = execute([&]() {
-            auto desc   = GPUBindGroupDescriptor{};
-            desc.layout = blayout;
+            Array<GPUBindGroupEntry, 3> entries;
 
             // camera
             {
-                desc.entries.push_back(GPUBindGroupEntry{});
-                auto& entry         = desc.entries.back();
+                auto& entry         = entries.at(0);
                 entry.type          = GPUBindingResourceType::BUFFER;
                 entry.binding       = 0;
                 entry.buffer.buffer = uniform.ubuffer;
@@ -255,8 +258,7 @@ struct TextureSamplingApp : public TestApp
 
             // texture
             {
-                desc.entries.push_back(GPUBindGroupEntry{});
-                auto& entry   = desc.entries.back();
+                auto& entry   = entries.at(1);
                 entry.type    = GPUBindingResourceType::TEXTURE;
                 entry.binding = 1;
                 entry.texture = texview;
@@ -264,13 +266,15 @@ struct TextureSamplingApp : public TestApp
 
             // sampler
             {
-                desc.entries.push_back(GPUBindGroupEntry{});
-                auto& entry   = desc.entries.back();
+                auto& entry   = entries.at(2);
                 entry.type    = GPUBindingResourceType::SAMPLER;
                 entry.binding = 2;
                 entry.sampler = sampler;
             }
 
+            auto desc    = GPUBindGroupDescriptor{};
+            desc.layout  = blayout;
+            desc.entries = entries;
             return device.create_bind_group(desc);
         });
 
@@ -283,7 +287,7 @@ struct TextureSamplingApp : public TestApp
 
         // render pass info
         auto render_pass                     = GPURenderPassDescriptor{};
-        render_pass.color_attachments        = {color_attachment};
+        render_pass.color_attachments        = color_attachment;
         render_pass.depth_stencil_attachment = {};
 
         // synchronization when window is enabled

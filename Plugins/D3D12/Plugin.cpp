@@ -137,7 +137,7 @@ void api::delete_fence(GPUFenceHandle fence)
     get_rhi()->fences.remove(fence.value);
 }
 
-bool api::create_blas(GPUBlasHandle& blas, const GPUBlasDescriptor& desc, const Vector<GPUBlasGeometrySizeDescriptor>& sizes)
+bool api::create_blas(GPUBlasHandle& blas, const GPUBlasDescriptor& desc, GPUBlasGeometrySizeDescriptors sizes)
 {
     assert(!!!"api::create_blas(...) is not implemented!");
     return false;

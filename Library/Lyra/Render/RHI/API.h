@@ -47,7 +47,7 @@ namespace lyra::rhi
         bool (*create_query_set)(GPUQuerySetHandle& query, const GPUQuerySetDescriptor& descriptor);
         void (*delete_query_set)(GPUQuerySetHandle query);
 
-        bool (*create_blas)(GPUBlasHandle& blas, const GPUBlasDescriptor& descriptor, const Vector<GPUBlasGeometrySizeDescriptor>& sizes);
+        bool (*create_blas)(GPUBlasHandle& blas, const GPUBlasDescriptor& descriptor, GPUBlasGeometrySizeDescriptors sizes);
         void (*delete_blas)(GPUBlasHandle blas);
 
         bool (*create_tlas)(GPUTlasHandle& tlas, const GPUTlasDescriptor& descriptor);
@@ -94,7 +94,7 @@ namespace lyra::rhi
         void (*cmd_set_render_pipeline)(GPUCommandEncoderHandle cmdbuffer, GPURenderPipelineHandle pipeline);
         void (*cmd_set_compute_pipeline)(GPUCommandEncoderHandle cmdbuffer, GPUComputePipelineHandle pipeline);
         void (*cmd_set_raytracing_pipeline)(GPUCommandEncoderHandle cmdbuffer, GPURayTracingPipelineHandle pipeline);
-        void (*cmd_set_bind_group)(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 index, GPUBindGroupHandle bind_group, const Vector<GPUBufferDynamicOffset>& dynamic_offsets);
+        void (*cmd_set_bind_group)(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 index, GPUBindGroupHandle bind_group, GPUBufferDynamicOffsets dynamic_offsets);
         void (*cmd_set_index_buffer)(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle buffer, GPUIndexFormat format, GPUSize64 offset, GPUSize64 size);
         void (*cmd_set_vertex_buffer)(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 slot, GPUBufferHandle buffer, GPUSize64 offset, GPUSize64 size);
         void (*cmd_draw)(GPUCommandEncoderHandle cmdbuffer, GPUSize32 vertex_count, GPUSize32 instance_count, GPUSize32 first_vertex, GPUSize32 first_instance);
@@ -118,11 +118,11 @@ namespace lyra::rhi
         void (*cmd_write_timestamp)(GPUCommandEncoderHandle cmdbuffer, GPUQuerySetHandle query_set, GPUSize32 query_index);
         void (*cmd_write_blas_properties)(GPUCommandEncoderHandle cmdbuffer, GPUQuerySetHandle query_set, GPUSize32 query_index, GPUBlasHandle blas);
         void (*cmd_resolve_query_set)(GPUCommandEncoderHandle cmdbuffer, GPUQuerySetHandle query_set, GPUSize32 first_query, GPUSize32 query_count, GPUBufferHandle destination, GPUSize64 destination_offset);
-        void (*cmd_memory_barrier)(GPUCommandEncoderHandle cmdbuffer, GPUSize32 count, GPUMemoryBarrier* barriers);
-        void (*cmd_buffer_barrier)(GPUCommandEncoderHandle cmdbuffer, GPUSize32 count, GPUBufferBarrier* barriers);
-        void (*cmd_texture_barrier)(GPUCommandEncoderHandle cmdbuffer, GPUSize32 count, GPUTextureBarrier* barriers);
-        void (*cmd_build_tlases)(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, GPUSize32 count, GPUTlasBuildEntry* entries);
-        void (*cmd_build_blases)(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, GPUSize32 count, GPUBlasBuildEntry* entries);
+        void (*cmd_memory_barrier)(GPUCommandEncoderHandle cmdbuffer, GPUMemoryBarriers barriers);
+        void (*cmd_buffer_barrier)(GPUCommandEncoderHandle cmdbuffer, GPUBufferBarriers barriers);
+        void (*cmd_texture_barrier)(GPUCommandEncoderHandle cmdbuffer, GPUTextureBarriers barriers);
+        void (*cmd_build_tlases)(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, GPUTlasBuildEntries entries);
+        void (*cmd_build_blases)(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, GPUBlasBuildEntries entries);
         void (*cmd_copy_blas)(GPUCommandEncoderHandle cmdbuffer, GPUBlasHandle old_blas, GPUBlasHandle new_blas);
     };
 

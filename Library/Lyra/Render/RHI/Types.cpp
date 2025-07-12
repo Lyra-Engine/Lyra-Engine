@@ -1,4 +1,3 @@
-#include <iostream>
 #include <Lyra/Common/Plugin.h>
 #include <Lyra/Render/RHI/API.h>
 #include <Lyra/Render/RHI/Types.h>
@@ -604,24 +603,24 @@ void GPUCommandEncoder::resolve_query_set(GPUQuerySet query_set, GPUSize32 first
     RHI::api()->cmd_resolve_query_set(handle, query_set, first_query, query_count, destination, destination_offset);
 }
 
-void GPUCommandEncoder::resource_barrier(const GPUBufferBarrier& barrier) const
+void GPUCommandEncoder::resource_barrier(GPUBufferBarrier barrier) const
 {
-    RHI::api()->cmd_buffer_barrier(handle, 1, const_cast<GPUBufferBarrier*>(&barrier));
+    RHI::api()->cmd_buffer_barrier(handle, barrier);
+}
+
+void GPUCommandEncoder::resource_barrier(GPUTextureBarrier barrier) const
+{
+    RHI::api()->cmd_texture_barrier(handle, barrier);
 }
 
 void GPUCommandEncoder::resource_barrier(const Vector<GPUBufferBarrier>& barriers) const
 {
-    RHI::api()->cmd_buffer_barrier(handle, static_cast<uint32_t>(barriers.size()), const_cast<GPUBufferBarrier*>(barriers.data()));
-}
-
-void GPUCommandEncoder::resource_barrier(const GPUTextureBarrier& barrier) const
-{
-    RHI::api()->cmd_texture_barrier(handle, 1, const_cast<GPUTextureBarrier*>(&barrier));
+    RHI::api()->cmd_buffer_barrier(handle, barriers);
 }
 
 void GPUCommandEncoder::resource_barrier(const Vector<GPUTextureBarrier>& barriers) const
 {
-    RHI::api()->cmd_texture_barrier(handle, static_cast<uint32_t>(barriers.size()), const_cast<GPUTextureBarrier*>(barriers.data()));
+    RHI::api()->cmd_texture_barrier(handle, barriers);
 }
 #pragma endregion GPUCommandEncoder
 
