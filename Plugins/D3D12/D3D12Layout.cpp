@@ -276,13 +276,32 @@ D3D12BindGroupLayout::D3D12BindGroupLayout(const GPUBindGroupLayoutDescriptor& d
 
         // binding info
         auto& binding = bindings.at(entry.binding);
-        binding.count = entry.count;
         binding.type  = range.RangeType;
+        binding.count = entry.count;
     }
 
-    // populate binding info start/offset
-    for (uint i = 1; i < binding_count; i++)
-        bindings.at(i).start = bindings.at(i - 1).start + bindings.at(i - 1).count;
+    // populate default descriptor counts
+    this->num_defaults = 0;
+    for (auto& range : default_ranges)
+        this->num_defaults += range.NumDescriptors;
+
+    // populate sampler descriptor counts
+    this->num_samplers = 0;
+    for (auto& range : sampler_ranges)
+        this->num_samplers += range.NumDescriptors;
+
+    // populate binding offset
+    uint default_offset = 0;
+    uint sampler_offset = 0;
+    for (auto& binding : bindings) {
+        if (binding.type == D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER) {
+            binding.start = sampler_offset;
+            sampler_offset += binding.count;
+        } else {
+            binding.start = default_offset;
+            default_offset += binding.count;
+        }
+    }
 
     // optimize shader visibility if possible
     bool has_compute  = stages.contains(GPUShaderStage::COMPUTE);
@@ -313,20 +332,16 @@ D3D12BindGroup D3D12BindGroupLayout::create(D3D12Frame& frame, const GPUBindGrou
 
     // allocate descriptors
     D3D12BindGroup bind_group;
+    bind_group.default_index = -1u;
+    bind_group.sampler_index = -1u;
 
     // allocate descriptors for default ranges
-    uint default_count = false;
-    for (auto& range : default_ranges)
-        default_count += range.NumDescriptors;
-    if (default_count)
-        bind_group.default_index = frame.default_heap.allocate(default_count);
+    if (num_defaults)
+        bind_group.default_index = frame.default_heap.allocate(num_defaults);
 
     // allocate descriptors for sampler ranges
-    uint sampler_count = false;
-    for (auto& range : sampler_ranges)
-        sampler_count += range.NumDescriptors;
-    if (sampler_count)
-        bind_group.sampler_index = frame.sampler_heap.allocate(sampler_count);
+    if (num_samplers)
+        bind_group.sampler_index = frame.sampler_heap.allocate(num_samplers);
 
     // write to descriptors
     for (auto& entry : desc.entries) {

@@ -290,6 +290,8 @@ struct D3D12BindGroupLayout
     Vector<D3D12_DESCRIPTOR_RANGE1> sampler_ranges = {};
     Vector<D3D12_DESCRIPTOR_RANGE1> default_ranges = {};
     Vector<D3D12BindInfo>           bindings       = {};
+    uint                            num_defaults   = 0;
+    uint                            num_samplers   = 0;
     D3D12_SHADER_VISIBILITY         visibility     = D3D12_SHADER_VISIBILITY_ALL;
     bool                            bindless       = false;
 
