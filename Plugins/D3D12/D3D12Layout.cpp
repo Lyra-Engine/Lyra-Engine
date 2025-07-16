@@ -222,7 +222,7 @@ D3D12BindGroupLayout::D3D12BindGroupLayout()
 
 D3D12BindGroupLayout::D3D12BindGroupLayout(const GPUBindGroupLayoutDescriptor& desc)
 {
-    bindless = desc.bindless;
+    // bindless = desc.bindless;
 
     // determine overall shader visibility
     visibility = D3D12_SHADER_VISIBILITY_ALL;

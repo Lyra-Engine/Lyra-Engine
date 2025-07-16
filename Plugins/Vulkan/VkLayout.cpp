@@ -90,7 +90,7 @@ VulkanBindGroupLayout::VulkanBindGroupLayout(const GPUBindGroupLayoutDescriptor&
     }
 
     layout   = VK_NULL_HANDLE;
-    bindless = desc.bindless;
+    // bindless = desc.bindless;
 
     if (!bindings.empty()) {
         // prepare create info

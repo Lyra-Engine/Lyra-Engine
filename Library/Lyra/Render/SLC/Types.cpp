@@ -2,6 +2,7 @@
 #include <Lyra/Common/Plugin.h>
 #include <Lyra/Render/SLC/API.h>
 #include <Lyra/Render/SLC/Types.h>
+#include <objidl.h>
 
 using namespace lyra;
 using namespace lyra::rhi;
@@ -10,6 +11,7 @@ using ShaderPlugin = Plugin<ShaderAPI>;
 
 static Own<ShaderPlugin> SHADER_PLUGIN;
 
+#pragma region Compiler
 ShaderAPI* Compiler::api()
 {
     return SHADER_PLUGIN->get_api();
@@ -30,7 +32,7 @@ void Compiler::destroy()
     Compiler::api()->delete_compiler(handle);
 }
 
-Own<CompileResult> Compiler::compile(const Path& path)
+Own<ShaderModule> Compiler::compile(const Path& path)
 {
     std::ifstream file(path);
     assert(file.good());
@@ -41,30 +43,55 @@ Own<CompileResult> Compiler::compile(const Path& path)
     String source = buffer.str();
 
     auto descriptor   = CompileDescriptor{};
-    descriptor.path   = path.u8string().c_str();
-    descriptor.module = path.stem().u8string().c_str();
+    auto path_u8      = path.u8string();
+    auto stem_u8      = path.stem().u8string();
+    descriptor.path   = path_u8.c_str();
+    descriptor.module = stem_u8.c_str();
     descriptor.source = source.c_str();
     return compile(descriptor);
 }
 
-Own<CompileResult> Compiler::compile(const CompileDescriptor& descriptor)
+Own<ShaderModule> Compiler::compile(const CompileDescriptor& descriptor)
 {
-    auto result  = std::make_unique<CompileResult>();
-    bool success = Compiler::api()->compile(handle, descriptor, result->handle);
+    auto result  = std::make_unique<ShaderModule>();
+    bool success = Compiler::api()->create_module(handle, descriptor, result->handle);
     if (!success)
         throw std::runtime_error("Failed to compile shader!");
     return result;
 }
 
-CompileResult::~CompileResult()
+Own<ShaderReflection> Compiler::reflect(InitList<ShaderEntryPoint> entry_points)
 {
-    Compiler::api()->cleanup(handle);
+    // make a copy of the entry points
+    Vector<ShaderEntryPoint> entries = entry_points;
+
+    auto result  = std::make_unique<ShaderReflection>();
+    bool success = Compiler::api()->create_reflection(handle, entries, result->handle);
+    if (!success)
+        throw std::runtime_error("Failed to reflect shader!");
+    return result;
+}
+#pragma endregion Compiler
+
+#pragma region ShaderModule
+ShaderModule::~ShaderModule()
+{
+    Compiler::api()->delete_module(handle);
 }
 
-OwnedShaderBlob CompileResult::get_shader_blob(CString entry) const
+OwnedShaderBlob ShaderModule::get_shader_blob(CString entry) const
 {
-    OwnedShaderBlob blob;
+    OwnedShaderBlob  blob;
+    ShaderEntryPoint entry_point{handle, entry};
     blob.reset(new ShaderBlob{});
-    Compiler::api()->get_shader_blob(handle, entry, *blob.get());
+    Compiler::api()->get_shader_blob(entry_point, *blob.get());
     return blob;
 }
+#pragma endregion ShaderModule
+
+#pragma region ShaderReflection
+ShaderReflection::~ShaderReflection()
+{
+    Compiler::api()->delete_reflection(handle);
+}
+#pragma endregion ShaderReflection

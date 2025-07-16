@@ -84,6 +84,9 @@ namespace lyra::rhi
     using GPUBindGroupLayoutEntries = TypedView<GPUBindGroupLayoutEntry>;
     using GPUBindGroupLayoutHandles = TypedView<GPUBindGroupLayoutHandle>;
 
+    struct GPUBindGroupLayoutDescriptor;
+    using GPUBindGroupLayoutDescriptors = TypedView<GPUBindGroupLayoutDescriptor>;
+
     struct GPUVertexAttribute;
     using GPUVertexAttributes = TypedView<GPUVertexAttribute>;
 
@@ -406,6 +409,7 @@ namespace lyra::rhi
         GPUVertexFormat format;
         GPUSize64       offset;
         GPUIndex32      shader_location;
+        CString         shader_semantics = "ATTRIBUTE"; // NOTE: non-WebGPU standard, only applicable to D3D12
     };
 
     struct GPUVertexBufferLayout
@@ -462,28 +466,12 @@ namespace lyra::rhi
         ~GPUBindGroupEntry() {}
     };
 
-    struct GPUBindlessEntry
-    {
-        GPUIndex32             binding;
-        GPUBindingResourceType type;
-        union
-        {
-            GPUBufferBindings     buffers;
-            GPUSamplerHandles     samplers;
-            GPUTextureViewHandles textures;
-        };
-
-        // default trivial constructor / destructor
-        GPUBindlessEntry() {}
-        ~GPUBindlessEntry() {}
-    };
-
     struct GPUBindGroupLayoutEntry
     {
-        GPUIndex32             binding;
-        GPUIndex32             count = 1; // NOTE: Non-WebGPU standard API
-        GPUShaderStageFlags    visibility;
         GPUBindingResourceType type;
+        GPUIndex32             binding;
+        GPUShaderStageFlags    visibility;
+        GPUIndex32             count = 1; // NOTE: Non-WebGPU standard API
         union
         {
             GPUBufferBindingLayout         buffer;

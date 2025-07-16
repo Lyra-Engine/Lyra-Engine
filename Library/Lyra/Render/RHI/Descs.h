@@ -125,17 +125,9 @@ namespace lyra::rhi
         GPUBindGroupEntries      entries;
     };
 
-    // NOTE: Non-WebGPU standard API
-    struct GPUBindlessDescriptor : public GPUObjectDescriptorBase
-    {
-        GPUBindGroupLayoutHandle layout;
-        GPUBindlessEntry         entry;
-    };
-
     struct GPUBindGroupLayoutDescriptor : public GPUObjectDescriptorBase
     {
-        bool                      bindless = false;
-        GPUBindGroupLayoutEntries entries  = {};
+        GPUBindGroupLayoutEntries entries = {};
     };
 
     struct GPUPipelineLayoutDescriptor : public GPUObjectDescriptorBase

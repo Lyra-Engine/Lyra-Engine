@@ -16,20 +16,41 @@ namespace lyra::rhi
     struct ShaderAPI;
 
     struct Compiler;
-    struct CompileResult;
+    struct ShaderModule;
+    struct ShaderReflection;
+    struct ShaderEntryPoint;
 
-    using CompilerHandle      = TypedPointerHandle<Compiler>;
-    using CompileResultHandle = TypedPointerHandle<CompileResult>;
+    using CompilerHandle         = TypedPointerHandle<Compiler>;
+    using ShaderModuleHandle     = TypedPointerHandle<ShaderModule>;
+    using ShaderReflectionHandle = TypedPointerHandle<ShaderReflection>;
+    using ShaderEntryPoints      = TypedView<ShaderEntryPoint>;
 
-    struct CompileResult
+    struct ShaderEntryPoint
     {
-        CompileResultHandle handle;
+        ShaderModuleHandle module;
+        CString            entry;
+    };
 
-        virtual ~CompileResult();
+    struct ShaderModule
+    {
+        ShaderModuleHandle handle;
 
-        void reflect(GPUPipelineLayoutDescriptor& desc) const;
+        virtual ~ShaderModule();
+
+        operator ShaderModuleHandle() { return handle; }
+        operator ShaderModuleHandle() const { return handle; }
 
         auto get_shader_blob(CString entry) const -> OwnedShaderBlob;
+    };
+
+    struct ShaderReflection
+    {
+        ShaderReflectionHandle handle;
+
+        virtual ~ShaderReflection();
+
+        operator ShaderReflectionHandle() { return handle; }
+        operator ShaderReflectionHandle() const { return handle; }
     };
 
     struct Compiler
@@ -42,9 +63,11 @@ namespace lyra::rhi
 
         void destroy();
 
-        auto compile(const Path& path) -> Own<CompileResult>;
+        auto compile(const Path& path) -> Own<ShaderModule>;
 
-        auto compile(const CompileDescriptor& descriptor) -> Own<CompileResult>;
+        auto compile(const CompileDescriptor& descriptor) -> Own<ShaderModule>;
+
+        auto reflect(InitList<ShaderEntryPoint> entry_points) -> Own<ShaderReflection>;
     };
 
 } // namespace lyra::rhi

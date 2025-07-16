@@ -69,18 +69,19 @@ def list_tests(args):
     subprocess.check_call([args.executable, '-ltc', "-r=xml", f"-out={output}"])
     return parse_tests(output)
 
-def filter_tests(tests):
+def filter_env_tests(tests):
+    filtered_tests = []
+    filter_key = os.environ.get("LYRA_TESTKIT_FILTER", None)
+    if filter_key:
+        filtered_tests = [test for test in tests if filter_key in test["name"]]
+    return filtered_tests
+
+def filter_rhi_tests(tests):
     filtered_tests = []
     for test in tests:
         if test["components"][0] == "rhi":
             filtered_tests.append(test)
-
-    # additionally, apply a filter based on environment variable to run specific test
-    filter_key = os.environ.get("LYRA_TESTKIT_FILTER", None)
-    if filter_key:
-        filtered_tests = [test for test in filtered_tests if filter_key in test["name"]]
-
-    return filtered_tests
+    return filter_env_tests(filtered_tests)
 
 def bucketize_tests(tests):
     buckets = {}
@@ -91,7 +92,7 @@ def bucketize_tests(tests):
         buckets[name].append(test)
     return buckets
 
-def run_tests(args, buckets):
+def run_rhi_tests(args, buckets):
     results = {}
 
     git_root = find_git_root()
@@ -111,6 +112,11 @@ def run_tests(args, buckets):
             results[test_name][backend] = test_result
 
     return results
+
+def run_unit_tests(args):
+    git_root = find_git_root()
+    assert git_root, "Not within a git repository!"
+    subprocess.check_call([args.executable, f"-tce=rhi*"])
 
 def generate_html_report(args, results):
     sequence = ["reference", "vulkan", "d3d12"]
@@ -174,10 +180,11 @@ def generate_html_report(args, results):
 def main():
     args = parse_args();
     prepare_run(args)
+    run_unit_tests(args)
     tests = list_tests(args)
-    filtered = filter_tests(tests)
-    buckets = bucketize_tests(filtered)
-    results = run_tests(args, buckets)
+    tests = filter_rhi_tests(tests)
+    buckets = bucketize_tests(tests)
+    results = run_rhi_tests(args, buckets)
     report = generate_html_report(args, results)
     webbrowser.open(report)
 
