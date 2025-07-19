@@ -94,4 +94,37 @@ ShaderReflection::~ShaderReflection()
 {
     Compiler::api()->delete_reflection(handle);
 }
+
+uint ShaderReflection::get_bind_group_location(CString name) const
+{
+    uint group;
+    Compiler::api()->get_bind_group_location(handle, name, group);
+    return group;
+}
+
+GPUBindGroupLayoutDescriptors ShaderReflection::get_bind_group_layouts()
+{
+    uint count;
+    Compiler::api()->get_bind_group_layouts(handle, count, nullptr);
+
+    bind_group_layouts.resize(count);
+    Compiler::api()->get_bind_group_layouts(handle, count, bind_group_layouts.data());
+    return bind_group_layouts;
+}
+
+GPUVertexAttributes ShaderReflection::get_vertex_attributes(ShaderAttributes attrs)
+{
+    vertex_attributes.push_front({});
+    auto& attributes = vertex_attributes.front();
+    attributes.resize(attrs.size());
+
+    Compiler::api()->get_vertex_attributes(handle, attrs, attributes.data());
+    return attributes;
+}
+
+GPUVertexAttributes ShaderReflection::get_vertex_attributes(InitList<ShaderAttribute> attrs)
+{
+    Vector<ShaderAttribute> copied = attrs;
+    return get_vertex_attributes(copied);
+}
 #pragma endregion ShaderReflection

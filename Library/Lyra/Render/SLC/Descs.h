@@ -11,10 +11,10 @@ namespace lyra::rhi
 
     struct CompilerDescriptor
     {
-        CompileFlags              flags    = CompileFlag::NONE;
-        CompileTarget             target   = CompileTarget::SPIRV;
-        Vector<CString>           includes = {};
-        HashMap<CString, CString> defines  = {};
+        CompileFlags   flags    = CompileFlag::NONE;
+        CompileTarget  target   = CompileTarget::SPIRV;
+        ShaderDefines  defines  = {};
+        ShaderIncludes includes = {};
     };
 
     struct CompileDescriptor

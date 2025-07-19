@@ -68,24 +68,24 @@ bool get_shader_blob(ShaderEntryPoint entry, ShaderBlob& blob)
     return res->get_shader_blob(entry.entry, blob);
 }
 
-bool get_vertex_attributes(ShaderReflectionHandle handle, GPUVertexAttributes& attributes)
+bool get_vertex_attributes(ShaderReflectionHandle reflection, ShaderAttributes attrs, GPUVertexAttribute* attributes)
 {
-    auto res   = reinterpret_cast<ReflectResultInternal*>(handle.handle);
-    attributes = res->get_vertex_attributes();
+    auto res = reinterpret_cast<ReflectResultInternal*>(reflection.handle);
+    res->get_vertex_attributes(attrs, attributes);
     return true;
 }
 
-bool get_bind_group_layouts(ShaderReflectionHandle handle, GPUBindGroupLayoutDescriptors& layouts)
+bool get_bind_group_layouts(ShaderReflectionHandle reflection, uint& count, GPUBindGroupLayoutDescriptor* layouts)
 {
-    auto res = reinterpret_cast<ReflectResultInternal*>(handle.handle);
-    layouts  = res->get_bind_group_layouts();
+    auto res = reinterpret_cast<ReflectResultInternal*>(reflection.handle);
+    res->get_bind_group_layouts(count, layouts);
     return true;
 }
 
-bool get_bind_group_location(ShaderReflectionHandle handle, CString name, uint& group, uint& binding)
+bool get_bind_group_location(ShaderReflectionHandle handle, CString name, uint& group)
 {
     auto res = reinterpret_cast<ReflectResultInternal*>(handle.handle);
-    return res->get_bind_group_location(name, group, binding);
+    return res->get_bind_group_location(name, group);
 }
 
 LYRA_EXPORT auto prepare() -> void

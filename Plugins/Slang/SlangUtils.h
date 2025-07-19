@@ -59,8 +59,9 @@ struct TraverseDepthHandle
 
 struct CompileResultInternal
 {
-    Slang::ComPtr<slang::ISession> session;
-    Slang::ComPtr<slang::IModule>  module;
+    Slang::ComPtr<slang::ISession>        session;
+    Slang::ComPtr<slang::ICompileRequest> request;
+    Slang::ComPtr<slang::IModule>         module;
 
     auto get_entry_point(CString entry) const -> Slang::ComPtr<slang::IEntryPoint>;
     auto get_linked_program(CString entry) const -> Slang::ComPtr<slang::IComponentType>;
@@ -71,30 +72,37 @@ struct CompileResultInternal
 
 struct ReflectResultInternal
 {
-    using SetBindings = TreeMap<uint, Vector<GPUBindGroupLayoutEntry>>;
-    using Callback    = std::function<WalkAction(AccessPathNode)>;
+    using Bindings = TreeMap<uint, Vector<GPUBindGroupLayoutEntry>>;
+    using Callback = std::function<WalkAction(AccessPathNode)>;
+    using Metadata = std::pair<uint, slang::ICompileRequest*>;
 
-    HashMap<String, uint>                   spaces;
-    Vector<GPUVertexAttribute>              attributes;
-    Vector<Vector<GPUBindGroupLayoutEntry>> bind_group_entries;
-    Vector<GPUBindGroupLayoutDescriptor>    bind_group_layouts;
-    TraversalData                           traversal_data;
+    CompileTarget                     target;
+    HashMap<GPUShaderStage, Metadata> metadata;
+    HashMap<String, uint>             name2attributes;
+    HashMap<String, uint>             name2bindgroups;
+    Bindings                          bind_groups;
+    Vector<GPUVertexAttribute>        vertex_attributes;
+    TraversalData                     traversal_data;
 
-    auto get_vertex_attributes() const -> GPUVertexAttributes;
-    auto get_bind_group_layouts() const -> GPUBindGroupLayoutDescriptors;
-    bool get_bind_group_location(CString name, uint& group, uint& binding) const;
+    bool get_vertex_attributes(ShaderAttributes attrs, GPUVertexAttribute* attributes) const;
+    bool get_bind_group_layouts(uint& count, GPUBindGroupLayoutDescriptor* layouts) const;
+    bool get_bind_group_location(CString name, uint& group) const;
 
     void init(slang::ProgramLayout* program_layout);
     void walk(slang::EntryPointReflection* entry_point, AccessPathNode path, const Callback& callback);
     void walk(slang::VariableLayoutReflection* var_layout, AccessPathNode path, const Callback& callback);
 
+    void init_bindings(slang::ProgramLayout* program_layout);
+    void init_vertices(slang::ProgramLayout* program_layout);
+
     void record_parameter_block_space(AccessPathNode path);
-    void create_binding(SetBindings& bindings, AccessPathNode path);
-    void create_automatic_constant_buffer(SetBindings& bindings, AccessPathNode path);
+    void create_binding(Bindings& bindings, AccessPathNode path);
+    void create_automatic_constant_buffer(Bindings& bindings, AccessPathNode path);
     void fill_binding_type(slang::TypeLayoutReflection* type, GPUBindGroupLayoutEntry& entry) const;
     void fill_binding_count(slang::TypeLayoutReflection* type, GPUBindGroupLayoutEntry& entry) const;
     void fill_binding_stages(CumulativeOffset offset, GPUBindGroupLayoutEntry& entry) const;
     auto infer_texture_format(slang::TypeLayoutReflection* type) const -> GPUTextureFormat;
+    auto infer_vertex_format(slang::TypeLayoutReflection* type) const -> GPUVertexFormat;
 };
 
 struct CompilerWrapper
@@ -112,6 +120,8 @@ struct CompilerWrapper
     bool compile(const CompileDescriptor& desc, CompileResultInternal& result);
 
     bool reflect(ShaderEntryPoints entries, ReflectResultInternal& result);
+
+    CompileTarget target;
 };
 
 #endif // LYRA_PLUGIN_SLANG_UTILS_H

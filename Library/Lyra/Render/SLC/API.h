@@ -29,9 +29,9 @@ namespace lyra::rhi
 
         // retrieve shader blobs
         bool (*get_shader_blob)(ShaderEntryPoint entry, ShaderBlob& blob);
-        bool (*get_vertex_attributes)(ShaderReflectionHandle handle, GPUVertexAttributes& attributes);
-        bool (*get_bind_group_layouts)(ShaderReflectionHandle handle, GPUBindGroupLayoutDescriptors& layouts);
-        bool (*get_bind_group_location)(ShaderReflectionHandle handle, CString name, uint& location);
+        bool (*get_vertex_attributes)(ShaderReflectionHandle reflection, ShaderAttributes attrs, GPUVertexAttribute* attributes);
+        bool (*get_bind_group_layouts)(ShaderReflectionHandle reflection, uint& count, GPUBindGroupLayoutDescriptor* layouts);
+        bool (*get_bind_group_location)(ShaderReflectionHandle reflection, CString name, uint& location);
     };
 
 } // namespace lyra::rhi

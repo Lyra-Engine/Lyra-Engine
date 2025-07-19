@@ -99,6 +99,47 @@ void diagnose_if_needed(slang::IBlob* diagnosticsBlob)
     }
 }
 
+static GPUShaderStage to_stage(SlangStage stage)
+{
+    switch (stage) {
+        case SLANG_STAGE_VERTEX:
+            return GPUShaderStage::VERTEX;
+        case SLANG_STAGE_FRAGMENT:
+            return GPUShaderStage::FRAGMENT;
+        case SLANG_STAGE_COMPUTE:
+            return GPUShaderStage::COMPUTE;
+        case SLANG_STAGE_RAY_GENERATION:
+            return GPUShaderStage::RAYGEN;
+        case SLANG_STAGE_INTERSECTION:
+            return GPUShaderStage::INTERSECT;
+        case SLANG_STAGE_ANY_HIT:
+            return GPUShaderStage::AHIT;
+        case SLANG_STAGE_CLOSEST_HIT:
+            return GPUShaderStage::CHIT;
+        case SLANG_STAGE_MISS:
+            return GPUShaderStage::MISS;
+        case SLANG_STAGE_GEOMETRY:
+        case SLANG_STAGE_HULL:
+        case SLANG_STAGE_DOMAIN:
+        case SLANG_STAGE_AMPLIFICATION:
+        case SLANG_STAGE_MESH:
+        case SLANG_STAGE_CALLABLE:
+        default:
+            assert(!!!"Unsupported shader types!");
+            return GPUShaderStage::COMPUTE;
+    }
+}
+
+static uint get_shader_entry_point_index(slang::ProgramLayout* layout, slang::EntryPointReflection* refl)
+{
+    for (uint i = 0; i < layout->getEntryPointCount(); i++)
+        if (layout->getEntryPointByIndex(i) == refl)
+            return i;
+
+    assert(!!!"Failed to find shader entry point!");
+    return ~0u;
+}
+
 CumulativeOffset AccessPathNode::calculate_cumulative_offset() const
 {
     CumulativeOffset result{};
@@ -140,6 +181,8 @@ void CompilerWrapper::init()
 
 CompilerWrapper::CompilerWrapper(const CompilerDescriptor& descriptor)
 {
+    this->target = descriptor.target;
+
     auto target_desc    = slang::TargetDesc{};
     target_desc.format  = select_target(descriptor);
     target_desc.profile = select_profile(descriptor);
@@ -164,8 +207,8 @@ CompilerWrapper::CompilerWrapper(const CompilerDescriptor& descriptor)
         auto entry               = slang::CompilerOptionEntry{};
         entry.name               = slang::CompilerOptionName::MacroDefine;
         entry.value.kind         = slang::CompilerOptionValueKind::String;
-        entry.value.stringValue0 = macro.first;
-        entry.value.stringValue1 = macro.second;
+        entry.value.stringValue0 = macro.key;
+        entry.value.stringValue1 = macro.value;
         options.push_back(entry);
     }
 
@@ -205,18 +248,36 @@ SlangCompileTarget CompilerWrapper::select_target(const CompilerDescriptor& desc
 
 bool CompilerWrapper::compile(const CompileDescriptor& desc, CompileResultInternal& result)
 {
-    // create shader module
-    {
+    // compile result shares the session
+    result.session = session;
+
+    // create compile request
+    session->createCompileRequest(result.request.writeRef());
+
+    // translation unit
+    int translation_unit_index = result.request->addTranslationUnit(
+        SLANG_SOURCE_LANGUAGE_SLANG,
+        desc.module);
+
+    // shader module source
+    result.request->addTranslationUnitSourceString(
+        translation_unit_index,
+        desc.path,
+        desc.source);
+
+    // compile shader module
+    auto res = result.request->compile();
+    if (SLANG_FAILED(res)) {
+        get_logger()->error("Failed to compile shader module!");
+
         Slang::ComPtr<slang::IBlob> diagnostics;
-        result.module = session->loadModuleFromSourceString(
-            desc.module,             // module name
-            desc.path,               // module path
-            desc.source,             // shader source code
-            diagnostics.writeRef()); // optional diagnostic container
+        result.request->getDiagnosticOutputBlob(diagnostics.writeRef());
         diagnose_if_needed(diagnostics);
+        return false;
     }
 
-    result.session = session;
+    // get the module for the translation unit
+    result.request->getModule(translation_unit_index, result.module.writeRef());
     return result.module != nullptr;
 }
 
@@ -264,7 +325,29 @@ bool CompilerWrapper::reflect(ShaderEntryPoints entries, ReflectResultInternal& 
         diagnose_if_needed(diagnostics);
         SLANG_RETURN_FALSE_ON_FAIL(result);
     }
-    result.init(linked_program->getLayout());
+
+    // associate stages with ICompileRequests*
+    auto layout = linked_program->getLayout();
+    for (auto& entry : entries) {
+        auto module = reinterpret_cast<CompileResultInternal*>(entry.module.handle);
+        auto refl   = layout->findEntryPointByName(entry.entry);
+        uint index  = get_shader_entry_point_index(layout, refl);
+        auto stage  = to_stage(refl->getStage());
+        result.metadata.emplace(stage, std::make_pair(index, module->request.get()));
+    }
+
+    auto request = reinterpret_cast<CompileResultInternal*>(entries[0].module.handle)->request;
+    for (int ep = 0; ep < layout->getEntryPointCount(); ep++) {
+        bool used     = false;
+        auto category = SLANG_PARAMETER_CATEGORY_SUB_ELEMENT_REGISTER_SPACE;
+        for (uint reg = 0; reg < 4; reg++) {
+            request->isParameterLocationUsed(ep, 0, category, 0, reg, used);
+            std::cout << "=== register " << reg << " ====== used: " << used << std::endl;
+        }
+    }
+
+    result.target = target;
+    result.init(layout);
     return true;
 }
 #pragma endregion CompilerWrapper
@@ -357,64 +440,69 @@ bool CompileResultInternal::get_shader_blob(CString entry, ShaderBlob& blob)
 #pragma endregion CompileResultInternal
 
 #pragma region ReflectResultInternal
-GPUVertexAttributes ReflectResultInternal::get_vertex_attributes() const
+bool ReflectResultInternal::get_vertex_attributes(ShaderAttributes attrs, GPUVertexAttribute* attributes) const
 {
-    return attributes;
+    bool pass = true;
+
+    // assume attributes has been properly allocated
+    for (uint i = 0; i < attrs.size(); i++) {
+        auto& attr = attrs.at(i);
+        auto  iter = name2attributes.find(attr.name);
+        if (iter == name2attributes.end()) {
+            pass = false;
+            get_logger()->error("Failed to find vertex attribute with name: {}!", attr.name);
+        } else {
+            attributes[i]        = vertex_attributes.at(iter->second);
+            attributes[i].offset = attr.offset;
+        }
+    }
+    return pass;
 }
 
-GPUBindGroupLayoutDescriptors ReflectResultInternal::get_bind_group_layouts() const
+bool ReflectResultInternal::get_bind_group_layouts(uint& count, GPUBindGroupLayoutDescriptor* layouts) const
 {
-    return bind_group_layouts;
+    count = static_cast<uint>(bind_groups.size());
+
+    // check if layouts is provided, if null, simply return count
+    if (layouts == nullptr)
+        return true;
+
+    Vector<CString> group2names(bind_groups.size());
+    for (auto& kv : name2bindgroups)
+        group2names[kv.second] = kv.first.c_str();
+
+    // initialize layouts (assume layout has been properly allocated)
+    uint index = 0;
+    for (auto& kv : bind_groups) {
+        if (kv.first != index) {
+            get_logger()->error("Found non-continuous bind group layout space: {}", kv.first);
+            return false;
+        }
+        GPUBindGroupLayoutDescriptor layout{};
+        layout.label     = group2names[kv.first];
+        layout.entries   = kv.second;
+        layouts[index++] = layout;
+    }
+    return true;
 }
 
-bool ReflectResultInternal::get_bind_group_location(CString name, uint& group, uint& binding) const
+bool ReflectResultInternal::get_bind_group_location(CString name, uint& group) const
 {
-    return false;
+    auto it = name2bindgroups.find(name);
+    if (it == name2bindgroups.end()) {
+        get_logger()->error("Failed to find bind group with name: {}!", name);
+        return false;
+    }
+
+    // assign the group and binding
+    group = it->second;
+    return true;
 }
 
 void ReflectResultInternal::init(slang::ProgramLayout* program_layout)
 {
-    SetBindings bindings;
-
-    auto callback = [&](AccessPathNode node) {
-        auto typ_layout = node.layout->getTypeLayout();
-        switch (typ_layout->getKind()) {
-            case slang::TypeReflection::Kind::ParameterBlock:
-                // ParameterBlock has a name, we record it for bind group retrieval
-                record_parameter_block_space(node);
-
-                // ParameterBlock will automatically introduce a constant buffer binding if ordinary types are observed.
-                if (typ_layout->getSize())
-                    this->create_automatic_constant_buffer(bindings, node);
-
-                return WalkAction::CONTINUE;
-            case slang::TypeReflection::Kind::Resource:
-            case slang::TypeReflection::Kind::SamplerState:
-            case slang::TypeReflection::Kind::TextureBuffer:
-            case slang::TypeReflection::Kind::ConstantBuffer:
-            case slang::TypeReflection::Kind::ShaderStorageBuffer:
-                this->create_binding(bindings, node);
-                return WalkAction::SKIP;
-            default:
-                return WalkAction::CONTINUE;
-        }
-    };
-
-    // reset traversal data
-    traversal_data.current_walk_depth = 0;
-
-    // iterate through global parameters
-    // get_logger()->info("############## VISIT GLOBAL PARAMS ##############");
-    auto global_params = program_layout->getGlobalParamsVarLayout();
-    walk(global_params, {}, callback);
-
-    // iterate through entry points
-    uint entry_point_count = program_layout->getEntryPointCount();
-    for (uint i = 0; i < entry_point_count; i++) {
-        // get_logger()->info("############## VISIT ENTRY POINT ##############");
-        auto entry_point_reflect = program_layout->getEntryPointByIndex(i);
-        walk(entry_point_reflect, {}, callback);
-    }
+    init_bindings(program_layout);
+    init_vertices(program_layout);
 }
 
 void ReflectResultInternal::walk(slang::EntryPointReflection* entry_point, AccessPathNode path, const Callback& callback)
@@ -454,16 +542,93 @@ void ReflectResultInternal::walk(slang::VariableLayoutReflection* var_layout, Ac
     }
 }
 
+void ReflectResultInternal::init_bindings(slang::ProgramLayout* program_layout)
+{
+    auto callback = [&](AccessPathNode node) {
+        auto typ_layout = node.layout->getTypeLayout();
+        switch (typ_layout->getKind()) {
+            case slang::TypeReflection::Kind::ParameterBlock:
+                // ParameterBlock has a name, we record it for bind group retrieval
+                record_parameter_block_space(node);
+
+                // ParameterBlock will automatically introduce a constant buffer binding if ordinary types are observed.
+                if (typ_layout->getSize())
+                    this->create_automatic_constant_buffer(bind_groups, node);
+
+                return WalkAction::CONTINUE;
+            case slang::TypeReflection::Kind::Resource:
+            case slang::TypeReflection::Kind::SamplerState:
+            case slang::TypeReflection::Kind::TextureBuffer:
+            case slang::TypeReflection::Kind::ConstantBuffer:
+            case slang::TypeReflection::Kind::ShaderStorageBuffer:
+                this->create_binding(bind_groups, node);
+                return WalkAction::SKIP;
+            default:
+                return WalkAction::CONTINUE;
+        }
+    };
+
+    // reset traversal data
+    traversal_data.current_walk_depth = 0;
+
+    // iterate through global parameters
+    auto global_params = program_layout->getGlobalParamsVarLayout();
+    walk(global_params, {}, callback);
+
+    // iterate through entry points
+    uint entry_point_count = program_layout->getEntryPointCount();
+    for (uint i = 0; i < entry_point_count; i++) {
+        auto entry_point_reflect = program_layout->getEntryPointByIndex(i);
+        walk(entry_point_reflect, {}, callback);
+    }
+
+    // organize the bindings
+}
+
+void ReflectResultInternal::init_vertices(slang::ProgramLayout* program_layout)
+{
+    auto callback = [&](AccessPathNode node) {
+        auto typ_layout = node.layout->getTypeLayout();
+        if (typ_layout->getParameterCategory() == slang::ParameterCategory::VertexInput) {
+            if (typ_layout->getKind() != slang::TypeReflection::Kind::Struct) {
+                auto name           = node.layout->getName();
+                auto semantics      = node.layout->getSemanticName();
+                uint semantic_index = node.layout->getSemanticIndex();
+                uint binding_index  = node.layout->getBindingIndex();
+                get_logger()->info("[VTX INPUT] NAME: {}\t LOCATION: {} SEMANTICS: {}{}", name, binding_index, semantics, semantic_index);
+
+                vertex_attributes.push_back(GPUVertexAttribute{});
+                auto& attribute            = vertex_attributes.back();
+                attribute.offset           = 0; // host-provided, cannot be reflected from shader
+                attribute.format           = infer_vertex_format(typ_layout);
+                attribute.shader_semantics = semantics;
+                attribute.shader_location  = target == CompileTarget::SPIRV ? binding_index : semantic_index;
+
+                name2attributes.emplace(name, static_cast<uint>(vertex_attributes.size() - 1));
+            }
+        }
+        return WalkAction::CONTINUE;
+    };
+
+    // iterate through entry points (only process vertex shader entry)
+    uint entry_point_count = program_layout->getEntryPointCount();
+    for (uint i = 0; i < entry_point_count; i++) {
+        auto entry_point_reflect = program_layout->getEntryPointByIndex(i);
+        if (entry_point_reflect->getStage() == SLANG_STAGE_VERTEX)
+            walk(entry_point_reflect, {}, callback);
+    }
+}
+
 void ReflectResultInternal::record_parameter_block_space(AccessPathNode path)
 {
     assert(path.layout->getTypeLayout()->getKind() == slang::TypeReflection::Kind::ParameterBlock);
 
     auto name   = path.layout->getName();
     auto offset = path.calculate_cumulative_offset();
-    spaces.emplace(name, offset.space);
+    name2bindgroups.emplace(name, offset.space);
 }
 
-void ReflectResultInternal::create_automatic_constant_buffer(SetBindings& bindings, AccessPathNode node)
+void ReflectResultInternal::create_automatic_constant_buffer(Bindings& bindings, AccessPathNode node)
 {
     auto offset = node.calculate_cumulative_offset();
 
@@ -477,10 +642,10 @@ void ReflectResultInternal::create_automatic_constant_buffer(SetBindings& bindin
     fill_binding_stages(offset, val);
 
     bindings[space].push_back(val);
-    get_logger()->info("NAME:{}\t SPACE:{} BINDING:{} (AUTOMATIC)", node.layout->getName(), space, binding);
+    get_logger()->info("[BINDGROUP] NAME:{}\t SPACE:{} BINDING:{} (AUTOMATIC)", node.layout->getName(), space, binding);
 }
 
-void ReflectResultInternal::create_binding(SetBindings& bindings, AccessPathNode node)
+void ReflectResultInternal::create_binding(Bindings& bindings, AccessPathNode node)
 {
     auto type   = node.layout->getTypeLayout();
     auto offset = node.calculate_cumulative_offset();
@@ -496,7 +661,7 @@ void ReflectResultInternal::create_binding(SetBindings& bindings, AccessPathNode
 
     // append to bindings
     bindings[space].push_back(val);
-    get_logger()->info("NAME:{}\t SPACE:{} BINDING:{}", node.layout->getName(), space, binding);
+    get_logger()->info("[BINDGROUP] NAME:{}\t SPACE:{} BINDING:{}", node.layout->getName(), space, binding);
 }
 
 void ReflectResultInternal::fill_binding_count(slang::TypeLayoutReflection* type, GPUBindGroupLayoutEntry& entry) const
@@ -518,8 +683,17 @@ void ReflectResultInternal::fill_binding_count(slang::TypeLayoutReflection* type
 
 void ReflectResultInternal::fill_binding_stages(CumulativeOffset offset, GPUBindGroupLayoutEntry& entry) const
 {
-    // NOTE: implement this using IMetadata
-    entry.visibility = GPUShaderStage::VERTEX | GPUShaderStage::FRAGMENT;
+    // implement this using IMetadata (or ICompileRequests for older versions of Slang)
+    for (auto& kv : metadata) {
+        bool used     = false;
+        auto epindex  = kv.second.first;
+        auto request  = kv.second.second;
+        auto category = SLANG_PARAMETER_CATEGORY_SUB_ELEMENT_REGISTER_SPACE;
+        request->isParameterLocationUsed(epindex, 0, category, offset.space, offset.value, used);
+        if (used) entry.visibility = entry.visibility | kv.first;
+        std::cout << "epindex: " << epindex << " ";
+        std::cout << "stage: " << int(kv.first) << " space: " << offset.space << " register: " << offset.value << " used: " << used << std::endl;
+    }
 }
 
 void ReflectResultInternal::fill_binding_type(slang::TypeLayoutReflection* type, GPUBindGroupLayoutEntry& entry) const
@@ -707,5 +881,88 @@ GPUTextureFormat ReflectResultInternal::infer_texture_format(slang::TypeLayoutRe
 
     assert(!!!"Failed to infer texture format!");
     return GPUTextureFormat::RGBA32FLOAT;
+}
+
+GPUVertexFormat ReflectResultInternal::infer_vertex_format(slang::TypeLayoutReflection* type) const
+{
+    // check the scalar type and component count
+    auto scalar_type     = type->getScalarType();
+    auto component_count = type->getElementCount();
+
+    // map to common formats
+    // clang-format off
+    switch (scalar_type) {
+        case slang::TypeReflection::ScalarType::Float32:
+            switch (component_count) {
+                case 1: return GPUVertexFormat::FLOAT32;
+                case 2: return GPUVertexFormat::FLOAT32x2;
+                case 3: return GPUVertexFormat::FLOAT32x3;
+                case 4: return GPUVertexFormat::FLOAT32x4;
+                default: assert(!!!"unsupported channel count!");
+            }
+            break;
+
+        case slang::TypeReflection::ScalarType::UInt32:
+            switch (component_count) {
+                case 1: return GPUVertexFormat::UINT32;
+                case 2: return GPUVertexFormat::UINT32x2;
+                case 3: return GPUVertexFormat::UINT32x3;
+                case 4: return GPUVertexFormat::UINT32x4;
+                default: assert(!!!"unsupported channel count!");
+            }
+            break;
+
+        case slang::TypeReflection::ScalarType::Int32:
+            switch (component_count) {
+                case 1: return GPUVertexFormat::SINT32;
+                case 2: return GPUVertexFormat::SINT32x2;
+                case 3: return GPUVertexFormat::SINT32x3;
+                case 4: return GPUVertexFormat::SINT32x4;
+                default: assert(!!!"unsupported channel count!");
+            }
+            break;
+
+        case slang::TypeReflection::ScalarType::UInt16:
+            switch (component_count) {
+                case 1: return GPUVertexFormat::FLOAT16;
+                case 2: return GPUVertexFormat::FLOAT16x2;
+                case 4: return GPUVertexFormat::FLOAT16x4;
+                default: assert(!!!"unsupported channel count!");
+            }
+            break;
+
+        case slang::TypeReflection::ScalarType::Int16:
+            switch (component_count) {
+                case 1: return GPUVertexFormat::SINT16;
+                case 2: return GPUVertexFormat::SINT16x2;
+                case 4: return GPUVertexFormat::SINT16x4;
+                default: assert(!!!"unsupported channel count!");
+            }
+            break;
+
+        case slang::TypeReflection::ScalarType::UInt8:
+            switch (component_count) {
+                case 1: return GPUVertexFormat::UINT8;
+                case 2: return GPUVertexFormat::UINT8x2;
+                case 4: return GPUVertexFormat::UINT8x4;
+                default: assert(!!!"unsupported channel count!");
+            }
+            break;
+
+        case slang::TypeReflection::ScalarType::Int8:
+            switch (component_count) {
+                case 1: return GPUVertexFormat::SINT8;
+                case 2: return GPUVertexFormat::SINT8x2;
+                case 4: return GPUVertexFormat::SINT8x4;
+                default: assert(!!!"unsupported channel count!");
+            }
+            break;
+
+        default: break;
+    }
+    // clang-format on
+
+    assert(!!!"Failed to infer vertex format!");
+    return GPUVertexFormat::FLOAT32x4;
 }
 #pragma endregion ReflectResultInternal

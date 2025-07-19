@@ -15,22 +15,6 @@ namespace lyra::rhi
 {
     struct ShaderAPI;
 
-    struct Compiler;
-    struct ShaderModule;
-    struct ShaderReflection;
-    struct ShaderEntryPoint;
-
-    using CompilerHandle         = TypedPointerHandle<Compiler>;
-    using ShaderModuleHandle     = TypedPointerHandle<ShaderModule>;
-    using ShaderReflectionHandle = TypedPointerHandle<ShaderReflection>;
-    using ShaderEntryPoints      = TypedView<ShaderEntryPoint>;
-
-    struct ShaderEntryPoint
-    {
-        ShaderModuleHandle module;
-        CString            entry;
-    };
-
     struct ShaderModule
     {
         ShaderModuleHandle handle;
@@ -51,6 +35,15 @@ namespace lyra::rhi
 
         operator ShaderReflectionHandle() { return handle; }
         operator ShaderReflectionHandle() const { return handle; }
+
+        auto get_bind_group_location(CString name) const -> uint;
+        auto get_bind_group_layouts() -> GPUBindGroupLayoutDescriptors;
+        auto get_vertex_attributes(ShaderAttributes attrs) -> GPUVertexAttributes;
+        auto get_vertex_attributes(InitList<ShaderAttribute> attrs) -> GPUVertexAttributes;
+
+    private:
+        List<Vector<GPUVertexAttribute>>     vertex_attributes;
+        Vector<GPUBindGroupLayoutDescriptor> bind_group_layouts;
     };
 
     struct Compiler
