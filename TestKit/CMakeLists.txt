@@ -18,6 +18,7 @@ add_subdirectory(depth_test)
 add_subdirectory(stencil_test)
 add_subdirectory(texture_sampling)
 add_subdirectory(graphics_pipeline)
+add_subdirectory(shader_reflection)
 
 # add custom target to run test kit
 find_package(Python3 REQUIRED COMPONENTS Interpreter)

@@ -12,6 +12,7 @@
 
 using namespace lyra;
 using namespace lyra::rhi;
+using Slang::ComPtr;
 
 auto get_logger() -> Logger;
 
@@ -27,12 +28,24 @@ struct CumulativeOffset
     int space = 0; // the associated space
 };
 
+struct EntryMetadata
+{
+    GPUShaderStage    stage;
+    slang::IMetadata* metadata;
+};
+
 struct AccessPathNode
 {
     slang::VariableLayoutReflection* layout = nullptr;
     AccessPathNode*                  outer  = nullptr;
 
-    CumulativeOffset calculate_cumulative_offset() const;
+    auto calculate_cumulative_offset() const -> CumulativeOffset;
+    auto calculate_cumulative_offset(slang::ParameterCategory category) const -> CumulativeOffset;
+
+    bool is_parameter_used(
+        slang::IMetadata*        metadata,
+        slang::ParameterCategory unit,
+        CumulativeOffset         offset) const;
 
     void print() const;
 };
@@ -59,13 +72,12 @@ struct TraverseDepthHandle
 
 struct CompileResultInternal
 {
-    Slang::ComPtr<slang::ISession>        session;
-    Slang::ComPtr<slang::ICompileRequest> request;
-    Slang::ComPtr<slang::IModule>         module;
+    ComPtr<slang::ISession> session;
+    ComPtr<slang::IModule>  module;
 
-    auto get_entry_point(CString entry) const -> Slang::ComPtr<slang::IEntryPoint>;
-    auto get_linked_program(CString entry) const -> Slang::ComPtr<slang::IComponentType>;
-    auto get_composed_program(CString entry) const -> Slang::ComPtr<slang::IComponentType>;
+    auto get_entry_point(CString entry) const -> ComPtr<slang::IEntryPoint>;
+    auto get_linked_program(CString entry) const -> ComPtr<slang::IComponentType>;
+    auto get_composed_program(CString entry) const -> ComPtr<slang::IComponentType>;
 
     bool get_shader_blob(CString entry, ShaderBlob& blob);
 };
@@ -74,15 +86,14 @@ struct ReflectResultInternal
 {
     using Bindings = TreeMap<uint, Vector<GPUBindGroupLayoutEntry>>;
     using Callback = std::function<WalkAction(AccessPathNode)>;
-    using Metadata = std::pair<uint, slang::ICompileRequest*>;
 
-    CompileTarget                     target;
-    HashMap<GPUShaderStage, Metadata> metadata;
-    HashMap<String, uint>             name2attributes;
-    HashMap<String, uint>             name2bindgroups;
-    Bindings                          bind_groups;
-    Vector<GPUVertexAttribute>        vertex_attributes;
-    TraversalData                     traversal_data;
+    CompileTarget              target;
+    Vector<EntryMetadata>      metadata;
+    HashMap<String, uint>      name2attributes;
+    HashMap<String, uint>      name2bindgroups;
+    Bindings                   bind_groups;
+    Vector<GPUVertexAttribute> vertex_attributes;
+    TraversalData              traversal_data;
 
     bool get_vertex_attributes(ShaderAttributes attrs, GPUVertexAttribute* attributes) const;
     bool get_bind_group_layouts(uint& count, GPUBindGroupLayoutDescriptor* layouts) const;
@@ -98,16 +109,16 @@ struct ReflectResultInternal
     void record_parameter_block_space(AccessPathNode path);
     void create_binding(Bindings& bindings, AccessPathNode path);
     void create_automatic_constant_buffer(Bindings& bindings, AccessPathNode path);
-    void fill_binding_type(slang::TypeLayoutReflection* type, GPUBindGroupLayoutEntry& entry) const;
-    void fill_binding_count(slang::TypeLayoutReflection* type, GPUBindGroupLayoutEntry& entry) const;
-    void fill_binding_stages(CumulativeOffset offset, GPUBindGroupLayoutEntry& entry) const;
+    void fill_binding_type(GPUBindGroupLayoutEntry& entry, slang::TypeLayoutReflection* type) const;
+    void fill_binding_count(GPUBindGroupLayoutEntry& entry, slang::TypeLayoutReflection* type) const;
+    void fill_binding_stages(GPUBindGroupLayoutEntry& entry, AccessPathNode path) const;
     auto infer_texture_format(slang::TypeLayoutReflection* type) const -> GPUTextureFormat;
     auto infer_vertex_format(slang::TypeLayoutReflection* type) const -> GPUVertexFormat;
 };
 
 struct CompilerWrapper
 {
-    Slang::ComPtr<slang::ISession> session;
+    ComPtr<slang::ISession> session;
 
     static void init();
 

@@ -1,7 +1,7 @@
 #include <iostream>
 #include "SlangUtils.h"
 
-static Slang::ComPtr<slang::IGlobalSession> GLOBAL_SESSION;
+static ComPtr<slang::IGlobalSession> GLOBAL_SESSION;
 
 static Logger logger = init_stderr_logger("Slang", LogLevel::trace);
 
@@ -146,17 +146,37 @@ CumulativeOffset AccessPathNode::calculate_cumulative_offset() const
 
     uint count = layout->getCategoryCount();
     for (uint i = 0; i < count; i++) {
-        auto unit = static_cast<SlangParameterCategory>(layout->getCategoryByIndex(i));
-        for (auto node = this; node != nullptr; node = node->outer) {
-            result.value += node->layout->getOffset(unit);
-            result.space += node->layout->getBindingSpace(unit);
-            if (node->layout->getTypeLayout()->getKind() == slang::TypeReflection::Kind::ParameterBlock) {
-                result.space += node->layout->getOffset(SLANG_PARAMETER_CATEGORY_SUB_ELEMENT_REGISTER_SPACE);
-            }
+        auto offset = calculate_cumulative_offset(layout->getCategoryByIndex(i));
+        result.value += offset.value;
+        result.space += offset.space;
+    }
+    return result;
+}
+
+CumulativeOffset AccessPathNode::calculate_cumulative_offset(slang::ParameterCategory category) const
+{
+    CumulativeOffset result{};
+
+    auto unit = static_cast<SlangParameterCategory>(category);
+    for (auto node = this; node != nullptr; node = node->outer) {
+        result.value += node->layout->getOffset(unit);
+        result.space += node->layout->getBindingSpace(unit);
+        if (node->layout->getTypeLayout()->getKind() == slang::TypeReflection::Kind::ParameterBlock) {
+            result.space += node->layout->getOffset(SLANG_PARAMETER_CATEGORY_SUB_ELEMENT_REGISTER_SPACE);
         }
     }
-
     return result;
+}
+
+bool AccessPathNode::is_parameter_used(slang::IMetadata* metadata, slang::ParameterCategory category, CumulativeOffset offset) const
+{
+    bool used   = false;
+    auto unit   = static_cast<SlangParameterCategory>(category);
+    auto result = metadata->isParameterLocationUsed(unit, offset.space, offset.value, used);
+    if (used) return true;
+    if (SLANG_FAILED(result))
+        get_logger()->error("Failed to query if parameter is used for unit: {} space: {}, register: {}", (int)unit, offset.space, offset.value);
+    return false;
 }
 
 void AccessPathNode::print() const
@@ -251,33 +271,15 @@ bool CompilerWrapper::compile(const CompileDescriptor& desc, CompileResultIntern
     // compile result shares the session
     result.session = session;
 
-    // create compile request
-    session->createCompileRequest(result.request.writeRef());
+    // create shader module
+    ComPtr<slang::IBlob> diagnostics;
+    result.module = session->loadModuleFromSourceString(
+        desc.module,             // module name
+        desc.path,               // module path
+        desc.source,             // shader source code
+        diagnostics.writeRef()); // optional diagnostic container
+    diagnose_if_needed(diagnostics);
 
-    // translation unit
-    int translation_unit_index = result.request->addTranslationUnit(
-        SLANG_SOURCE_LANGUAGE_SLANG,
-        desc.module);
-
-    // shader module source
-    result.request->addTranslationUnitSourceString(
-        translation_unit_index,
-        desc.path,
-        desc.source);
-
-    // compile shader module
-    auto res = result.request->compile();
-    if (SLANG_FAILED(res)) {
-        get_logger()->error("Failed to compile shader module!");
-
-        Slang::ComPtr<slang::IBlob> diagnostics;
-        result.request->getDiagnosticOutputBlob(diagnostics.writeRef());
-        diagnose_if_needed(diagnostics);
-        return false;
-    }
-
-    // get the module for the translation unit
-    result.request->getModule(translation_unit_index, result.module.writeRef());
     return result.module != nullptr;
 }
 
@@ -291,8 +293,8 @@ bool CompilerWrapper::reflect(ShaderEntryPoints entries, ReflectResultInternal& 
     }
 
     // find all required shader entry points
-    Vector<slang::IComponentType*>            component_types(modules.begin(), modules.end());
-    Vector<Slang::ComPtr<slang::IEntryPoint>> entry_points;
+    Vector<slang::IComponentType*>     component_types(modules.begin(), modules.end());
+    Vector<ComPtr<slang::IEntryPoint>> entry_points;
     for (auto& entry : entries) {
         auto module = reinterpret_cast<CompileResultInternal*>(entry.module.handle);
         auto entryp = module->get_entry_point(entry.entry);
@@ -301,9 +303,9 @@ bool CompilerWrapper::reflect(ShaderEntryPoints entries, ReflectResultInternal& 
     }
 
     // create a composed program for reflection
-    Slang::ComPtr<slang::IComponentType> composed_program;
+    ComPtr<slang::IComponentType> composed_program;
     {
-        Slang::ComPtr<slang::IBlob> diagnostics;
+        ComPtr<slang::IBlob> diagnostics;
 
         SlangResult result = session->createCompositeComponentType(
             component_types.data(),
@@ -315,15 +317,15 @@ bool CompilerWrapper::reflect(ShaderEntryPoints entries, ReflectResultInternal& 
     }
 
     // link the program
-    Slang::ComPtr<slang::IComponentType> linked_program;
+    ComPtr<slang::IComponentType> linked_program;
     {
-        Slang::ComPtr<slang::IBlob> diagnostics;
+        ComPtr<slang::IBlob> diagnostics;
 
-        SlangResult result = composed_program->link(
+        auto res = composed_program->link(
             linked_program.writeRef(),
             diagnostics.writeRef());
         diagnose_if_needed(diagnostics);
-        SLANG_RETURN_FALSE_ON_FAIL(result);
+        SLANG_RETURN_FALSE_ON_FAIL(res);
     }
 
     // associate stages with ICompileRequests*
@@ -333,17 +335,15 @@ bool CompilerWrapper::reflect(ShaderEntryPoints entries, ReflectResultInternal& 
         auto refl   = layout->findEntryPointByName(entry.entry);
         uint index  = get_shader_entry_point_index(layout, refl);
         auto stage  = to_stage(refl->getStage());
-        result.metadata.emplace(stage, std::make_pair(index, module->request.get()));
-    }
 
-    auto request = reinterpret_cast<CompileResultInternal*>(entries[0].module.handle)->request;
-    for (int ep = 0; ep < layout->getEntryPointCount(); ep++) {
-        bool used     = false;
-        auto category = SLANG_PARAMETER_CATEGORY_SUB_ELEMENT_REGISTER_SPACE;
-        for (uint reg = 0; reg < 4; reg++) {
-            request->isParameterLocationUsed(ep, 0, category, 0, reg, used);
-            std::cout << "=== register " << reg << " ====== used: " << used << std::endl;
-        }
+        slang::IMetadata*    metadata;
+        ComPtr<slang::IBlob> diagnostics;
+
+        auto res = linked_program->getEntryPointMetadata(index, 0, &metadata, diagnostics.writeRef());
+        diagnose_if_needed(diagnostics);
+        SLANG_RETURN_FALSE_ON_FAIL(res);
+
+        result.metadata.push_back(EntryMetadata{stage, metadata});
     }
 
     result.target = target;
@@ -353,11 +353,11 @@ bool CompilerWrapper::reflect(ShaderEntryPoints entries, ReflectResultInternal& 
 #pragma endregion CompilerWrapper
 
 #pragma region CompileResultInternal
-Slang::ComPtr<slang::IEntryPoint> CompileResultInternal::get_entry_point(CString entry) const
+ComPtr<slang::IEntryPoint> CompileResultInternal::get_entry_point(CString entry) const
 {
     // query entry point
-    Slang::ComPtr<slang::IEntryPoint> entry_point;
-    Slang::ComPtr<slang::IBlob>       diagnostics;
+    ComPtr<slang::IEntryPoint> entry_point;
+    ComPtr<slang::IBlob>       diagnostics;
     module->findEntryPointByName(entry, entry_point.writeRef());
 
     if (!entry_point) {
@@ -367,15 +367,15 @@ Slang::ComPtr<slang::IEntryPoint> CompileResultInternal::get_entry_point(CString
     return entry_point;
 }
 
-Slang::ComPtr<slang::IComponentType> CompileResultInternal::get_linked_program(CString entry) const
+ComPtr<slang::IComponentType> CompileResultInternal::get_linked_program(CString entry) const
 {
     auto composed_program = get_composed_program(entry);
     if (composed_program == nullptr)
         return nullptr;
 
     // link
-    Slang::ComPtr<slang::IComponentType> linked_program;
-    Slang::ComPtr<slang::IBlob>          diagnostics;
+    ComPtr<slang::IComponentType> linked_program;
+    ComPtr<slang::IBlob>          diagnostics;
 
     SlangResult result = composed_program->link(
         linked_program.writeRef(),
@@ -389,7 +389,7 @@ Slang::ComPtr<slang::IComponentType> CompileResultInternal::get_linked_program(C
     return linked_program;
 }
 
-Slang::ComPtr<slang::IComponentType> CompileResultInternal::get_composed_program(CString entry) const
+ComPtr<slang::IComponentType> CompileResultInternal::get_composed_program(CString entry) const
 {
     auto entry_point = get_entry_point(entry);
     if (entry_point == nullptr)
@@ -397,8 +397,8 @@ Slang::ComPtr<slang::IComponentType> CompileResultInternal::get_composed_program
 
     // compose modules + entry points
     std::array<slang::IComponentType*, 2> component_types = {module, entry_point};
-    Slang::ComPtr<slang::IComponentType>  composed_program;
-    Slang::ComPtr<slang::IBlob>           diagnostics;
+    ComPtr<slang::IComponentType>         composed_program;
+    ComPtr<slang::IBlob>                  diagnostics;
 
     SlangResult result = session->createCompositeComponentType(
         component_types.data(),
@@ -421,8 +421,8 @@ bool CompileResultInternal::get_shader_blob(CString entry, ShaderBlob& blob)
         return false;
 
     // kernel binary
-    Slang::ComPtr<slang::IBlob> spirv_code;
-    Slang::ComPtr<slang::IBlob> diagnostics;
+    ComPtr<slang::IBlob> spirv_code;
+    ComPtr<slang::IBlob> diagnostics;
 
     SlangResult result = linked_program->getEntryPointCode(
         0,
@@ -639,7 +639,7 @@ void ReflectResultInternal::create_automatic_constant_buffer(Bindings& bindings,
     val.binding = binding; // binding index within the space
     val.type    = GPUBindingResourceType::BUFFER;
     val.count   = 1;
-    fill_binding_stages(offset, val);
+    fill_binding_stages(val, node);
 
     bindings[space].push_back(val);
     get_logger()->info("[BINDGROUP] NAME:{}\t SPACE:{} BINDING:{} (AUTOMATIC)", node.layout->getName(), space, binding);
@@ -655,16 +655,16 @@ void ReflectResultInternal::create_binding(Bindings& bindings, AccessPathNode no
 
     auto val    = GPUBindGroupLayoutEntry{};
     val.binding = binding; // binding index within the space
-    fill_binding_type(type, val);
-    fill_binding_count(type, val);
-    fill_binding_stages(offset, val);
+    fill_binding_type(val, type);
+    fill_binding_count(val, type);
+    fill_binding_stages(val, node);
 
     // append to bindings
     bindings[space].push_back(val);
     get_logger()->info("[BINDGROUP] NAME:{}\t SPACE:{} BINDING:{}", node.layout->getName(), space, binding);
 }
 
-void ReflectResultInternal::fill_binding_count(slang::TypeLayoutReflection* type, GPUBindGroupLayoutEntry& entry) const
+void ReflectResultInternal::fill_binding_count(GPUBindGroupLayoutEntry& entry, slang::TypeLayoutReflection* type) const
 {
     // entry.bindless = false;
 
@@ -681,22 +681,21 @@ void ReflectResultInternal::fill_binding_count(slang::TypeLayoutReflection* type
     entry.count = count;
 }
 
-void ReflectResultInternal::fill_binding_stages(CumulativeOffset offset, GPUBindGroupLayoutEntry& entry) const
+void ReflectResultInternal::fill_binding_stages(GPUBindGroupLayoutEntry& entry, AccessPathNode path) const
 {
     // implement this using IMetadata (or ICompileRequests for older versions of Slang)
-    for (auto& kv : metadata) {
-        bool used     = false;
-        auto epindex  = kv.second.first;
-        auto request  = kv.second.second;
-        auto category = SLANG_PARAMETER_CATEGORY_SUB_ELEMENT_REGISTER_SPACE;
-        request->isParameterLocationUsed(epindex, 0, category, offset.space, offset.value, used);
-        if (used) entry.visibility = entry.visibility | kv.first;
-        std::cout << "epindex: " << epindex << " ";
-        std::cout << "stage: " << int(kv.first) << " space: " << offset.space << " register: " << offset.value << " used: " << used << std::endl;
+    for (auto& metadata : metadata) {
+        uint count = path.layout->getCategoryCount();
+        for (uint i = 0; i < count; i++) {
+            auto unit   = path.layout->getCategoryByIndex(i);
+            auto offset = path.calculate_cumulative_offset(unit);
+            if (path.is_parameter_used(metadata.metadata, unit, offset))
+                entry.visibility = entry.visibility | metadata.stage;
+        }
     }
 }
 
-void ReflectResultInternal::fill_binding_type(slang::TypeLayoutReflection* type, GPUBindGroupLayoutEntry& entry) const
+void ReflectResultInternal::fill_binding_type(GPUBindGroupLayoutEntry& entry, slang::TypeLayoutReflection* type) const
 {
     auto kind = type->getKind();
 
