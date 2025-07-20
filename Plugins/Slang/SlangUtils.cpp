@@ -592,16 +592,18 @@ void ReflectResultInternal::init_vertices(slang::ProgramLayout* program_layout)
         if (typ_layout->getParameterCategory() == slang::ParameterCategory::VertexInput) {
             if (typ_layout->getKind() != slang::TypeReflection::Kind::Struct) {
                 auto name           = node.layout->getName();
-                auto semantics      = node.layout->getSemanticName();
+                auto semantic_name  = node.layout->getSemanticName();
                 uint semantic_index = node.layout->getSemanticIndex();
                 uint binding_index  = node.layout->getBindingIndex();
-                get_logger()->info("[VTX INPUT] NAME: {}\t LOCATION: {} SEMANTICS: {}{}", name, binding_index, semantics, semantic_index);
+                get_logger()->info("[VTX INPUT] NAME: {}\t LOCATION: {} SEMANTICS: {}{}", name, binding_index, semantic_name, semantic_index);
+
+                semantic_names.push_front(semantic_name);
 
                 vertex_attributes.push_back(GPUVertexAttribute{});
                 auto& attribute            = vertex_attributes.back();
                 attribute.offset           = 0; // host-provided, cannot be reflected from shader
                 attribute.format           = infer_vertex_format(typ_layout);
-                attribute.shader_semantics = semantics;
+                attribute.shader_semantics = semantic_names.front().c_str();
                 attribute.shader_location  = target == CompileTarget::SPIRV ? binding_index : semantic_index;
 
                 name2attributes.emplace(name, static_cast<uint>(vertex_attributes.size() - 1));
@@ -719,7 +721,8 @@ void ReflectResultInternal::fill_binding_type(GPUBindGroupLayoutEntry& entry, sl
                 case SLANG_TEXTURE_CUBE:       view_dimension = GPUTextureViewDimension::CUBE;       break;
                 case SLANG_TEXTURE_CUBE_ARRAY: view_dimension = GPUTextureViewDimension::CUBE_ARRAY; break;
                 case SLANG_TEXTURE_1D_ARRAY:   assert(!!!"TEXTURE1D_ARRAY is not supported!");       break;
-                default:                                                                             break;
+                default:                           
+                    break;
             }
             // clang-format on
 
