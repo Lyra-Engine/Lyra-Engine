@@ -10,18 +10,18 @@ namespace lyra::wsi
 {
     struct WindowAPI
     {
-        using MainLoopCallback = std::function<void(WindowEvent)>;
-
         // api name
         CString (*get_api_name)();
-
-        void (*get_window_size)(WindowHandle handle, uint& width, uint& height);
-        void (*get_input_state)(WindowHandle handle, WindowInputState& state);
 
         bool (*create_window)(const WindowDescriptor& desc, WindowHandle& window);
         void (*delete_window)(WindowHandle window);
 
-        void (*run_in_loop)(WindowHandle window, MainLoopCallback&& callback);
+        bool (*bind_window_callback)(WindowHandle window, WindowCallback&& callback);
+
+        bool (*get_window_size)(WindowHandle window, uint& width, uint& height);
+        bool (*get_input_state)(WindowHandle window, WindowInputState& state);
+
+        void (*run_in_loop)();
     };
 
 } // namespace lyra::wsi

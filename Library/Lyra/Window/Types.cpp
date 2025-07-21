@@ -35,44 +35,15 @@ WindowAPI* Window::api()
     return WINDOW_PLUGIN->get_api();
 }
 
+void Window::loop()
+{
+    EventLoop::bind(*this);
+    EventLoop::run();
+}
+
 void Window::destroy()
 {
     Window::api()->delete_window(this->handle);
-}
-
-void Window::loop()
-{
-    Window::api()->run_in_loop(handle, [&](WindowEvent event) {
-        switch (event) {
-            case WindowEvent::START:
-                for (auto& cb : callbacks.start)
-                    cb();
-                break;
-            case WindowEvent::CLOSE:
-                // invoke callbacks in reverse order
-                for (auto it = callbacks.close.rbegin(); it != callbacks.close.rend(); it++)
-                    (*it)();
-                break;
-            case WindowEvent::TIMER:
-                for (auto& cb : callbacks.timer)
-                    cb();
-                break;
-            case WindowEvent::UPDATE:
-                inputs.update(handle);
-                for (auto& cb : callbacks.update)
-                    cb(inputs);
-                break;
-            case WindowEvent::RENDER:
-                for (auto& cb : callbacks.render)
-                    cb();
-                break;
-            case WindowEvent::RESIZE:
-                Window::api()->get_window_size(handle, info.width, info.height);
-                for (auto& cb : callbacks.resize)
-                    cb(info);
-                break;
-        }
-    });
 }
 
 WindowInput::WindowInput()
@@ -150,4 +121,44 @@ bool WindowInput::is_key_released(KeyButton key) const
     auto& prev_keyboard = previous_state().keyboard;
     return (prev_keyboard.status[(int)key] == ButtonState::ON) &&
            (curr_keyboard.status[(int)key] == ButtonState::OFF);
+}
+
+void EventLoop::bind(Window& window)
+{
+    Window::api()->bind_window_callback(window.handle, [=](WindowEvent event) mutable {
+        switch (event) {
+            case WindowEvent::START:
+                for (auto& cb : window.callbacks.start)
+                    cb();
+                break;
+            case WindowEvent::CLOSE:
+                // invoke callbacks in reverse order
+                for (auto it = window.callbacks.close.rbegin(); it != window.callbacks.close.rend(); it++)
+                    (*it)();
+                break;
+            case WindowEvent::TIMER:
+                for (auto& cb : window.callbacks.timer)
+                    cb();
+                break;
+            case WindowEvent::UPDATE:
+                window.inputs.update(window.handle);
+                for (auto& cb : window.callbacks.update)
+                    cb(window.inputs);
+                break;
+            case WindowEvent::RENDER:
+                for (auto& cb : window.callbacks.render)
+                    cb();
+                break;
+            case WindowEvent::RESIZE:
+                Window::api()->get_window_size(window.handle, window.info.width, window.info.height);
+                for (auto& cb : window.callbacks.resize)
+                    cb(window.info);
+                break;
+        }
+    });
+}
+
+void EventLoop::run()
+{
+    Window::api()->run_in_loop();
 }

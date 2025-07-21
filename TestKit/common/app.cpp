@@ -76,6 +76,7 @@ void TestApp::run_with_window()
     win->bind<WindowEvent::CLOSE>([&]() {
         RHI::get_current_device().wait();
     });
+
     win->loop();
 }
 
