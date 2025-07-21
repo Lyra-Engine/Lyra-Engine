@@ -13,7 +13,7 @@ void test_shader_vertex_attribute_reflection(CompileTarget target, CompileFlags 
     struct VertexOutput
     {
         float4 position : SV_POSITION;
-        float3 color;
+        float3 color    : TEXCOORD1;
     };
 
     struct Camera
@@ -84,7 +84,7 @@ void test_shader_vertex_attribute_reflection(CompileTarget target, CompileFlags 
     for (auto& attrib : attributes) {
         std::cout << "attrib[" << attrib.shader_location << "].offset = " << attrib.offset << std::endl;
         std::cout << "attrib[" << attrib.shader_location << "].location = " << attrib.shader_location << std::endl;
-        std::cout << "attrib[" << attrib.shader_location << "].semantics = " << attrib.shader_semantics << std::endl;
+        std::cout << "attrib[" << attrib.shader_location << "].semantic = " << attrib.shader_semantic << std::endl;
     }
 
     auto bindgroups = reflection->get_bind_group_layouts();
@@ -92,10 +92,10 @@ void test_shader_vertex_attribute_reflection(CompileTarget target, CompileFlags 
     for (auto& bindgroup : bindgroups) {
         std::cout << "bindgroup: " << bindgroup.label << std::endl;
         for (auto& entry : bindgroup.entries) {
-            std::cout << "- entries[" << entry.binding << "].type       = " << (int)entry.type << std::endl;
-            std::cout << "- entries[" << entry.binding << "].binding    = " << entry.binding << std::endl;
-            std::cout << "- entries[" << entry.binding << "].count      = " << entry.count << std::endl;
-            std::cout << "- entries[" << entry.binding << "].visibility =";
+            std::cout << "- entries[" << entry.binding.index << "].type       = " << (int)entry.type << std::endl;
+            std::cout << "- entries[" << entry.binding.index << "].binding    = " << entry.binding.index << std::endl;
+            std::cout << "- entries[" << entry.binding.index << "].count      = " << entry.count << std::endl;
+            std::cout << "- entries[" << entry.binding.index << "].visibility =";
             if (entry.visibility.contains(GPUShaderStage::VERTEX)) std::cout << " VERTEX";
             if (entry.visibility.contains(GPUShaderStage::FRAGMENT)) std::cout << " FRAGMENT";
             if (entry.visibility.contains(GPUShaderStage::COMPUTE)) std::cout << " COMPUTE";
@@ -108,5 +108,12 @@ TEST_CASE("slc::vulkan::shader_reflection" * doctest::description("shader vertex
 {
     test_shader_vertex_attribute_reflection(
         CompileTarget::SPIRV,
+        CompileFlag::DEBUG | CompileFlag::REFLECT);
+}
+
+TEST_CASE("slc::d3d12::shader_reflection" * doctest::description("shader vertex attributes reflection"))
+{
+    test_shader_vertex_attribute_reflection(
+        CompileTarget::DXIL,
         CompileFlag::DEBUG | CompileFlag::REFLECT);
 }

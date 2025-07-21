@@ -3,8 +3,8 @@
 CString texture_sampling_program = R"""(
 struct VertexInput
 {
-    float3 position : ATTRIBUTE0;
-    float2 texcoord : ATTRIBUTE1;
+    float3 position : POSITION;
+    float2 texcoord : TEXCOORD0;
 };
 
 struct VertexOutput
@@ -19,21 +19,20 @@ struct Camera
     float4x4 view;
 };
 
-[[vk::binding(0, 0)]]
-ConstantBuffer<Camera> camera : register(b0, space0);
+struct Params
+{
+    ConstantBuffer<Camera> camera;
+    Texture2D<float4>      texture;
+    SamplerState           sampler;
+};
 
-[[vk::binding(1, 0)]]
-Texture2D<float4> main_texture : register(t1, space0);
-
-// unfortunately have to break the binding groups due to D3D12 requirement
-[[vk::binding(2, 0)]]
-SamplerState main_sampler : register(s2, space0);
+ParameterBlock<Params> params;
 
 [shader("vertex")]
 VertexOutput vsmain(VertexInput input)
 {
     VertexOutput output;
-    output.position = mul(mul(float4(input.position, 1.0), camera.view), camera.proj);
+    output.position = mul(mul(float4(input.position, 1.0), params.camera.view), params.camera.proj);
     output.texcoord = input.texcoord;
     return output;
 }
@@ -41,23 +40,19 @@ VertexOutput vsmain(VertexInput input)
 [shader("fragment")]
 float4 fsmain(VertexOutput input) : SV_Target
 {
-    return main_texture.Sample(main_sampler, input.texcoord);
+    return params.texture.Sample(params.sampler, input.texcoord);
 }
 )""";
 
 struct TextureSamplingApp : public TestApp
 {
-    Uniform            uniform;
-    Geometry           geometry;
-    GPUShaderModule    vshader;
-    GPUShaderModule    fshader;
-    GPURenderPipeline  pipeline;
-    GPUPipelineLayout  playout;
-    GPUBindGroupLayout blayout;
-    GPUBuffer          staging;
-    GPUTexture         texture;
-    GPUTextureView     texview;
-    GPUSampler         sampler;
+    Uniform              uniform;
+    Geometry             geometry;
+    GPUBuffer            staging;
+    GPUTexture           texture;
+    GPUTextureView       texview;
+    GPUSampler           sampler;
+    SimpleRenderPipeline pipeline;
 
     explicit TextureSamplingApp(const TestAppDescriptor& desc) : TestApp(desc)
     {
@@ -122,113 +117,19 @@ struct TextureSamplingApp : public TestApp
             return compiler->compile(desc);
         });
 
-        vshader = execute([&]() {
-            auto code  = module->get_shader_blob("vsmain");
-            auto desc  = GPUShaderModuleDescriptor{};
-            desc.label = "vertex_shader";
-            desc.data  = code->data;
-            desc.size  = code->size;
-            return device.create_shader_module(desc);
+        auto reflection = compiler->reflect({
+            {*module, "vsmain"},
+            {*module, "fsmain"},
         });
 
-        fshader = execute([&]() {
-            auto code  = module->get_shader_blob("fsmain");
-            auto desc  = GPUShaderModuleDescriptor{};
-            desc.label = "fragment_shader";
-            desc.data  = code->data;
-            desc.size  = code->size;
-            return device.create_shader_module(desc);
-        });
-
-        blayout = execute([&]() {
-            Array<GPUBindGroupLayoutEntry, 3> entries;
-
-            // camera
-            {
-                auto& entry                     = entries.at(0);
-                entry.type                      = GPUBindingResourceType::BUFFER;
-                entry.binding                   = 0;
-                entry.count                     = 1;
-                entry.visibility                = GPUShaderStage::VERTEX;
-                entry.buffer.type               = GPUBufferBindingType::UNIFORM;
-                entry.buffer.has_dynamic_offset = false;
-            }
-
-            // texture
-            {
-                auto& entry                  = entries.at(1);
-                entry.type                   = GPUBindingResourceType::TEXTURE;
-                entry.binding                = 1;
-                entry.count                  = 1;
-                entry.visibility             = GPUShaderStage::FRAGMENT;
-                entry.texture.view_dimension = GPUTextureViewDimension::x2D;
-                entry.texture.multisampled   = false;
-            }
-
-            // sampler
-            {
-                auto& entry        = entries.at(2);
-                entry.type         = GPUBindingResourceType::SAMPLER;
-                entry.binding      = 2;
-                entry.count        = 1;
-                entry.visibility   = GPUShaderStage::FRAGMENT;
-                entry.sampler.type = GPUSamplerBindingType::FILTERING;
-            }
-
-            auto desc    = GPUBindGroupLayoutDescriptor{};
-            desc.entries = entries;
-            return device.create_bind_group_layout(desc);
-        });
-
-        playout = execute([&]() {
-            Array<GPUBindGroupLayoutHandle, 1> layouts = {blayout};
-
-            auto desc               = GPUPipelineLayoutDescriptor{};
-            desc.bind_group_layouts = layouts;
-            return device.create_pipeline_layout(desc);
-        });
-
-        pipeline = execute([&]() {
-            Array<GPUVertexAttribute, 2>    attributes;
-            Array<GPUVertexBufferLayout, 1> layouts;
-            Array<GPUColorTargetState, 1>   targets;
-
-            auto& position           = attributes.at(0);
-            position.format          = GPUVertexFormat::FLOAT32x3;
-            position.offset          = offsetof(Vertex, position);
-            position.shader_location = 0;
-
-            auto& texcoord           = attributes.at(1);
-            texcoord.format          = GPUVertexFormat::FLOAT32x2;
-            texcoord.offset          = offsetof(Vertex, uv);
-            texcoord.shader_location = 1;
-
-            auto& layout        = layouts.at(0);
-            layout.attributes   = attributes;
-            layout.array_stride = sizeof(Vertex);
-            layout.step_mode    = GPUVertexStepMode::VERTEX;
-
-            auto& target        = targets.at(0);
-            target.format       = get_backbuffer_format();
-            target.blend_enable = false;
-
-            auto desc                                  = GPURenderPipelineDescriptor{};
-            desc.layout                                = playout;
-            desc.primitive.cull_mode                   = GPUCullMode::NONE;
-            desc.primitive.topology                    = GPUPrimitiveTopology::TRIANGLE_LIST;
-            desc.primitive.front_face                  = GPUFrontFace::CCW;
-            desc.primitive.strip_index_format          = GPUIndexFormat::UINT32;
-            desc.depth_stencil.depth_compare           = GPUCompareFunction::ALWAYS;
-            desc.depth_stencil.depth_write_enabled     = false;
-            desc.multisample.alpha_to_coverage_enabled = false;
-            desc.multisample.count                     = 1;
-            desc.vertex.module                         = vshader;
-            desc.fragment.module                       = fshader;
-            desc.vertex.buffers                        = layout;
-            desc.fragment.targets                      = targets;
-
-            return device.create_render_pipeline(desc);
-        });
+        pipeline.vstride = sizeof(Vertex);
+        pipeline.attributes.push_back({"position", offsetof(Vertex, position)});
+        pipeline.attributes.push_back({"texcoord", offsetof(Vertex, uv)});
+        pipeline.init_color_state(get_backbuffer_format());
+        pipeline.init_vshader(device, module.get(), "vsmain");
+        pipeline.init_fshader(device, module.get(), "fsmain");
+        pipeline.init_playout(device, reflection.get());
+        pipeline.init_pipeline(device, reflection.get());
     }
 
     void render(const GPUSurfaceTexture& backbuffer) override
@@ -273,7 +174,7 @@ struct TextureSamplingApp : public TestApp
             }
 
             auto desc    = GPUBindGroupDescriptor{};
-            desc.layout  = blayout;
+            desc.layout  = pipeline.blayouts.at(0);
             desc.entries = entries;
             return device.create_bind_group(desc);
         });
@@ -301,7 +202,7 @@ struct TextureSamplingApp : public TestApp
         command.begin_render_pass(render_pass);
         command.set_viewport(0, 0, desc.width, desc.height);
         command.set_scissor_rect(0, 0, desc.width, desc.height);
-        command.set_pipeline(pipeline);
+        command.set_pipeline(pipeline.pipeline);
         command.set_vertex_buffer(0, geometry.vbuffer);
         command.set_index_buffer(geometry.ibuffer, GPUIndexFormat::UINT32);
         command.set_bind_group(0, bind_group);

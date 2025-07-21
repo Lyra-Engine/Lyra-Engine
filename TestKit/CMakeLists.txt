@@ -8,6 +8,7 @@ target_sources(lyra-testkit PRIVATE
     ./common/geometry.cpp
     ./common/render.cpp
     ./common/texture.cpp
+    ./common/pipeline.cpp
     ./common/app.cpp
 )
 target_link_libraries(lyra-testkit PRIVATE stb doctest::doctest)

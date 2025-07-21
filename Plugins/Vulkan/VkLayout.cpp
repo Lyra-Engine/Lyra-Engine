@@ -74,7 +74,7 @@ VulkanBindGroupLayout::VulkanBindGroupLayout(const GPUBindGroupLayoutDescriptor&
     for (auto& entry : desc.entries) {
         auto type                  = infer_descriptor_type(entry);
         auto binding               = VkDescriptorSetLayoutBinding{};
-        binding.binding            = entry.binding;
+        binding.binding            = entry.binding.index;
         binding.descriptorCount    = entry.count;
         binding.descriptorType     = type;
         binding.stageFlags         = vkenum(entry.visibility);
@@ -89,7 +89,7 @@ VulkanBindGroupLayout::VulkanBindGroupLayout(const GPUBindGroupLayoutDescriptor&
             bindingflags_info.pBindingFlags = flags;
     }
 
-    layout   = VK_NULL_HANDLE;
+    layout = VK_NULL_HANDLE;
     // bindless = desc.bindless;
 
     if (!bindings.empty()) {

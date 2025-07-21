@@ -553,7 +553,7 @@ void ReflectResultInternal::init_bindings(slang::ProgramLayout* program_layout)
 
                 // ParameterBlock will automatically introduce a constant buffer binding if ordinary types are observed.
                 if (typ_layout->getSize())
-                    this->create_automatic_constant_buffer(bind_groups, node);
+                    create_automatic_constant_buffer(node);
 
                 return WalkAction::CONTINUE;
             case slang::TypeReflection::Kind::Resource:
@@ -561,7 +561,7 @@ void ReflectResultInternal::init_bindings(slang::ProgramLayout* program_layout)
             case slang::TypeReflection::Kind::TextureBuffer:
             case slang::TypeReflection::Kind::ConstantBuffer:
             case slang::TypeReflection::Kind::ShaderStorageBuffer:
-                this->create_binding(bind_groups, node);
+                create_binding(node);
                 return WalkAction::SKIP;
             default:
                 return WalkAction::CONTINUE;
@@ -600,11 +600,11 @@ void ReflectResultInternal::init_vertices(slang::ProgramLayout* program_layout)
                 semantic_names.push_front(semantic_name);
 
                 vertex_attributes.push_back(GPUVertexAttribute{});
-                auto& attribute            = vertex_attributes.back();
-                attribute.offset           = 0; // host-provided, cannot be reflected from shader
-                attribute.format           = infer_vertex_format(typ_layout);
-                attribute.shader_semantics = semantic_names.front().c_str();
-                attribute.shader_location  = target == CompileTarget::SPIRV ? binding_index : semantic_index;
+                auto& attribute           = vertex_attributes.back();
+                attribute.offset          = 0; // host-provided, cannot be reflected from shader
+                attribute.format          = infer_vertex_format(typ_layout);
+                attribute.shader_semantic = semantic_names.front().c_str();
+                attribute.shader_location = target == CompileTarget::SPIRV ? binding_index : semantic_index;
 
                 name2attributes.emplace(name, static_cast<uint>(vertex_attributes.size() - 1));
             }
@@ -630,24 +630,24 @@ void ReflectResultInternal::record_parameter_block_space(AccessPathNode path)
     name2bindgroups.emplace(name, offset.space);
 }
 
-void ReflectResultInternal::create_automatic_constant_buffer(Bindings& bindings, AccessPathNode node)
+void ReflectResultInternal::create_automatic_constant_buffer(AccessPathNode node)
 {
     auto offset = node.calculate_cumulative_offset();
 
     uint space   = offset.space;
     uint binding = offset.value;
 
-    auto val    = GPUBindGroupLayoutEntry{};
-    val.binding = binding; // binding index within the space
-    val.type    = GPUBindingResourceType::BUFFER;
-    val.count   = 1;
+    auto val  = GPUBindGroupLayoutEntry{};
+    val.type  = GPUBindingResourceType::BUFFER;
+    val.count = 1;
+    fill_binding_index(val, offset);
     fill_binding_stages(val, node);
 
-    bindings[space].push_back(val);
+    bind_groups[space].push_back(val);
     get_logger()->info("[BINDGROUP] NAME:{}\t SPACE:{} BINDING:{} (AUTOMATIC)", node.layout->getName(), space, binding);
 }
 
-void ReflectResultInternal::create_binding(Bindings& bindings, AccessPathNode node)
+void ReflectResultInternal::create_binding(AccessPathNode node)
 {
     auto type   = node.layout->getTypeLayout();
     auto offset = node.calculate_cumulative_offset();
@@ -655,15 +655,36 @@ void ReflectResultInternal::create_binding(Bindings& bindings, AccessPathNode no
     uint space   = offset.space;
     uint binding = offset.value;
 
-    auto val    = GPUBindGroupLayoutEntry{};
-    val.binding = binding; // binding index within the space
+    auto val = GPUBindGroupLayoutEntry{};
+    std::memset(&val, 1, sizeof(val)); // completely clear this struct
+
+    val.binding.index = binding; // binding index within the space
     fill_binding_type(val, type);
+    fill_binding_index(val, offset);
     fill_binding_count(val, type);
     fill_binding_stages(val, node);
 
     // append to bindings
-    bindings[space].push_back(val);
+    bind_groups[space].push_back(val);
     get_logger()->info("[BINDGROUP] NAME:{}\t SPACE:{} BINDING:{}", node.layout->getName(), space, binding);
+}
+
+void ReflectResultInternal::fill_binding_index(GPUBindGroupLayoutEntry& entry, CumulativeOffset offset) const
+{
+    uint existing_binding_count = 0;
+
+    auto it = bind_groups.find((uint)offset.space);
+    if (it != bind_groups.end())
+        existing_binding_count = static_cast<uint>(it->second.size());
+
+    if (target == CompileTarget::SPIRV) {
+        entry.binding.index          = offset.value;
+        entry.binding.register_index = 0; // register index does NOT matter
+        return;
+    } else {
+        entry.binding.index          = existing_binding_count;
+        entry.binding.register_index = offset.value;
+    }
 }
 
 void ReflectResultInternal::fill_binding_count(GPUBindGroupLayoutEntry& entry, slang::TypeLayoutReflection* type) const
@@ -721,7 +742,7 @@ void ReflectResultInternal::fill_binding_type(GPUBindGroupLayoutEntry& entry, sl
                 case SLANG_TEXTURE_CUBE:       view_dimension = GPUTextureViewDimension::CUBE;       break;
                 case SLANG_TEXTURE_CUBE_ARRAY: view_dimension = GPUTextureViewDimension::CUBE_ARRAY; break;
                 case SLANG_TEXTURE_1D_ARRAY:   assert(!!!"TEXTURE1D_ARRAY is not supported!");       break;
-                default:                           
+                default:
                     break;
             }
             // clang-format on
@@ -785,9 +806,10 @@ void ReflectResultInternal::fill_binding_type(GPUBindGroupLayoutEntry& entry, sl
             return;
         case slang::TypeReflection::Kind::ConstantBuffer:
         default:
-            entry.type                    = GPUBindingResourceType::BUFFER;
-            entry.buffer.type             = GPUBufferBindingType::UNIFORM;
-            entry.buffer.min_binding_size = type->getSize();
+            entry.type                      = GPUBindingResourceType::BUFFER;
+            entry.buffer.type               = GPUBufferBindingType::UNIFORM;
+            entry.buffer.has_dynamic_offset = false;
+            entry.buffer.min_binding_size   = type->getSize();
             return;
     }
 }

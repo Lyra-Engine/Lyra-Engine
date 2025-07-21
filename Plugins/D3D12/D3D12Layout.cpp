@@ -27,7 +27,7 @@ D3D12_DESCRIPTOR_RANGE_TYPE infer_texture_descriptor_type(const GPUTextureBindin
 
 D3D12_DESCRIPTOR_RANGE_TYPE infer_storage_texture_descriptor_type(const GPUStorageTextureBindingLayout&)
 {
-    return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+    return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
 }
 
 D3D12_DESCRIPTOR_RANGE_TYPE infer_bvh_descriptor_type(const GPUBVHBindingLayout&)
@@ -235,7 +235,7 @@ D3D12BindGroupLayout::D3D12BindGroupLayout(const GPUBindGroupLayoutDescriptor& d
     uint sampler_count = 0;
     uint default_count = 0;
     for (const auto& entry : desc.entries) {
-        binding_count = std::max(binding_count, entry.binding + 1);
+        binding_count = std::max(binding_count, (uint)entry.binding.index + 1);
         if (entry.type == GPUBindingResourceType::SAMPLER)
             sampler_count++;
         else
@@ -252,7 +252,7 @@ D3D12BindGroupLayout::D3D12BindGroupLayout(const GPUBindGroupLayoutDescriptor& d
         D3D12_DESCRIPTOR_RANGE1 range{};
 
         // range info
-        range.BaseShaderRegister                = entry.binding;
+        range.BaseShaderRegister                = entry.binding.register_index;
         range.NumDescriptors                    = entry.count;
         range.RegisterSpace                     = 0; // NOTE: need to be changed later in the pipeline layout
         range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
@@ -275,7 +275,7 @@ D3D12BindGroupLayout::D3D12BindGroupLayout(const GPUBindGroupLayoutDescriptor& d
         stages = stages | entry.visibility;
 
         // binding info
-        auto& binding = bindings.at(entry.binding);
+        auto& binding = bindings.at(entry.binding.index);
         binding.type  = range.RangeType;
         binding.count = entry.count;
     }

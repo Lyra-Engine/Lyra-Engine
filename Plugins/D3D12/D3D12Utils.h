@@ -9,6 +9,7 @@
 #include <wrl/client.h>
 using Microsoft::WRL::ComPtr;
 
+#include <Lyra/Common/Enums.h>
 #include <Lyra/Common/Logger.h>
 #include <Lyra/Common/Msgbox.h>
 #include <Lyra/Common/Slotmap.h>

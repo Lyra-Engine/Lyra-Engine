@@ -159,6 +159,22 @@ namespace lyra::rhi
         }
     };
 
+    // NOTE: Non-WebGPU standard
+    struct GPUBindingIndex
+    {
+        // index is the same as Vulkan style flattened binding,
+        // expected to be unique within the bind group.
+        uint16_t index = 0;
+
+        // register_type and register_index are D3D12 specific fields,
+        // because D3D12 uses spaced registers instead of flattened indexed bindings.
+        // Therefore, for robust bind group layout creation, it is necessary to specify
+        // both binding index and register* info.
+        // Users are expected to use the reflection or serialization/deserialization API
+        // to automatically populate these.
+        uint16_t register_index = 0;
+    };
+
     struct GPUSupportedFeatures
     {
         bool bgra8unorm_storage                 = false;
@@ -404,12 +420,15 @@ namespace lyra::rhi
         GPUBlendComponent alpha = {};
     };
 
+    // NOTE: shader_semantic is non-WebGPU standard, and only applicable to D3D12.
+    // Users are expected to use the reflection or serialization/deserialization API
+    // to automatically populate these.
     struct GPUVertexAttribute
     {
         GPUVertexFormat format;
         GPUSize64       offset;
         GPUIndex32      shader_location;
-        CString         shader_semantics = "ATTRIBUTE"; // NOTE: non-WebGPU standard, only applicable to D3D12
+        CString         shader_semantic = nullptr;
     };
 
     struct GPUVertexBufferLayout
@@ -469,7 +488,7 @@ namespace lyra::rhi
     struct GPUBindGroupLayoutEntry
     {
         GPUBindingResourceType type;
-        GPUIndex32             binding;
+        GPUBindingIndex        binding;
         GPUShaderStageFlags    visibility;
         GPUIndex32             count = 1; // NOTE: Non-WebGPU standard API
         union

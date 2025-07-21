@@ -15,5 +15,6 @@
 #include "./geometry.h"
 #include "./render.h"
 #include "./texture.h"
+#include "./pipeline.h"
 
 #endif // LYRA_TESTLIB_HELPER_H

@@ -58,7 +58,7 @@ D3D12Pipeline::D3D12Pipeline(const GPURenderPipelineDescriptor& desc)
 
         for (const auto& attribute : layout.attributes) {
             D3D12_INPUT_ELEMENT_DESC element = {};
-            element.SemanticName             = "ATTRIBUTE";
+            element.SemanticName             = attribute.shader_semantic;
             element.SemanticIndex            = attribute.shader_location;
             element.Format                   = d3d12enum(attribute.format);
             element.InputSlot                = static_cast<UINT>(buffer_index);

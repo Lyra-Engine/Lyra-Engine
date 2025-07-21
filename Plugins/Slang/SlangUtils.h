@@ -108,9 +108,10 @@ struct ReflectResultInternal
     void init_vertices(slang::ProgramLayout* program_layout);
 
     void record_parameter_block_space(AccessPathNode path);
-    void create_binding(Bindings& bindings, AccessPathNode path);
-    void create_automatic_constant_buffer(Bindings& bindings, AccessPathNode path);
+    void create_binding(AccessPathNode path);
+    void create_automatic_constant_buffer(AccessPathNode path);
     void fill_binding_type(GPUBindGroupLayoutEntry& entry, slang::TypeLayoutReflection* type) const;
+    void fill_binding_index(GPUBindGroupLayoutEntry& entry, CumulativeOffset offset) const;
     void fill_binding_count(GPUBindGroupLayoutEntry& entry, slang::TypeLayoutReflection* type) const;
     void fill_binding_stages(GPUBindGroupLayoutEntry& entry, AccessPathNode path) const;
     auto infer_texture_format(slang::TypeLayoutReflection* type) const -> GPUTextureFormat;

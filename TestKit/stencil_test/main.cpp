@@ -3,8 +3,8 @@
 CString stencil_test_program = R"""(
 struct VertexInput
 {
-    float3 position : ATTRIBUTE0;
-    float3 color    : ATTRIBUTE1;
+    float3 position : POSITION;
+    float3 color    : COLOR0;
 };
 
 struct VertexOutput
@@ -39,17 +39,13 @@ float4 fsmain(VertexOutput input) : SV_Target
 
 struct StencilTestApp : public TestApp
 {
-    Uniform            uniform;
-    Geometry           mask;
-    Geometry           geometry;
-    GPUShaderModule    vshader;
-    GPUShaderModule    fshader;
-    GPURenderPipeline  pipeline_mask;
-    GPURenderPipeline  pipeline_draw;
-    GPUPipelineLayout  playout;
-    GPUBindGroupLayout blayout;
-    GPUTexture         dsbuffer;
-    GPUTextureView     dsview;
+    Uniform              uniform;
+    Geometry             mask;
+    Geometry             geometry;
+    GPUTexture           dsbuffer;
+    GPUTextureView       dsview;
+    SimpleRenderPipeline pipeline_mask;
+    SimpleRenderPipeline pipeline_draw;
 
     explicit StencilTestApp(const TestAppDescriptor& desc) : TestApp(desc)
     {
@@ -102,140 +98,30 @@ struct StencilTestApp : public TestApp
             return compiler->compile(desc);
         });
 
-        vshader = execute([&]() {
-            auto code  = module->get_shader_blob("vsmain");
-            auto desc  = GPUShaderModuleDescriptor{};
-            desc.label = "vertex_shader";
-            desc.data  = code->data;
-            desc.size  = code->size;
-            return device.create_shader_module(desc);
+        auto reflection = compiler->reflect({
+            {*module, "vsmain"},
+            {*module, "fsmain"},
         });
 
-        fshader = execute([&]() {
-            auto code  = module->get_shader_blob("fsmain");
-            auto desc  = GPUShaderModuleDescriptor{};
-            desc.label = "fragment_shader";
-            desc.data  = code->data;
-            desc.size  = code->size;
-            return device.create_shader_module(desc);
-        });
+        pipeline_mask.vstride = sizeof(Vertex);
+        pipeline_mask.attributes.push_back({"position", offsetof(Vertex, position)});
+        pipeline_mask.attributes.push_back({"color", offsetof(Vertex, color)});
+        pipeline_mask.init_color_state(get_backbuffer_format(), false);
+        pipeline_mask.init_stencil_state(GPUTextureFormat::DEPTH24PLUS_STENCIL8);
+        pipeline_mask.init_vshader(device, module.get(), "vsmain");
+        pipeline_mask.init_fshader(device, module.get(), "fsmain");
+        pipeline_mask.init_playout(device, reflection.get());
+        pipeline_mask.init_pipeline(device, reflection.get());
 
-        blayout = execute([&]() {
-            auto entry                      = GPUBindGroupLayoutEntry{};
-            entry.type                      = GPUBindingResourceType::BUFFER;
-            entry.binding                   = 0;
-            entry.count                     = 1;
-            entry.visibility                = GPUShaderStage::VERTEX;
-            entry.buffer.type               = GPUBufferBindingType::UNIFORM;
-            entry.buffer.has_dynamic_offset = false;
-
-            auto desc    = GPUBindGroupLayoutDescriptor{};
-            desc.entries = entry;
-            return device.create_bind_group_layout(desc);
-        });
-
-        playout = execute([&]() {
-            auto desc               = GPUPipelineLayoutDescriptor{};
-            desc.bind_group_layouts = blayout.handle;
-            return device.create_pipeline_layout(desc);
-        });
-
-        pipeline_mask = execute([&]() {
-            Array<GPUVertexAttribute, 2> attributes;
-
-            auto& position           = attributes.at(0);
-            position.format          = GPUVertexFormat::FLOAT32x3;
-            position.offset          = offsetof(Vertex, position);
-            position.shader_location = 0;
-
-            auto& color           = attributes.at(1);
-            color.format          = GPUVertexFormat::FLOAT32x3;
-            color.offset          = offsetof(Vertex, color);
-            color.shader_location = 1;
-
-            auto layout         = GPUVertexBufferLayout{};
-            layout.attributes   = attributes;
-            layout.array_stride = sizeof(Vertex);
-            layout.step_mode    = GPUVertexStepMode::VERTEX;
-
-            auto target         = GPUColorTargetState{};
-            target.format       = get_backbuffer_format();
-            target.blend_enable = false;
-            target.write_mask   = GPUColorWrite::NONE; // NOTE: disable color write
-
-            auto desc                                      = GPURenderPipelineDescriptor{};
-            desc.layout                                    = playout;
-            desc.primitive.cull_mode                       = GPUCullMode::NONE;
-            desc.primitive.topology                        = GPUPrimitiveTopology::TRIANGLE_LIST;
-            desc.primitive.front_face                      = GPUFrontFace::CCW;
-            desc.primitive.strip_index_format              = GPUIndexFormat::UINT32;
-            desc.depth_stencil.format                      = GPUTextureFormat::DEPTH24PLUS_STENCIL8;
-            desc.depth_stencil.depth_compare               = GPUCompareFunction::ALWAYS;
-            desc.depth_stencil.depth_write_enabled         = false;
-            desc.depth_stencil.stencil_read_mask           = 0x0;
-            desc.depth_stencil.stencil_write_mask          = 0x1;
-            desc.depth_stencil.stencil_front.depth_fail_op = GPUStencilOperation::KEEP;
-            desc.depth_stencil.stencil_front.compare       = GPUCompareFunction::ALWAYS;
-            desc.depth_stencil.stencil_front.pass_op       = GPUStencilOperation::REPLACE;
-            desc.depth_stencil.stencil_front.fail_op       = GPUStencilOperation::REPLACE;
-            desc.depth_stencil.stencil_back                = desc.depth_stencil.stencil_front;
-            desc.multisample.alpha_to_coverage_enabled     = false;
-            desc.multisample.count                         = 1;
-            desc.vertex.module                             = vshader;
-            desc.fragment.module                           = fshader;
-            desc.vertex.buffers                            = layout;
-            desc.fragment.targets                          = target;
-
-            return device.create_render_pipeline(desc);
-        });
-
-        pipeline_draw = execute([&]() {
-            Array<GPUVertexAttribute, 2> attributes;
-
-            auto& position           = attributes.at(0);
-            position.format          = GPUVertexFormat::FLOAT32x3;
-            position.offset          = offsetof(Vertex, position);
-            position.shader_location = 0;
-
-            auto& color           = attributes.at(1);
-            color.format          = GPUVertexFormat::FLOAT32x3;
-            color.offset          = offsetof(Vertex, color);
-            color.shader_location = 1;
-
-            auto layout         = GPUVertexBufferLayout{};
-            layout.attributes   = attributes;
-            layout.array_stride = sizeof(Vertex);
-            layout.step_mode    = GPUVertexStepMode::VERTEX;
-
-            auto target         = GPUColorTargetState{};
-            target.format       = get_backbuffer_format();
-            target.blend_enable = false;
-
-            auto desc                                      = GPURenderPipelineDescriptor{};
-            desc.layout                                    = playout;
-            desc.primitive.cull_mode                       = GPUCullMode::NONE;
-            desc.primitive.topology                        = GPUPrimitiveTopology::TRIANGLE_LIST;
-            desc.primitive.front_face                      = GPUFrontFace::CCW;
-            desc.primitive.strip_index_format              = GPUIndexFormat::UINT32;
-            desc.depth_stencil.format                      = GPUTextureFormat::DEPTH24PLUS_STENCIL8;
-            desc.depth_stencil.depth_compare               = GPUCompareFunction::ALWAYS;
-            desc.depth_stencil.depth_write_enabled         = true;
-            desc.depth_stencil.stencil_read_mask           = 0x1;
-            desc.depth_stencil.stencil_write_mask          = 0x0;
-            desc.depth_stencil.stencil_front.depth_fail_op = GPUStencilOperation::KEEP;
-            desc.depth_stencil.stencil_front.compare       = GPUCompareFunction::EQUAL;
-            desc.depth_stencil.stencil_front.pass_op       = GPUStencilOperation::KEEP; // don't modify stencil
-            desc.depth_stencil.stencil_front.fail_op       = GPUStencilOperation::KEEP; // don't modify stencil
-            desc.depth_stencil.stencil_back                = desc.depth_stencil.stencil_front;
-            desc.multisample.alpha_to_coverage_enabled     = false;
-            desc.multisample.count                         = 1;
-            desc.vertex.module                             = vshader;
-            desc.fragment.module                           = fshader;
-            desc.vertex.buffers                            = layout;
-            desc.fragment.targets                          = target;
-
-            return device.create_render_pipeline(desc);
-        });
+        pipeline_draw.vstride = sizeof(Vertex);
+        pipeline_draw.attributes.push_back({"position", offsetof(Vertex, position)});
+        pipeline_draw.attributes.push_back({"color", offsetof(Vertex, color)});
+        pipeline_draw.init_color_state(get_backbuffer_format());
+        pipeline_draw.init_depth_stencil_state(GPUTextureFormat::DEPTH24PLUS_STENCIL8);
+        pipeline_draw.init_vshader(device, module.get(), "vsmain");
+        pipeline_draw.init_fshader(device, module.get(), "fsmain");
+        pipeline_draw.init_playout(device, reflection.get());
+        pipeline_draw.init_pipeline(device, reflection.get());
     }
 
     void render_mask(GPUCommandBuffer& command, const GPUSurfaceTexture& backbuffer, const GPUBindGroup& bind_group)
@@ -267,7 +153,7 @@ struct StencilTestApp : public TestApp
         command.begin_render_pass(render_pass);
         command.set_viewport(0, 0, desc.width, desc.height);
         command.set_scissor_rect(0, 0, desc.width, desc.height);
-        command.set_pipeline(pipeline_mask);
+        command.set_pipeline(pipeline_mask.pipeline);
         command.set_vertex_buffer(0, mask.vbuffer);
         command.set_index_buffer(mask.ibuffer, GPUIndexFormat::UINT32);
         command.set_bind_group(0, bind_group);
@@ -305,7 +191,7 @@ struct StencilTestApp : public TestApp
         command.begin_render_pass(render_pass);
         command.set_viewport(0, 0, desc.width, desc.height);
         command.set_scissor_rect(0, 0, desc.width, desc.height);
-        command.set_pipeline(pipeline_draw);
+        command.set_pipeline(pipeline_draw.pipeline);
         command.set_vertex_buffer(0, geometry.vbuffer);
         command.set_index_buffer(geometry.ibuffer, GPUIndexFormat::UINT32);
         command.set_bind_group(0, bind_group);
@@ -335,7 +221,7 @@ struct StencilTestApp : public TestApp
             entry.buffer.size   = 0;
 
             auto desc    = GPUBindGroupDescriptor{};
-            desc.layout  = blayout;
+            desc.layout  = pipeline_mask.blayouts.at(0);
             desc.entries = entry;
             return device.create_bind_group(desc);
         });

@@ -70,7 +70,7 @@ def list_tests(args):
     return parse_tests(output)
 
 def filter_env_tests(tests):
-    filtered_tests = []
+    filtered_tests = tests
     filter_key = os.environ.get("LYRA_TESTKIT_FILTER", None)
     if filter_key:
         filtered_tests = [test for test in tests if filter_key in test["name"]]
@@ -79,6 +79,7 @@ def filter_env_tests(tests):
 def filter_rhi_tests(tests):
     filtered_tests = []
     for test in tests:
+        print(test)
         if test["components"][0] == "rhi":
             filtered_tests.append(test)
     return filter_env_tests(filtered_tests)

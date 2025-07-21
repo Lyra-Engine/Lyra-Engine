@@ -3,8 +3,8 @@
 CString graphics_pipeline_program = R"""(
 struct VertexInput
 {
-    float3 position : ATTRIBUTE0;
-    float3 color    : ATTRIBUTE1;
+    float3 position : POSITION;
+    float3 color    : COLOR0;
 };
 
 struct VertexOutput
@@ -39,13 +39,9 @@ float4 fsmain(VertexOutput input) : SV_Target
 
 struct GraphicsPipelineApp : public TestApp
 {
-    Uniform            uniform;
-    Geometry           geometry;
-    GPUShaderModule    vshader;
-    GPUShaderModule    fshader;
-    GPURenderPipeline  pipeline;
-    GPUPipelineLayout  playout;
-    GPUBindGroupLayout blayout;
+    Uniform              uniform;
+    Geometry             geometry;
+    SimpleRenderPipeline pipeline;
 
     explicit GraphicsPipelineApp(const TestAppDescriptor& desc) : TestApp(desc)
     {
@@ -76,83 +72,19 @@ struct GraphicsPipelineApp : public TestApp
             return compiler->compile(desc);
         });
 
-        vshader = execute([&]() {
-            auto code  = module->get_shader_blob("vsmain");
-            auto desc  = GPUShaderModuleDescriptor{};
-            desc.label = "vertex_shader";
-            desc.data  = code->data;
-            desc.size  = code->size;
-            return device.create_shader_module(desc);
+        auto reflection = compiler->reflect({
+            {*module, "vsmain"},
+            {*module, "fsmain"},
         });
 
-        fshader = execute([&]() {
-            auto code  = module->get_shader_blob("fsmain");
-            auto desc  = GPUShaderModuleDescriptor{};
-            desc.label = "fragment_shader";
-            desc.data  = code->data;
-            desc.size  = code->size;
-            return device.create_shader_module(desc);
-        });
-
-        blayout = execute([&]() {
-            auto entry                      = GPUBindGroupLayoutEntry{};
-            entry.type                      = GPUBindingResourceType::BUFFER;
-            entry.binding                   = 0;
-            entry.count                     = 1;
-            entry.visibility                = GPUShaderStage::VERTEX;
-            entry.buffer.type               = GPUBufferBindingType::UNIFORM;
-            entry.buffer.has_dynamic_offset = false;
-
-            auto desc    = GPUBindGroupLayoutDescriptor{};
-            desc.entries = entry;
-            return device.create_bind_group_layout(desc);
-        });
-
-        playout = execute([&]() {
-            auto desc               = GPUPipelineLayoutDescriptor{};
-            desc.bind_group_layouts = blayout.handle;
-            return device.create_pipeline_layout(desc);
-        });
-
-        pipeline = execute([&]() {
-            Array<GPUVertexAttribute, 2> attributes;
-
-            auto& position           = attributes.at(0);
-            position.format          = GPUVertexFormat::FLOAT32x3;
-            position.offset          = offsetof(Vertex, position);
-            position.shader_location = 0;
-
-            auto& color           = attributes.at(1);
-            color.format          = GPUVertexFormat::FLOAT32x3;
-            color.offset          = offsetof(Vertex, color);
-            color.shader_location = 1;
-
-            auto layout         = GPUVertexBufferLayout{};
-            layout.attributes   = attributes;
-            layout.array_stride = sizeof(Vertex);
-            layout.step_mode    = GPUVertexStepMode::VERTEX;
-
-            auto target         = GPUColorTargetState{};
-            target.format       = get_backbuffer_format();
-            target.blend_enable = false;
-
-            auto desc                                  = GPURenderPipelineDescriptor{};
-            desc.layout                                = playout;
-            desc.primitive.cull_mode                   = GPUCullMode::NONE;
-            desc.primitive.topology                    = GPUPrimitiveTopology::TRIANGLE_LIST;
-            desc.primitive.front_face                  = GPUFrontFace::CCW;
-            desc.primitive.strip_index_format          = GPUIndexFormat::UINT32;
-            desc.depth_stencil.depth_compare           = GPUCompareFunction::ALWAYS;
-            desc.depth_stencil.depth_write_enabled     = false;
-            desc.multisample.alpha_to_coverage_enabled = false;
-            desc.multisample.count                     = 1;
-            desc.vertex.module                         = vshader;
-            desc.fragment.module                       = fshader;
-            desc.vertex.buffers                        = layout;
-            desc.fragment.targets                      = target;
-
-            return device.create_render_pipeline(desc);
-        });
+        pipeline.vstride = sizeof(Vertex);
+        pipeline.attributes.push_back({"position", offsetof(Vertex, position)});
+        pipeline.attributes.push_back({"color", offsetof(Vertex, color)});
+        pipeline.init_color_state(get_backbuffer_format());
+        pipeline.init_vshader(device, module.get(), "vsmain");
+        pipeline.init_fshader(device, module.get(), "fsmain");
+        pipeline.init_playout(device, reflection.get());
+        pipeline.init_pipeline(device, reflection.get());
     }
 
     void render(const GPUSurfaceTexture& backbuffer) override
@@ -178,7 +110,7 @@ struct GraphicsPipelineApp : public TestApp
             entry.buffer.size   = 0;
 
             auto desc    = GPUBindGroupDescriptor{};
-            desc.layout  = blayout;
+            desc.layout  = pipeline.blayouts.at(0);
             desc.entries = entries;
             return device.create_bind_group(desc);
         });
@@ -206,7 +138,7 @@ struct GraphicsPipelineApp : public TestApp
         command.begin_render_pass(render_pass);
         command.set_viewport(0, 0, desc.width, desc.height);
         command.set_scissor_rect(0, 0, desc.width, desc.height);
-        command.set_pipeline(pipeline);
+        command.set_pipeline(pipeline.pipeline);
         command.set_vertex_buffer(0, geometry.vbuffer);
         command.set_index_buffer(geometry.ibuffer, GPUIndexFormat::UINT32);
         command.set_bind_group(0, bind_group);
