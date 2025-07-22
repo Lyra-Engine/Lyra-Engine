@@ -20,10 +20,10 @@ namespace lyra::rhi
         bool (*create_adapter)(GPUAdapter& adapter, const GPUAdapterDescriptor& descriptor);
         void (*delete_adapter)();
 
-        bool (*create_surface)(GPUSurface& surface, const GPUSurfaceDescriptor& descriptor);
-        void (*delete_surface)();
-        bool (*get_surface_extent)(GPUExtent2D& extent);
-        bool (*get_surface_format)(GPUTextureFormat& format);
+        bool (*create_surface)(GPUSurfaceHandle& surface, const GPUSurfaceDescriptor& descriptor);
+        void (*delete_surface)(GPUSurfaceHandle surface);
+        bool (*get_surface_extent)(GPUSurfaceHandle surface, GPUExtent2D& extent);
+        bool (*get_surface_format)(GPUSurfaceHandle surface, GPUTextureFormat& format);
 
         bool (*create_device)(const GPUDeviceDescriptor& descriptor);
         void (*delete_device)();
@@ -69,8 +69,11 @@ namespace lyra::rhi
         bool (*create_bind_group_layout)(GPUBindGroupLayoutHandle& layout, const GPUBindGroupLayoutDescriptor& descriptor);
         void (*delete_bind_group_layout)(GPUBindGroupLayoutHandle layout);
 
-        bool (*acquire_next_frame)(GPUTextureHandle& texture, GPUTextureViewHandle& view, GPUFenceHandle& image_available, GPUFenceHandle& render_complete, bool& suboptimal);
-        bool (*present_curr_frame)();
+        void (*new_frame)();
+        void (*end_frame)();
+
+        bool (*acquire_next_frame)(GPUSurfaceHandle surface, GPUTextureHandle& texture, GPUTextureViewHandle& view, GPUFenceHandle& image_available, GPUFenceHandle& render_complete, bool& suboptimal);
+        bool (*present_curr_frame)(GPUSurfaceHandle surface);
 
         void (*get_mapped_range)(GPUBufferHandle buffer, MappedBufferRange& range);
         void (*map_buffer)(GPUBufferHandle buffer, GPUMapMode mode, GPUSize64 offset, GPUSize64 size);

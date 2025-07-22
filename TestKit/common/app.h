@@ -29,6 +29,7 @@ struct TestApp
     auto get_backbuffer_format() const -> GPUTextureFormat;
 
     TestAppDescriptor       desc;
+    GPUSurface              swp;
     OwnedResource<Window>   win;
     OwnedResource<RHI>      rhi;
     OwnedResource<Compiler> compiler;

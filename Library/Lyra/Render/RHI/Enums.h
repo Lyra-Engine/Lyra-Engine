@@ -22,6 +22,7 @@ namespace lyra::rhi
 
     enum struct GPUObjectType : uint
     {
+        SURFACE,
         FENCE,
         BUFFER,
         SAMPLER,

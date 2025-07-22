@@ -1,5 +1,4 @@
 // windows native window
-#include "Lyra/Window/Types.h"
 #include <algorithm>
 #ifdef USE_PLATFORM_WINDOWS
 #define GLFW_EXPOSE_NATIVE_WIN32
@@ -22,8 +21,11 @@
 #include <Lyra/Common/Logger.h>
 #include <Lyra/Common/Plugin.h>
 #include <Lyra/Window/API.h>
+#include <Lyra/Window/Types.h>
+#include <Lyra/Render/RHI/Types.h>
 
 using namespace lyra;
+using namespace lyra::rhi;
 using namespace lyra::wsi;
 
 static Logger logger = init_stderr_logger("GLFW", LogLevel::trace);
@@ -327,7 +329,6 @@ void run_in_loop()
     }
 
     // glfw main loop
-    get_logger()->info("should exit on first sight: {}", global_event_loop.should_exit());
     while (!global_event_loop.should_exit()) {
 
         // UPDATE
@@ -338,14 +339,19 @@ void run_in_loop()
         }
 
         // RENDER
+        RHI::new_frame(); // prior to frame begin
         for (auto& window : global_event_loop.windows) {
             auto handle = reinterpret_cast<GLFWwindow*>(window.window);
             auto& user   = *static_cast<UserState*>(glfwGetWindowUserPointer(handle));
             user.callback(WindowEvent::RENDER);
         }
+        RHI::end_frame(); // post frame end
 
         glfwPollEvents();
     }
+
+    // wait until GPU device is idle
+    RHI::wait();
 }
 
 LYRA_EXPORT auto prepare() -> void

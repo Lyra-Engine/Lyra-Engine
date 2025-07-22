@@ -390,17 +390,6 @@ struct VulkanCommandPool
     AllocatedCommandBuffers secondary;
 };
 
-struct VulkanSwapFrame
-{
-    GPUTextureHandle     texture;
-    GPUTextureViewHandle view;
-    GPUFenceHandle       render_complete_semaphore;
-
-    // implementation in vkSwapchain.cpp
-    void init(VkImage image, VkFormat format, VkExtent2D extent);
-    void destroy();
-};
-
 struct VulkanFrame
 {
     // used to check command buffer usage,
@@ -408,9 +397,13 @@ struct VulkanFrame
     // frame id must match VulkanFrame's id
     uint32_t frame_id = 0u;
 
-    VulkanFence       inflight_fence;
-    GPUFenceHandle    image_available_semaphore; // must be binary semaphores
-    GPUFenceHandle    render_complete_semaphore; // NOTE: VulkanFrame does NOT own this.
+    // NOTE: VulkanFrame does NOT own these synchronization primitives.
+    // These should be copied from VulkanSwapchain::Frame when frame is selected.
+    VulkanFence     inflight_fence; // only the most recent one
+    GPUFenceHandle  image_available_semaphore;
+    GPUFenceHandle  render_complete_semaphore;
+    Vector<VkFence> existing_fences;
+
     VulkanCommandPool compute_command_pool;
     VulkanCommandPool graphics_command_pool;
     VulkanCommandPool transfer_command_pool;
@@ -441,6 +434,50 @@ struct VulkanFrame
     void destroy();
 };
 
+struct VulkanSwapchain
+{
+    struct Frame
+    {
+        GPUTextureHandle     texture;
+        GPUTextureViewHandle view;
+
+        // implementation in vkSwapchain.cpp
+        void init(VkImage image, VkFormat format, VkExtent2D extent);
+        void destroy();
+    };
+
+    // descriptor
+    GPUSurfaceDescriptor desc = {};
+
+    // surface object
+    VkSurfaceKHR surface = VK_NULL_HANDLE;
+
+    // swapchain object
+    VkSwapchainKHR swapchain = VK_NULL_HANDLE;
+
+    // objects for swapchain recreation
+    VkExtent2D      extent;
+    VkFormat        format;
+    VkColorSpaceKHR colorspace;
+
+    // swapchain frames
+    Vector<Frame> frames = {};
+
+    // fence objects
+    Vector<VulkanFence>    inflight_fences;
+    Vector<GPUFenceHandle> image_available_semaphores;
+    Vector<GPUFenceHandle> render_complete_semaphores;
+
+    // implementation in VkSwapchain.cpp
+    explicit VulkanSwapchain();
+    explicit VulkanSwapchain(const GPUSurfaceDescriptor& desc, VkSurfaceKHR surface);
+
+    void recreate();
+    void destroy();
+
+    bool valid() const { return swapchain != VK_NULL_HANDLE; }
+};
+
 struct VulkanRHI
 {
     RHIFlags           rhiflags       = 0;
@@ -452,7 +489,6 @@ struct VulkanRHI
     VkQueue            graphics_queue = VK_NULL_HANDLE;
     VkQueue            compute_queue  = VK_NULL_HANDLE;
     VkQueue            present_queue  = VK_NULL_HANDLE;
-    VkSwapchainKHR     swapchain      = VK_NULL_HANDLE;
     VolkDeviceTable    vtable         = {};
     VmaAllocator       alloc;
     QueueFamilyIndices queues;
@@ -461,21 +497,15 @@ struct VulkanRHI
     VkPhysicalDeviceProperties  props  = {};
     VkPhysicalDeviceProperties2 props2 = {};
 
-    // objects for swapchain recreation
-    GPUSurfaceDescriptor surface_desc = {};
-    VkExtent2D           swapchain_extent;
-    VkFormat             swapchain_format;
-    VkColorSpaceKHR      swapchain_colorspace;
-
     // frame objects
-    Vector<VulkanFrame>     frames           = {};
-    Vector<VulkanSwapFrame> swapchain_frames = {};
+    Vector<VulkanFrame> frames = {};
 
     // frame tracker
     uint current_frame_index = 0;
     uint current_image_index = 0;
 
     // collection of objects
+    VulkanResourceManager<VulkanSwapchain>       swapchains;
     VulkanResourceManager<VulkanSemaphore>       fences;
     VulkanResourceManager<VulkanBuffer>          buffers;
     VulkanResourceManager<VulkanTexture>         textures;
@@ -490,8 +520,6 @@ struct VulkanRHI
     VulkanResourceManager<VulkanBindGroupLayout> bind_group_layouts;
 
     auto current_frame() -> VulkanFrame& { return frames.at(current_frame_index % frames.size()); }
-    auto current_image() -> VulkanSwapFrame& { return swapchain_frames.at(current_image_index); }
-    void create_swapchain(); // implementation in VkSwapchain.cpp
 
     // debug label
     void set_debug_label(VkObjectType type, uint64_t handle, CString name)
@@ -517,10 +545,10 @@ namespace api
     void delete_instance();
 
     // surface apis
-    bool create_surface(GPUSurface& surface, const GPUSurfaceDescriptor& desc);
-    void delete_surface();
-    bool get_surface_extent(GPUExtent2D& extent);
-    bool get_surface_format(GPUTextureFormat& format);
+    bool create_surface(GPUSurfaceHandle& surface, const GPUSurfaceDescriptor& desc);
+    void delete_surface(GPUSurfaceHandle surface);
+    bool get_surface_extent(GPUSurfaceHandle surface, GPUExtent2D& extent);
+    bool get_surface_format(GPUSurfaceHandle surface, GPUTextureFormat& format);
 
     // adapter apis
     bool create_adapter(GPUAdapter& adapter, const GPUAdapterDescriptor& descriptor);
@@ -585,9 +613,13 @@ namespace api
     bool create_raytracing_pipeline(GPURayTracingPipelineHandle& handle, const GPURayTracingPipelineDescriptor& desc);
     void delete_raytracing_pipeline(GPURayTracingPipelineHandle pipeline);
 
+    // vulkan frame logic
+    void new_frame();
+    void end_frame();
+
     // vulkan swapchain
-    bool acquire_next_frame(GPUTextureHandle& texture, GPUTextureViewHandle& view, GPUFenceHandle& image_available_fence, GPUFenceHandle& render_complete_fence, bool& suboptimal);
-    bool present_curr_frame();
+    bool acquire_next_frame(GPUSurfaceHandle surface, GPUTextureHandle& texture, GPUTextureViewHandle& view, GPUFenceHandle& image_available_fence, GPUFenceHandle& render_complete_fence, bool& suboptimal);
+    bool present_curr_frame(GPUSurfaceHandle surface);
 
     // vulkan desciprtor
     bool create_bind_group(GPUBindGroupHandle& bind_group, const GPUBindGroupDescriptor& desc);

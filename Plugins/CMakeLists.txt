@@ -1,10 +1,10 @@
 add_subdirectory(Glfw)
 add_subdirectory(Slang)
 
-# build d3d12 backend on Windows
-if(WIN32)
-  add_subdirectory(D3D12)
-endif()
+# # build d3d12 backend on Windows
+# if(WIN32)
+#   add_subdirectory(D3D12)
+# endif()
 
 # # build metal backend on MacOS
 # if(APPLE)

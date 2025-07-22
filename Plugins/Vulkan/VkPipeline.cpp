@@ -68,12 +68,18 @@ VulkanPipeline::VulkanPipeline(const GPURenderPipelineDescriptor& desc)
         formats.push_back(vkenum(attachment.format));
     }
 
+    // use dummy swapchain extent for non-windowed workload,
+    // but also query from the first available swapchain
+    VkExtent2D extent = {1920, 1080};
+    if (!rhi->swapchains.data.empty())
+        extent = rhi->swapchains.data.at(0).extent;
+
     // dummy viewport (supposed to be replaced by vkCmdSetViewport)
     auto viewport     = VkViewport{};
     viewport.x        = 0;
-    viewport.y        = rhi->swapchain_extent.height;
-    viewport.width    = rhi->swapchain_extent.width;
-    viewport.height   = -rhi->swapchain_extent.height;
+    viewport.y        = extent.height;
+    viewport.width    = extent.width;
+    viewport.height   = -extent.height;
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
 
@@ -81,8 +87,8 @@ VulkanPipeline::VulkanPipeline(const GPURenderPipelineDescriptor& desc)
     auto scissor          = VkRect2D{};
     scissor.offset.x      = 0;
     scissor.offset.y      = 0;
-    scissor.extent.width  = rhi->swapchain_extent.width;
-    scissor.extent.height = rhi->swapchain_extent.height;
+    scissor.extent.width  = extent.width;
+    scissor.extent.height = extent.height;
 
     // allow viewport/scissor/etc to be reset at rendering time
     Vector<VkDynamicState> dynamics = {

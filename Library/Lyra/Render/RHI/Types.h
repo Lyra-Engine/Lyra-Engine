@@ -326,6 +326,7 @@ namespace lyra::rhi
 
     struct GPUSurfaceTexture : public GPUObjectBase
     {
+        GPUSurfaceHandle     surface;
         GPUTextureHandle     texture;
         GPUTextureViewHandle view;
         GPUFenceHandle       complete;
@@ -383,6 +384,8 @@ namespace lyra::rhi
 
     struct GPUSurface : public GPUObjectBase
     {
+        GPUSurfaceHandle handle;
+
         auto get_current_texture() const -> GPUSurfaceTexture;
 
         auto get_current_format() const -> GPUTextureFormat;
@@ -390,6 +393,8 @@ namespace lyra::rhi
         auto get_current_extent() const -> GPUExtent2D;
 
         auto destroy() const -> void;
+
+        operator GPUSurfaceHandle() const { return handle; }
     };
 
     struct GPUAdapter : public GPUObjectBase
@@ -412,11 +417,15 @@ namespace lyra::rhi
 
         static auto get_current_device() -> GPUDevice&;
 
-        static auto get_current_surface() -> GPUSurface&;
-
         static auto init(const RHIDescriptor& descriptor) -> OwnedResource<RHI>;
 
         static auto api() -> RenderAPI*;
+
+        static void wait();
+
+        static void new_frame();
+
+        static void end_frame();
 
         auto destroy() const -> void;
 

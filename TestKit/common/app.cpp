@@ -40,7 +40,7 @@ TestApp::TestApp(const TestAppDescriptor& app_desc) : desc(app_desc)
         desc.label        = "main_surface";
         desc.window       = win->handle;
         desc.present_mode = GPUPresentMode::Fifo;
-        rhi->request_surface(desc);
+        swp               = rhi->request_surface(desc);
     }
 
     // initialize compiler
@@ -66,8 +66,7 @@ void TestApp::run()
 void TestApp::run_with_window()
 {
     win->bind<WindowEvent::RENDER>([&]() {
-        auto& surface = RHI::get_current_surface();
-        auto  texture = surface.get_current_texture();
+        auto texture = this->swp.get_current_texture();
         if (!texture.suboptimal) {
             render(texture);
             texture.present();
@@ -85,7 +84,10 @@ void TestApp::run_without_window()
     GPUSurfaceTexture backbuffer;
     backbuffer.texture = render_target.texture.handle;
     backbuffer.view    = render_target.view.handle;
+
+    RHI::new_frame();
     render(backbuffer);
+    RHI::end_frame();
 
     auto& device = RHI::get_current_device();
     device.wait();
@@ -107,7 +109,7 @@ void TestApp::postprocessing(const GPUCommandBuffer& cmd, GPUTextureHandle backb
 GPUTextureFormat TestApp::get_backbuffer_format() const
 {
     if (desc.window) {
-        return RHI::get_current_surface().get_current_format();
+        return swp.get_current_format();
     } else {
         return GPUTextureFormat::RGBA8UNORM;
     }

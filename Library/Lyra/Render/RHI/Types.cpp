@@ -48,10 +48,24 @@ RenderAPI* RHI::api()
 void RHI::destroy() const
 {
     RHI::api()->wait_idle();
-    RHI::api()->delete_surface();
     RHI::api()->delete_device();
     RHI::api()->delete_adapter();
     RHI::api()->delete_instance();
+}
+
+void RHI::wait()
+{
+    RHI::api()->wait_idle();
+}
+
+void RHI::new_frame()
+{
+    RHI::api()->new_frame();
+}
+
+void RHI::end_frame()
+{
+    RHI::api()->end_frame();
 }
 
 GPUAdapter& RHI::get_current_adapter()
@@ -66,12 +80,6 @@ GPUDevice& RHI::get_current_device()
     return DEVICE;
 }
 
-GPUSurface& RHI::get_current_surface()
-{
-    static GPUSurface SURFACE = {};
-    return SURFACE;
-}
-
 GPUAdapter RHI::request_adapter(const GPUAdapterDescriptor& descriptor) const
 {
     auto& adapter = RHI::get_current_adapter();
@@ -81,8 +89,8 @@ GPUAdapter RHI::request_adapter(const GPUAdapterDescriptor& descriptor) const
 
 GPUSurface RHI::request_surface(const GPUSurfaceDescriptor& descriptor) const
 {
-    auto& surface = RHI::get_current_surface();
-    RHI::api()->create_surface(surface, descriptor);
+    GPUSurface surface;
+    RHI::api()->create_surface(surface.handle, descriptor);
     return surface;
 }
 #pragma endregion RHI
@@ -102,34 +110,35 @@ GPUDevice GPUAdapter::request_device(const GPUDeviceDescriptor& descriptor)
 GPUSurfaceTexture GPUSurface::get_current_texture() const
 {
     GPUSurfaceTexture texture;
-    RHI::api()->acquire_next_frame(texture.texture, texture.view, texture.available, texture.complete, texture.suboptimal);
+    texture.surface = handle;
+    RHI::api()->acquire_next_frame(handle, texture.texture, texture.view, texture.available, texture.complete, texture.suboptimal);
     return texture;
 }
 
 GPUTextureFormat GPUSurface::get_current_format() const
 {
     GPUTextureFormat format;
-    RHI::api()->get_surface_format(format);
+    RHI::api()->get_surface_format(handle, format);
     return format;
 }
 
 GPUExtent2D GPUSurface::get_current_extent() const
 {
     GPUExtent2D extent;
-    RHI::api()->get_surface_extent(extent);
+    RHI::api()->get_surface_extent(handle, extent);
     return extent;
 }
 
 void GPUSurface::destroy() const
 {
-    RHI::api()->delete_surface();
+    RHI::api()->delete_surface(handle);
 }
 #pragma endregion GPUSurface
 
 #pragma region GPUSurfaceTexture
 void GPUSurfaceTexture::present() const
 {
-    RHI::api()->present_curr_frame();
+    RHI::api()->present_curr_frame(surface);
 }
 #pragma endregion GPUSurfaceTexture
 

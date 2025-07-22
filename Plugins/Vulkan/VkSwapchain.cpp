@@ -1,19 +1,58 @@
 #include <algorithm>
-#include <Lyra/Window/API.h>
-#include <Lyra/Window/Types.h>
 #include "VkUtils.h"
 
-void VulkanRHI::create_swapchain()
+#pragma region VulkanSwapchain
+VulkanSwapchain::VulkanSwapchain()
+{
+    // do nothing
+}
+
+VulkanSwapchain::VulkanSwapchain(const GPUSurfaceDescriptor& desc, VkSurfaceKHR surface) : desc(desc), surface(surface)
+{
+    recreate();
+
+    uint image_frame_count = static_cast<uint>(frames.size());
+    uint logic_frame_count = static_cast<uint>(desc.frames_inflight);
+
+    // create inflight fences
+    uint existing_fence_count = static_cast<uint>(inflight_fences.size());
+    assert(existing_fence_count == 0u || existing_fence_count == logic_frame_count);
+    if (existing_fence_count == 0) {
+        inflight_fences.resize(logic_frame_count);
+        for (uint i = 0; i < logic_frame_count; i++)
+            inflight_fences.at(i) = VulkanFence(false);
+    }
+
+    // create image available semaphores
+    uint existing_image_available_semaphores = static_cast<uint>(image_available_semaphores.size());
+    assert(existing_image_available_semaphores == 0u || existing_image_available_semaphores == logic_frame_count);
+    if (existing_image_available_semaphores == 0) {
+        image_available_semaphores.resize(logic_frame_count);
+        for (uint i = 0; i < logic_frame_count; i++)
+            api::create_fence(image_available_semaphores.at(i), VK_SEMAPHORE_TYPE_BINARY);
+    }
+
+    // create render complete semaphores (each image must have its own render complete semaphore)
+    uint existing_render_complete_semaphores = static_cast<uint>(render_complete_semaphores.size());
+    assert(existing_render_complete_semaphores == 0u || existing_render_complete_semaphores == image_frame_count);
+    if (existing_render_complete_semaphores == 0) {
+        render_complete_semaphores.resize(image_frame_count);
+        for (uint i = 0; i < image_frame_count; i++)
+            api::create_fence(render_complete_semaphores.at(i), VK_SEMAPHORE_TYPE_BINARY);
+    }
+}
+
+void VulkanSwapchain::recreate()
 {
     auto rhi = get_rhi();
 
-    SwapchainSupportDetails swapchain_support = query_swapchain_support(rhi->adapter, rhi->surface);
+    SwapchainSupportDetails swapchain_support = query_swapchain_support(rhi->adapter, surface);
+    VkExtent2D              swapchain_extent  = choose_swap_extent(desc, swapchain_support.capabilities);
     VkSurfaceFormatKHR      surface_format    = choose_swap_surface_format(swapchain_support.formats);
     VkPresentModeKHR        present_mode      = choose_swap_present_mode(swapchain_support.present_modes);
-    VkExtent2D              extent            = choose_swap_extent(surface_desc, swapchain_support.capabilities);
 
     uint32_t image_count = std::clamp(
-        surface_desc.frames_inflight,
+        desc.frames_inflight,
         swapchain_support.capabilities.minImageCount,
         swapchain_support.capabilities.maxImageCount);
 
@@ -23,13 +62,13 @@ void VulkanRHI::create_swapchain()
     create_info.minImageCount    = image_count;
     create_info.imageFormat      = surface_format.format;
     create_info.imageColorSpace  = surface_format.colorSpace;
-    create_info.imageExtent      = extent;
+    create_info.imageExtent      = swapchain_extent;
     create_info.imageArrayLayers = 1;
     create_info.imageUsage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     create_info.clipped          = VK_TRUE;
     create_info.presentMode      = present_mode;
     create_info.preTransform     = swapchain_support.capabilities.currentTransform;
-    create_info.compositeAlpha   = vkenum(surface_desc.alpha_mode);
+    create_info.compositeAlpha   = vkenum(desc.alpha_mode);
 
     auto indices              = find_queue_family_indices(rhi->adapter, rhi->surface);
     uint queueFamilyIndices[] = {indices.graphics.value(), indices.present.value()};
@@ -41,14 +80,15 @@ void VulkanRHI::create_swapchain()
         create_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
     }
 
-    VkSwapchainKHR old_swapchain = rhi->swapchain;
-    if (rhi->swapchain != VK_NULL_HANDLE)
+    this->colorspace = surface_format.colorSpace;
+    this->format     = surface_format.format;
+    this->extent     = swapchain_extent;
+
+    VkSwapchainKHR old_swapchain = this->swapchain;
+    if (this->swapchain != VK_NULL_HANDLE)
         create_info.oldSwapchain = old_swapchain;
 
-    rhi->swapchain_colorspace = surface_format.colorSpace;
-    rhi->swapchain_format     = surface_format.format;
-    rhi->swapchain_extent     = extent;
-    vk_check(rhi->vtable.vkCreateSwapchainKHR(rhi->device, &create_info, nullptr, &rhi->swapchain));
+    vk_check(rhi->vtable.vkCreateSwapchainKHR(rhi->device, &create_info, nullptr, &swapchain));
 
     // delete the old swapchain
     if (old_swapchain != VK_NULL_HANDLE)
@@ -56,10 +96,10 @@ void VulkanRHI::create_swapchain()
 
     // get swapchain images
     uint count;
-    vk_check(rhi->vtable.vkGetSwapchainImagesKHR(rhi->device, rhi->swapchain, &count, nullptr));
+    vk_check(rhi->vtable.vkGetSwapchainImagesKHR(rhi->device, swapchain, &count, nullptr));
 
     Vector<VkImage> swapchain_images(count);
-    vk_check(rhi->vtable.vkGetSwapchainImagesKHR(rhi->device, rhi->swapchain, &count, swapchain_images.data()));
+    vk_check(rhi->vtable.vkGetSwapchainImagesKHR(rhi->device, swapchain, &count, swapchain_images.data()));
 
     // set names for swapchain images
     for (uint i = 0; i < count; i++) {
@@ -67,65 +107,78 @@ void VulkanRHI::create_swapchain()
         rhi->set_debug_label(VK_OBJECT_TYPE_IMAGE, (uint64_t)swapchain_images.at(i), name.c_str());
     }
 
-    // clean up swapchain data if mismatching size
-    if (rhi->swapchain_frames.size() != count) {
-        for (auto& swap_frame : rhi->swapchain_frames)
-            swap_frame.destroy();
-        rhi->swapchain_frames.clear();
-        rhi->swapchain_frames.resize(count);
-    }
-
     // create swapchain data
+    assert(frames.size() == 0 || frames.size() == count);
+    frames.resize(count);
     for (uint i = 0; i < count; i++)
-        rhi->swapchain_frames.at(i).init(swapchain_images.at(i), surface_format.format, extent);
+        frames.at(i).init(swapchain_images.at(i), surface_format.format, extent);
 
-    size_t current_frames = rhi->frames.size();
-    size_t desired_frames = surface_desc.frames_inflight;
-
-    // destroy additional logical frames
-    if (current_frames > desired_frames) {
-        for (size_t i = desired_frames; i < current_frames; i++)
-            rhi->frames.at(i).destroy();
-        rhi->frames.resize(surface_desc.frames_inflight);
-    }
-    // create logical frames in flight if not enough
-    if (current_frames < desired_frames) {
-        rhi->frames.resize(desired_frames);
-        for (size_t i = current_frames; i < desired_frames; i++)
+    // create frames if not already done so
+    uint existing_frames_count = static_cast<uint>(rhi->frames.size());
+    if (existing_frames_count < desc.frames_inflight) {
+        rhi->frames.resize(desc.frames_inflight);
+        for (uint i = existing_frames_count; i < desc.frames_inflight; i++)
             rhi->frames.at(i).init();
     }
-
-    // reset frame / image indices
-    rhi->current_frame_index = 0;
-    rhi->current_image_index = 0;
 }
 
-void VulkanSwapFrame::init(VkImage image, VkFormat format, VkExtent2D extent)
+void VulkanSwapchain::destroy()
 {
     auto rhi = get_rhi();
 
-    // clean up texture if already created
-    if (this->texture.valid())
-        fetch_resource(rhi->textures, texture).destroy();
+    // destroy frames
+    for (auto& frame : frames)
+        frame.destroy();
 
-    // clean up texture view if already created
-    if (this->view.valid())
-        fetch_resource(rhi->views, view).destroy();
+    // destroy fences
+    for (auto& fence : inflight_fences)
+        fence.destroy();
 
-    // reuse render complete semaphore if possible
-    if (!render_complete_semaphore.valid())
-        api::create_fence(render_complete_semaphore, VK_SEMAPHORE_TYPE_BINARY);
+    // destroy semaphores
+    for (auto& semaphore : image_available_semaphores)
+        api::delete_fence(semaphore);
+
+    // destroy semaphores
+    for (auto& semaphore : render_complete_semaphores)
+        api::delete_fence(semaphore);
+
+    // destroy swapchain
+    if (swapchain != VK_NULL_HANDLE) {
+        rhi->vtable.vkDestroySwapchainKHR(rhi->device, swapchain, nullptr);
+        swapchain = VK_NULL_HANDLE;
+    }
+
+    // surface does not needs to be destroyed
+    if (surface != VK_NULL_HANDLE) {
+        vkDestroySurfaceKHR(rhi->instance, surface, nullptr);
+        surface = VK_NULL_HANDLE;
+    }
+
+    frames.clear();
+    inflight_fences.clear();
+    image_available_semaphores.clear();
+    render_complete_semaphores.clear();
+}
+#pragma endregion VulkanSwapchain
+
+#pragma region VulkanSwapchainFrame
+void VulkanSwapchain::Frame::init(VkImage image, VkFormat format, VkExtent2D extent)
+{
+    auto rhi = get_rhi();
+
+    destroy();
 
     // re-create texture
     auto texture    = VulkanTexture{};
     texture.image   = image;
     texture.format  = format;
     texture.aspects = VK_IMAGE_ASPECT_COLOR_BIT;
+    texture.area    = extent;
     this->texture   = rhi->textures.add(texture);
 
     // re-create new texture view
     auto view = VulkanTextureView();
-    view.area = rhi->swapchain_extent; // record the render area
+    view.area = extent; // record the render area
 
     auto create_info = VkImageViewCreateInfo{};
     {
@@ -147,91 +200,32 @@ void VulkanSwapFrame::init(VkImage image, VkFormat format, VkExtent2D extent)
     this->view = rhi->views.add(view);
 }
 
-void VulkanSwapFrame::destroy()
+void VulkanSwapchain::Frame::destroy()
 {
     auto rhi = get_rhi();
 
-    // texture does not need to be deleted (but we can do it to free up texture handles)
-    fetch_resource(rhi->textures, texture).destroy();
-    fetch_resource(rhi->views, view).destroy();
-    fetch_resource(rhi->fences, render_complete_semaphore).destroy();
-
-    // remove from slotmap
-    rhi->views.remove(view.value);
-    rhi->textures.remove(texture.value);
-    rhi->fences.remove(render_complete_semaphore.value);
-}
-
-SwapchainSupportDetails query_swapchain_support(VkPhysicalDevice adapter, VkSurfaceKHR surface)
-{
-    SwapchainSupportDetails details;
-
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(adapter, surface, &details.capabilities);
-
-    uint format_count;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(adapter, surface, &format_count, nullptr);
-
-    if (format_count != 0) {
-        details.formats.resize(format_count);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(adapter, surface, &format_count, details.formats.data());
+    // clean up texture if already created
+    if (this->texture.valid()) {
+        fetch_resource(rhi->textures, texture).destroy();
+        rhi->textures.remove(texture.value);
+        this->texture.reset();
     }
 
-    uint present_mode_count;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(adapter, surface, &present_mode_count, nullptr);
-
-    if (present_mode_count != 0) {
-        details.present_modes.resize(present_mode_count);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(adapter, surface, &present_mode_count, details.present_modes.data());
+    // clean up texture view if already created
+    if (this->view.valid()) {
+        fetch_resource(rhi->views, view).destroy();
+        rhi->views.remove(view.value);
+        this->view.reset();
     }
-
-    return details;
 }
+#pragma endregion VulkanSwapchainFrame
 
-VkSurfaceFormatKHR choose_swap_surface_format(const Vector<VkSurfaceFormatKHR>& availableFormats)
-{
-    for (const auto& availableFormat : availableFormats) {
-        if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB &&
-            availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-            return availableFormat;
-        }
-    }
-    return availableFormats.at(0);
-}
-
-VkPresentModeKHR choose_swap_present_mode(const Vector<VkPresentModeKHR>& availablePresentModes)
-{
-    for (const auto& availablePresentMode : availablePresentModes) {
-        if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
-            return availablePresentMode;
-        }
-    }
-    return VK_PRESENT_MODE_FIFO_KHR;
-}
-
-VkExtent2D choose_swap_extent(const GPUSurfaceDescriptor& desc, const VkSurfaceCapabilitiesKHR& capabilities)
-{
-    if (capabilities.currentExtent.width != UINT32_MAX) {
-        return capabilities.currentExtent;
-    }
-
-    // query window size
-    uint width, height;
-    Window::api()->get_window_size(desc.window, width, height);
-
-    VkExtent2D actual_extent;
-    actual_extent.width  = width;
-    actual_extent.height = height;
-    actual_extent.width  = std::clamp(actual_extent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
-    actual_extent.height = std::clamp(actual_extent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
-    return actual_extent;
-}
-
-void default_swapchain_image_barrier(VkCommandBuffer command_buffer)
+void default_swapchain_image_barrier(const VulkanSwapchain& swp, VkCommandBuffer command_buffer)
 {
     auto rhi = get_rhi();
 
-    auto swap_frame = rhi->swapchain_frames.at(rhi->current_image_index);
-    auto texture    = fetch_resource(rhi->textures, swap_frame.texture);
+    auto frame   = swp.frames.at(rhi->current_image_index);
+    auto texture = fetch_resource(rhi->textures, frame.texture);
 
     auto barrier                            = VkImageMemoryBarrier{};
     barrier.sType                           = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -259,51 +253,80 @@ void default_swapchain_image_barrier(VkCommandBuffer command_buffer)
         1, &barrier);
 }
 
-// vulkan swapchain utils
-bool api::acquire_next_frame(GPUTextureHandle& texture, GPUTextureViewHandle& view, GPUFenceHandle& image_available_fence, GPUFenceHandle& render_complete_fence, bool& suboptimal)
+void api::new_frame()
 {
     auto rhi = get_rhi();
 
-    // query the current frame
-    auto& frame    = rhi->current_frame();
-    frame.frame_id = rhi->current_frame_index;
+    // wait for the current frame to complete
+    auto& frame = rhi->current_frame();
 
     // wait for inflight frame to complete
     frame.wait();
     frame.reset();
+
+    // clear all existing fences
+    frame.existing_fences.clear();
+}
+
+void api::end_frame()
+{
+    auto rhi = get_rhi();
+
+    // increment the current frame index
+    rhi->current_frame_index++;
+}
+
+// vulkan swapchain utils
+bool api::acquire_next_frame(GPUSurfaceHandle surface, GPUTextureHandle& texture, GPUTextureViewHandle& view, GPUFenceHandle& image_available_fence, GPUFenceHandle& render_complete_fence, bool& suboptimal)
+{
+    auto rhi = get_rhi();
+
+    // query the swapchain
+    auto& swp = fetch_resource(rhi->swapchains, surface);
+    auto  ind = rhi->current_frame_index % swp.desc.frames_inflight;
+
+    // query the current frame (and assign the synchronization primitives for this swapchain)
+    auto& frame                     = rhi->current_frame();
+    frame.frame_id                  = rhi->current_frame_index;
+    frame.inflight_fence            = swp.inflight_fences.at(ind);
+    frame.image_available_semaphore = swp.image_available_semaphores.at(ind);
+    frame.existing_fences.push_back(frame.inflight_fence.fence);
 
     // initialize suboptimal
     suboptimal = false;
 
     // acquire next frame
     auto semaphore = fetch_resource(rhi->fences, frame.image_available_semaphore);
-    auto result    = rhi->vtable.vkAcquireNextImageKHR(rhi->device, rhi->swapchain, UINT64_MAX, semaphore.semaphore, VK_NULL_HANDLE, &rhi->current_image_index);
+    auto result    = rhi->vtable.vkAcquireNextImageKHR(rhi->device, swp.swapchain, UINT64_MAX, semaphore.semaphore, VK_NULL_HANDLE, &rhi->current_image_index);
     if (result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR) {
         // recreate the swapchain if window resizes or moved to other displays
         api::wait_idle();
-        rhi->create_swapchain();
+        swp.recreate();
         suboptimal = true;
         return true;
     }
     vk_check(result);
 
     // update swapchain view (this must be done after current_image_index is updated)
-    auto& swap_frame = rhi->swapchain_frames.at(rhi->current_image_index);
+    auto& swap_frame = swp.frames.at(rhi->current_image_index);
     texture          = swap_frame.texture;
     view             = swap_frame.view;
 
-    // update fences (this must be done after current_image_index is updated)
-    image_available_fence = rhi->current_frame().image_available_semaphore;
-    render_complete_fence = rhi->current_image().render_complete_semaphore;
+    // track the render complete semaphore in frame (after acquiring the new image index)
+    frame.render_complete_semaphore = swp.render_complete_semaphores.at(rhi->current_image_index);
 
-    // also tracks the render complete semaphore in frame (for consistent synchronization)
-    frame.render_complete_semaphore = render_complete_fence;
+    // update fences (this must be done after current_image_index is updated)
+    image_available_fence = frame.image_available_semaphore;
+    render_complete_fence = frame.render_complete_semaphore;
     return true;
 }
 
-bool api::present_curr_frame()
+bool api::present_curr_frame(GPUSurfaceHandle surface)
 {
     auto rhi = get_rhi();
+
+    // query the swapchain
+    auto& swp = fetch_resource(rhi->swapchains, surface);
 
     // query the current frame (also update the frame index)
     auto& frame = rhi->current_frame();
@@ -317,7 +340,7 @@ bool api::present_curr_frame()
         auto  command_buffer_handle = frame.allocate(GPUQueueType::COMPUTE, true);
         auto& command_buffer        = frame.allocated_command_buffers.at(command_buffer_handle.value);
         command_buffer.begin();
-        default_swapchain_image_barrier(command_buffer.command_buffer);
+        default_swapchain_image_barrier(swp, command_buffer.command_buffer);
         command_buffer.end();
         command_buffer.wait(image_available_fence, GPUBarrierSync::NONE);
         command_buffer.signal(render_complete_fence, GPUBarrierSync::ALL);
@@ -331,7 +354,7 @@ bool api::present_curr_frame()
     present_info.waitSemaphoreCount = 1;
     present_info.pWaitSemaphores    = &render_complete_fence.semaphore;
     present_info.swapchainCount     = 1;
-    present_info.pSwapchains        = &rhi->swapchain;
+    present_info.pSwapchains        = &swp.swapchain;
     present_info.pImageIndices      = &rhi->current_image_index;
     present_info.pResults           = nullptr;
 
@@ -339,11 +362,10 @@ bool api::present_curr_frame()
     if (result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR) {
         // recreate the swapchain if window resizes or moved to other displays
         api::wait_idle();
-        rhi->create_swapchain();
+        swp.recreate();
         return true;
     }
 
     vk_check(result);
-    rhi->current_frame_index++;
     return true;
 }

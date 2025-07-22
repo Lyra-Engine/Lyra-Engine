@@ -50,6 +50,7 @@ namespace lyra::rhi
     using GPUHandle = Handle<GPUObjectType, E>;
 
     // typed GPU handle
+    using GPUSurfaceHandle            = GPUHandle<GPUObjectType::SURFACE>;
     using GPUFenceHandle              = GPUHandle<GPUObjectType::FENCE>;
     using GPUCommandEncoderHandle     = GPUHandle<GPUObjectType::COMMAND_ENCODER>;
     using GPUBufferHandle             = GPUHandle<GPUObjectType::BUFFER>;
