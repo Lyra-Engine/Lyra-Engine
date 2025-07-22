@@ -58,14 +58,14 @@ void api::delete_device()
 
     auto rhi = get_rhi();
 
-    // clean up remaining fences
+    // clean up remaining frames
     for (auto& frame : rhi->frames)
         frame.destroy();
 
-    // clean up remaining swapchain fences
-    for (auto& frame : rhi->swapchain_frames)
-        if (frame.valid())
-            frame.destroy();
+    // clean up remaining swapchains
+    for (auto& swapchain : rhi->swapchains.data)
+        if (swapchain.valid())
+            swapchain.destroy();
 
     // clean up remaining blases
     for (auto& blas : rhi->blases.data)
@@ -130,11 +130,6 @@ void api::delete_device()
 
     if (rhi->idle_fence.valid()) {
         rhi->idle_fence.destroy();
-    }
-
-    if (rhi->swapchain) {
-        rhi->swapchain->Release();
-        rhi->swapchain = nullptr;
     }
 
     if (rhi->transfer_queue) {

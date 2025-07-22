@@ -12,20 +12,38 @@ using namespace lyra::wsi;
 
 auto get_api_name() -> CString { return "D3D12"; }
 
-bool api::get_surface_extent(GPUExtent2D& extent)
+bool api::get_surface_extent(GPUSurfaceHandle surface, GPUExtent2D& extent)
 {
     auto rhi = get_rhi();
 
-    extent.width  = rhi->surface_extent.width;
-    extent.height = rhi->surface_extent.height;
+    auto& swapchain = fetch_resource(rhi->swapchains, surface);
+    extent.width    = swapchain.extent.width;
+    extent.height   = swapchain.extent.height;
     return true;
 }
 
-bool api::get_surface_format(GPUTextureFormat& format)
+bool api::get_surface_format(GPUSurfaceHandle surface, GPUTextureFormat& format)
 {
     auto rhi = get_rhi();
-    format   = rhi->surface_format;
+
+    auto& swapchain = fetch_resource(rhi->swapchains, surface);
+    format          = swapchain.format;
     return true;
+}
+
+bool api::create_surface(GPUSurfaceHandle& surface, const GPUSurfaceDescriptor& desc)
+{
+    auto rhi = get_rhi();
+    auto obj = D3D12Swapchain(desc);
+    auto ind = rhi->swapchains.add(obj);
+
+    surface = GPUSurfaceHandle(ind);
+    return true;
+}
+
+void api::delete_surface(GPUSurfaceHandle surface)
+{
+    get_rhi()->swapchains.remove(surface.value);
 }
 
 bool api::create_buffer(GPUBufferHandle& buffer, const GPUBufferDescriptor& desc)
@@ -408,6 +426,8 @@ LYRA_EXPORT auto create() -> RenderAPI
     api.submit_command_buffer            = api::submit_command_buffer;
     api.get_blas_sizes                   = api::get_blas_sizes;
     api.get_tlas_sizes                   = api::get_tlas_sizes;
+    api.new_frame                        = api::new_frame;
+    api.end_frame                        = api::end_frame;
     api.acquire_next_frame               = api::acquire_next_frame;
     api.present_curr_frame               = api::present_curr_frame;
     api.cmd_wait_fence                   = cmd::wait_fence;

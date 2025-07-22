@@ -17,7 +17,7 @@ VulkanSwapchain::VulkanSwapchain(const GPUSurfaceDescriptor& desc, VkSurfaceKHR 
     // create inflight fences
     uint existing_fence_count = static_cast<uint>(inflight_fences.size());
     assert(existing_fence_count == 0u || existing_fence_count == logic_frame_count);
-    if (existing_fence_count == 0) {
+    if (existing_fence_count == 0u) {
         inflight_fences.resize(logic_frame_count);
         for (uint i = 0; i < logic_frame_count; i++)
             inflight_fences.at(i) = VulkanFence(false);
@@ -26,7 +26,7 @@ VulkanSwapchain::VulkanSwapchain(const GPUSurfaceDescriptor& desc, VkSurfaceKHR 
     // create image available semaphores
     uint existing_image_available_semaphores = static_cast<uint>(image_available_semaphores.size());
     assert(existing_image_available_semaphores == 0u || existing_image_available_semaphores == logic_frame_count);
-    if (existing_image_available_semaphores == 0) {
+    if (existing_image_available_semaphores == 0u) {
         image_available_semaphores.resize(logic_frame_count);
         for (uint i = 0; i < logic_frame_count; i++)
             api::create_fence(image_available_semaphores.at(i), VK_SEMAPHORE_TYPE_BINARY);
@@ -35,10 +35,19 @@ VulkanSwapchain::VulkanSwapchain(const GPUSurfaceDescriptor& desc, VkSurfaceKHR 
     // create render complete semaphores (each image must have its own render complete semaphore)
     uint existing_render_complete_semaphores = static_cast<uint>(render_complete_semaphores.size());
     assert(existing_render_complete_semaphores == 0u || existing_render_complete_semaphores == image_frame_count);
-    if (existing_render_complete_semaphores == 0) {
+    if (existing_render_complete_semaphores == 0u) {
         render_complete_semaphores.resize(image_frame_count);
         for (uint i = 0; i < image_frame_count; i++)
             api::create_fence(render_complete_semaphores.at(i), VK_SEMAPHORE_TYPE_BINARY);
+    }
+
+    // create frames if not already done so
+    auto rhi                   = get_rhi();
+    uint existing_frames_count = static_cast<uint>(rhi->frames.size());
+    if (existing_frames_count < desc.frames_inflight) {
+        rhi->frames.resize(desc.frames_inflight);
+        for (uint i = existing_frames_count; i < desc.frames_inflight; i++)
+            rhi->frames.at(i).init();
     }
 }
 
@@ -112,14 +121,6 @@ void VulkanSwapchain::recreate()
     frames.resize(count);
     for (uint i = 0; i < count; i++)
         frames.at(i).init(swapchain_images.at(i), surface_format.format, extent);
-
-    // create frames if not already done so
-    uint existing_frames_count = static_cast<uint>(rhi->frames.size());
-    if (existing_frames_count < desc.frames_inflight) {
-        rhi->frames.resize(desc.frames_inflight);
-        for (uint i = existing_frames_count; i < desc.frames_inflight; i++)
-            rhi->frames.at(i).init();
-    }
 }
 
 void VulkanSwapchain::destroy()

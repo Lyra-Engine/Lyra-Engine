@@ -448,19 +448,6 @@ struct D3D12CommandPool
     auto allocate() -> ID3D12GraphicsCommandList*;
 };
 
-struct D3D12SwapFrame
-{
-    GPUFenceHandle       image_available_fence;
-    GPUTextureHandle     texture;
-    GPUTextureViewHandle view;
-
-    // implementation in D3D12Swapchain.cpp
-    void init(uint backbuffer_index, uint width, uint height);
-    void destroy();
-
-    bool valid() const { return texture.valid(); }
-};
-
 struct D3D12Frame
 {
     struct CommandBuffer
@@ -482,8 +469,11 @@ struct D3D12Frame
     // frame id must match D3D12Frame's id
     uint32_t frame_id = 0u;
 
-    GPUFenceHandle   image_available_fence; // D3D12Frame does NOT own this!!!
-    GPUFenceHandle   render_complete_fence;
+    // D3D12Frame does NOT own this!!!
+    GPUFenceHandle       image_available_fence;
+    GPUFenceHandle       render_complete_fence;
+    Vector<ID3D12Fence*> existing_fences;
+
     D3D12CommandPool bundle_command_pool;
     D3D12CommandPool compute_command_pool;
     D3D12CommandPool graphics_command_pool;
@@ -519,6 +509,48 @@ struct D3D12Frame
     void destroy();
 };
 
+struct D3D12Swapchain
+{
+    struct Frame
+    {
+        GPUTextureHandle     texture;
+        GPUTextureViewHandle view;
+
+        // implementation in D3D12Swapchain.cpp
+        void init(D3D12Swapchain* swapchain, uint backbuffer_index, uint width, uint height);
+        void destroy();
+
+        bool valid() const { return texture.valid(); }
+    };
+
+    // implementation in D3D12Pipeline.cpp
+    explicit D3D12Swapchain();
+    explicit D3D12Swapchain(const GPUSurfaceDescriptor& desc);
+
+    bool valid() const { return swapchain != 0; }
+
+    void recreate();
+    void destroy();
+
+    IDXGISwapChain3* swapchain = nullptr;
+
+    // objects for swapchain recreation
+    GPUSurfaceDescriptor desc     = {};
+    GPUExtent2D          extent   = {};
+    GPUTextureFormat     format   = GPUTextureFormat::RGBA8UNORM;
+    DXGI_FORMAT          dxformat = DXGI_FORMAT_R8G8B8A8_UNORM;
+
+    // similar to Vulkan's VkPresentModeKHR
+    D3D12PresentMode present_mode = {};
+
+    // swapchain images
+    Vector<Frame> frames;
+
+    // synchronization primitives
+    Vector<GPUFenceHandle> image_available_fences;
+    Vector<GPUFenceHandle> render_complete_fences;
+};
+
 struct D3D12RHI
 {
     RHIFlags rhiflags = 0;
@@ -529,13 +561,9 @@ struct D3D12RHI
     IDXGIAdapter1*      adapter        = nullptr; // equivalent to VkPhysicalDevice
     ID3D12Device*       device         = nullptr; // equivalent to VkDevice
     D3D12MA::Allocator* allocator      = nullptr;
-    IDXGISwapChain3*    swapchain      = nullptr;
     ID3D12CommandQueue* transfer_queue = nullptr;
     ID3D12CommandQueue* graphics_queue = nullptr;
     ID3D12CommandQueue* compute_queue  = nullptr;
-
-    // similar to Vulkan's VkPresentModeKHR
-    D3D12PresentMode present_mode = {};
 
     // fence used to wait on queues for completion
     D3D12Fence idle_fence;
@@ -546,14 +574,8 @@ struct D3D12RHI
     D3D12HeapCPU sampler_heap;
     D3D12HeapCPU cbv_srv_uav_heap;
 
-    // objects for swapchain recreation
-    GPUSurfaceDescriptor surface_desc   = {};
-    GPUExtent2D          surface_extent = {};
-    GPUTextureFormat     surface_format = GPUTextureFormat::BGRA8UNORM_SRGB;
-
     // frame objects
-    Vector<D3D12Frame>     frames           = {};
-    Vector<D3D12SwapFrame> swapchain_frames = {};
+    Vector<D3D12Frame> frames = {};
 
     // frame tracker
     uint current_frame_index = 0;
@@ -572,9 +594,9 @@ struct D3D12RHI
     D3D12ResourceManager<D3D12Pipeline>        pipelines;
     D3D12ResourceManager<D3D12PipelineLayout>  pipeline_layouts;
     D3D12ResourceManager<D3D12BindGroupLayout> bind_group_layouts;
+    D3D12ResourceManager<D3D12Swapchain>       swapchains;
 
     auto current_frame() -> D3D12Frame& { return frames.at(current_frame_index % frames.size()); }
-    auto current_image() -> D3D12SwapFrame& { return swapchain_frames.at(current_image_index); }
 
     void wait_idle()
     {
@@ -602,10 +624,10 @@ namespace api
     void delete_instance();
 
     // surface apis
-    bool create_surface(GPUSurface& surface, const GPUSurfaceDescriptor& desc);
-    void delete_surface();
-    bool get_surface_extent(GPUExtent2D& extent);
-    bool get_surface_format(GPUTextureFormat& format);
+    bool create_surface(GPUSurfaceHandle& surface, const GPUSurfaceDescriptor& desc);
+    void delete_surface(GPUSurfaceHandle surface);
+    bool get_surface_extent(GPUSurfaceHandle surface, GPUExtent2D& extent);
+    bool get_surface_format(GPUSurfaceHandle surface, GPUTextureFormat& format);
 
     // adapter apis
     bool create_adapter(GPUAdapter& adapter, const GPUAdapterDescriptor& desc);
@@ -634,6 +656,7 @@ namespace api
     bool create_texture(GPUTextureHandle& texture, const GPUTextureDescriptor& desc);
     void delete_texture(GPUTextureHandle texture);
     bool create_texture_view(GPUTextureViewHandle& view, GPUTextureHandle texture, const GPUTextureViewDescriptor& desc);
+    void delete_texture_view(GPUTextureViewHandle view);
 
     // shader apis
     bool create_shader_module(GPUShaderModuleHandle& shader, const GPUShaderModuleDescriptor& desc);
@@ -669,9 +692,13 @@ namespace api
     bool create_raytracing_pipeline(GPURayTracingPipelineHandle& handle, const GPURayTracingPipelineDescriptor& desc);
     void delete_raytracing_pipeline(GPURayTracingPipelineHandle pipeline);
 
+    // d3d12 frame logic
+    void new_frame();
+    void end_frame();
+
     // d3d12 swapchain
-    bool acquire_next_frame(GPUTextureHandle& texture, GPUTextureViewHandle& view, GPUFenceHandle& image_available_fence, GPUFenceHandle& render_complete_fence, bool& suboptimal);
-    bool present_curr_frame();
+    bool acquire_next_frame(GPUSurfaceHandle surface, GPUTextureHandle& texture, GPUTextureViewHandle& view, GPUFenceHandle& image_available_fence, GPUFenceHandle& render_complete_fence, bool& suboptimal);
+    bool present_curr_frame(GPUSurfaceHandle surface);
 
     // d3d12 desciprtor
     bool create_bind_group(GPUBindGroupHandle& bind_group, const GPUBindGroupDescriptor& desc);

@@ -40,6 +40,7 @@ namespace lyra::rhi
         bool (*create_texture)(GPUTextureHandle& texture, const GPUTextureDescriptor& descriptor);
         void (*delete_texture)(GPUTextureHandle texture);
         bool (*create_texture_view)(GPUTextureViewHandle& view, GPUTextureHandle texture, const GPUTextureViewDescriptor& descriptor);
+        void (*delete_texture_view)(GPUTextureViewHandle view);
 
         bool (*create_shader_module)(GPUShaderModuleHandle& texture, const GPUShaderModuleDescriptor& descriptor);
         void (*delete_shader_module)(GPUShaderModuleHandle texture);
