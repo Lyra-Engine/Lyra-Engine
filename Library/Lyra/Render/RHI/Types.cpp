@@ -380,6 +380,13 @@ void GPUTexture::destroy()
 }
 #pragma endregion GPUTexture
 
+#pragma region GPUTextureView
+void GPUTextureView::destroy()
+{
+    RHI::api()->delete_texture_view(handle);
+}
+#pragma endregion GPUTextureView
+
 #pragma region GPUSampler
 void GPUSampler::destroy()
 {

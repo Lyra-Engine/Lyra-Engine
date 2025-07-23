@@ -132,6 +132,11 @@ bool api::create_texture_view(GPUTextureViewHandle& handle, GPUTextureHandle tex
     return true;
 }
 
+void api::delete_texture_view(GPUTextureViewHandle handle)
+{
+    get_rhi()->views.remove(handle.value);
+}
+
 bool api::create_shader_module(GPUShaderModuleHandle& shader, const GPUShaderModuleDescriptor& desc)
 {
     auto obj = VulkanShader(desc);
@@ -388,6 +393,7 @@ LYRA_EXPORT auto create() -> RenderAPI
     api.create_texture                   = api::create_texture;
     api.delete_texture                   = api::delete_texture;
     api.create_texture_view              = api::create_texture_view;
+    api.delete_texture_view              = api::delete_texture_view;
     api.create_sampler                   = api::create_sampler;
     api.delete_sampler                   = api::delete_sampler;
     api.create_fence                     = api::create_fence;

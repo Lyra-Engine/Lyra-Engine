@@ -79,7 +79,6 @@ def filter_env_tests(tests):
 def filter_rhi_tests(tests):
     filtered_tests = []
     for test in tests:
-        print(test)
         if test["components"][0] == "rhi":
             filtered_tests.append(test)
     return filter_env_tests(filtered_tests)
@@ -155,7 +154,6 @@ def generate_html_report(args, results):
     html_content.append('</thead>')
     html_content.append("<tbody>")
     for test_name, buckets in results.items():
-        print(test_name, buckets)
         html_content.append('<tr>')
         html_content.append(f'<td>{test_name}</td>')
         for key in sequence:

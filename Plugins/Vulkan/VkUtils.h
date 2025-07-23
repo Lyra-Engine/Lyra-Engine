@@ -578,6 +578,7 @@ namespace api
     bool create_texture(GPUTextureHandle& texture, const GPUTextureDescriptor& desc);
     void delete_texture(GPUTextureHandle texture);
     bool create_texture_view(GPUTextureViewHandle& view, GPUTextureHandle texture, const GPUTextureViewDescriptor& desc);
+    void delete_texture_view(GPUTextureViewHandle view);
 
     // shader apis
     bool create_shader_module(GPUShaderModuleHandle& shader, const GPUShaderModuleDescriptor& desc);
