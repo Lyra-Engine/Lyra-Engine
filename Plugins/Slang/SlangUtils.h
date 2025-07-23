@@ -114,6 +114,7 @@ struct ReflectResultInternal
     void fill_binding_index(GPUBindGroupLayoutEntry& entry, CumulativeOffset offset) const;
     void fill_binding_count(GPUBindGroupLayoutEntry& entry, slang::TypeLayoutReflection* type) const;
     void fill_binding_stages(GPUBindGroupLayoutEntry& entry, AccessPathNode path) const;
+    void fill_dynamic_uniform_buffer(GPUBindGroupLayoutEntry& entry, slang::VariableLayoutReflection* var_layout);
     auto infer_texture_format(slang::TypeLayoutReflection* type) const -> GPUTextureFormat;
     auto infer_vertex_format(slang::TypeLayoutReflection* type) const -> GPUVertexFormat;
 };
@@ -121,6 +122,7 @@ struct ReflectResultInternal
 struct CompilerWrapper
 {
     ComPtr<slang::ISession> session;
+    ComPtr<slang::IModule>  builtin;
 
     static void init();
 
@@ -129,6 +131,8 @@ struct CompilerWrapper
     auto select_profile(const CompilerDescriptor& descriptor) const -> SlangProfileID;
 
     auto select_target(const CompilerDescriptor& descriptor) const -> SlangCompileTarget;
+
+    void init_builtin_module();
 
     bool compile(const CompileDescriptor& desc, CompileResultInternal& result);
 

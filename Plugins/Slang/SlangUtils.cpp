@@ -5,6 +5,16 @@ static ComPtr<slang::IGlobalSession> GLOBAL_SESSION;
 
 static Logger logger = init_stderr_logger("Slang", LogLevel::trace);
 
+static CString builtin_module_source = R"""(
+module lyra;
+
+// a custom attribute to indicate if a constant buffer is dynamic uniform buffer
+// example usage: [lyra::dynamic]
+
+[__AttributeUsage(_AttributeTargets.Var)]
+struct lyra_dynamicAttribute { };
+)""";
+
 // #define SLANG_DEBUG
 #ifdef SLANG_DEBUG
 CString to_string(slang::TypeReflection::Kind kind)
@@ -242,6 +252,9 @@ CompilerWrapper::CompilerWrapper(const CompilerDescriptor& descriptor)
     }
 
     GLOBAL_SESSION->createSession(session_desc, session.writeRef());
+
+    // some common stuff that might be used in other shaders
+    init_builtin_module();
 }
 
 SlangProfileID CompilerWrapper::select_profile(const CompilerDescriptor& descriptor) const
@@ -264,6 +277,18 @@ SlangCompileTarget CompilerWrapper::select_target(const CompilerDescriptor& desc
         default:
             return SLANG_SPIRV;
     }
+}
+
+void CompilerWrapper::init_builtin_module()
+{
+    // create shader module
+    ComPtr<slang::IBlob> diagnostics;
+    builtin = session->loadModuleFromSourceString(
+        "lyra",                  // module name
+        "lyra.slang",            // module path
+        builtin_module_source,   // shader source code
+        diagnostics.writeRef()); // optional diagnostic container
+    diagnose_if_needed(diagnostics);
 }
 
 bool CompilerWrapper::compile(const CompileDescriptor& desc, CompileResultInternal& result)
@@ -642,6 +667,7 @@ void ReflectResultInternal::create_automatic_constant_buffer(AccessPathNode node
     val.count = 1;
     fill_binding_index(val, offset);
     fill_binding_stages(val, node);
+    fill_dynamic_uniform_buffer(val, node.layout);
 
     bind_groups[space].push_back(val);
     get_logger()->info("[BINDGROUP] NAME:{}\t SPACE:{} BINDING:{} (AUTOMATIC)", node.layout->getName(), space, binding);
@@ -663,6 +689,7 @@ void ReflectResultInternal::create_binding(AccessPathNode node)
     fill_binding_index(val, offset);
     fill_binding_count(val, type);
     fill_binding_stages(val, node);
+    fill_dynamic_uniform_buffer(val, node.layout);
 
     // append to bindings
     bind_groups[space].push_back(val);
@@ -809,8 +836,20 @@ void ReflectResultInternal::fill_binding_type(GPUBindGroupLayoutEntry& entry, sl
             entry.type                      = GPUBindingResourceType::BUFFER;
             entry.buffer.type               = GPUBufferBindingType::UNIFORM;
             entry.buffer.has_dynamic_offset = false;
-            entry.buffer.min_binding_size   = type->getSize();
+            entry.buffer.min_binding_size   = 0;
             return;
+    }
+}
+
+void ReflectResultInternal::fill_dynamic_uniform_buffer(GPUBindGroupLayoutEntry& entry, slang::VariableLayoutReflection* var_layout)
+{
+    if (entry.type != GPUBindingResourceType::BUFFER)
+        return;
+
+    auto var = var_layout->getVariable();
+    if (var->findUserAttributeByName(GLOBAL_SESSION, "lyra_dynamic")) {
+        entry.buffer.has_dynamic_offset = true;
+        entry.buffer.min_binding_size   = var_layout->getTypeLayout()->getSize();
     }
 }
 
