@@ -68,6 +68,28 @@ struct D3D12GPUDescriptor
     bool valid() const { return gpu_handle.ptr != 0; }
 };
 
+template <typename T>
+struct Heap
+{
+    Vector<T> data = {};
+    uint      tail = 0;
+
+    uint allocate()
+    {
+        if (tail >= data.size())
+            data.resize(data.size() * 2 + 1);
+        return tail++;
+    }
+
+    void reset() { tail = 0; }
+
+    void free() { data.clear(); }
+
+    T& at(uint i) { return data.at(i); }
+
+    const T& at(uint i) const { return data.at(i); }
+};
+
 struct D3D12HeapCPUUtils
 {
     ID3D12DescriptorHeap* heap      = nullptr;
@@ -260,29 +282,40 @@ struct D3D12BindGroup
     // the index into the heap though
     uint default_index = -1;
     uint sampler_index = -1;
+    uint dynamic_index = -1;
 
     bool valid() const
     {
         bool default_valid = default_index != -1u;
         bool sampler_valid = sampler_index != -1u;
-        return default_valid || sampler_valid;
+        bool dynamic_valid = dynamic_index != -1u;
+        return default_valid || sampler_valid || dynamic_valid;
     }
+};
+
+struct D3D12BindGroupDynamic
+{
+    D3D12_ROOT_PARAMETER_TYPE type;
+    D3D12_GPU_VIRTUAL_ADDRESS address;
 };
 
 struct D3D12BindInfo
 {
-    D3D12_DESCRIPTOR_RANGE_TYPE type  = (D3D12_DESCRIPTOR_RANGE_TYPE)0;
-    uint                        start = 0;
-    uint                        count = 0;
+    D3D12_DESCRIPTOR_RANGE_TYPE type    = (D3D12_DESCRIPTOR_RANGE_TYPE)0;
+    uint                        start   = 0;
+    uint                        count   = 0;
+    bool                        dynamic = false;
 };
 
 struct D3D12BindGroupInfo
 {
     uint default_root_parameter = -1;
     uint sampler_root_parameter = -1;
+    uint dynamic_root_parameter = -1;
 
     bool has_default_root_parameter() const { return default_root_parameter != -1; }
     bool has_sampler_root_parameter() const { return sampler_root_parameter != -1; }
+    bool has_dynamic_root_parameter() const { return dynamic_root_parameter != -1; }
 };
 
 struct D3D12Frame;
@@ -290,9 +323,11 @@ struct D3D12BindGroupLayout
 {
     Vector<D3D12_DESCRIPTOR_RANGE1> sampler_ranges = {};
     Vector<D3D12_DESCRIPTOR_RANGE1> default_ranges = {};
+    Vector<D3D12_DESCRIPTOR_RANGE1> dynamic_ranges = {};
     Vector<D3D12BindInfo>           bindings       = {};
     uint                            num_defaults   = 0;
     uint                            num_samplers   = 0;
+    uint                            num_dynamics   = 0;
     D3D12_SHADER_VISIBILITY         visibility     = D3D12_SHADER_VISIBILITY_ALL;
     bool                            bindless       = false;
 
@@ -304,15 +339,15 @@ struct D3D12BindGroupLayout
 
     auto create(D3D12Frame& frame, const GPUBindGroupDescriptor& desc) -> D3D12BindGroup;
 
-    bool valid() const { return !(default_ranges.empty() && sampler_ranges.empty()); }
+    bool valid() const { return num_defaults + num_samplers + num_dynamics != 0; }
 
     // helper methods
-    void copy_regular_descriptors(const D3D12Frame& frame, const GPUBindGroupEntry& entry, D3D12BindGroup& bind_group, uint offset);
-    void copy_sampler_descriptor(const D3D12Frame& frame, const GPUBindGroupEntry& entry, D3D12BindGroup& bind_group, uint offset);
-    void copy_texture_descriptor(const D3D12Frame& frame, const GPUBindGroupEntry& entry, D3D12BindGroup& bind_group, uint offset);
-    void create_buffer_descriptor(const D3D12Frame& frame, const GPUBindGroupEntry& entry, D3D12BindGroup& bind_group, uint offset);
-    void create_buffer_cbv_descriptor(const D3D12Frame& frame, const GPUBindGroupEntry& entry, D3D12BindGroup& bind_group, uint offset);
-    void create_buffer_uav_descriptor(const D3D12Frame& frame, const GPUBindGroupEntry& entry, D3D12BindGroup& bind_group, uint offset);
+    void copy_regular_descriptors(D3D12Frame& frame, const GPUBindGroupEntry& entry, const D3D12BindInfo& bind_info, D3D12BindGroup& bind_group);
+    void copy_sampler_descriptor(D3D12Frame& frame, const GPUBindGroupEntry& entry, const D3D12BindInfo& bind_info, D3D12BindGroup& bind_group);
+    void copy_texture_descriptor(D3D12Frame& frame, const GPUBindGroupEntry& entry, const D3D12BindInfo& bind_info, D3D12BindGroup& bind_group);
+    void create_buffer_descriptor(D3D12Frame& frame, const GPUBindGroupEntry& entry, const D3D12BindInfo& bind_info, D3D12BindGroup& bind_group);
+    void create_buffer_cbv_descriptor(D3D12Frame& frame, const GPUBindGroupEntry& entry, const D3D12BindInfo& bind_info, D3D12BindGroup& bind_group);
+    void create_buffer_uav_descriptor(D3D12Frame& frame, const GPUBindGroupEntry& entry, const D3D12BindInfo& bind_info, D3D12BindGroup& bind_group);
 };
 
 struct D3D12PipelineLayout
@@ -480,9 +515,10 @@ struct D3D12Frame
     D3D12CommandPool transfer_command_pool;
 
     // descriptor heap for runtime bound descriptors
-    D3D12HeapGPU           default_heap;
-    D3D12HeapGPU           sampler_heap;
-    Vector<D3D12BindGroup> allocated_descriptors;
+    D3D12HeapGPU                default_heap;
+    D3D12HeapGPU                sampler_heap;
+    Heap<D3D12BindGroupDynamic> dynamic_heap;
+    Vector<D3D12BindGroup>      allocated_descriptors;
 
     // allocate command buffers
     Vector<CommandBuffer> allocated_command_buffers;
@@ -801,7 +837,7 @@ T& fetch_resource(D3D12ResourceManager<T>& manager, Handle handle)
 
     T& resource = manager.data.at(handle.value);
     if (!resource.valid()) {
-        get_logger()->error("Resource handle {} with value={} has invalid  object!", Handle::type_name(), handle.value);
+        get_logger()->error("Resource handle {} with value={} has invalid object!", Handle::type_name(), handle.value);
         exit(1);
     }
     return resource;

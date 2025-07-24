@@ -41,6 +41,7 @@ void D3D12Frame::reset()
     // clean up descriptor heap
     default_heap.reset();
     sampler_heap.reset();
+    dynamic_heap.reset();
 
     // reset command buffers
     for (auto& cmd : allocated_command_buffers)
@@ -58,6 +59,7 @@ void D3D12Frame::free()
     // clean up descriptor heap
     default_heap.reset();
     sampler_heap.reset();
+    dynamic_heap.free();
 
     // destroy command buffers
     for (auto& cmd : allocated_command_buffers)

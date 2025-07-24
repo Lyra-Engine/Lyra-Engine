@@ -40,6 +40,11 @@ float4 fsmain(VertexOutput input) : SV_Target
 }
 )""";
 
+struct DynamicUniform
+{
+    glm::mat4x4 mvp;
+};
+
 struct DynamicUniformApp : public TestApp
 {
     Uniform              uniform;
@@ -71,16 +76,16 @@ struct DynamicUniformApp : public TestApp
         uniform.ubuffer = execute([&]() {
             auto desc               = GPUBufferDescriptor{};
             desc.label              = "dynamic_uniform_buffer";
-            desc.size               = sizeof(glm::mat4x4) * 3;
+            desc.size               = sizeof(DynamicUniform) * 3;
             desc.usage              = GPUBufferUsage::UNIFORM | GPUBufferUsage::MAP_WRITE;
             desc.mapped_at_creation = true;
             return device.create_buffer(desc);
         });
 
-        auto data  = uniform.ubuffer.get_mapped_range<glm::mat4x4>();
-        data.at(0) = proj * view * glm::translate(glm::mat4(1.0f), glm::vec3(-1.0, 0.0, 0.0));
-        data.at(1) = proj * view * glm::translate(glm::mat4(1.0f), glm::vec3(+0.0, 0.0, 0.0));
-        data.at(2) = proj * view * glm::translate(glm::mat4(1.0f), glm::vec3(+1.0, 0.0, 0.0));
+        auto data      = uniform.ubuffer.get_mapped_range<DynamicUniform>();
+        data.at(0).mvp = proj * view * glm::translate(glm::mat4(1.0f), glm::vec3(-1.0, 0.0, 0.0));
+        data.at(1).mvp = proj * view * glm::translate(glm::mat4(1.0f), glm::vec3(+0.0, 0.0, 0.0));
+        data.at(2).mvp = proj * view * glm::translate(glm::mat4(1.0f), glm::vec3(+1.0, 0.0, 0.0));
     }
 
     void setup_pipeline()
@@ -130,7 +135,7 @@ struct DynamicUniformApp : public TestApp
             entry.binding       = 0;
             entry.buffer.buffer = uniform.ubuffer;
             entry.buffer.offset = 0;
-            entry.buffer.size   = sizeof(glm::mat4); // NOTE: THIS MUST NOT BE 0 WHEN DYNAMIC UNIFORM IS ENABLED
+            entry.buffer.size   = sizeof(DynamicUniform); // NOTE: THIS MUST NOT BE 0 WHEN DYNAMIC UNIFORM IS ENABLED
 
             auto desc    = GPUBindGroupDescriptor{};
             desc.layout  = pipeline.blayouts.at(0);
@@ -165,7 +170,7 @@ struct DynamicUniformApp : public TestApp
         command.set_vertex_buffer(0, geometry.vbuffer);
         command.set_index_buffer(geometry.ibuffer, GPUIndexFormat::UINT32);
         for (uint i = 0; i < 3; i++) {
-            command.set_bind_group(0, bind_group, {i * sizeof(glm::mat4x4)});
+            command.set_bind_group(0, bind_group, {i * (uint)sizeof(DynamicUniform)});
             command.draw_indexed(3, 1, 0, 0, 0);
         }
         command.end_render_pass();
@@ -178,7 +183,7 @@ TEST_CASE("rhi::vulkan::dynamic_uniform" * doctest::description("Rendering multi
 {
     TestAppDescriptor desc{};
     desc.name           = "vulkan";
-    desc.window         = true;
+    desc.window         = false;
     desc.backend        = RHIBackend::VULKAN;
     desc.width          = 640;
     desc.height         = 480;

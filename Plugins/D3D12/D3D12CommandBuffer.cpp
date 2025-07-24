@@ -244,9 +244,6 @@ void cmd::set_bind_group(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 index, GP
     auto& cmd = frm.command(cmdbuffer);
     auto  des = frm.descriptor(bind_group);
 
-    if (!dynamic_offsets.empty())
-        assert(!!!"cmd::set_bind_group() with dynamic offsets is currently not implemented!");
-
     const auto& info = cmd.pso.layout->bindgroups.at(index);
     if (info.has_default_root_parameter()) {
         auto handle = frm.default_heap.gpu(des.default_index);
@@ -255,6 +252,20 @@ void cmd::set_bind_group(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 index, GP
     if (info.has_sampler_root_parameter()) {
         auto handle = frm.sampler_heap.gpu(des.sampler_index);
         cmd.command_buffer->SetGraphicsRootDescriptorTable(info.sampler_root_parameter, handle);
+    }
+
+    if (dynamic_offsets.empty()) return;
+
+    assert(des.dynamic_index != -1);
+    assert(info.has_dynamic_root_parameter());
+    for (uint i = 0; i < dynamic_offsets.size(); i++) {
+        auto& dynamic = frm.dynamic_heap.at(des.dynamic_index + i);
+        auto  address = dynamic.address + dynamic_offsets.at(i);
+        if (dynamic.type == D3D12_ROOT_PARAMETER_TYPE_CBV) {
+            cmd.command_buffer->SetGraphicsRootConstantBufferView(info.dynamic_root_parameter + i, address);
+        } else {
+            cmd.command_buffer->SetGraphicsRootUnorderedAccessView(info.dynamic_root_parameter + i, address);
+        }
     }
 }
 
