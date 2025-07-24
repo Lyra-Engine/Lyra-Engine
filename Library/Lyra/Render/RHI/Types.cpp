@@ -47,23 +47,50 @@ RenderAPI* RHI::api()
 
 void RHI::destroy() const
 {
-    RHI::api()->delete_surface();
+    RHI::api()->wait_idle();
     RHI::api()->delete_device();
     RHI::api()->delete_adapter();
     RHI::api()->delete_instance();
 }
 
+void RHI::wait()
+{
+    RHI::api()->wait_idle();
+}
+
+void RHI::new_frame()
+{
+    RHI::api()->new_frame();
+}
+
+void RHI::end_frame()
+{
+    RHI::api()->end_frame();
+}
+
+GPUAdapter& RHI::get_current_adapter()
+{
+    static GPUAdapter ADAPTER = {};
+    return ADAPTER;
+}
+
+GPUDevice& RHI::get_current_device()
+{
+    static GPUDevice DEVICE = {};
+    return DEVICE;
+}
+
 GPUAdapter RHI::request_adapter(const GPUAdapterDescriptor& descriptor) const
 {
-    GPUAdapter adapter = {};
+    auto& adapter = RHI::get_current_adapter();
     RHI::api()->create_adapter(adapter, descriptor);
     return adapter;
 }
 
 GPUSurface RHI::request_surface(const GPUSurfaceDescriptor& descriptor) const
 {
-    auto& surface = RHI::get_current_surface();
-    RHI::api()->create_surface(surface, descriptor);
+    GPUSurface surface;
+    RHI::api()->create_surface(surface.handle, descriptor);
     return surface;
 }
 #pragma endregion RHI
@@ -83,34 +110,35 @@ GPUDevice GPUAdapter::request_device(const GPUDeviceDescriptor& descriptor)
 GPUSurfaceTexture GPUSurface::get_current_texture() const
 {
     GPUSurfaceTexture texture;
-    RHI::api()->acquire_next_frame(texture.texture, texture.view, texture.available, texture.complete, texture.suboptimal);
+    texture.surface = handle;
+    RHI::api()->acquire_next_frame(handle, texture.texture, texture.view, texture.available, texture.complete, texture.suboptimal);
     return texture;
 }
 
 GPUTextureFormat GPUSurface::get_current_format() const
 {
     GPUTextureFormat format;
-    RHI::api()->get_surface_format(format);
+    RHI::api()->get_surface_format(handle, format);
     return format;
 }
 
 GPUExtent2D GPUSurface::get_current_extent() const
 {
     GPUExtent2D extent;
-    RHI::api()->get_surface_extent(extent);
+    RHI::api()->get_surface_extent(handle, extent);
     return extent;
 }
 
 void GPUSurface::destroy() const
 {
-    RHI::api()->delete_surface();
+    RHI::api()->delete_surface(handle);
 }
 #pragma endregion GPUSurface
 
 #pragma region GPUSurfaceTexture
 void GPUSurfaceTexture::present() const
 {
-    RHI::api()->present_curr_frame();
+    RHI::api()->present_curr_frame(surface);
 }
 #pragma endregion GPUSurfaceTexture
 
@@ -188,13 +216,6 @@ GPUBindGroup GPUDevice::create_bind_group(const GPUBindGroupDescriptor& desc) co
 {
     GPUBindGroup bind_group;
     RHI::api()->create_bind_group(bind_group.handle, desc);
-    return bind_group;
-}
-
-GPUBindGroup GPUDevice::create_bind_group(const GPUBindlessDescriptor& desc) const
-{
-    GPUBindGroup bind_group;
-    RHI::api()->create_bind_group_bindless(bind_group.handle, desc);
     return bind_group;
 }
 
@@ -309,12 +330,26 @@ void GPUBuffer::destroy()
 #pragma region GPUTexture
 GPUTextureView GPUTexture::create_view()
 {
+    uint aspect   = 0;
+    bool modified = false;
+    if (is_depth_format(format)) {
+        modified = true;
+        aspect |= static_cast<uint>(GPUTextureAspect::DEPTH);
+    }
+    if (is_stencil_format(format)) {
+        modified = true;
+        aspect |= static_cast<uint>(GPUTextureAspect::STENCIL);
+    }
+    if (!modified) {
+        aspect |= static_cast<uint>(GPUTextureAspect::COLOR);
+    }
+
     GPUTextureViewDescriptor desc = {};
     desc.base_array_layer         = 0;
     desc.array_layer_count        = array_layers;
     desc.base_mip_level           = 0;
     desc.mip_level_count          = std::min(mip_level_count, static_cast<GPUIntegerCoordinate>(std::log2(std::min(width, height))));
-    desc.aspect                   = GPUTextureAspect::COLOR;
+    desc.aspect                   = static_cast<GPUTextureAspect>(aspect);
     desc.format                   = format;
     desc.usage                    = usage;
     switch (dimension) {
@@ -344,6 +379,13 @@ void GPUTexture::destroy()
     handle.reset();
 }
 #pragma endregion GPUTexture
+
+#pragma region GPUTextureView
+void GPUTextureView::destroy()
+{
+    RHI::api()->delete_texture_view(handle);
+}
+#pragma endregion GPUTextureView
 
 #pragma region GPUSampler
 void GPUSampler::destroy()
@@ -570,24 +612,24 @@ void GPUCommandEncoder::resolve_query_set(GPUQuerySet query_set, GPUSize32 first
     RHI::api()->cmd_resolve_query_set(handle, query_set, first_query, query_count, destination, destination_offset);
 }
 
-void GPUCommandEncoder::resource_barrier(const GPUBufferBarrier& barrier) const
+void GPUCommandEncoder::resource_barrier(GPUBufferBarrier barrier) const
 {
-    RHI::api()->cmd_buffer_barrier(handle, 1, const_cast<GPUBufferBarrier*>(&barrier));
+    RHI::api()->cmd_buffer_barrier(handle, barrier);
+}
+
+void GPUCommandEncoder::resource_barrier(GPUTextureBarrier barrier) const
+{
+    RHI::api()->cmd_texture_barrier(handle, barrier);
 }
 
 void GPUCommandEncoder::resource_barrier(const Vector<GPUBufferBarrier>& barriers) const
 {
-    RHI::api()->cmd_buffer_barrier(handle, static_cast<uint32_t>(barriers.size()), const_cast<GPUBufferBarrier*>(barriers.data()));
-}
-
-void GPUCommandEncoder::resource_barrier(const GPUTextureBarrier& barrier) const
-{
-    RHI::api()->cmd_texture_barrier(handle, 1, const_cast<GPUTextureBarrier*>(&barrier));
+    RHI::api()->cmd_buffer_barrier(handle, barriers);
 }
 
 void GPUCommandEncoder::resource_barrier(const Vector<GPUTextureBarrier>& barriers) const
 {
-    RHI::api()->cmd_texture_barrier(handle, static_cast<uint32_t>(barriers.size()), const_cast<GPUTextureBarrier*>(barriers.data()));
+    RHI::api()->cmd_texture_barrier(handle, barriers);
 }
 #pragma endregion GPUCommandEncoder
 

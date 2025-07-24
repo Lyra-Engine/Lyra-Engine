@@ -20,14 +20,18 @@ namespace lyra::rhi
         void (*delete_compiler)(CompilerHandle compiler);
 
         // compile from source
-        bool (*compile)(CompilerHandle compiler, const CompileDescriptor& desc, CompileResultHandle& result);
-        void (*cleanup)(CompileResultHandle result);
+        bool (*create_module)(CompilerHandle compiler, const CompileDescriptor& desc, ShaderModuleHandle& module);
+        void (*delete_module)(ShaderModuleHandle module);
+
+        // reflect from modules
+        bool (*create_reflection)(CompilerHandle compiler, ShaderEntryPoints entries, ShaderReflectionHandle& reflection);
+        void (*delete_reflection)(ShaderReflectionHandle reflection);
 
         // retrieve shader blobs
-        bool (*get_shader_blob)(CompileResultHandle result, CString entry, ShaderBlob& blob);
-
-        // reflect from compiled result
-        bool (*reflect)(CompileResultHandle result, GPUPipelineLayoutDescriptor& desc);
+        bool (*get_shader_blob)(ShaderEntryPoint entry, ShaderBlob& blob);
+        bool (*get_vertex_attributes)(ShaderReflectionHandle reflection, ShaderAttributes attrs, GPUVertexAttribute* attributes);
+        bool (*get_bind_group_layouts)(ShaderReflectionHandle reflection, uint& count, GPUBindGroupLayoutDescriptor* layouts);
+        bool (*get_bind_group_location)(ShaderReflectionHandle reflection, CString name, uint& location);
     };
 
 } // namespace lyra::rhi

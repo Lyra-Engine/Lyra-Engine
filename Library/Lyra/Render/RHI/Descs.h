@@ -28,7 +28,7 @@ namespace lyra::rhi
 
     struct GPUDeviceDescriptor : public GPUObjectDescriptorBase
     {
-        Vector<GPUFeatureName> required_features = {};
+        GPUFeatureNames required_features = {};
     };
 
     struct GPUSurfaceDescriptor : public GPUObjectDescriptorBase
@@ -85,7 +85,7 @@ namespace lyra::rhi
         GPUTextureFormat        format;
         GPUTextureViewDimension dimension;
         GPUTextureUsageFlags    usage             = 0; // if specified as 0, use texture's usage
-        GPUTextureAspect        aspect            = GPUTextureAspect::ALL;
+        GPUTextureAspectFlags   aspect            = GPUTextureAspect::ALL;
         GPUIntegerCoordinate    base_mip_level    = 0;
         GPUIntegerCoordinate    mip_level_count   = 1;
         GPUIntegerCoordinate    base_array_layer  = 0;
@@ -121,26 +121,18 @@ namespace lyra::rhi
 
     struct GPUBindGroupDescriptor : public GPUObjectDescriptorBase
     {
-        GPUBindGroupLayoutHandle  layout;
-        Vector<GPUBindGroupEntry> entries;
-    };
-
-    // NOTE: Non-WebGPU standard API
-    struct GPUBindlessDescriptor : public GPUObjectDescriptorBase
-    {
         GPUBindGroupLayoutHandle layout;
-        GPUBindlessEntry         entry;
+        GPUBindGroupEntries      entries;
     };
 
     struct GPUBindGroupLayoutDescriptor : public GPUObjectDescriptorBase
     {
-        bool                            bindless = false;
-        Vector<GPUBindGroupLayoutEntry> entries  = {};
+        GPUBindGroupLayoutEntries entries = {};
     };
 
     struct GPUPipelineLayoutDescriptor : public GPUObjectDescriptorBase
     {
-        Vector<GPUBindGroupLayoutHandle> bind_group_layouts;
+        GPUBindGroupLayoutHandles bind_group_layouts;
     };
 
     struct GPUPipelineDescriptorBase : public GPUObjectDescriptorBase
@@ -169,17 +161,17 @@ namespace lyra::rhi
 
     struct GPURenderPassLayout : public GPUObjectDescriptorBase
     {
-        Vector<GPUTextureFormat> color_formats;
-        GPUTextureFormat         depth_stencil_format;
-        GPUSize32                sample_count = 1;
+        GPUTextureFormats color_formats;
+        GPUTextureFormat  depth_stencil_format;
+        GPUSize32         sample_count = 1;
     };
 
     struct GPURenderPassDescriptor : public GPUObjectDescriptorBase
     {
-        Vector<GPURenderPassColorAttachment> color_attachments;
-        GPURenderPassDepthStencilAttachment  depth_stencil_attachment;
-        GPUQuerySetHandle                    occlusion_query_set;
-        GPUSize64                            max_draw_count = 50000000;
+        GPURenderPassColorAttachments       color_attachments;
+        GPURenderPassDepthStencilAttachment depth_stencil_attachment;
+        GPUQuerySetHandle                   occlusion_query_set;
+        GPUSize64                           max_draw_count = 50000000;
     };
 
     struct GPUCommandBufferDescriptor : public GPUObjectDescriptorBase

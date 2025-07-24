@@ -237,32 +237,34 @@ void cmd::set_raytracing_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURayTraci
     }
 }
 
-void cmd::set_bind_group(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 index, GPUBindGroupHandle bind_group, const Vector<GPUBufferDynamicOffset>& dynamic_offsets)
+void cmd::set_bind_group(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 index, GPUBindGroupHandle bind_group, GPUBufferDynamicOffsets dynamic_offsets)
 {
     auto  rhi = get_rhi();
     auto& frm = rhi->current_frame();
     auto& cmd = frm.command(cmdbuffer);
-    auto* lay = cmd.pso.layout;
     auto  des = frm.descriptor(bind_group);
 
-    if (!dynamic_offsets.empty())
-        assert(!!!"cmd::set_bind_group() with dynamic offsets is currently not implemented!");
+    const auto& info = cmd.pso.layout->bindgroups.at(index);
+    if (info.has_default_root_parameter()) {
+        auto handle = frm.default_heap.gpu(des.default_index);
+        cmd.command_buffer->SetGraphicsRootDescriptorTable(info.default_root_parameter, handle);
+    }
+    if (info.has_sampler_root_parameter()) {
+        auto handle = frm.sampler_heap.gpu(des.sampler_index);
+        cmd.command_buffer->SetGraphicsRootDescriptorTable(info.sampler_root_parameter, handle);
+    }
 
-    assert(index < lay->bind_group_layouts.size());
-    auto& layout = lay->bind_group_layouts.at(index);
-    for (auto& binding : layout.bindings) {
-        if (binding.heap_type == D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER) {
-            auto handle = des.sampler_base.value().gpu_handle;
-            handle.ptr += binding.base_offset * frm.sampler_heap.increment;
-            cmd.command_buffer->SetGraphicsRootDescriptorTable(
-                binding.root_param_index,
-                handle);
+    if (dynamic_offsets.empty()) return;
+
+    assert(des.dynamic_index != -1);
+    assert(info.has_dynamic_root_parameter());
+    for (uint i = 0; i < dynamic_offsets.size(); i++) {
+        auto& dynamic = frm.dynamic_heap.at(des.dynamic_index + i);
+        auto  address = dynamic.address + dynamic_offsets.at(i);
+        if (dynamic.type == D3D12_ROOT_PARAMETER_TYPE_CBV) {
+            cmd.command_buffer->SetGraphicsRootConstantBufferView(info.dynamic_root_parameter + i, address);
         } else {
-            auto handle = des.cbv_srv_uav_base.value().gpu_handle;
-            handle.ptr += binding.base_offset * frm.cbv_srv_uav_heap.increment;
-            cmd.command_buffer->SetGraphicsRootDescriptorTable(
-                binding.root_param_index,
-                handle);
+            cmd.command_buffer->SetGraphicsRootUnorderedAccessView(info.dynamic_root_parameter + i, address);
         }
     }
 }
@@ -390,7 +392,7 @@ void cmd::copy_buffer_to_texture(GPUCommandEncoderHandle cmdbuffer, const GPUTex
     src_location.PlacedFootprint.Footprint.Width    = copy_size.width;
     src_location.PlacedFootprint.Footprint.Height   = copy_size.height;
     src_location.PlacedFootprint.Footprint.Depth    = copy_size.depth;
-    src_location.PlacedFootprint.Footprint.RowPitch = source.bytes_per_row;
+    src_location.PlacedFootprint.Footprint.RowPitch = infer_row_pitch(dst.format, dst.area.width, source.bytes_per_row);
 
     // setup texture copy location for destination (texture)
     D3D12_TEXTURE_COPY_LOCATION dst_location = {};
@@ -433,7 +435,7 @@ void cmd::copy_texture_to_buffer(GPUCommandEncoderHandle cmdbuffer, const GPUTex
     dst_location.PlacedFootprint.Footprint.Width    = copy_size.width;
     dst_location.PlacedFootprint.Footprint.Height   = copy_size.height;
     dst_location.PlacedFootprint.Footprint.Depth    = copy_size.depth;
-    dst_location.PlacedFootprint.Footprint.RowPitch = destination.bytes_per_row;
+    dst_location.PlacedFootprint.Footprint.RowPitch = infer_row_pitch(src.format, src.area.width, destination.bytes_per_row);
 
     // setup box for the copy region
     D3D12_BOX src_box = {};
@@ -482,14 +484,20 @@ void cmd::copy_texture_to_texture(GPUCommandEncoderHandle cmdbuffer, const GPUTe
 
 void cmd::clear_buffer(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle buffer, GPUSize64 offset, GPUSize64 size)
 {
-    // auto  rhi = get_rhi();
-    // auto& cmd = rhi->current_frame().command(cmdbuffer);
-    // auto& buf = fetch_resource(rhi->buffers, buffer);
+    auto  rhi = get_rhi();
+    auto& cmd = rhi->current_frame().command(cmdbuffer);
+    auto& buf = fetch_resource(rhi->buffers, buffer);
 
-    // NOTE: D3D12 does not directly support clearing buffer.
-    // The recommended method is to clear a buffer using a compute shader.
-    // I would like to avoid the hassle of implement buffer clearing now.
-    assert(!!!"cmd::clear_buffer(...) is currently not implemented!");
+    // for small buffers or patterns
+    D3D12_WRITEBUFFERIMMEDIATE_PARAMETER write_params{};
+    write_params.Dest  = buf.buffer->GetGPUVirtualAddress() + offset;
+    write_params.Value = 0;
+
+    D3D12_WRITEBUFFERIMMEDIATE_MODE write_mode = D3D12_WRITEBUFFERIMMEDIATE_MODE_DEFAULT;
+
+    // fill buffer
+    auto command_list = static_cast<ID3D12GraphicsCommandList2*>(cmd.command_buffer);
+    command_list->WriteBufferImmediate(1, &write_params, &write_mode);
 }
 
 void cmd::set_viewport(GPUCommandEncoderHandle cmdbuffer, float x, float y, float w, float h, float min_depth, float max_depth)
@@ -528,14 +536,27 @@ void cmd::set_scissor_rect(GPUCommandEncoderHandle cmdbuffer, GPUIntegerCoordina
 
 void cmd::set_blend_constant(GPUCommandEncoderHandle cmdbuffer, GPUColor color)
 {
-    // NOTE: No obvious way to support it now.
-    assert(!!!"cmd::set_blend_constant(...) is currently not implemented!");
+    auto  rhi = get_rhi();
+    auto& cmd = rhi->current_frame().command(cmdbuffer);
+
+    float blend_color[4] = {
+        color.r,
+        color.g,
+        color.b,
+        color.a,
+    };
+
+    // set the stencil reference value
+    cmd.command_buffer->OMSetBlendFactor(blend_color);
 }
 
 void cmd::set_stencil_reference(GPUCommandEncoderHandle cmdbuffer, GPUStencilValue reference)
 {
-    // NOTE: No obvious way to support it now.
-    assert(!!!"cmd::set_stencil_reference(...) is currently not implemented!");
+    auto  rhi = get_rhi();
+    auto& cmd = rhi->current_frame().command(cmdbuffer);
+
+    // set the stencil reference value
+    cmd.command_buffer->OMSetStencilRef(reference);
 }
 
 void cmd::begin_occlusion_query(GPUCommandEncoderHandle cmdbuffer, GPUSize32 query_index)
@@ -568,7 +589,7 @@ void cmd::resolve_query_set(GPUCommandEncoderHandle cmdbuffer, GPUQuerySetHandle
     assert(!!!"cmd::resolve_query_set(...) is currently not implemented!");
 }
 
-void cmd::memory_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUMemoryBarrier* barriers)
+void cmd::memory_barrier(GPUCommandEncoderHandle cmdbuffer, GPUMemoryBarriers barriers)
 {
     auto  rhi = get_rhi();
     auto& cmd = rhi->current_frame().command(cmdbuffer);
@@ -589,17 +610,19 @@ void cmd::memory_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUM
     // multiple webgpu barriers collapse to a single global d3d12 barrier
 }
 
-void cmd::buffer_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUBufferBarrier* barriers)
+void cmd::buffer_barrier(GPUCommandEncoderHandle cmdbuffer, GPUBufferBarriers barriers)
 {
     auto  rhi = get_rhi();
     auto& cmd = rhi->current_frame().command(cmdbuffer);
 
     // allocate array for d3d12 resource barriers
-    Vector<D3D12_BUFFER_BARRIER> d3d12_barriers(count);
+    Vector<D3D12_BUFFER_BARRIER> d3d12_barriers;
+    d3d12_barriers.reserve(barriers.size());
 
-    for (uint32_t i = 0; i < count; ++i) {
-        const GPUBufferBarrier& barrier       = barriers[i];
-        D3D12_BUFFER_BARRIER&   d3d12_barrier = d3d12_barriers[i];
+    for (auto& barrier : barriers) {
+        d3d12_barriers.emplace_back();
+
+        auto& d3d12_barrier = d3d12_barriers.back();
 
         // setup enhanced buffer barrier
         d3d12_barrier.SyncBefore   = d3d12enum(barrier.src_sync);
@@ -613,7 +636,7 @@ void cmd::buffer_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUB
 
     D3D12_BARRIER_GROUP barrier_group = {};
     barrier_group.Type                = D3D12_BARRIER_TYPE_BUFFER;
-    barrier_group.NumBarriers         = count;
+    barrier_group.NumBarriers         = barriers.size();
     barrier_group.pBufferBarriers     = d3d12_barriers.data();
 
     // issue the resource barriers
@@ -621,17 +644,19 @@ void cmd::buffer_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUB
     command_list->Barrier(1, &barrier_group);
 }
 
-void cmd::texture_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUTextureBarrier* barriers)
+void cmd::texture_barrier(GPUCommandEncoderHandle cmdbuffer, GPUTextureBarriers barriers)
 {
     auto  rhi = get_rhi();
     auto& cmd = rhi->current_frame().command(cmdbuffer);
 
     // allocate array for d3d12 resource barriers
-    Vector<D3D12_TEXTURE_BARRIER> d3d12_barriers(count);
+    Vector<D3D12_TEXTURE_BARRIER> d3d12_barriers;
+    d3d12_barriers.reserve(barriers.size());
 
-    for (uint32_t i = 0; i < count; ++i) {
-        const GPUTextureBarrier& barrier       = barriers[i];
-        D3D12_TEXTURE_BARRIER&   d3d12_barrier = d3d12_barriers[i];
+    for (auto& barrier : barriers) {
+        d3d12_barriers.emplace_back();
+
+        auto& d3d12_barrier = d3d12_barriers.back();
 
         // setup enhanced buffer barrier
         d3d12_barrier.SyncBefore                        = d3d12enum(barrier.src_sync);
@@ -651,7 +676,7 @@ void cmd::texture_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPU
 
     D3D12_BARRIER_GROUP barrier_group = {};
     barrier_group.Type                = D3D12_BARRIER_TYPE_TEXTURE;
-    barrier_group.NumBarriers         = count;
+    barrier_group.NumBarriers         = barriers.size();
     barrier_group.pTextureBarriers    = d3d12_barriers.data();
 
     // issue the resource barriers
@@ -659,12 +684,12 @@ void cmd::texture_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPU
     command_list->Barrier(1, &barrier_group);
 }
 
-void cmd::build_tlases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, uint32_t count, GPUTlasBuildEntry* entries)
+void cmd::build_tlases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, GPUTlasBuildEntries entries)
 {
     assert(!!!"cmd::build_tlases(...) is currently not implemented!");
 }
 
-void cmd::build_blases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, uint32_t count, GPUBlasBuildEntry* entries)
+void cmd::build_blases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, GPUBlasBuildEntries entries)
 {
     assert(!!!"cmd::build_blases(...) is currently not implemented!");
 }

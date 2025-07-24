@@ -45,6 +45,10 @@ bool api::create_device(const GPUDeviceDescriptor& desc)
     rhi->sampler_heap.init(32, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
     rhi->cbv_srv_uav_heap.init(512, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
 
+    // create a default frame (for headless cases)
+    rhi->frames.emplace_back();
+    rhi->frames.back().init();
+
     return true;
 }
 
@@ -54,57 +58,69 @@ void api::delete_device()
 
     auto rhi = get_rhi();
 
-    // clean up remaining fences
+    // clean up remaining frames
     for (auto& frame : rhi->frames)
         frame.destroy();
 
-    // clean up remaining swapchain fences
-    for (auto& frame : rhi->swapchain_frames)
-        frame.destroy();
+    // clean up remaining swapchains
+    for (auto& swapchain : rhi->swapchains.data)
+        if (swapchain.valid())
+            swapchain.destroy();
 
     // clean up remaining blases
     for (auto& blas : rhi->blases.data)
-        blas.destroy();
+        if (blas.valid())
+            blas.destroy();
 
     // clean up remaining tlases
     for (auto& tlas : rhi->tlases.data)
-        tlas.destroy();
+        if (tlas.valid())
+            tlas.destroy();
 
     // clean up remaining fences
     for (auto& fence : rhi->fences.data)
-        fence.destroy();
+        if (fence.valid())
+            fence.destroy();
 
     // clean up remaining buffers
     for (auto& buffer : rhi->buffers.data)
-        buffer.destroy();
+        if (buffer.valid())
+            buffer.destroy();
 
     // clean up remaining texture views
     for (auto& view : rhi->views.data)
-        view.destroy();
+        if (view.valid())
+            view.destroy();
 
     // clean up remaining textures
     for (auto& texture : rhi->textures.data)
-        texture.destroy();
+        if (texture.valid())
+            texture.destroy();
 
     // clean up remaining samplers
     for (auto& sampler : rhi->samplers.data)
-        sampler.destroy();
+        if (sampler.valid())
+            sampler.destroy();
 
     // clean up remaining shaders
     for (auto& shader : rhi->shaders.data)
-        shader.destroy();
+        if (shader.valid())
+            shader.destroy();
 
     // clean up remaining bind group layouts
     for (auto& layout : rhi->bind_group_layouts.data)
-        layout.destroy();
+        if (layout.valid())
+            layout.destroy();
 
     // clean up remaining pipeline layouts
     for (auto& layout : rhi->pipeline_layouts.data)
-        layout.destroy();
+        if (layout.valid())
+            layout.destroy();
 
     // clean up remaining pipelines
     for (auto& pipeline : rhi->pipelines.data)
-        pipeline.destroy();
+        if (pipeline.valid())
+            pipeline.destroy();
 
     // clean up descriptor heaps
     rhi->rtv_heap.destroy();
@@ -114,11 +130,6 @@ void api::delete_device()
 
     if (rhi->idle_fence.valid()) {
         rhi->idle_fence.destroy();
-    }
-
-    if (rhi->swapchain) {
-        rhi->swapchain->Release();
-        rhi->swapchain = nullptr;
     }
 
     if (rhi->transfer_queue) {

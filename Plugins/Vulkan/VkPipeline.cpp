@@ -68,12 +68,18 @@ VulkanPipeline::VulkanPipeline(const GPURenderPipelineDescriptor& desc)
         formats.push_back(vkenum(attachment.format));
     }
 
+    // use dummy swapchain extent for non-windowed workload,
+    // but also query from the first available swapchain
+    VkExtent2D extent = {1920, 1080};
+    if (!rhi->swapchains.data.empty())
+        extent = rhi->swapchains.data.at(0).extent;
+
     // dummy viewport (supposed to be replaced by vkCmdSetViewport)
     auto viewport     = VkViewport{};
     viewport.x        = 0;
-    viewport.y        = rhi->swapchain_extent.height;
-    viewport.width    = rhi->swapchain_extent.width;
-    viewport.height   = -rhi->swapchain_extent.height;
+    viewport.y        = extent.height;
+    viewport.width    = extent.width;
+    viewport.height   = -extent.height;
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
 
@@ -81,8 +87,8 @@ VulkanPipeline::VulkanPipeline(const GPURenderPipelineDescriptor& desc)
     auto scissor          = VkRect2D{};
     scissor.offset.x      = 0;
     scissor.offset.y      = 0;
-    scissor.extent.width  = rhi->swapchain_extent.width;
-    scissor.extent.height = rhi->swapchain_extent.height;
+    scissor.extent.width  = extent.width;
+    scissor.extent.height = extent.height;
 
     // allow viewport/scissor/etc to be reset at rendering time
     Vector<VkDynamicState> dynamics = {
@@ -151,8 +157,27 @@ VulkanPipeline::VulkanPipeline(const GPURenderPipelineDescriptor& desc)
     depth_stencil_state.depthCompareOp        = vkenum(desc.depth_stencil.depth_compare);
     depth_stencil_state.maxDepthBounds        = 1.0f;
     depth_stencil_state.minDepthBounds        = 0.0f;
-    depth_stencil_state.stencilTestEnable     = desc.depth_stencil.stencil_front.compare != GPUCompareFunction::ALWAYS ||
-                                            desc.depth_stencil.stencil_back.compare != GPUCompareFunction::ALWAYS;
+    depth_stencil_state.stencilTestEnable =
+        desc.depth_stencil.stencil_front.compare != GPUCompareFunction::ALWAYS ||
+        desc.depth_stencil.stencil_front.pass_op != GPUStencilOperation::KEEP ||
+        desc.depth_stencil.stencil_front.fail_op != GPUStencilOperation::KEEP ||
+        desc.depth_stencil.stencil_back.compare != GPUCompareFunction::ALWAYS ||
+        desc.depth_stencil.stencil_back.pass_op != GPUStencilOperation::KEEP ||
+        desc.depth_stencil.stencil_back.fail_op != GPUStencilOperation::KEEP;
+    depth_stencil_state.front.compareOp   = vkenum(desc.depth_stencil.stencil_front.compare);
+    depth_stencil_state.front.depthFailOp = vkenum(desc.depth_stencil.stencil_front.depth_fail_op);
+    depth_stencil_state.front.failOp      = vkenum(desc.depth_stencil.stencil_front.fail_op);
+    depth_stencil_state.front.passOp      = vkenum(desc.depth_stencil.stencil_front.pass_op);
+    depth_stencil_state.front.writeMask   = desc.depth_stencil.stencil_write_mask;
+    depth_stencil_state.front.compareMask = desc.depth_stencil.stencil_read_mask;
+    depth_stencil_state.front.reference   = 0; // need to be set dynamically
+    depth_stencil_state.back.compareOp    = vkenum(desc.depth_stencil.stencil_back.compare);
+    depth_stencil_state.back.depthFailOp  = vkenum(desc.depth_stencil.stencil_back.depth_fail_op);
+    depth_stencil_state.back.failOp       = vkenum(desc.depth_stencil.stencil_back.fail_op);
+    depth_stencil_state.back.passOp       = vkenum(desc.depth_stencil.stencil_back.pass_op);
+    depth_stencil_state.back.writeMask    = desc.depth_stencil.stencil_write_mask;
+    depth_stencil_state.back.compareMask  = desc.depth_stencil.stencil_read_mask;
+    depth_stencil_state.back.reference    = 0; // need to be set dynamically
 
     auto color_blend_state            = VkPipelineColorBlendStateCreateInfo{};
     color_blend_state.sType           = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
@@ -175,9 +200,11 @@ VulkanPipeline::VulkanPipeline(const GPURenderPipelineDescriptor& desc)
     pipeline_rendering_create_info.pColorAttachmentFormats = formats.data();
     pipeline_rendering_create_info.depthAttachmentFormat   = VK_FORMAT_UNDEFINED;
     pipeline_rendering_create_info.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
-    if (depth_stencil_state.depthWriteEnable) {
-        pipeline_rendering_create_info.depthAttachmentFormat   = vkenum(desc.depth_stencil.format);
-        pipeline_rendering_create_info.stencilAttachmentFormat = vkenum(desc.depth_stencil.format);
+    if (depth_stencil_state.depthWriteEnable || depth_stencil_state.depthTestEnable || depth_stencil_state.stencilTestEnable) {
+        if (is_depth_format(desc.depth_stencil.format))
+            pipeline_rendering_create_info.depthAttachmentFormat = vkenum(desc.depth_stencil.format);
+        if (is_stencil_format(desc.depth_stencil.format))
+            pipeline_rendering_create_info.stencilAttachmentFormat = vkenum(desc.depth_stencil.format);
     }
 
     auto create_info                = VkGraphicsPipelineCreateInfo{};

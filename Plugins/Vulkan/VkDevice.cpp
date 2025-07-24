@@ -15,7 +15,7 @@ bool is_supported(const Vector<CString>& extensions, CString name)
     return false;
 }
 
-bool is_required(const Vector<GPUFeatureName>& features, GPUFeatureName feature)
+bool is_required(GPUFeatureNames features, GPUFeatureName feature)
 {
     return std::find(features.begin(), features.end(), feature) != features.end();
 }
@@ -413,15 +413,12 @@ bool api::create_device(const GPUDeviceDescriptor& desc)
     if (queue_family_indices.present.has_value())
         rhi->vtable.vkGetDeviceQueue(rhi->device, queue_family_indices.present.value(), 0, &rhi->present_queue);
 
-    // create a default frame (for compute only cases)
+    // create a default frame (for headless cases)
     rhi->frames.emplace_back();
     rhi->frames.back().init();
 
     if (desc.label)
         rhi->set_debug_label(VK_OBJECT_TYPE_DEVICE, (uint64_t)rhi->device, desc.label);
-
-    // set a dummy swapchain extent
-    rhi->swapchain_extent = {1920, 1080};
 
     return true;
 }
@@ -431,6 +428,11 @@ void api::delete_device()
     wait_idle();
 
     auto rhi = get_rhi();
+
+    // clean up remaining swapchains
+    // needs to be deleted first, because it contains other handles
+    for (auto& swapchain : rhi->swapchains.data)
+        swapchain.destroy();
 
     // clean up remaining blases
     for (auto& blas : rhi->blases.data)
@@ -442,10 +444,6 @@ void api::delete_device()
 
     // clean up remaining fences
     for (auto& frame : rhi->frames)
-        frame.destroy();
-
-    // clean up remaining swapchain fences
-    for (auto& frame : rhi->swapchain_frames)
         frame.destroy();
 
     // clean up remaining fences
@@ -483,11 +481,6 @@ void api::delete_device()
     // clean up remaining pipelines
     for (auto& pipeline : rhi->pipelines.data)
         pipeline.destroy();
-
-    if (rhi->swapchain) {
-        rhi->vtable.vkDestroySwapchainKHR(rhi->device, rhi->swapchain, nullptr);
-        rhi->swapchain = VK_NULL_HANDLE;
-    }
 
     if (rhi->alloc) {
         vmaDestroyAllocator(rhi->alloc);

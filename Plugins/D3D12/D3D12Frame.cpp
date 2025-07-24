@@ -12,8 +12,8 @@ void D3D12Frame::init()
     transfer_command_pool.init(D3D12_COMMAND_LIST_TYPE_COPY);
 
     // initialize descriptor heap
+    default_heap.init(MAX_CBV_SRV_UAV_HEAP_SIZE, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
     sampler_heap.init(MAX_SAMPLERS_HEAP_SIZE, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
-    cbv_srv_uav_heap.init(MAX_CBV_SRV_UAV_HEAP_SIZE, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 
     D3D12Fence fence(true);
     render_complete_fence = GPUFenceHandle(get_rhi()->fences.add(fence));
@@ -27,7 +27,28 @@ void D3D12Frame::wait()
     }
 }
 
-void D3D12Frame::reset(bool free)
+void D3D12Frame::reset()
+{
+    // reset fence
+    fetch_resource(get_rhi()->fences, render_complete_fence).reset();
+
+    // clean up command pools
+    bundle_command_pool.reset();
+    compute_command_pool.reset();
+    graphics_command_pool.reset();
+    transfer_command_pool.reset();
+
+    // clean up descriptor heap
+    default_heap.reset();
+    sampler_heap.reset();
+    dynamic_heap.reset();
+
+    // reset command buffers
+    for (auto& cmd : allocated_command_buffers)
+        cmd.reset();
+}
+
+void D3D12Frame::free()
 {
     // clean up command pools
     bundle_command_pool.reset();
@@ -36,27 +57,20 @@ void D3D12Frame::reset(bool free)
     transfer_command_pool.reset();
 
     // clean up descriptor heap
+    default_heap.reset();
     sampler_heap.reset();
-    cbv_srv_uav_heap.reset();
+    dynamic_heap.free();
 
-    // reset fence
-    fetch_resource(get_rhi()->fences, render_complete_fence).reset();
+    // destroy command buffers
+    for (auto& cmd : allocated_command_buffers)
+        cmd.cmd.destroy();
 
-    if (free) {
-        // destroy command buffers
-        for (auto& cmd : allocated_command_buffers)
-            cmd.cmd.destroy();
-        allocated_command_buffers.clear();
-    } else {
-        // reset command buffers
-        for (auto& cmd : allocated_command_buffers)
-            cmd.reset();
-    }
+    allocated_command_buffers.clear();
 }
 
 void D3D12Frame::destroy()
 {
-    reset(true);
+    free();
 
     auto rhi = get_rhi();
 
@@ -71,8 +85,8 @@ void D3D12Frame::destroy()
     transfer_command_pool.destroy();
 
     // destroy descriptor heap
+    default_heap.destroy();
     sampler_heap.destroy();
-    cbv_srv_uav_heap.destroy();
 }
 
 GPUCommandEncoderHandle D3D12Frame::allocate(GPUQueueType type, bool primary)
@@ -81,8 +95,11 @@ GPUCommandEncoderHandle D3D12Frame::allocate(GPUQueueType type, bool primary)
 
     // set default descriptor heaps
     auto set_descriptor_heap = [&](D3D12CommandBuffer& command_buffer) {
-        ID3D12DescriptorHeap* descriptor_heaps[] = {cbv_srv_uav_heap.heap, sampler_heap.heap};
-        command_buffer.command_buffer->SetDescriptorHeaps(2, descriptor_heaps);
+        // D3D12 COPY QUEUE does not support SetDescriptorHeaps
+        if (type != GPUQueueType::TRANSFER) {
+            ID3D12DescriptorHeap* descriptor_heaps[] = {default_heap.heap, sampler_heap.heap};
+            command_buffer.command_buffer->SetDescriptorHeaps(2, descriptor_heaps);
+        }
     };
 
     // search from existing allocations

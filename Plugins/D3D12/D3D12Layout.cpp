@@ -2,6 +2,13 @@
 #include "D3D12Utils.h"
 #include "d3d12.h"
 
+bool is_dynamic_bind_group_entry(const GPUBindGroupLayoutEntry& entry)
+{
+    return entry.type == GPUBindingResourceType::BUFFER
+               ? entry.buffer.has_dynamic_offset
+               : false;
+}
+
 D3D12_DESCRIPTOR_RANGE_TYPE infer_buffer_descriptor_type(const GPUBufferBindingLayout& entry)
 {
     switch (entry.type) {
@@ -27,7 +34,7 @@ D3D12_DESCRIPTOR_RANGE_TYPE infer_texture_descriptor_type(const GPUTextureBindin
 
 D3D12_DESCRIPTOR_RANGE_TYPE infer_storage_texture_descriptor_type(const GPUStorageTextureBindingLayout&)
 {
-    return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+    return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
 }
 
 D3D12_DESCRIPTOR_RANGE_TYPE infer_bvh_descriptor_type(const GPUBVHBindingLayout&)
@@ -65,24 +72,63 @@ D3D12PipelineLayout::D3D12PipelineLayout(const GPUPipelineLayoutDescriptor& desc
 
     auto rhi = get_rhi();
 
-    bind_group_layouts.reserve(desc.bind_group_layouts.size());
+    uint root_parameter_index = 0;
+    uint register_space_index = 0;
 
-    // collect all descriptor ranges from bind group layouts
     Vector<D3D12_ROOT_PARAMETER1> root_parameters;
-    root_parameters.reserve(desc.bind_group_layouts.size());
-    for (auto& bind_group_layout : desc.bind_group_layouts) {
-        auto& layout = fetch_resource(rhi->bind_group_layouts, bind_group_layout);
+    bindgroups.resize(desc.bind_group_layouts.size());
+    root_parameters.reserve(desc.bind_group_layouts.size() * 2);
 
-        // record bind group layouts
-        bind_group_layouts.push_back(layout);
+    for (auto& layout_handle : desc.bind_group_layouts) {
+        auto& layout = fetch_resource(rhi->bind_group_layouts, layout_handle);
 
-        // create root parameter for this bind group's descriptor table
-        root_parameters.push_back({});
-        auto& root_param                               = root_parameters.back();
-        root_param.ParameterType                       = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-        root_param.ShaderVisibility                    = layout.visibility;
-        root_param.DescriptorTable.NumDescriptorRanges = static_cast<UINT>(layout.ranges.size());
-        root_param.DescriptorTable.pDescriptorRanges   = layout.ranges.data();
+        auto& bindgroup = bindgroups.at(register_space_index);
+
+        // fix the register space
+        for (auto& range : layout.default_ranges)
+            range.RegisterSpace = register_space_index;
+
+        // fix the register space
+        for (auto& range : layout.sampler_ranges)
+            range.RegisterSpace = register_space_index;
+
+        // add default ranges
+        if (!layout.default_ranges.empty()) {
+            root_parameters.push_back({});
+            auto& root_param                               = root_parameters.back();
+            root_param.ParameterType                       = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+            root_param.ShaderVisibility                    = layout.visibility;
+            root_param.DescriptorTable.NumDescriptorRanges = static_cast<UINT>(layout.default_ranges.size());
+            root_param.DescriptorTable.pDescriptorRanges   = layout.default_ranges.data();
+            bindgroup.default_root_parameter               = root_parameter_index++;
+        }
+
+        // add sampler ranges
+        if (!layout.sampler_ranges.empty()) {
+            root_parameters.push_back({});
+            auto& root_param                               = root_parameters.back();
+            root_param.ParameterType                       = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+            root_param.ShaderVisibility                    = layout.visibility;
+            root_param.DescriptorTable.NumDescriptorRanges = static_cast<UINT>(layout.sampler_ranges.size());
+            root_param.DescriptorTable.pDescriptorRanges   = layout.sampler_ranges.data();
+            bindgroup.sampler_root_parameter               = root_parameter_index++;
+        }
+
+        // add dynamic ranges
+        if (!layout.dynamic_ranges.empty()) {
+            bindgroup.dynamic_root_parameter = root_parameter_index++;
+            for (auto& range : layout.dynamic_ranges) {
+                root_parameters.push_back({});
+                auto& root_param                     = root_parameters.back();
+                root_param.ParameterType             = range.RangeType == D3D12_DESCRIPTOR_RANGE_TYPE_CBV ? D3D12_ROOT_PARAMETER_TYPE_CBV : D3D12_ROOT_PARAMETER_TYPE_UAV;
+                root_param.ShaderVisibility          = layout.visibility;
+                root_param.Descriptor.ShaderRegister = range.BaseShaderRegister;
+                root_param.Descriptor.RegisterSpace  = range.RegisterSpace;
+                root_param.Descriptor.Flags          = D3D12_ROOT_DESCRIPTOR_FLAG_NONE;
+            }
+        }
+
+        register_space_index++;
     }
 
     // create root signature descriptor
@@ -189,16 +235,15 @@ void D3D12PipelineLayout::create_draw_indexed_indirect_signature()
 #pragma region D3D12BindGroupLayout
 D3D12BindGroupLayout::D3D12BindGroupLayout()
 {
-    ranges.clear();
+    default_ranges.clear();
+    sampler_ranges.clear();
     visibility = D3D12_SHADER_VISIBILITY_ALL;
+    bindless   = false;
 }
 
 D3D12BindGroupLayout::D3D12BindGroupLayout(const GPUBindGroupLayoutDescriptor& desc)
 {
-    bindless = desc.bindless;
-
-    // initialize ranges vector based on descriptor entries
-    ranges.reserve(desc.entries.size());
+    // bindless = desc.bindless;
 
     // determine overall shader visibility
     visibility = D3D12_SHADER_VISIBILITY_ALL;
@@ -206,52 +251,94 @@ D3D12BindGroupLayout::D3D12BindGroupLayout(const GPUBindGroupLayoutDescriptor& d
     // record requires stages
     GPUShaderStageFlags stages = 0;
 
-    // binding info accumulators
-    uint root_param_index        = 0;
-    uint sampler_base_offset     = 0;
-    uint cbv_srv_uav_base_offset = 0;
-
+    // check binding type (D3D12 has requirement that sampler cannot be mixed with others)
+    uint binding_count = 0;
+    uint sampler_count = 0;
+    uint default_count = 0;
+    uint dynamic_count = 0;
     for (const auto& entry : desc.entries) {
-        ranges.push_back(D3D12_DESCRIPTOR_RANGE1{});
+        binding_count = std::max(binding_count, (uint)entry.binding.index + 1);
+        if (entry.type == GPUBindingResourceType::SAMPLER)
+            sampler_count++;
+        else if (is_dynamic_bind_group_entry(entry))
+            dynamic_count++;
+        else
+            default_count++;
+    }
 
-        // set binding information
-        auto& range                             = ranges.back();
-        range.BaseShaderRegister                = entry.binding;
+    // reserve enough space for ranges
+    sampler_ranges.reserve(sampler_count);
+    default_ranges.reserve(default_count);
+    dynamic_ranges.reserve(dynamic_count);
+    bindings.resize(binding_count);
+
+    // initialize ranges vector based on descriptor entries
+    for (const auto& entry : desc.entries) {
+        D3D12_DESCRIPTOR_RANGE1 range{};
+
+        // range info
+        range.BaseShaderRegister                = entry.binding.register_index;
         range.NumDescriptors                    = entry.count;
-        range.RegisterSpace                     = 0;
+        range.RegisterSpace                     = 0; // NOTE: need to be changed later in the pipeline layout
         range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
         range.Flags                             = D3D12_DESCRIPTOR_RANGE_FLAG_NONE;
         range.RangeType                         = infer_descriptor_type(entry);
 
-        // additional special processing
+        // additional flag for read-only buffer resources
         if (entry.type == GPUBindingResourceType::BUFFER)
             if (entry.buffer.type == GPUBufferBindingType::READ_ONLY_STORAGE)
                 range.Flags |= D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE;
 
-        // prepare bind info
-        bindings.push_back(D3D12BindInfo{});
-        auto& binding            = bindings.back();
-        binding.root_param_index = root_param_index++;
-        binding.binding_index    = entry.binding;
-        binding.binding_count    = entry.count;
-        if (range.RangeType == D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER) {
-            binding.base_offset = sampler_base_offset;
-            binding.heap_type   = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
-            sampler_base_offset += range.NumDescriptors;
-        } else {
-            binding.base_offset = cbv_srv_uav_base_offset;
-            binding.heap_type   = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-            cbv_srv_uav_base_offset += range.NumDescriptors;
-        }
+        // save this range into corresponding ranges
+        if (entry.type == GPUBindingResourceType::SAMPLER)
+            sampler_ranges.push_back(range);
+        else if (is_dynamic_bind_group_entry(entry))
+            dynamic_ranges.push_back(range);
+        else
+            default_ranges.push_back(range);
 
+        // shader visibility
         stages = stages | entry.visibility;
+
+        // binding info
+        auto& binding   = bindings.at(entry.binding.index);
+        binding.type    = range.RangeType;
+        binding.count   = entry.count;
+        binding.dynamic = is_dynamic_bind_group_entry(entry);
+    }
+
+    // populate default descriptor counts
+    this->num_defaults = 0;
+    for (auto& range : default_ranges)
+        this->num_defaults += range.NumDescriptors;
+
+    // populate sampler descriptor counts
+    this->num_samplers = 0;
+    for (auto& range : sampler_ranges)
+        this->num_samplers += range.NumDescriptors;
+
+    // populate dynamic descriptor counts
+    this->num_dynamics = 0;
+    for (auto& range : dynamic_ranges)
+        this->num_dynamics += range.NumDescriptors;
+
+    // populate binding offset
+    uint default_offset = 0;
+    uint sampler_offset = 0;
+    for (auto& binding : bindings) {
+        if (binding.type == D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER) {
+            binding.start = sampler_offset;
+            sampler_offset += binding.count;
+        } else {
+            binding.start = default_offset;
+            default_offset += binding.count;
+        }
     }
 
     // optimize shader visibility if possible
     bool has_compute  = stages.contains(GPUShaderStage::COMPUTE);
     bool has_vertex   = stages.contains(GPUShaderStage::VERTEX);
     bool has_fragment = stages.contains(GPUShaderStage::FRAGMENT);
-
     if (has_compute) {
         visibility = D3D12_SHADER_VISIBILITY_ALL; // Compute uses ALL
     } else if (has_vertex && !has_fragment && !has_compute) {
@@ -265,126 +352,140 @@ D3D12BindGroupLayout::D3D12BindGroupLayout(const GPUBindGroupLayoutDescriptor& d
 
 void D3D12BindGroupLayout::destroy()
 {
-    ranges.clear();
+    default_ranges.clear();
+    sampler_ranges.clear();
+    dynamic_ranges.clear();
     visibility = D3D12_SHADER_VISIBILITY_ALL;
+    bindless   = false;
 }
 
 D3D12BindGroup D3D12BindGroupLayout::create(D3D12Frame& frame, const GPUBindGroupDescriptor& desc)
 {
     assert(!bindless && "Cannot create bindless descriptor using bound descriptor entries!");
 
-    // find out descriptor count
-    uint default_count = false;
-    uint sampler_count = false;
-    for (auto& entry : bindings) {
-        if (entry.heap_type == D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER)
-            sampler_count += entry.binding_count;
-        else
-            default_count += entry.binding_count;
-    }
-
     // allocate descriptors
     D3D12BindGroup bind_group;
-    if (default_count) bind_group.cbv_srv_uav_base = frame.cbv_srv_uav_heap.allocate(default_count);
-    if (sampler_count) bind_group.sampler_base = frame.sampler_heap.allocate(sampler_count);
+    bind_group.default_index = -1u;
+    bind_group.sampler_index = -1u;
+
+    // allocate descriptors for default ranges
+    if (num_defaults)
+        bind_group.default_index = frame.default_heap.allocate(num_defaults);
+
+    // allocate descriptors for sampler ranges
+    if (num_samplers)
+        bind_group.sampler_index = frame.sampler_heap.allocate(num_samplers);
 
     // write to descriptors
     for (auto& entry : desc.entries) {
-        uint offset = bindings.at(entry.binding).base_offset;
-        copy_regular_descriptors(frame, entry, bind_group, offset);
+        auto& bind_info = bindings.at(entry.binding);
+        copy_regular_descriptors(frame, entry, bind_info, bind_group);
     }
 
     return bind_group;
 }
 
-void D3D12BindGroupLayout::copy_regular_descriptors(const D3D12Frame& frame, const GPUBindGroupEntry& entry, D3D12BindGroup& bind_group, uint offset)
+void D3D12BindGroupLayout::copy_regular_descriptors(D3D12Frame& frame, const GPUBindGroupEntry& entry, const D3D12BindInfo& bind_info, D3D12BindGroup& bind_group)
 {
     switch (entry.type) {
         case GPUBindingResourceType::SAMPLER:
-            copy_sampler_descriptor(frame, entry, bind_group, offset);
+            copy_sampler_descriptor(frame, entry, bind_info, bind_group);
             break;
         case GPUBindingResourceType::BUFFER:
-            create_buffer_descriptor(frame, entry, bind_group, offset);
+            create_buffer_descriptor(frame, entry, bind_info, bind_group);
             break;
         case GPUBindingResourceType::TEXTURE:
         case GPUBindingResourceType::STORAGE_TEXTURE:
-            copy_texture_descriptor(frame, entry, bind_group, offset);
+            copy_texture_descriptor(frame, entry, bind_info, bind_group);
             break;
         case GPUBindingResourceType::ACCELERATION_STRUCTURE:
+            assert(!!!"BVH is current not supported!");
             break;
         default:
             assert(!!!"Invaid GPUBindingResourceType");
     }
 }
 
-void D3D12BindGroupLayout::copy_sampler_descriptor(const D3D12Frame& frame, const GPUBindGroupEntry& entry, D3D12BindGroup& bind_group, uint offset)
+void D3D12BindGroupLayout::copy_sampler_descriptor(D3D12Frame& frame, const GPUBindGroupEntry& entry, const D3D12BindInfo& bind_info, D3D12BindGroup& bind_group)
 {
     auto  rhi = get_rhi();
     auto& smp = fetch_resource(rhi->samplers, entry.sampler);
 
     D3D12_CPU_DESCRIPTOR_HANDLE src_handle = smp.sampler.handle;
-    D3D12_CPU_DESCRIPTOR_HANDLE dst_handle = bind_group.sampler_base.value().cpu_handle;
-    dst_handle.ptr += (offset + entry.index) * frame.sampler_heap.increment;
+    D3D12_CPU_DESCRIPTOR_HANDLE dst_handle = frame.sampler_heap.cpu(bind_group.sampler_index + bind_info.start);
     rhi->device->CopyDescriptorsSimple(1, dst_handle, src_handle, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
 }
 
-void D3D12BindGroupLayout::copy_texture_descriptor(const D3D12Frame& frame, const GPUBindGroupEntry& entry, D3D12BindGroup& bind_group, uint offset)
+void D3D12BindGroupLayout::copy_texture_descriptor(D3D12Frame& frame, const GPUBindGroupEntry& entry, const D3D12BindInfo& bind_info, D3D12BindGroup& bind_group)
 {
     auto  rhi = get_rhi();
     auto& tex = fetch_resource(rhi->views, entry.texture);
 
     D3D12_CPU_DESCRIPTOR_HANDLE src_handle = entry.type == GPUBindingResourceType::TEXTURE ? tex.srv_view.handle : tex.uav_view.handle;
-    D3D12_CPU_DESCRIPTOR_HANDLE dst_handle = bind_group.cbv_srv_uav_base.value().cpu_handle;
-    dst_handle.ptr += (offset + entry.index) * frame.cbv_srv_uav_heap.increment;
+    D3D12_CPU_DESCRIPTOR_HANDLE dst_handle = frame.default_heap.cpu(bind_group.default_index + bind_info.start);
     rhi->device->CopyDescriptorsSimple(1, dst_handle, src_handle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 }
 
-void D3D12BindGroupLayout::create_buffer_descriptor(const D3D12Frame& frame, const GPUBindGroupEntry& entry, D3D12BindGroup& bind_group, uint offset)
+void D3D12BindGroupLayout::create_buffer_descriptor(D3D12Frame& frame, const GPUBindGroupEntry& entry, const D3D12BindInfo& bind_info, D3D12BindGroup& bind_group)
 {
-    auto type = ranges.at(entry.binding).RangeType;
+    auto type = bindings.at(entry.binding).type;
     switch (type) {
         case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
-            create_buffer_cbv_descriptor(frame, entry, bind_group, offset);
+            create_buffer_cbv_descriptor(frame, entry, bind_info, bind_group);
             break;
         case D3D12_DESCRIPTOR_RANGE_TYPE_UAV:
-            create_buffer_uav_descriptor(frame, entry, bind_group, offset);
+            create_buffer_uav_descriptor(frame, entry, bind_info, bind_group);
             break;
         default:
             assert(!!!"Buffer descriptor only supports CBV and UAV!");
     }
 }
 
-void D3D12BindGroupLayout::create_buffer_cbv_descriptor(const D3D12Frame& frame, const GPUBindGroupEntry& entry, D3D12BindGroup& bind_group, uint offset)
+void D3D12BindGroupLayout::create_buffer_cbv_descriptor(D3D12Frame& frame, const GPUBindGroupEntry& entry, const D3D12BindInfo& bind_info, D3D12BindGroup& bind_group)
 {
     auto  rhi = get_rhi();
     auto& buf = fetch_resource(rhi->buffers, entry.buffer.buffer);
 
-    D3D12_CONSTANT_BUFFER_VIEW_DESC cbv_desc{};
-    cbv_desc.BufferLocation = buf.buffer->GetGPUVirtualAddress() + entry.buffer.offset;
-    cbv_desc.SizeInBytes    = entry.buffer.size == 0 ? buf.size() : entry.buffer.size;
-    cbv_desc.SizeInBytes    = (cbv_desc.SizeInBytes + 255) & ~255; // CBV alignment
+    if (bind_info.dynamic) {
+        uint  index    = frame.dynamic_heap.allocate();
+        auto& object   = frame.dynamic_heap.at(index);
+        object.type    = D3D12_ROOT_PARAMETER_TYPE_CBV;
+        object.address = buf.buffer->GetGPUVirtualAddress() + entry.buffer.offset;
+        if (bind_group.dynamic_index == -1) bind_group.dynamic_index = index;
+    } else {
+        D3D12_CONSTANT_BUFFER_VIEW_DESC cbv_desc{};
+        cbv_desc.BufferLocation = buf.buffer->GetGPUVirtualAddress() + entry.buffer.offset;
+        cbv_desc.SizeInBytes    = entry.buffer.size == 0 ? buf.size() : entry.buffer.size;
+        cbv_desc.SizeInBytes    = (cbv_desc.SizeInBytes + 255) & ~255; // CBV alignment
 
-    auto descriptor = bind_group.cbv_srv_uav_base.value();
-    descriptor.cpu_handle.ptr += (offset + entry.index) * frame.cbv_srv_uav_heap.increment;
-    rhi->device->CreateConstantBufferView(&cbv_desc, descriptor.cpu_handle);
+        D3D12_CPU_DESCRIPTOR_HANDLE descriptor = frame.default_heap.cpu(bind_group.default_index + bind_info.start);
+        rhi->device->CreateConstantBufferView(&cbv_desc, descriptor);
+    }
 }
 
-void D3D12BindGroupLayout::create_buffer_uav_descriptor(const D3D12Frame& frame, const GPUBindGroupEntry& entry, D3D12BindGroup& bind_group, uint offset)
+void D3D12BindGroupLayout::create_buffer_uav_descriptor(D3D12Frame& frame, const GPUBindGroupEntry& entry, const D3D12BindInfo& bind_info, D3D12BindGroup& bind_group)
 {
     auto  rhi = get_rhi();
     auto& buf = fetch_resource(rhi->buffers, entry.buffer.buffer);
 
-    D3D12_UNORDERED_ACCESS_VIEW_DESC uav_desc{};
-    uav_desc.Format                      = DXGI_FORMAT_R8_UINT;
-    uav_desc.ViewDimension               = D3D12_UAV_DIMENSION_BUFFER;
-    uav_desc.Buffer.FirstElement         = entry.buffer.offset;
-    uav_desc.Buffer.NumElements          = entry.buffer.size == 0 ? buf.size() : entry.buffer.size;
-    uav_desc.Buffer.StructureByteStride  = 1;
-    uav_desc.Buffer.CounterOffsetInBytes = 0;
-    uav_desc.Buffer.Flags                = D3D12_BUFFER_UAV_FLAG_NONE;
+    if (bind_info.dynamic) {
+        uint  index    = frame.dynamic_heap.allocate();
+        auto& object   = frame.dynamic_heap.at(index);
+        object.type    = D3D12_ROOT_PARAMETER_TYPE_UAV;
+        object.address = buf.buffer->GetGPUVirtualAddress() + entry.buffer.offset;
+        if (bind_group.dynamic_index == -1) bind_group.dynamic_index = index;
+    } else {
+        D3D12_UNORDERED_ACCESS_VIEW_DESC uav_desc{};
+        uav_desc.Format                      = DXGI_FORMAT_R8_UINT;
+        uav_desc.ViewDimension               = D3D12_UAV_DIMENSION_BUFFER;
+        uav_desc.Buffer.FirstElement         = entry.buffer.offset;
+        uav_desc.Buffer.NumElements          = entry.buffer.size == 0 ? buf.size() : entry.buffer.size;
+        uav_desc.Buffer.StructureByteStride  = 1;
+        uav_desc.Buffer.CounterOffsetInBytes = 0;
+        uav_desc.Buffer.Flags                = D3D12_BUFFER_UAV_FLAG_NONE;
 
-    auto descriptor = bind_group.cbv_srv_uav_base.value();
-    descriptor.cpu_handle.ptr += (offset + entry.index) * frame.cbv_srv_uav_heap.increment;
-    rhi->device->CreateUnorderedAccessView(buf.buffer, nullptr, &uav_desc, descriptor.cpu_handle);
+        D3D12_CPU_DESCRIPTOR_HANDLE descriptor = frame.default_heap.cpu(bind_group.default_index + bind_info.start);
+        rhi->device->CreateUnorderedAccessView(buf.buffer, nullptr, &uav_desc, descriptor);
+    }
 }
 #pragma endregion D3D12BindGroupLayout

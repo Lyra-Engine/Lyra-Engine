@@ -14,6 +14,8 @@
 namespace lyra::wsi
 {
 
+    using WindowCallback = std::function<void(WindowEvent)>;
+
     struct WindowAPI;
 
     struct WindowInfo
@@ -64,13 +66,17 @@ namespace lyra::wsi
 
     struct Window
     {
+        friend struct EventLoop;
+
         static auto init(const WindowDescriptor& descriptor) -> OwnedResource<Window>;
 
         static auto api() -> WindowAPI*;
 
-        void destroy();
-
+        // NOTE: only a convenience method for launching window and run.
+        // use EventLoop::bind(...) and EventLoop::run() for multiple windows
         void loop();
+
+        void destroy();
 
         auto get_window_info() const -> WindowInfo;
 
@@ -115,6 +121,13 @@ namespace lyra::wsi
         WindowCallbacks callbacks;
         WindowInput     inputs;
         WindowInfo      info;
+    };
+
+    struct EventLoop
+    {
+        static void bind(Window& window);
+
+        static void run();
     };
 
 } // namespace lyra::wsi

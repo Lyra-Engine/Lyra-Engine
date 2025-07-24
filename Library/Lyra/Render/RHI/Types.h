@@ -301,11 +301,11 @@ namespace lyra::rhi
 
         void resolve_query_set(GPUQuerySet query_set, GPUSize32 first_query, GPUSize32 query_count, const GPUBuffer& destination, GPUSize64 destination_offset) const;
 
-        void resource_barrier(const GPUBufferBarrier& barrier) const;
+        void resource_barrier(GPUBufferBarrier barrier) const;
+
+        void resource_barrier(GPUTextureBarrier barrier) const;
 
         void resource_barrier(const Vector<GPUBufferBarrier>& barriers) const;
-
-        void resource_barrier(const GPUTextureBarrier& barrier) const;
 
         void resource_barrier(const Vector<GPUTextureBarrier>& barriers) const;
     };
@@ -326,6 +326,7 @@ namespace lyra::rhi
 
     struct GPUSurfaceTexture : public GPUObjectBase
     {
+        GPUSurfaceHandle     surface;
         GPUTextureHandle     texture;
         GPUTextureViewHandle view;
         GPUFenceHandle       complete;
@@ -360,8 +361,6 @@ namespace lyra::rhi
 
         auto create_bind_group(const GPUBindGroupDescriptor& descriptor) const -> GPUBindGroup;
 
-        auto create_bind_group(const GPUBindlessDescriptor& descriptor) const -> GPUBindGroup;
-
         auto create_bind_group_layout(const GPUBindGroupLayoutDescriptor& descriptor) const -> GPUBindGroupLayout;
 
         auto create_pipeline_layout(const GPUPipelineLayoutDescriptor& descriptor) const -> GPUPipelineLayout;
@@ -385,6 +384,8 @@ namespace lyra::rhi
 
     struct GPUSurface : public GPUObjectBase
     {
+        GPUSurfaceHandle handle;
+
         auto get_current_texture() const -> GPUSurfaceTexture;
 
         auto get_current_format() const -> GPUTextureFormat;
@@ -392,13 +393,16 @@ namespace lyra::rhi
         auto get_current_extent() const -> GPUExtent2D;
 
         auto destroy() const -> void;
+
+        operator GPUSurfaceHandle() const { return handle; }
     };
 
     struct GPUAdapter : public GPUObjectBase
     {
-        GPUAdapterInfo       info     = {};
-        GPUSupportedFeatures features = {};
-        GPUSupportedLimits   limits   = {};
+        GPUAdapterInfo       info       = {};
+        GPUSupportedFeatures features   = {};
+        GPUSupportedLimits   limits     = {};
+        GPUProperties        properties = {};
 
         auto request_device(const GPUDeviceDescriptor& descriptor) -> GPUDevice;
     };
@@ -409,21 +413,19 @@ namespace lyra::rhi
         RHIBackend   backend;
         WindowHandle window = {};
 
-        static GPUDevice& get_current_device()
-        {
-            static GPUDevice DEVICE = {};
-            return DEVICE;
-        }
+        static auto get_current_adapter() -> GPUAdapter&;
 
-        static GPUSurface& get_current_surface()
-        {
-            static GPUSurface SURFACE = {};
-            return SURFACE;
-        }
+        static auto get_current_device() -> GPUDevice&;
 
         static auto init(const RHIDescriptor& descriptor) -> OwnedResource<RHI>;
 
         static auto api() -> RenderAPI*;
+
+        static void wait();
+
+        static void new_frame();
+
+        static void end_frame();
 
         auto destroy() const -> void;
 

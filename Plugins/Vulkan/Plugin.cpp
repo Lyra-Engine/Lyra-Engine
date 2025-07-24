@@ -12,19 +12,22 @@ using namespace lyra::wsi;
 
 auto get_api_name() -> CString { return "Vulkan"; }
 
-bool api::get_surface_extent(GPUExtent2D& extent)
+bool api::get_surface_extent(GPUSurfaceHandle surface, GPUExtent2D& extent)
 {
     auto rhi = get_rhi();
 
-    extent.width  = rhi->swapchain_extent.width;
-    extent.height = rhi->swapchain_extent.height;
+    auto& swapchain = fetch_resource(rhi->swapchains, surface);
+    extent.width    = swapchain.extent.width;
+    extent.height   = swapchain.extent.height;
     return true;
 }
 
-bool api::get_surface_format(GPUTextureFormat& format)
+bool api::get_surface_format(GPUSurfaceHandle surface, GPUTextureFormat& format)
 {
     auto rhi = get_rhi();
-    switch (rhi->swapchain_format) {
+
+    auto& swapchain = fetch_resource(rhi->swapchains, surface);
+    switch (swapchain.format) {
         case VK_FORMAT_B8G8R8A8_SRGB:
             format = GPUTextureFormat::BGRA8UNORM_SRGB;
             return true;
@@ -32,6 +35,22 @@ bool api::get_surface_format(GPUTextureFormat& format)
             throw std::runtime_error("Failed to match the corresponding swapchain format");
             return false;
     }
+}
+
+bool api::create_surface(GPUSurfaceHandle& surface, const GPUSurfaceDescriptor& desc)
+{
+    auto rhi = get_rhi();
+    auto vks = create_surface(rhi->instance, desc.window);
+    auto obj = VulkanSwapchain(desc, vks);
+    auto ind = rhi->swapchains.add(obj);
+
+    surface = GPUSurfaceHandle(ind);
+    return true;
+}
+
+void api::delete_surface(GPUSurfaceHandle surface)
+{
+    get_rhi()->swapchains.remove(surface.value);
 }
 
 bool api::create_buffer(GPUBufferHandle& buffer, const GPUBufferDescriptor& desc)
@@ -113,6 +132,11 @@ bool api::create_texture_view(GPUTextureViewHandle& handle, GPUTextureHandle tex
     return true;
 }
 
+void api::delete_texture_view(GPUTextureViewHandle handle)
+{
+    get_rhi()->views.remove(handle.value);
+}
+
 bool api::create_shader_module(GPUShaderModuleHandle& shader, const GPUShaderModuleDescriptor& desc)
 {
     auto obj = VulkanShader(desc);
@@ -153,7 +177,7 @@ void api::delete_fence(GPUFenceHandle fence)
     get_rhi()->fences.remove(fence.value);
 }
 
-bool api::create_blas(GPUBlasHandle& blas, const GPUBlasDescriptor& desc, const Vector<GPUBlasGeometrySizeDescriptor>& sizes)
+bool api::create_blas(GPUBlasHandle& blas, const GPUBlasDescriptor& desc, GPUBlasGeometrySizeDescriptors sizes)
 {
     auto obj = VulkanBlas(desc, sizes);
     auto rhi = get_rhi();
@@ -332,7 +356,7 @@ void api::wait_idle()
 
     // optional: clean up all pools from all frames
     for (auto& frame : rhi->frames)
-        frame.reset(true);
+        frame.free();
 }
 
 void api::wait_fence(GPUFenceHandle handle)
@@ -369,6 +393,7 @@ LYRA_EXPORT auto create() -> RenderAPI
     api.create_texture                   = api::create_texture;
     api.delete_texture                   = api::delete_texture;
     api.create_texture_view              = api::create_texture_view;
+    api.delete_texture_view              = api::delete_texture_view;
     api.create_sampler                   = api::create_sampler;
     api.delete_sampler                   = api::delete_sampler;
     api.create_fence                     = api::create_fence;
@@ -392,6 +417,8 @@ LYRA_EXPORT auto create() -> RenderAPI
     api.delete_bind_group_layout         = api::delete_bind_group_layout;
     api.wait_idle                        = api::wait_idle;
     api.wait_fence                       = api::wait_fence;
+    api.new_frame                        = api::new_frame;
+    api.end_frame                        = api::end_frame;
     api.map_buffer                       = api::map_buffer;
     api.unmap_buffer                     = api::unmap_buffer;
     api.get_mapped_range                 = api::get_mapped_range;

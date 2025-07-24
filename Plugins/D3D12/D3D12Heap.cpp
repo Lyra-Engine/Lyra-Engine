@@ -155,19 +155,29 @@ void D3D12HeapGPU::destroy()
     heap = nullptr;
 }
 
-D3D12GPUDescriptor D3D12HeapGPU::allocate(uint allocate_count)
+uint D3D12HeapGPU::allocate(uint allocate_count)
 {
+    // get the current base register
     uint index = count;
-
-    // allocate descriptor
-    D3D12GPUDescriptor descriptor{};
-    descriptor.cpu_handle = heap->GetCPUDescriptorHandleForHeapStart();
-    descriptor.gpu_handle = heap->GetGPUDescriptorHandleForHeapStart();
-    descriptor.cpu_handle.ptr += increment * index;
-    descriptor.gpu_handle.ptr += increment * index;
 
     // update count
     count += allocate_count;
+
+    return index;
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE D3D12HeapGPU::cpu(uint index) const
+{
+    auto descriptor = heap->GetCPUDescriptorHandleForHeapStart();
+    descriptor.ptr += index * increment;
     return descriptor;
 }
+
+D3D12_GPU_DESCRIPTOR_HANDLE D3D12HeapGPU::gpu(uint index) const
+{
+    auto descriptor = heap->GetGPUDescriptorHandleForHeapStart();
+    descriptor.ptr += index * increment;
+    return descriptor;
+}
+
 #pragma endregion D3D12HeapGPU

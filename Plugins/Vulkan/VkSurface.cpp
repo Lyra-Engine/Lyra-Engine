@@ -76,31 +76,3 @@ VkSurfaceKHR create_surface(VkInstance instance, const WindowHandle& handle)
     vk_check(create_surface(instance, handle, surface));
     return surface;
 }
-
-bool api::create_surface(GPUSurface& surface, const GPUSurfaceDescriptor& desc)
-{
-    auto rhi = get_rhi();
-
-    rhi->surface_desc = desc;
-    rhi->create_swapchain();
-    return true;
-}
-
-void api::delete_surface()
-{
-    auto rhi = get_rhi();
-
-    for (auto& swap_frame : rhi->swapchain_frames)
-        swap_frame.destroy();
-    rhi->swapchain_frames.clear();
-
-    if (rhi->swapchain) {
-        rhi->vtable.vkDestroySwapchainKHR(rhi->device, rhi->swapchain, nullptr);
-        rhi->swapchain = VK_NULL_HANDLE;
-    }
-
-    if (rhi->surface) {
-        vkDestroySurfaceKHR(rhi->instance, rhi->surface, nullptr);
-        rhi->surface = VK_NULL_HANDLE;
-    }
-}

@@ -128,30 +128,47 @@ void cmd::begin_render_pass(GPUCommandEncoderHandle cmdbuffer, const GPURenderPa
     }
 
     VkRenderingAttachmentInfo depth_attachment{};
-    depth_attachment.sType                         = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-    depth_attachment.pNext                         = nullptr;
-    depth_attachment.imageLayout                   = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-    depth_attachment.loadOp                        = vkenum(descriptor.depth_stencil_attachment.depth_load_op);
-    depth_attachment.storeOp                       = vkenum(descriptor.depth_stencil_attachment.depth_store_op);
-    depth_attachment.resolveImageView              = VK_NULL_HANDLE;
-    depth_attachment.resolveMode                   = VK_RESOLVE_MODE_NONE;
-    depth_attachment.clearValue.depthStencil.depth = descriptor.depth_stencil_attachment.depth_clear_value;
-    depth_attachment.imageView                     = descriptor.depth_stencil_attachment.view.valid()
-                                                         ? fetch_resource(rhi->views, descriptor.depth_stencil_attachment.view).view
-                                                         : VK_NULL_HANDLE;
-
     VkRenderingAttachmentInfo stencil_attachment{};
-    stencil_attachment.sType                           = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-    stencil_attachment.pNext                           = nullptr;
-    stencil_attachment.imageLayout                     = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-    stencil_attachment.loadOp                          = vkenum(descriptor.depth_stencil_attachment.stencil_load_op);
-    stencil_attachment.storeOp                         = vkenum(descriptor.depth_stencil_attachment.stencil_store_op);
-    stencil_attachment.resolveImageView                = VK_NULL_HANDLE;
-    stencil_attachment.resolveMode                     = VK_RESOLVE_MODE_NONE;
-    stencil_attachment.clearValue.depthStencil.stencil = descriptor.depth_stencil_attachment.stencil_clear_value;
-    stencil_attachment.imageView                       = descriptor.depth_stencil_attachment.view.valid()
-                                                             ? fetch_resource(rhi->views, descriptor.depth_stencil_attachment.view).view
-                                                             : VK_NULL_HANDLE;
+
+    bool has_depth_stencil      = descriptor.depth_stencil_attachment.view.valid();
+    bool has_depth_attachment   = false;
+    bool has_stencil_attachment = false;
+    if (has_depth_stencil) {
+        auto& view = fetch_resource(rhi->views, descriptor.depth_stencil_attachment.view);
+
+        has_depth_attachment   = view.aspects & VK_IMAGE_ASPECT_DEPTH_BIT;
+        has_stencil_attachment = view.aspects & VK_IMAGE_ASPECT_STENCIL_BIT;
+
+        auto layout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+        // clang-format off
+        if      (has_depth_attachment && !has_stencil_attachment) layout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+        else if (!has_depth_attachment && has_stencil_attachment) layout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL;
+        else                                                      layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        // clang-format on
+
+        // depth attachment
+        depth_attachment.sType                         = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+        depth_attachment.pNext                         = nullptr;
+        depth_attachment.imageLayout                   = layout;
+        depth_attachment.loadOp                        = vkenum(descriptor.depth_stencil_attachment.depth_load_op);
+        depth_attachment.storeOp                       = vkenum(descriptor.depth_stencil_attachment.depth_store_op);
+        depth_attachment.resolveImageView              = VK_NULL_HANDLE;
+        depth_attachment.resolveMode                   = VK_RESOLVE_MODE_NONE;
+        depth_attachment.clearValue.depthStencil.depth = descriptor.depth_stencil_attachment.depth_clear_value;
+        depth_attachment.imageView                     = view.view;
+
+        // stencil attachment
+        stencil_attachment.sType                           = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+        stencil_attachment.pNext                           = nullptr;
+        stencil_attachment.imageLayout                     = layout;
+        stencil_attachment.loadOp                          = vkenum(descriptor.depth_stencil_attachment.stencil_load_op);
+        stencil_attachment.storeOp                         = vkenum(descriptor.depth_stencil_attachment.stencil_store_op);
+        stencil_attachment.resolveImageView                = VK_NULL_HANDLE;
+        stencil_attachment.resolveMode                     = VK_RESOLVE_MODE_NONE;
+        stencil_attachment.clearValue.depthStencil.stencil = descriptor.depth_stencil_attachment.stencil_clear_value;
+        stencil_attachment.imageView                       = view.view;
+    }
 
     auto& view                = fetch_resource(rhi->views, descriptor.color_attachments.at(0).view);
     auto  render_area         = VkRect2D{};
@@ -167,8 +184,8 @@ void cmd::begin_render_pass(GPUCommandEncoderHandle cmdbuffer, const GPURenderPa
     rendering.layerCount           = 1;
     rendering.colorAttachmentCount = static_cast<uint32_t>(descriptor.color_attachments.size());
     rendering.pColorAttachments    = color_attachments.data();
-    rendering.pDepthAttachment     = nullptr; // &depth_attachment;
-    rendering.pStencilAttachment   = nullptr; // &stencil_attachment;
+    rendering.pDepthAttachment     = has_depth_attachment ? &depth_attachment : nullptr;
+    rendering.pStencilAttachment   = has_stencil_attachment ? &stencil_attachment : nullptr;
 
     rhi->vtable.vkCmdBeginRenderingKHR(cmd.command_buffer, &rendering);
 
@@ -228,7 +245,7 @@ void cmd::set_raytracing_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURayTraci
     }
 }
 
-void cmd::set_bind_group(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 index, GPUBindGroupHandle bind_group, const Vector<GPUBufferDynamicOffset>& dynamic_offsets)
+void cmd::set_bind_group(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 index, GPUBindGroupHandle bind_group, GPUBufferDynamicOffsets dynamic_offsets)
 {
     auto  rhi = get_rhi();
     auto& cmd = rhi->current_frame().command(cmdbuffer);
@@ -331,8 +348,8 @@ void cmd::copy_buffer_to_texture(GPUCommandEncoderHandle cmdbuffer, const GPUTex
 
     auto copy                            = VkBufferImageCopy{};
     copy.bufferOffset                    = source.offset;
-    copy.bufferRowLength                 = source.bytes_per_row;
-    copy.bufferImageHeight               = source.rows_per_image; // TODO: convert this to texels, not in bytes
+    copy.bufferRowLength                 = infer_texture_row_length(dst.format, source.bytes_per_row);
+    copy.bufferImageHeight               = source.rows_per_image;
     copy.imageOffset.x                   = destination.origin.x;
     copy.imageOffset.y                   = destination.origin.y;
     copy.imageOffset.z                   = destination.origin.z;
@@ -355,9 +372,12 @@ void cmd::copy_texture_to_buffer(GPUCommandEncoderHandle cmdbuffer, const GPUTex
     auto& src = fetch_resource(rhi->textures, source.texture);
     auto& dst = fetch_resource(rhi->buffers, destination.buffer);
 
+    if (destination.bytes_per_row != 0)
+        assert("non-zero bytes per row is currently not implemented!");
+
     auto copy                            = VkBufferImageCopy{};
     copy.bufferOffset                    = destination.offset;
-    copy.bufferRowLength                 = destination.bytes_per_row; // TODO: convert this to texels, not in bytes
+    copy.bufferRowLength                 = infer_texture_row_length(src.format, destination.bytes_per_row);
     copy.bufferImageHeight               = destination.rows_per_image;
     copy.imageOffset.x                   = source.origin.x;
     copy.imageOffset.y                   = source.origin.y;
@@ -526,12 +546,10 @@ void cmd::resolve_query_set(GPUCommandEncoderHandle cmdbuffer, GPUQuerySetHandle
     rhi->vtable.vkCmdCopyQueryPoolResults(cmd.command_buffer, qry.pool, first_query, query_count, buf.buffer, destination_offset, stride, 0);
 }
 
-void cmd::memory_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUMemoryBarrier* barriers)
+void cmd::memory_barrier(GPUCommandEncoderHandle cmdbuffer, GPUMemoryBarriers barriers)
 {
     Vector<VkMemoryBarrier2KHR> bars;
-    for (uint32_t i = 0; i < count; i++) {
-        auto& barrier = barriers[i];
-
+    for (auto& barrier : barriers) {
         auto b          = VkMemoryBarrier2KHR{};
         b.sType         = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2_KHR;
         b.pNext         = nullptr;
@@ -558,15 +576,13 @@ void cmd::memory_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUM
     rhi->vtable.vkCmdPipelineBarrier2KHR(cmd.command_buffer, &dependency);
 }
 
-void cmd::buffer_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUBufferBarrier* barriers)
+void cmd::buffer_barrier(GPUCommandEncoderHandle cmdbuffer, GPUBufferBarriers barriers)
 {
     auto  rhi = get_rhi();
     auto& cmd = rhi->current_frame().command(cmdbuffer);
 
     Vector<VkBufferMemoryBarrier2KHR> bars;
-    for (uint32_t i = 0; i < count; i++) {
-        auto& barrier = barriers[i];
-
+    for (auto& barrier : barriers) {
         auto b                = VkBufferMemoryBarrier2KHR{};
         b.sType               = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2_KHR;
         b.pNext               = nullptr;
@@ -595,15 +611,13 @@ void cmd::buffer_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUB
     rhi->vtable.vkCmdPipelineBarrier2KHR(cmd.command_buffer, &dependency);
 }
 
-void cmd::texture_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUTextureBarrier* barriers)
+void cmd::texture_barrier(GPUCommandEncoderHandle cmdbuffer, GPUTextureBarriers barriers)
 {
     auto  rhi = get_rhi();
     auto& cmd = rhi->current_frame().command(cmdbuffer);
 
     Vector<VkImageMemoryBarrier2KHR> bars;
-    for (uint32_t i = 0; i < count; i++) {
-        auto& barrier = barriers[i];
-
+    for (auto& barrier : barriers) {
         auto& t         = fetch_resource(rhi->textures, barrier.texture);
         auto  b         = VkImageMemoryBarrier2KHR{};
         b.sType         = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2_KHR;
@@ -616,7 +630,7 @@ void cmd::texture_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPU
         b.oldLayout     = vkenum(barrier.src_layout);
         b.newLayout     = vkenum(barrier.dst_layout);
 
-        b.subresourceRange.aspectMask     = vkenum(t.aspects);
+        b.subresourceRange.aspectMask     = t.aspects;
         b.subresourceRange.baseArrayLayer = barrier.subresources.base_array_layer;
         b.subresourceRange.baseMipLevel   = barrier.subresources.base_mip_level;
         b.subresourceRange.layerCount     = barrier.subresources.array_layers;
@@ -638,7 +652,7 @@ void cmd::texture_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPU
     rhi->vtable.vkCmdPipelineBarrier2KHR(cmd.command_buffer, &dependency);
 }
 
-void cmd::build_tlases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, uint32_t count, GPUTlasBuildEntry* entries)
+void cmd::build_tlases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, GPUTlasBuildEntries entries)
 {
     auto  rhi = get_rhi();
     auto& cmd = rhi->current_frame().command(cmdbuffer);
@@ -648,14 +662,13 @@ void cmd::build_tlases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratc
     Vector<VkAccelerationStructureBuildGeometryInfoKHR> build_infos  = {};
     Vector<VkAccelerationStructureBuildRangeInfoKHR*>   build_ranges = {};
 
-    barriers.reserve(count);
-    build_infos.reserve(count);
-    build_ranges.reserve(count);
+    barriers.reserve(entries.size());
+    build_infos.reserve(entries.size());
+    build_ranges.reserve(entries.size());
 
     VkDeviceAddress scratch_address = buf.device_address;
-    for (uint i = 0; i < count; i++) {
-        auto& entry = entries[i];
-        auto& tlas  = fetch_resource(rhi->tlases, entry.tlas);
+    for (auto& entry : entries) {
+        auto& tlas = fetch_resource(rhi->tlases, entry.tlas);
 
         // create VkAccelerationStructureInstanceKHR on the fly
         auto address = tlas.staging.map<VkAccelerationStructureInstanceKHR>();
@@ -736,7 +749,7 @@ void cmd::build_tlases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratc
         build_ranges.data());
 }
 
-void cmd::build_blases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, uint32_t count, GPUBlasBuildEntry* entries)
+void cmd::build_blases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, GPUBlasBuildEntries entries)
 {
     auto  rhi = get_rhi();
     auto& cmd = rhi->current_frame().command(cmdbuffer);
@@ -745,21 +758,20 @@ void cmd::build_blases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratc
     Vector<VkAccelerationStructureBuildGeometryInfoKHR> build_infos  = {};
     Vector<VkAccelerationStructureBuildRangeInfoKHR*>   build_ranges = {};
 
-    build_infos.reserve(count);
-    build_ranges.reserve(count);
+    build_infos.reserve(entries.size());
+    build_ranges.reserve(entries.size());
 
     VkDeviceAddress scratch_address = buf.device_address;
-    for (uint i = 0; i < count; i++) {
-        auto& entry = entries[i];
-        auto& blas  = fetch_resource(rhi->blases, entry.blas);
+    for (auto& entry : entries) {
+        auto& blas = fetch_resource(rhi->blases, entry.blas);
 
         // geometry count check
-        if (entries->geometries.triangles.size() > blas.geometries.size()) {
+        if (entry.geometries.triangles.size() > blas.geometries.size()) {
             get_logger()->error("Trying to build more geometries than BVH could hold!");
         }
 
         // update geometries and ranges
-        uint geometry_count = std::min(entries->geometries.triangles.size(), blas.geometries.size());
+        uint geometry_count = std::min(entry.geometries.triangles.size(), blas.geometries.size());
         for (uint k = 0; k < geometry_count; k++) {
             auto& src_geometry = entry.geometries.triangles.at(k);
             auto& dst_geometry = blas.geometries.at(k);

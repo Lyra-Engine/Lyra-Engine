@@ -105,6 +105,7 @@ struct VulkanTexture
     VkImage            image = VK_NULL_HANDLE;
     VmaAllocation      allocation;
     VmaAllocationInfo  alloc_info = {};
+    VkFormat           format     = VK_FORMAT_UNDEFINED;
     VkImageAspectFlags aspects    = 0;
     VkExtent2D         area       = {}; // only used for Render Area
 
@@ -119,8 +120,9 @@ struct VulkanTexture
 
 struct VulkanTextureView
 {
-    VkImageView view = VK_NULL_HANDLE;
-    VkExtent2D  area = {}; // only used for Render Area
+    VkImageView        view    = VK_NULL_HANDLE;
+    VkExtent2D         area    = {}; // only used for Render Area
+    VkImageAspectFlags aspects = 0;
 
     // implementation in VkImage.cpp
     explicit VulkanTextureView();
@@ -299,7 +301,7 @@ struct VulkanBlas
 
     // implementation in VkBlas.cpp
     explicit VulkanBlas();
-    explicit VulkanBlas(const GPUBlasDescriptor& desc, const Vector<GPUBlasGeometrySizeDescriptor>& sizes);
+    explicit VulkanBlas(const GPUBlasDescriptor& desc, GPUBlasGeometrySizeDescriptors sizes);
 
     void destroy();
 
@@ -388,17 +390,6 @@ struct VulkanCommandPool
     AllocatedCommandBuffers secondary;
 };
 
-struct VulkanSwapFrame
-{
-    GPUTextureHandle     texture;
-    GPUTextureViewHandle view;
-    GPUFenceHandle       render_complete_semaphore;
-
-    // implementation in vkSwapchain.cpp
-    void init(VkImage image, VkFormat format, VkExtent2D extent);
-    void destroy();
-};
-
 struct VulkanFrame
 {
     // used to check command buffer usage,
@@ -406,9 +397,13 @@ struct VulkanFrame
     // frame id must match VulkanFrame's id
     uint32_t frame_id = 0u;
 
-    VulkanFence       inflight_fence;
-    GPUFenceHandle    image_available_semaphore; // must be binary semaphores
-    GPUFenceHandle    render_complete_semaphore; // NOTE: VulkanFrame does NOT own this.
+    // NOTE: VulkanFrame does NOT own these synchronization primitives.
+    // These should be copied from VulkanSwapchain::Frame when frame is selected.
+    VulkanFence     inflight_fence; // only the most recent one
+    GPUFenceHandle  image_available_semaphore;
+    GPUFenceHandle  render_complete_semaphore;
+    Vector<VkFence> existing_fences;
+
     VulkanCommandPool compute_command_pool;
     VulkanCommandPool graphics_command_pool;
     VulkanCommandPool transfer_command_pool;
@@ -433,9 +428,54 @@ struct VulkanFrame
     // implementation in VkFrame.cpp
     void init();
     void wait();
-    void reset(bool free = false);
+    void reset();
+    void free();
     auto allocate(GPUQueueType type, bool primary) -> GPUCommandEncoderHandle;
     void destroy();
+};
+
+struct VulkanSwapchain
+{
+    struct Frame
+    {
+        GPUTextureHandle     texture;
+        GPUTextureViewHandle view;
+
+        // implementation in vkSwapchain.cpp
+        void init(VkImage image, VkFormat format, VkExtent2D extent);
+        void destroy();
+    };
+
+    // descriptor
+    GPUSurfaceDescriptor desc = {};
+
+    // surface object
+    VkSurfaceKHR surface = VK_NULL_HANDLE;
+
+    // swapchain object
+    VkSwapchainKHR swapchain = VK_NULL_HANDLE;
+
+    // objects for swapchain recreation
+    VkExtent2D      extent;
+    VkFormat        format;
+    VkColorSpaceKHR colorspace;
+
+    // swapchain frames
+    Vector<Frame> frames = {};
+
+    // fence objects
+    Vector<VulkanFence>    inflight_fences;
+    Vector<GPUFenceHandle> image_available_semaphores;
+    Vector<GPUFenceHandle> render_complete_semaphores;
+
+    // implementation in VkSwapchain.cpp
+    explicit VulkanSwapchain();
+    explicit VulkanSwapchain(const GPUSurfaceDescriptor& desc, VkSurfaceKHR surface);
+
+    void recreate();
+    void destroy();
+
+    bool valid() const { return swapchain != VK_NULL_HANDLE; }
 };
 
 struct VulkanRHI
@@ -449,26 +489,23 @@ struct VulkanRHI
     VkQueue            graphics_queue = VK_NULL_HANDLE;
     VkQueue            compute_queue  = VK_NULL_HANDLE;
     VkQueue            present_queue  = VK_NULL_HANDLE;
-    VkSwapchainKHR     swapchain      = VK_NULL_HANDLE;
     VolkDeviceTable    vtable         = {};
     VmaAllocator       alloc;
     QueueFamilyIndices queues;
 
-    // objects for swapchain recreation
-    GPUSurfaceDescriptor surface_desc = {};
-    VkExtent2D           swapchain_extent;
-    VkFormat             swapchain_format;
-    VkColorSpaceKHR      swapchain_colorspace;
+    // additional properties
+    VkPhysicalDeviceProperties  props  = {};
+    VkPhysicalDeviceProperties2 props2 = {};
 
     // frame objects
-    Vector<VulkanFrame>     frames           = {};
-    Vector<VulkanSwapFrame> swapchain_frames = {};
+    Vector<VulkanFrame> frames = {};
 
     // frame tracker
     uint current_frame_index = 0;
     uint current_image_index = 0;
 
     // collection of objects
+    VulkanResourceManager<VulkanSwapchain>       swapchains;
     VulkanResourceManager<VulkanSemaphore>       fences;
     VulkanResourceManager<VulkanBuffer>          buffers;
     VulkanResourceManager<VulkanTexture>         textures;
@@ -483,8 +520,6 @@ struct VulkanRHI
     VulkanResourceManager<VulkanBindGroupLayout> bind_group_layouts;
 
     auto current_frame() -> VulkanFrame& { return frames.at(current_frame_index % frames.size()); }
-    auto current_image() -> VulkanSwapFrame& { return swapchain_frames.at(current_image_index); }
-    void create_swapchain(); // implementation in VkSwapchain.cpp
 
     // debug label
     void set_debug_label(VkObjectType type, uint64_t handle, CString name)
@@ -510,10 +545,10 @@ namespace api
     void delete_instance();
 
     // surface apis
-    bool create_surface(GPUSurface& surface, const GPUSurfaceDescriptor& desc);
-    void delete_surface();
-    bool get_surface_extent(GPUExtent2D& extent);
-    bool get_surface_format(GPUTextureFormat& format);
+    bool create_surface(GPUSurfaceHandle& surface, const GPUSurfaceDescriptor& desc);
+    void delete_surface(GPUSurfaceHandle surface);
+    bool get_surface_extent(GPUSurfaceHandle surface, GPUExtent2D& extent);
+    bool get_surface_format(GPUSurfaceHandle surface, GPUTextureFormat& format);
 
     // adapter apis
     bool create_adapter(GPUAdapter& adapter, const GPUAdapterDescriptor& descriptor);
@@ -543,13 +578,14 @@ namespace api
     bool create_texture(GPUTextureHandle& texture, const GPUTextureDescriptor& desc);
     void delete_texture(GPUTextureHandle texture);
     bool create_texture_view(GPUTextureViewHandle& view, GPUTextureHandle texture, const GPUTextureViewDescriptor& desc);
+    void delete_texture_view(GPUTextureViewHandle view);
 
     // shader apis
     bool create_shader_module(GPUShaderModuleHandle& shader, const GPUShaderModuleDescriptor& desc);
     void delete_shader_module(GPUShaderModuleHandle shader);
 
     // bvh blas apis
-    bool create_blas(GPUBlasHandle& blas, const GPUBlasDescriptor& descriptor, const Vector<GPUBlasGeometrySizeDescriptor>& sizes);
+    bool create_blas(GPUBlasHandle& blas, const GPUBlasDescriptor& descriptor, GPUBlasGeometrySizeDescriptors sizes);
     void delete_blas(GPUBlasHandle blas);
     bool get_blas_sizes(GPUBlasHandle blas, GPUBVHSizes& sizes);
 
@@ -578,9 +614,13 @@ namespace api
     bool create_raytracing_pipeline(GPURayTracingPipelineHandle& handle, const GPURayTracingPipelineDescriptor& desc);
     void delete_raytracing_pipeline(GPURayTracingPipelineHandle pipeline);
 
+    // vulkan frame logic
+    void new_frame();
+    void end_frame();
+
     // vulkan swapchain
-    bool acquire_next_frame(GPUTextureHandle& texture, GPUTextureViewHandle& view, GPUFenceHandle& image_available_fence, GPUFenceHandle& render_complete_fence, bool& suboptimal);
-    bool present_curr_frame();
+    bool acquire_next_frame(GPUSurfaceHandle surface, GPUTextureHandle& texture, GPUTextureViewHandle& view, GPUFenceHandle& image_available_fence, GPUFenceHandle& render_complete_fence, bool& suboptimal);
+    bool present_curr_frame(GPUSurfaceHandle surface);
 
     // vulkan desciprtor
     bool create_bind_group(GPUBindGroupHandle& bind_group, const GPUBindGroupDescriptor& desc);
@@ -606,7 +646,7 @@ namespace cmd
     void set_render_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURenderPipelineHandle pipeline);
     void set_compute_pipeline(GPUCommandEncoderHandle cmdbuffer, GPUComputePipelineHandle pipeline);
     void set_raytracing_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURayTracingPipelineHandle pipeline);
-    void set_bind_group(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 index, GPUBindGroupHandle bind_group, const Vector<GPUBufferDynamicOffset>& dynamic_offsets);
+    void set_bind_group(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 index, GPUBindGroupHandle bind_group, GPUBufferDynamicOffsets dynamic_offsets);
     void set_index_buffer(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle buffer, GPUIndexFormat format, GPUSize64 offset, GPUSize64 size);
     void set_vertex_buffer(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 slot, GPUBufferHandle buffer, GPUSize64 offset, GPUSize64 size);
     void draw(GPUCommandEncoderHandle cmdbuffer, GPUSize32 vertex_count, GPUSize32 instance_count, GPUSize32 first_vertex, GPUSize32 first_instance);
@@ -629,11 +669,11 @@ namespace cmd
     void write_timestamp(GPUCommandEncoderHandle cmdbuffer, GPUQuerySetHandle query_set, GPUSize32 query_index);
     void write_blas_properties(GPUCommandEncoderHandle cmdbuffer, GPUQuerySetHandle query_set, GPUSize32 query_index, GPUBlasHandle blas);
     void resolve_query_set(GPUCommandEncoderHandle cmdbuffer, GPUQuerySetHandle query_set, GPUSize32 first_query, GPUSize32 query_count, GPUBufferHandle destination, GPUSize64 destination_offset);
-    void memory_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUMemoryBarrier* barriers);
-    void buffer_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUBufferBarrier* barriers);
-    void texture_barrier(GPUCommandEncoderHandle cmdbuffer, uint32_t count, GPUTextureBarrier* barriers);
-    void build_tlases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, uint32_t count, GPUTlasBuildEntry* entries);
-    void build_blases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, uint32_t count, GPUBlasBuildEntry* entries);
+    void memory_barrier(GPUCommandEncoderHandle cmdbuffer, GPUMemoryBarriers barriers);
+    void buffer_barrier(GPUCommandEncoderHandle cmdbuffer, GPUBufferBarriers barriers);
+    void texture_barrier(GPUCommandEncoderHandle cmdbuffer, GPUTextureBarriers barriers);
+    void build_tlases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, GPUTlasBuildEntries entries);
+    void build_blases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratch_buffer, GPUBlasBuildEntries entries);
 } // namespace cmd
 
 auto get_logger() -> Logger;
@@ -652,7 +692,6 @@ auto vkenum(GPUBlendFactor factor) -> VkBlendFactor;
 auto vkenum(GPULoadOp op) -> VkAttachmentLoadOp;
 auto vkenum(GPUStoreOp op) -> VkAttachmentStoreOp;
 auto vkenum(GPUQueryType query) -> VkQueryType;
-auto vkenum(GPUTextureAspect aspect) -> VkImageAspectFlags;
 auto vkenum(GPUTextureDimension dim) -> VkImageType;
 auto vkenum(GPUTextureViewDimension dim) -> VkImageViewType;
 auto vkenum(GPUAddressMode mode) -> VkSamplerAddressMode;
@@ -671,6 +710,7 @@ auto vkenum(GPUBarrierLayout layout) -> VkImageLayout;
 auto vkenum(GPUIntegerCoordinate samples) -> VkSampleCountFlagBits;
 auto vkenum(GPUBlasType type) -> VkGeometryTypeKHR;
 auto vkenum(GPUBVHUpdateMode mode) -> VkBuildAccelerationStructureModeKHR;
+auto vkenum(GPUTextureAspectFlags aspect) -> VkImageAspectFlags;
 auto vkenum(GPUColorWriteFlags color) -> VkColorComponentFlags;
 auto vkenum(GPUBufferUsageFlags usages) -> VkBufferUsageFlags;
 auto vkenum(GPUTextureUsageFlags usages, GPUTextureFormat format) -> VkImageUsageFlags;
@@ -709,6 +749,10 @@ auto choose_swap_surface_format(const Vector<VkSurfaceFormatKHR>& availableForma
 auto choose_swap_present_mode(const Vector<VkPresentModeKHR>& availablePresentModes) -> VkPresentModeKHR;
 auto choose_swap_extent(const GPUSurfaceDescriptor& desc, const VkSurfaceCapabilitiesKHR& capabilities) -> VkExtent2D;
 
+// size of
+uint size_of(VkFormat format);
+uint infer_texture_row_length(VkFormat format, uint bytes_per_row);
+
 template <typename T, typename Handle>
 T& fetch_resource(VulkanResourceManager<T>& manager, Handle handle)
 {
@@ -720,13 +764,13 @@ T& fetch_resource(VulkanResourceManager<T>& manager, Handle handle)
 
     // check resource range
     if (handle.value >= manager.data.size()) {
-        get_logger()->error("Resource handle {} with value={} access out of range!", typeid(Handle).name(), handle.value);
+        get_logger()->error("Resource handle {} with value={} access out of range!", Handle::type_name(), handle.value);
         exit(1);
     }
 
     T& resource = manager.data.at(handle.value);
     if (!resource.valid()) {
-        get_logger()->error("Resource handle {} with value={} has invalid Vk object!", typeid(Handle).name(), handle.value);
+        get_logger()->error("Resource handle {} with value={} has invalid object!", Handle::type_name(), handle.value);
         exit(1);
     }
     return resource;

@@ -56,6 +56,9 @@ VulkanTexture::VulkanTexture(const GPUTextureDescriptor& desc) : aspects(0)
     if (desc.label)
         rhi->set_debug_label(VK_OBJECT_TYPE_IMAGE, (uint64_t)image, desc.label);
 
+    // record the format
+    format = tex_create_info.format;
+
     // record the render area
     area.width  = desc.size.width;
     area.height = desc.size.height;
@@ -103,6 +106,9 @@ VulkanTextureView::VulkanTextureView(const VulkanTexture& texture, const GPUText
 
     // record the render area
     area = texture.area;
+
+    // record the aspect flags
+    aspects = texture.aspects;
 }
 
 void VulkanTextureView::destroy()

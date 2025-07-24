@@ -1,11 +1,11 @@
 #ifndef LYRA_LIBRARY_RENDER_RHI_UTILS_H
 #define LYRA_LIBRARY_RENDER_RHI_UTILS_H
 
+#include <Lyra/Common/View.h>
 #include <Lyra/Common/Assert.h>
 #include <Lyra/Common/String.h>
 #include <Lyra/Common/Handle.h>
 #include <Lyra/Common/BitFlags.h>
-#include <Lyra/Common/Container.h>
 #include <Lyra/Render/RHI/Enums.h>
 
 ENABLE_BIT_FLAGS(lyra::rhi::RHIFlag);
@@ -44,24 +44,86 @@ namespace lyra::rhi
     using GPUBarrierAccessFlags    = BitFlags<GPUBarrierAccess>;
     using GPUBVHFlags              = BitFlags<GPUBVHFlag>;
     using GPUBVHGeometryFlags      = BitFlags<GPUBVHGeometryFlag>;
+    using GPUTextureAspectFlags    = BitFlags<GPUTextureAspect>;
+
+    template <GPUObjectType E>
+    using GPUHandle = Handle<GPUObjectType, E>;
 
     // typed GPU handle
-    using GPUFenceHandle              = Handle<GPUObjectType, GPUObjectType::FENCE>;
-    using GPUCommandEncoderHandle     = Handle<GPUObjectType, GPUObjectType::COMMAND_ENCODER>;
-    using GPUBufferHandle             = Handle<GPUObjectType, GPUObjectType::BUFFER>;
-    using GPUSamplerHandle            = Handle<GPUObjectType, GPUObjectType::SAMPLER>;
-    using GPUTextureHandle            = Handle<GPUObjectType, GPUObjectType::TEXTURE>;
-    using GPUTextureViewHandle        = Handle<GPUObjectType, GPUObjectType::TEXTURE_VIEW>;
-    using GPUShaderModuleHandle       = Handle<GPUObjectType, GPUObjectType::SHADER_MODULE>;
-    using GPUQuerySetHandle           = Handle<GPUObjectType, GPUObjectType::QUERY_SET>;
-    using GPUTlasHandle               = Handle<GPUObjectType, GPUObjectType::TLAS>;
-    using GPUBlasHandle               = Handle<GPUObjectType, GPUObjectType::BLAS>;
-    using GPUBindGroupHandle          = Handle<GPUObjectType, GPUObjectType::BIND_GROUP>;
-    using GPUBindGroupLayoutHandle    = Handle<GPUObjectType, GPUObjectType::BIND_GROUP_LAYOUT>;
-    using GPUPipelineLayoutHandle     = Handle<GPUObjectType, GPUObjectType::PIPELINE_LAYOUT>;
-    using GPURenderPipelineHandle     = Handle<GPUObjectType, GPUObjectType::RENDER_PIPELINE>;
-    using GPUComputePipelineHandle    = Handle<GPUObjectType, GPUObjectType::COMPUTE_PIPELINE>;
-    using GPURayTracingPipelineHandle = Handle<GPUObjectType, GPUObjectType::RAYTRACING_PIPELINE>;
+    using GPUSurfaceHandle            = GPUHandle<GPUObjectType::SURFACE>;
+    using GPUFenceHandle              = GPUHandle<GPUObjectType::FENCE>;
+    using GPUCommandEncoderHandle     = GPUHandle<GPUObjectType::COMMAND_ENCODER>;
+    using GPUBufferHandle             = GPUHandle<GPUObjectType::BUFFER>;
+    using GPUSamplerHandle            = GPUHandle<GPUObjectType::SAMPLER>;
+    using GPUTextureHandle            = GPUHandle<GPUObjectType::TEXTURE>;
+    using GPUTextureViewHandle        = GPUHandle<GPUObjectType::TEXTURE_VIEW>;
+    using GPUShaderModuleHandle       = GPUHandle<GPUObjectType::SHADER_MODULE>;
+    using GPUQuerySetHandle           = GPUHandle<GPUObjectType::QUERY_SET>;
+    using GPUTlasHandle               = GPUHandle<GPUObjectType::TLAS>;
+    using GPUBlasHandle               = GPUHandle<GPUObjectType::BLAS>;
+    using GPUBindGroupHandle          = GPUHandle<GPUObjectType::BIND_GROUP>;
+    using GPUBindGroupLayoutHandle    = GPUHandle<GPUObjectType::BIND_GROUP_LAYOUT>;
+    using GPUPipelineLayoutHandle     = GPUHandle<GPUObjectType::PIPELINE_LAYOUT>;
+    using GPURenderPipelineHandle     = GPUHandle<GPUObjectType::RENDER_PIPELINE>;
+    using GPUComputePipelineHandle    = GPUHandle<GPUObjectType::COMPUTE_PIPELINE>;
+    using GPURayTracingPipelineHandle = GPUHandle<GPUObjectType::RAYTRACING_PIPELINE>;
+
+    // forward declarations
+    using GPUFeatureNames   = TypedView<GPUFeatureName>;
+    using GPUTextureFormats = TypedView<GPUTextureFormat>;
+
+    struct GPUTlasInstance;
+    using GPUTlasInstances = TypedView<GPUTlasInstance>;
+
+    struct GPUBlasTriangleGeometry;
+    using GPUBlasTriangleGeometries = TypedView<GPUBlasTriangleGeometry>;
+
+    struct GPUBindGroupEntry;
+    using GPUBindGroupEntries = TypedView<GPUBindGroupEntry>;
+
+    struct GPUBindGroupLayoutEntry;
+    using GPUBindGroupLayoutEntries = TypedView<GPUBindGroupLayoutEntry>;
+    using GPUBindGroupLayoutHandles = TypedView<GPUBindGroupLayoutHandle>;
+
+    struct GPUBindGroupLayoutDescriptor;
+    using GPUBindGroupLayoutDescriptors = TypedView<GPUBindGroupLayoutDescriptor>;
+
+    struct GPUVertexAttribute;
+    using GPUVertexAttributes = TypedView<GPUVertexAttribute>;
+
+    struct GPUVertexBufferLayout;
+    using GPUVertexBufferLayouts = TypedView<GPUVertexBufferLayout>;
+
+    struct GPUColorTargetState;
+    using GPUColorTargetStates = TypedView<GPUColorTargetState>;
+
+    struct GPURenderPassColorAttachment;
+    using GPURenderPassColorAttachments = TypedView<GPURenderPassColorAttachment>;
+
+    struct GPUBlasGeometrySizeDescriptor;
+    using GPUBlasGeometrySizeDescriptors = TypedView<GPUBlasGeometrySizeDescriptor>;
+
+    struct GPUTlasBuildEntry;
+    using GPUTlasBuildEntries = TypedView<GPUTlasBuildEntry>;
+
+    struct GPUBlasBuildEntry;
+    using GPUBlasBuildEntries = TypedView<GPUBlasBuildEntry>;
+
+    struct GPUMemoryBarrier;
+    using GPUMemoryBarriers = TypedView<GPUMemoryBarrier>;
+
+    struct GPUBufferBarrier;
+    using GPUBufferBarriers = TypedView<GPUBufferBarrier>;
+
+    struct GPUTextureBarrier;
+    using GPUTextureBarriers = TypedView<GPUTextureBarrier>;
+
+    struct GPUBufferBinding;
+    using GPUBufferBindings     = TypedView<GPUBufferBinding>;
+    using GPUSamplerHandles     = TypedView<GPUSamplerHandle>;
+    using GPUTextureViewHandles = TypedView<GPUTextureViewHandle>;
+
+    using GPUBufferDynamicOffsets = TypedView<GPUBufferDynamicOffset>;
 
     struct MappedBufferRange
     {
@@ -96,6 +158,22 @@ namespace lyra::rhi
             assert(i < count);
             return data[i];
         }
+    };
+
+    // NOTE: Non-WebGPU standard
+    struct GPUBindingIndex
+    {
+        // index is the same as Vulkan style flattened binding,
+        // expected to be unique within the bind group.
+        uint16_t index = 0;
+
+        // register_type and register_index are D3D12 specific fields,
+        // because D3D12 uses spaced registers instead of flattened indexed bindings.
+        // Therefore, for robust bind group layout creation, it is necessary to specify
+        // both binding index and register* info.
+        // Users are expected to use the reflection or serialization/deserialization API
+        // to automatically populate these.
+        uint16_t register_index = 0;
     };
 
     struct GPUSupportedFeatures
@@ -155,14 +233,19 @@ namespace lyra::rhi
         uint max_compute_workgroups_per_dimension            = 65535;
     };
 
+    struct GPUProperties
+    {
+        uint subgroup_max_size           = 0;
+        uint subgroup_min_size           = 0;
+        uint texture_row_pitch_alignment = 0;
+    };
+
     struct GPUAdapterInfo
     {
-        String architecture      = "";
-        String descrition        = "";
-        String device            = "";
-        String vendor            = "";
-        uint   subgroup_max_size = 0;
-        uint   subgroup_min_size = 0;
+        String architecture = "";
+        String descrition   = "";
+        String device       = "";
+        String vendor       = "";
     };
 
     struct GPUColor
@@ -213,10 +296,10 @@ namespace lyra::rhi
 
     struct GPUTexelCopyTextureInfo
     {
-        GPUTextureHandle     texture;
-        GPUIntegerCoordinate mip_level = 0;
-        GPUOrigin3D          origin    = {};
-        GPUTextureAspect     aspect    = GPUTextureAspect::ALL;
+        GPUTextureHandle      texture;
+        GPUIntegerCoordinate  mip_level = 0;
+        GPUOrigin3D           origin    = {};
+        GPUTextureAspectFlags aspect    = GPUTextureAspect::ALL;
     };
 
     struct GPUBufferBindingLayout
@@ -297,7 +380,7 @@ namespace lyra::rhi
         GPUBlasType type;
         union
         {
-            Vector<GPUBlasTriangleGeometry> triangles;
+            GPUBlasTriangleGeometries triangles;
         };
 
         // default trivial constructor / destructor
@@ -321,8 +404,8 @@ namespace lyra::rhi
 
     struct GPUTlasBuildEntry
     {
-        GPUTlasHandle           tlas;
-        Vector<GPUTlasInstance> instances;
+        GPUTlasHandle    tlas;
+        GPUTlasInstances instances;
     };
 
     struct GPUBlendComponent
@@ -338,18 +421,22 @@ namespace lyra::rhi
         GPUBlendComponent alpha = {};
     };
 
+    // NOTE: shader_semantic is non-WebGPU standard, and only applicable to D3D12.
+    // Users are expected to use the reflection or serialization/deserialization API
+    // to automatically populate these.
     struct GPUVertexAttribute
     {
         GPUVertexFormat format;
         GPUSize64       offset;
         GPUIndex32      shader_location;
+        CString         shader_semantic = nullptr;
     };
 
     struct GPUVertexBufferLayout
     {
-        GPUSize64                  array_stride;
-        GPUVertexStepMode          step_mode = GPUVertexStepMode::VERTEX;
-        Vector<GPUVertexAttribute> attributes;
+        GPUSize64           array_stride;
+        GPUVertexStepMode   step_mode = GPUVertexStepMode::VERTEX;
+        GPUVertexAttributes attributes;
     };
 
     struct GPUStencilFaceState
@@ -399,28 +486,12 @@ namespace lyra::rhi
         ~GPUBindGroupEntry() {}
     };
 
-    struct GPUBindlessEntry
-    {
-        GPUIndex32             binding;
-        GPUBindingResourceType type;
-        union
-        {
-            Vector<GPUBufferBinding>     buffers;
-            Vector<GPUSamplerHandle>     samplers;
-            Vector<GPUTextureViewHandle> textures;
-        };
-
-        // default trivial constructor / destructor
-        GPUBindlessEntry() {}
-        ~GPUBindlessEntry() {}
-    };
-
     struct GPUBindGroupLayoutEntry
     {
-        GPUIndex32             binding;
-        GPUIndex32             count = 1; // NOTE: Non-WebGPU standard API
-        GPUShaderStageFlags    visibility;
         GPUBindingResourceType type;
+        GPUBindingIndex        binding;
+        GPUShaderStageFlags    visibility;
+        GPUIndex32             count = 1; // NOTE: Non-WebGPU standard API
         union
         {
             GPUBufferBindingLayout         buffer;
@@ -437,12 +508,12 @@ namespace lyra::rhi
 
     struct GPUVertexState : public GPUProgrammableStage
     {
-        Vector<GPUVertexBufferLayout> buffers = {};
+        GPUVertexBufferLayouts buffers;
     };
 
     struct GPUFragmentState : public GPUProgrammableStage
     {
-        Vector<GPUColorTargetState> targets = {};
+        GPUColorTargetStates targets;
     };
 
     struct GPUPrimitiveState
