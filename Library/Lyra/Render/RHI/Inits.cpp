@@ -20,6 +20,15 @@ TransitionState lyra::rhi::shader_resource_state(GPUBarrierSync sync)
     return state;
 }
 
+TransitionState lyra::rhi::unordered_access_state(GPUBarrierSync sync)
+{
+    TransitionState state{};
+    state.layout = GPUBarrierLayout::UNORDERED_ACCESS;
+    state.sync   = sync;
+    state.access = GPUBarrierAccess::UNORDERED_ACCESS;
+    return state;
+}
+
 TransitionState lyra::rhi::present_src_state()
 {
     TransitionState state{};

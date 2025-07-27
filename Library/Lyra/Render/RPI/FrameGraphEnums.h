@@ -13,12 +13,15 @@ namespace lyra::rpi
 
     enum struct FrameGraphReadOp
     {
+        NOP, // no specific action required
         READ,
         SAMPLE,
+        PRESENT,
     };
 
     enum struct FrameGraphWriteOp
     {
+        NOP, // no specific action required
         WRITE,
         RENDER,
     };

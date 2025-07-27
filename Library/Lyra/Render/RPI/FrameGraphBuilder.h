@@ -33,7 +33,10 @@ namespace lyra::rpi
             resource.entry->type = FrameGraphResourceType::IMPORTED;
 
             // imported resources directly stores the resource entry
-            *(reinterpret_cast<T*>(resource.entry)) = entry;
+            reinterpret_cast<FrameGraphResourceEntry<T>*>(resource.entry)->value = entry;
+
+            // save this resource
+            graph->resources.push_back(resource);
 
             // mark the resource to be created at the current pass
             auto& pass_node = graph->passes.at(pass);
@@ -50,27 +53,34 @@ namespace lyra::rpi
             resource.entry       = new FrameGraphResourceEntry<T>{};
             resource.entry->type = FrameGraphResourceType::TRANSIENT;
 
+            // transient resources needs to remember the descriptor
+            reinterpret_cast<FrameGraphResourceEntry<T>*>(resource.entry)->desc = desc;
+
+            // save this resource
+            graph->resources.push_back(resource);
+
             // mark the resource to be created at the current pass
             auto& pass_node = graph->passes.at(pass);
             pass_node.creates.push_back(index);
             return index;
         }
 
-        [[nodiscard]] FrameGraphPass& add_pass(StringView name);
+        [[nodiscard]] FrameGraphPass& create_pass(StringView name);
 
         [[nodiscard]] FrameGraphResource read(FrameGraphResource resource, FrameGraphReadOp op = FrameGraphReadOp::READ);
         [[nodiscard]] FrameGraphResource write(FrameGraphResource resource, FrameGraphWriteOp op = FrameGraphWriteOp::WRITE);
         [[nodiscard]] FrameGraphResource render(FrameGraphResource resource);
         [[nodiscard]] FrameGraphResource sample(FrameGraphResource resource);
+        [[nodiscard]] FrameGraphResource present(FrameGraphResource resource);
 
-        [[nodiscard]] auto build() && -> Own<FrameGraph>;
+        [[nodiscard]] auto build() -> Own<FrameGraph>;
 
-        // avoid build from being called twice
-        void build() & = delete;
+    private:
+        bool is_pass_valid() const { return pass != 0xFFFFFFFFu; }
 
     private:
         Own<FrameGraph> graph = nullptr;
-        uint            pass  = 0u;
+        uint            pass  = 0xFFFFFFFFu;
     }; // end of FrameGraphBuilder
 
 } // namespace lyra::rpi

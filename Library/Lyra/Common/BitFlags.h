@@ -48,6 +48,11 @@ struct BitFlags
         *this = *this & ~BitFlags(flag);
     }
 
+    friend bool operator==(T lhs, T rhs)
+    {
+        return lhs.value == rhs.value;
+    }
+
     friend T operator~(T lhs)
     {
         return T(~lhs.value);

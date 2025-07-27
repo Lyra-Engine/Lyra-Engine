@@ -867,7 +867,7 @@ inline void ThrowIfFailed(HRESULT hr)
         auto err = get_hresult_message(hr);
         if (err.c_str())
             get_logger()->error("error: {}\n", err.c_str());
-        throw std::exception();
+        throw std::exception(); 
     }
 }
 

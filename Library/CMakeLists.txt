@@ -11,6 +11,8 @@ target_sources(lyra-engine PRIVATE
     Lyra/Render/RHI/Inits.cpp
     Lyra/Render/RPI/FrameGraph.cpp
     Lyra/Render/RPI/FrameGraphBuilder.cpp
+    Lyra/Render/RPI/FrameGraphTexture.cpp
+    Lyra/Render/RPI/FrameGraphAllocator.cpp
     Lyra/Render/SLC/Types.cpp
 
     # window sources

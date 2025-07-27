@@ -28,15 +28,15 @@ namespace lyra::rpi
     struct FrameGraphAllocator
     {
     public:
-        auto allocate(const GPUBufferDescriptor& descriptor) -> GPUBufferHandle;
-        void recycle(const FGBufferObject& buffer);
+        auto allocate(const GPUBufferDescriptor& descriptor) -> FGBufferObject;
+        void recycle(const GPUBufferDescriptor& descriptor, FGBufferObject buffer);
 
-        auto allocate(const GPUTextureDescriptor& descriptor) -> GPUTextureHandle;
-        void recycle(const FGTextureObject& buffer);
+        auto allocate(const GPUTextureDescriptor& descriptor) -> FGTextureObject;
+        void recycle(const GPUTextureDescriptor& descriptor, FGTextureObject texture);
 
     private:
-        HashMap<GPUBufferDescriptor, FGBufferVector>  buffers;
-        HashMap<GPUBufferDescriptor, FGTextureVector> textures;
+        HashMap<GPUBufferDescriptor, FGBufferVector>   buffers;
+        HashMap<GPUTextureDescriptor, FGTextureVector> textures;
     };
 
 } // namespace lyra::rpi

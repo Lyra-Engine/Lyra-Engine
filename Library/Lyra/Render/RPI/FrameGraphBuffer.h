@@ -12,16 +12,18 @@ namespace lyra::rpi
 
     struct FrameGraphBuffer
     {
+        using Self       = FrameGraphBuffer;
         using Descriptor = GPUBufferDescriptor;
 
-        static void create(FrameGraphAllocator* allocator)
+        void create(FrameGraphAllocator* allocator, const Descriptor& descriptor)
         {
-            assert(!!!"Not implemented");
+            buffer = allocator->allocate(descriptor);
         }
 
-        static void destroy(FrameGraphAllocator* allocator, const FrameGraphBuffer& buffer)
+        void destroy(FrameGraphAllocator* allocator, const Descriptor& descriptor)
         {
-            assert(!!!"Not implemented");
+            allocator->recycle(descriptor, buffer);
+            buffer.reset();
         }
 
         // related texture handles

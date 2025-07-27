@@ -61,6 +61,8 @@ void D3D12Buffer::destroy()
 
 void D3D12Buffer::map(GPUSize64 offset, GPUSize64 size)
 {
+    if (mapped()) unmap();
+
     D3D12_RANGE range = {};
     range.Begin       = offset;
     range.End         = offset + size;
@@ -73,6 +75,9 @@ void D3D12Buffer::map(GPUSize64 offset, GPUSize64 size)
 
 void D3D12Buffer::unmap()
 {
-    if (mapped_data)
+    if (mapped_data) {
         buffer->Unmap(0, nullptr);
+        mapped_data = nullptr;
+        mapped_size = 0ull;
+    }
 }

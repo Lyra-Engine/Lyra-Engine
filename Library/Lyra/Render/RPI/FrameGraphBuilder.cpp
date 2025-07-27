@@ -3,7 +3,7 @@
 using namespace lyra;
 using namespace lyra::rpi;
 
-FrameGraphPass& FrameGraphBuilder::add_pass(StringView name)
+FrameGraphPass& FrameGraphBuilder::create_pass(StringView name)
 {
     auto psid = static_cast<uint>(graph->passes.size());
     auto pass = new FrameGraphPass(name);
@@ -15,7 +15,7 @@ FrameGraphPass& FrameGraphBuilder::add_pass(StringView name)
 
 FrameGraphResource FrameGraphBuilder::read(FrameGraphResource resource, FrameGraphReadOp op)
 {
-    assert(pass && "must call FrameGraphBuilder::add_pass(...) prior to FrameGraphBuilder::read(...)");
+    assert(is_pass_valid() && "must call FrameGraphBuilder::create_pass(...) prior to FrameGraphBuilder::read(...)");
 
     // add resource to pass
     auto  read_resource = FrameGraphReadResource{resource, op};
@@ -32,7 +32,7 @@ FrameGraphResource FrameGraphBuilder::read(FrameGraphResource resource, FrameGra
 
 FrameGraphResource FrameGraphBuilder::write(FrameGraphResource resource, FrameGraphWriteOp op)
 {
-    assert(pass && "must call FrameGraphBuilder::add_pass(...) prior to FrameGraphBuilder::write(...)");
+    assert(is_pass_valid() && "must call FrameGraphBuilder::create_pass(...) prior to FrameGraphBuilder::write(...)");
 
     // add resource to pass
     auto  write_resource = FrameGraphWriteResource{resource, op};
@@ -49,17 +49,23 @@ FrameGraphResource FrameGraphBuilder::write(FrameGraphResource resource, FrameGr
 
 FrameGraphResource FrameGraphBuilder::render(FrameGraphResource resource)
 {
-    assert(pass && "must call FrameGraphBuilder::add_pass(...) prior to FrameGraphBuilder::render(...)");
+    assert(is_pass_valid() && "must call FrameGraphBuilder::create_pass(...) prior to FrameGraphBuilder::render(...)");
     return write(resource, FrameGraphWriteOp::RENDER);
 }
 
 FrameGraphResource FrameGraphBuilder::sample(FrameGraphResource resource)
 {
-    assert(pass && "must call FrameGraphBuilder::add_pass(...) prior to FrameGraphBuilder::sample(...)");
+    assert(is_pass_valid() && "must call FrameGraphBuilder::create_pass(...) prior to FrameGraphBuilder::sample(...)");
     return read(resource, FrameGraphReadOp::SAMPLE);
 }
 
-Own<FrameGraph> FrameGraphBuilder::FrameGraphBuilder::build() &&
+FrameGraphResource FrameGraphBuilder::present(FrameGraphResource resource)
+{
+    assert(is_pass_valid() && "must call FrameGraphBuilder::create_pass(...) prior to FrameGraphBuilder::present(...)");
+    return read(resource, FrameGraphReadOp::PRESENT);
+}
+
+Own<FrameGraph> FrameGraphBuilder::FrameGraphBuilder::build()
 {
     graph->compile();
     return std::move(graph);

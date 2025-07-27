@@ -11,7 +11,6 @@ FrameGraph::~FrameGraph()
     for (auto& pass : passes)
         delete pass.entry;
 
-    // using `free` instead of `delete` due to the use of void*
     for (auto& resource : resources)
         delete resource.entry;
 
@@ -19,7 +18,7 @@ FrameGraph::~FrameGraph()
     resources.clear();
 }
 
-void FrameGraph::execute(void* context, void* allocator)
+void FrameGraph::execute(FrameGraphContext* context, FrameGraphAllocator* allocator)
 {
     for (auto& pass : passes) {
         // skip culled passes
@@ -28,8 +27,21 @@ void FrameGraph::execute(void* context, void* allocator)
         // create resources
         for (auto& rsid : pass.creates) {
             auto& resource = resources.at(rsid);
+
             resource.entry->create(allocator);
             registry.put(rsid, resource.entry);
+        }
+
+        // pre-read
+        for (auto& read : pass.reads) {
+            auto& resource = resources.at(read.resource);
+            resource.entry->pre_read(context, pass.entry, read.read_op);
+        }
+
+        // pre-write
+        for (auto& write : pass.writes) {
+            auto& resource = resources.at(write.resource);
+            resource.entry->pre_write(context, pass.entry, write.write_op);
         }
 
         // execute pass callback

@@ -5,6 +5,10 @@
 
 #include <Lyra/Common/Hash.h>
 #include <Lyra/Render/RHI/Descs.h>
+#include <Lyra/Render/RHI/Inits.h>
+#include <Lyra/Render/RPI/FrameGraphPass.h>
+#include <Lyra/Render/RPI/FrameGraphEnums.h>
+#include <Lyra/Render/RPI/FrameGraphContext.h>
 #include <Lyra/Render/RPI/FrameGraphAllocator.h>
 
 namespace lyra::rpi
@@ -13,20 +17,38 @@ namespace lyra::rpi
 
     struct FrameGraphTexture
     {
+        using Self       = FrameGraphTexture;
         using Descriptor = GPUTextureDescriptor;
 
-        static void create(FrameGraphAllocator* allocator)
+        void create(FrameGraphAllocator* allocator, const Descriptor& descriptor)
         {
-            assert(!!!"Not implemented");
+            auto handle = allocator->allocate(descriptor);
+            texture     = handle.first;
+            view        = handle.second;
+            state       = undefined_state();
+            format      = descriptor.format;
+            layers      = descriptor.array_layers;
+            levels      = descriptor.mip_level_count;
         }
 
-        static void destroy(FrameGraphAllocator* allocator, const FrameGraphTexture& texture)
+        void destroy(FrameGraphAllocator* allocator, const Descriptor& descriptor)
         {
-            assert(!!!"Not implemented");
+            auto handle = std::make_pair(texture, view);
+            allocator->recycle(descriptor, handle);
+            texture.reset();
+            view.reset();
         }
+
+        void pre_read(FrameGraphContext* context, FrameGraphPass* pass, FrameGraphReadOp op);
+        void pre_write(FrameGraphContext* context, FrameGraphPass* pass, FrameGraphWriteOp op);
 
         // related texture handles
+        GPUTextureHandle     texture;
         GPUTextureViewHandle view;
+        GPUTextureFormat     format;
+        uint                 layers = 1;
+        uint                 levels = 1;
+        TransitionState      state  = undefined_state();
     };
 
 } // namespace lyra::rpi

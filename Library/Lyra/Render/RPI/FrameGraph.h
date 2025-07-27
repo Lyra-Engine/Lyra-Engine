@@ -8,6 +8,7 @@
 #include <Lyra/Common/Blackboard.h>
 #include <Lyra/Render/RPI/FrameGraphPass.h>
 #include <Lyra/Render/RPI/FrameGraphContext.h>
+#include <Lyra/Render/RPI/FrameGraphAllocator.h>
 #include <Lyra/Render/RPI/FrameGraphResource.h>
 #include <Lyra/Render/RPI/FrameGraphTexture.h>
 #include <Lyra/Render/RPI/FrameGraphBuffer.h>
@@ -27,13 +28,14 @@ namespace lyra::rpi
         using Blackboard = ::lyra::Blackboard;
         using Buffer     = FrameGraphBuffer;
         using Texture    = FrameGraphTexture;
+        using Allocator  = FrameGraphAllocator;
 
         explicit FrameGraph()                   = default;
         explicit FrameGraph(FrameGraph&&)       = delete;
         explicit FrameGraph(const FrameGraph&&) = delete;
         virtual ~FrameGraph();
 
-        void execute(void* context, void* allocator);
+        void execute(FrameGraphContext* context, FrameGraphAllocator* allocator);
 
     private:
         void compile();

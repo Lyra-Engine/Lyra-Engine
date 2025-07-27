@@ -18,6 +18,7 @@ namespace lyra::rhi
 
     TransitionState undefined_state();
     TransitionState shader_resource_state(GPUBarrierSync sync);
+    TransitionState unordered_access_state(GPUBarrierSync sync);
     TransitionState present_src_state();
     TransitionState color_attachment_state();
     TransitionState depth_stencil_attachment_state();

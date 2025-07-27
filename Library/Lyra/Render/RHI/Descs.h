@@ -54,6 +54,13 @@ namespace lyra::rhi
         GPUBufferUsageFlags usage              = 0;
         bool                virtual_address    = false;
         bool                mapped_at_creation = false;
+
+        friend bool operator==(const GPUBufferDescriptor& lhs, const GPUBufferDescriptor& rhs)
+        {
+            return lhs.size == rhs.size &&
+                   lhs.usage.value == rhs.usage &&
+                   lhs.virtual_address == rhs.virtual_address;
+        }
     };
 
     struct GPUSamplerDescriptor : public GPUObjectDescriptorBase
@@ -80,6 +87,19 @@ namespace lyra::rhi
         GPUTextureDimension  dimension       = GPUTextureDimension::x2D;
         GPUTextureFormat     format          = GPUTextureFormat::RGBA8UNORM;
         GPUTextureUsageFlags usage           = 0;
+
+        friend bool operator==(const GPUTextureDescriptor& lhs, const GPUTextureDescriptor& rhs)
+        {
+            return lhs.size.width == rhs.size.width &&
+                   lhs.size.height == rhs.size.height &&
+                   lhs.size.depth == rhs.size.depth &&
+                   lhs.mip_level_count == rhs.mip_level_count &&
+                   lhs.array_layers == rhs.array_layers &&
+                   lhs.sample_count == rhs.sample_count &&
+                   lhs.dimension == rhs.dimension &&
+                   lhs.format == rhs.format &&
+                   lhs.usage.value == rhs.usage;
+        }
     };
 
     struct GPUTextureViewDescriptor : public GPUObjectDescriptorBase

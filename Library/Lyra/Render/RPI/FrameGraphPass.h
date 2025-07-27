@@ -25,6 +25,7 @@ namespace lyra::rpi
         FrameGraphWriteOp  write_op;
     };
 
+    struct FrameGraphContext;
     struct FrameGraphPass
     {
     public:
@@ -42,7 +43,7 @@ namespace lyra::rpi
         template <typename T>
         auto compile(CompileCallback<T>&& f) -> T { return f(*this); }
 
-        using ExecuteCallback = std::function<void(FrameGraphResources&, void* ctx)>;
+        using ExecuteCallback = std::function<void(FrameGraphResources&, FrameGraphContext* ctx)>;
         void execute(ExecuteCallback&& f) { this->callback = std::move(f); }
 
         // prevent from being culled
