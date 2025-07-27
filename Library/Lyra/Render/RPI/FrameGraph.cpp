@@ -1,0 +1,87 @@
+// reference: https://www.gdcvault.com/play/1024612/FrameGraph-Extensible-Rendering-Architecture-in
+// reference: https://www.gdcvault.com/play/1024045/FrameGraph-Extensible-Rendering-Architecture-in
+
+#include <Lyra/Common/Container.h>
+#include <Lyra/Render/RPI/FrameGraph.h>
+
+using namespace lyra::rpi;
+
+FrameGraph::~FrameGraph()
+{
+    for (auto& pass : passes)
+        delete pass.entry;
+
+    // using `free` instead of `delete` due to the use of void*
+    for (auto& resource : resources)
+        delete resource.entry;
+
+    passes.clear();
+    resources.clear();
+}
+
+void FrameGraph::execute(void* context, void* allocator)
+{
+    for (auto& pass : passes) {
+        // skip culled passes
+        if (!pass.active()) continue;
+
+        // create resources
+        for (auto& rsid : pass.creates) {
+            auto& resource = resources.at(rsid);
+            resource.entry->create(allocator);
+            registry.put(rsid, resource.entry);
+        }
+
+        // execute pass callback
+        std::invoke(pass.entry->callback, registry, context);
+
+        // delete resources
+        for (auto& rsid : pass.deletes) {
+            auto& resource = resources.at(rsid);
+            resource.entry->destroy(allocator);
+        }
+    }
+}
+
+void FrameGraph::compile()
+{
+    // adding the resources to pass deletes
+    for (auto& resource : resources) {
+        auto& pass = passes.at(resource.last_pass);
+        pass.deletes.push_back(resource.rsid);
+    }
+
+    // pass.refcnt++ for every resource write
+    for (auto& pass : passes)
+        pass.refcnt = pass.writes.size();
+
+    // resource.refcnt++ for every resource read
+    for (auto& resource : resources)
+        resource.refcnt = resource.consumers.size();
+
+    // identify resources with refcnt == 0 and push them on a stack
+    Stack<uint> unused_resources;
+    for (auto& resource : resources)
+        if (resource.refcnt == 0)
+            unused_resources.push(resource.rsid);
+
+    // cull unused passes and resources
+    while (!unused_resources.empty()) {
+        uint rsid = unused_resources.top();
+        unused_resources.pop();
+
+        // pop a resource and decrement refcnt of its producer
+        auto& resource = resources.at(rsid);
+        for_all_producers(resource, [&](auto& pass) {
+            if (--pass.refcnt > 0) return;
+
+            // decrement ref counts of resources that it reads if producer.refcnt == 0
+            // add them to the stack when their refcnt == 0
+            for (auto& res : pass.reads) {
+                auto& resource = resources.at(res.resource);
+                if (--resource.refcnt == 0)
+                    unused_resources.push(resource.rsid);
+            }
+        });
+    }
+}

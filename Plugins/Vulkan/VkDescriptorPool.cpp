@@ -1,6 +1,6 @@
 #include "VkUtils.h"
 
-constexpr uint MAX_SETS = 512;
+constexpr uint MAX_SETS = 2048;
 
 struct DescriptorObjects
 {

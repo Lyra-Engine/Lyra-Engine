@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef LYRA_LIBRARY_RENDER_RHI_ENUMS_H
 #define LYRA_LIBRARY_RENDER_RHI_ENUMS_H
 

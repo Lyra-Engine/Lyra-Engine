@@ -9,7 +9,8 @@ target_sources(lyra-engine PRIVATE
     # render sources
     Lyra/Render/RHI/Types.cpp
     Lyra/Render/RHI/Inits.cpp
-    Lyra/Render/RDG/Types.cpp
+    Lyra/Render/RPI/FrameGraph.cpp
+    Lyra/Render/RPI/FrameGraphBuilder.cpp
     Lyra/Render/SLC/Types.cpp
 
     # window sources

@@ -175,6 +175,7 @@ struct D3D12Buffer
 
     void map(GPUSize64 offset = 0, GPUSize64 size = 0);
     void unmap();
+    bool mapped() const { return mapped_data != nullptr; }
     void destroy();
     auto size() const -> size_t { return size_; }
 
@@ -683,6 +684,7 @@ namespace api
     void map_buffer(GPUBufferHandle buffer, GPUMapMode mode, GPUSize64 offset, GPUSize64 size);
     void unmap_buffer(GPUBufferHandle buffer);
     void get_mapped_range(GPUBufferHandle buffer, MappedBufferRange& range);
+    void get_mapped_state(GPUBufferHandle buffer, GPUMapState& state);
 
     // sampler apis
     bool create_sampler(GPUSamplerHandle& sampler, const GPUSamplerDescriptor& desc);

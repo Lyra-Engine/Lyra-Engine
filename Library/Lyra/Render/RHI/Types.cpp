@@ -2,9 +2,6 @@
 #include <Lyra/Render/RHI/API.h>
 #include <Lyra/Render/RHI/Types.h>
 
-#undef min
-#undef max
-
 using namespace lyra;
 using namespace lyra::rhi;
 
@@ -156,8 +153,6 @@ GPUBuffer GPUDevice::create_buffer(const GPUBufferDescriptor& desc) const
     RHI::api()->create_buffer(buffer.handle, desc);
     buffer.size  = desc.size;
     buffer.usage = desc.usage;
-    if (desc.mapped_at_creation)
-        buffer.map_state = GPUMapState::MAPPED;
     return buffer;
 }
 
@@ -300,25 +295,25 @@ void GPUDevice::destroy() const
 MappedBufferRange GPUBuffer::get_mapped_range() const
 {
     MappedBufferRange range = {};
-    if (map_state == GPUMapState::MAPPED)
-        RHI::api()->get_mapped_range(handle, range);
+    RHI::api()->get_mapped_range(handle, range);
     return range;
+}
+
+GPUMapState GPUBuffer::get_mapped_state() const
+{
+    GPUMapState state;
+    RHI::api()->get_mapped_state(handle, state);
+    return state;
 }
 
 void GPUBuffer::map(GPUMapMode mode, GPUSize64 offset, GPUSize64 size)
 {
-    if (map_state == GPUMapState::UNMAPPED)
-        RHI::api()->map_buffer(handle, mode, offset, size);
-
-    map_state = GPUMapState::MAPPED;
+    RHI::api()->map_buffer(handle, mode, offset, size);
 }
 
 void GPUBuffer::unmap()
 {
-    if (map_state == GPUMapState::MAPPED)
-        RHI::api()->unmap_buffer(handle);
-
-    map_state = GPUMapState::UNMAPPED;
+    RHI::api()->unmap_buffer(handle);
 }
 
 void GPUBuffer::destroy()

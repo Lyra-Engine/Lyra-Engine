@@ -76,6 +76,13 @@ void api::unmap_buffer(GPUBufferHandle buffer)
     buf.mapped_size = 0;
 }
 
+void api::get_mapped_state(GPUBufferHandle buffer, GPUMapState& state)
+{
+    auto  rhi = get_rhi();
+    auto& buf = fetch_resource(rhi->buffers, buffer);
+    state     = buf.mapped() ? GPUMapState::MAPPED : GPUMapState::UNMAPPED;
+}
+
 void api::get_mapped_range(GPUBufferHandle buffer, MappedBufferRange& range)
 {
     auto  rhi  = get_rhi();
@@ -426,6 +433,7 @@ LYRA_EXPORT auto create() -> RenderAPI
     api.wait_fence                       = api::wait_fence;
     api.map_buffer                       = api::map_buffer;
     api.unmap_buffer                     = api::unmap_buffer;
+    api.get_mapped_state                 = api::get_mapped_state;
     api.get_mapped_range                 = api::get_mapped_range;
     api.create_command_buffer            = api::create_command_buffer;
     api.create_command_bundle            = api::create_command_bundle;

@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef LYRA_LIBRARY_RENDER_RHI_TYPES_H
 #define LYRA_LIBRARY_RENDER_RHI_TYPES_H
 
@@ -99,9 +101,8 @@ namespace lyra::rhi
     {
         GPUBufferHandle handle;
 
-        GPUSize64Out        size      = 0;
-        GPUBufferUsageFlags usage     = 0;
-        GPUMapState         map_state = GPUMapState::UNMAPPED;
+        GPUSize64Out        size  = 0;
+        GPUBufferUsageFlags usage = 0;
 
         template <typename T>
         auto get_mapped_range() const -> TypedBufferRange<T>
@@ -114,6 +115,8 @@ namespace lyra::rhi
         }
 
         auto get_mapped_range() const -> MappedBufferRange;
+
+        auto get_mapped_state() const -> GPUMapState;
 
         void map(GPUMapMode mode, GPUSize64 offset = 0, GPUSize64 size = 0);
 

@@ -8,10 +8,13 @@
 #include <Lyra/Render/RHI/Types.h>
 #include <Lyra/Render/RHI/Inits.h>
 
-// RDG (Render Graph)
-#include <Lyra/Render/RDG/Enums.h>
-#include <Lyra/Render/RDG/Utils.h>
-#include <Lyra/Render/RDG/Types.h>
+// RPI (Render Pass Interface)
+#include <Lyra/Render/RPI/FrameGraph.h>
+#include <Lyra/Render/RPI/FrameGraphPass.h>
+#include <Lyra/Render/RPI/FrameGraphEnums.h>
+#include <Lyra/Render/RPI/FrameGraphContext.h>
+#include <Lyra/Render/RPI/FrameGraphBuilder.h>
+#include <Lyra/Render/RPI/FrameGraphResource.h>
 
 // SLC (Shader Language Compiler)
 #include <Lyra/Render/SLC/API.h>

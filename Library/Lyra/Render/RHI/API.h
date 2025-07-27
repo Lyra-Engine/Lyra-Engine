@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef LYRA_LIBRARY_RENDER_RHI_API_H
 #define LYRA_LIBRARY_RENDER_RHI_API_H
 
@@ -76,6 +78,7 @@ namespace lyra::rhi
         bool (*acquire_next_frame)(GPUSurfaceHandle surface, GPUTextureHandle& texture, GPUTextureViewHandle& view, GPUFenceHandle& image_available, GPUFenceHandle& render_complete, bool& suboptimal);
         bool (*present_curr_frame)(GPUSurfaceHandle surface);
 
+        void (*get_mapped_state)(GPUBufferHandle buffer, GPUMapState& state);
         void (*get_mapped_range)(GPUBufferHandle buffer, MappedBufferRange& range);
         void (*map_buffer)(GPUBufferHandle buffer, GPUMapMode mode, GPUSize64 offset, GPUSize64 size);
         void (*unmap_buffer)(GPUBufferHandle buffer);

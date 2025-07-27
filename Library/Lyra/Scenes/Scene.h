@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef LYRA_LIBRARY_SCENES_SCENE_H
 #define LYRA_LIBRARY_SCENES_SCENE_H
 
