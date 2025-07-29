@@ -75,6 +75,8 @@ VulkanBuffer::VulkanBuffer(const GPUBufferDescriptor& desc, VkBufferUsageFlags a
 
 void VulkanBuffer::map(GPUSize64 offset, GPUSize64 size)
 {
+    if (mapped()) unmap();
+
     void* data = nullptr;
     vk_check(vmaMapMemory(get_rhi()->alloc, allocation, &data));
     mapped_data = reinterpret_cast<uint8_t*>(data) + offset;
@@ -83,7 +85,11 @@ void VulkanBuffer::map(GPUSize64 offset, GPUSize64 size)
 
 void VulkanBuffer::unmap()
 {
-    vmaUnmapMemory(get_rhi()->alloc, allocation);
+    if (mapped_data) {
+        vmaUnmapMemory(get_rhi()->alloc, allocation);
+        mapped_data = nullptr;
+        mapped_size = 0ull;
+    }
 }
 
 void VulkanBuffer::destroy()

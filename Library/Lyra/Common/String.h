@@ -1,15 +1,20 @@
+#pragma once
+
 #ifndef LYRA_LIBRARY_COMMON_STRING_H
 #define LYRA_LIBRARY_COMMON_STRING_H
 
 #include <string>
 #include <vector>
 #include <locale>
+#include <string_view>
 
 namespace lyra
 {
     using String  = std::string;
     using WString = std::wstring;
     using CString = const char*;
+
+    using StringView = std::string_view;
 
     // for windows compatibility
     using LPCWSTR = const wchar_t*;

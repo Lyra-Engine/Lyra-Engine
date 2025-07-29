@@ -9,6 +9,7 @@ struct Geometry
     GPUBuffer ibuffer;
 
     static auto create_triangle() -> Geometry;
+    static auto create_fullscreen() -> Geometry;
     static auto create_overlapping_triangles() -> Geometry;
 };
 

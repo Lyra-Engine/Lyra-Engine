@@ -1,8 +1,12 @@
+#pragma once
+
 #ifndef LYRA_LIBRARY_COMMON_CONTAINER_H
 #define LYRA_LIBRARY_COMMON_CONTAINER_H
 
 #include <map>
 #include <array>
+#include <deque>
+#include <stack>
 #include <vector>
 #include <optional>
 #include <forward_list>
@@ -14,6 +18,12 @@ namespace lyra
 {
     template <typename... T>
     using List = std::forward_list<T...>;
+
+    template <typename... T>
+    using Deque = std::deque<T...>;
+
+    template <typename... T>
+    using Stack = std::stack<T...>;
 
     template <typename T, int N>
     using Array = std::array<T, N>;

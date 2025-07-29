@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef LYRA_LIBRARY_COMMON_POINTER_H
 #define LYRA_LIBRARY_COMMON_POINTER_H
 

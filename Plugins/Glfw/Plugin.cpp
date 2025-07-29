@@ -20,9 +20,9 @@
 #include <Lyra/Common/String.h>
 #include <Lyra/Common/Logger.h>
 #include <Lyra/Common/Plugin.h>
-#include <Lyra/Window/API.h>
-#include <Lyra/Window/Types.h>
-#include <Lyra/Render/RHI/Types.h>
+#include <Lyra/Window/WSIAPI.h>
+#include <Lyra/Window/WSITypes.h>
+#include <Lyra/Render/RHI/RHITypes.h>
 
 using namespace lyra;
 using namespace lyra::rhi;
@@ -271,7 +271,7 @@ void bind_window_events(WindowHandle window)
     glfwSetMouseButtonCallback(handle, mouse_button_callback);
     glfwSetWindowSizeCallback(handle, [](GLFWwindow* window, int width, int height) {
         auto& user = *static_cast<UserState*>(glfwGetWindowUserPointer(window));
-        user.callback(WindowEvent::RESIZE);
+        std::invoke(user.callback, WindowEvent::RESIZE);
     });
 }
 
@@ -325,7 +325,7 @@ void run_in_loop()
     for (auto& window : global_event_loop.windows) {
         auto handle = reinterpret_cast<GLFWwindow*>(window.window);
         auto& user   = *static_cast<UserState*>(glfwGetWindowUserPointer(handle));
-        user.callback(WindowEvent::START);
+        std::invoke(user.callback, WindowEvent::START);
     }
 
     // glfw main loop
@@ -335,7 +335,7 @@ void run_in_loop()
         for (auto& window : global_event_loop.windows) {
             auto handle = reinterpret_cast<GLFWwindow*>(window.window);
             auto& user   = *static_cast<UserState*>(glfwGetWindowUserPointer(handle));
-            user.callback(WindowEvent::UPDATE);
+            std::invoke(user.callback, WindowEvent::UPDATE);
         }
 
         // RENDER
@@ -343,7 +343,7 @@ void run_in_loop()
         for (auto& window : global_event_loop.windows) {
             auto handle = reinterpret_cast<GLFWwindow*>(window.window);
             auto& user   = *static_cast<UserState*>(glfwGetWindowUserPointer(handle));
-            user.callback(WindowEvent::RENDER);
+            std::invoke(user.callback, WindowEvent::RENDER);
         }
         RHI::end_frame(); // post frame end
 

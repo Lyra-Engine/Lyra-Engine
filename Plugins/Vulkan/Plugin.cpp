@@ -1,8 +1,8 @@
 // global module headers
 #include <Lyra/Common/String.h>
 #include <Lyra/Common/Plugin.h>
-#include <Lyra/Render/RHI/API.h>
-#include <Lyra/Window/API.h>
+#include <Lyra/Render/RHI/RHIAPI.h>
+#include <Lyra/Window/WSIAPI.h>
 
 #include "VkUtils.h"
 
@@ -81,6 +81,13 @@ void api::unmap_buffer(GPUBufferHandle buffer)
     auto& buf = fetch_resource(rhi->buffers, buffer);
     buf.unmap();
     buf.mapped_size = 0;
+}
+
+void api::get_mapped_state(GPUBufferHandle buffer, GPUMapState& state)
+{
+    auto  rhi = get_rhi();
+    auto& buf = fetch_resource(rhi->buffers, buffer);
+    state     = buf.mapped() ? GPUMapState::MAPPED : GPUMapState::UNMAPPED;
 }
 
 void api::get_mapped_range(GPUBufferHandle buffer, MappedBufferRange& range)
@@ -421,6 +428,7 @@ LYRA_EXPORT auto create() -> RenderAPI
     api.end_frame                        = api::end_frame;
     api.map_buffer                       = api::map_buffer;
     api.unmap_buffer                     = api::unmap_buffer;
+    api.get_mapped_state                 = api::get_mapped_state;
     api.get_mapped_range                 = api::get_mapped_range;
     api.create_command_buffer            = api::create_command_buffer;
     api.create_command_bundle            = api::create_command_bundle;
