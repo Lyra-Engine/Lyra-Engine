@@ -67,7 +67,6 @@ cmake --install Scratch  # copy the built libraries and headers into system dire
 * Library: The core shared library for the rendering engine (to be linked by user application).
 * Plugins: Shared libraries loaded at runtime by library (not directly linked).
 * Samples: Basic example as guide on how to use this engine (Permanently moved to [Lyra-Samples](https://github.com/Lyra-Engine/Lyra-Samples)).
-* Designs: This is where I place all my thoughts on the design of this project.
 
 **Lyra Engine**'s design is largely inspired by **The Machinery** (currently removed from internet).
 We adopt a plugin-based design philosophy so that the underlying implementation could be swapped

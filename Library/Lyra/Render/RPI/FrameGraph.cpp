@@ -12,7 +12,9 @@ FrameGraph::~FrameGraph()
         delete pass.entry;
 
     for (auto& resource : resources)
-        delete resource.entry;
+        // duplicated resources shares the entry with some other resources (avoid double deletion)
+        if (!resource.duplicate)
+            delete resource.entry;
 
     passes.clear();
     resources.clear();
@@ -28,7 +30,9 @@ void FrameGraph::execute(FrameGraphContext* context, FrameGraphAllocator* alloca
         for (auto& rsid : pass.creates) {
             auto& resource = resources.at(rsid);
 
-            resource.entry->create(allocator);
+            // duplicated resources shares the entry with some other resources (avoid double creation)
+            if (!resource.duplicate)
+                resource.entry->create(allocator);
             registry.put(rsid, resource.entry);
         }
 
@@ -50,7 +54,10 @@ void FrameGraph::execute(FrameGraphContext* context, FrameGraphAllocator* alloca
         // delete resources
         for (auto& rsid : pass.deletes) {
             auto& resource = resources.at(rsid);
-            resource.entry->destroy(allocator);
+
+            // duplicated resources shares the entry with some other resources (avoid double deletion)
+            if (!resource.duplicate)
+                resource.entry->destroy(allocator);
         }
     }
 }
@@ -96,4 +103,37 @@ void FrameGraph::compile()
             }
         });
     }
+}
+
+bool FrameGraph::has_cycles() const
+{
+    HashSet<uint> visited_passes;
+    HashSet<uint> recursion_set;
+    for (auto& pass : passes)
+        if (visited_passes.find(pass.psid) == visited_passes.end())
+            if (has_cycles(visited_passes, recursion_set, pass.psid))
+                return true;
+    return false;
+}
+
+bool FrameGraph::has_cycles(HashSet<uint>& visited_passes, HashSet<uint>& recursion_set, uint psid) const
+{
+    visited_passes.insert(psid);
+    recursion_set.insert(psid);
+
+    const auto& pass = passes.at(psid);
+    for (auto& write : pass.writes) {
+        const auto& resource = resources.at(write.resource);
+        for (auto& consumer : resource.consumers) {
+            if (visited_passes.find(consumer) == visited_passes.end()) {
+                if (has_cycles(visited_passes, recursion_set, consumer))
+                    return true;
+            } else if (recursion_set.find(consumer) != recursion_set.end()) {
+                return true;
+            }
+        }
+        return false;
+    }
+    recursion_set.erase(psid);
+    return false;
 }

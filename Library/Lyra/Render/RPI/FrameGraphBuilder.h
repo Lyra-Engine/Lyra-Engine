@@ -65,6 +65,28 @@ namespace lyra::rpi
             return index;
         }
 
+        // NOTE: Sometimes we need to read/write to the same resource in a single pass,
+        // for example, updating a buffer in place. FrameGraph does not allow cycles,
+        // therefore we will need to duplicate a resource logically, but under the hood
+        // they are pointing to the same actual resource.
+        [[nodiscard]] FrameGraphResource duplicate(FrameGraphResource rsid)
+        {
+            auto& from_resource = graph->resources.at(rsid);
+
+            uint index         = static_cast<uint>(graph->resources.size());
+            auto resource      = FrameGraphResourceNode{};
+            resource.rsid      = index;
+            resource.entry     = from_resource.entry;
+            resource.duplicate = true; // explicitly mark the resource as a duplicated resource
+
+            // save this resource
+            graph->resources.push_back(resource);
+
+            // mark the resource to be created at the current pass
+            auto& pass_node = graph->passes.at(pass);
+            pass_node.creates.push_back(index);
+        }
+
         [[nodiscard]] FrameGraphPass& create_pass(StringView name);
 
         [[nodiscard]] FrameGraphResource read(FrameGraphResource resource, FrameGraphReadOp op = FrameGraphReadOp::READ);

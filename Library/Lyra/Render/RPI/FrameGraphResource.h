@@ -64,6 +64,7 @@ namespace lyra::rpi
         uint                     rsid      = 0;
         uint                     refcnt    = 0;
         uint                     last_pass = 0;
+        bool                     duplicate = false;
         Vector<uint>             consumers = {};
         Vector<uint>             producers = {};
     };

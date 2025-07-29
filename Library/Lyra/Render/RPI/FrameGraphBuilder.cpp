@@ -67,6 +67,9 @@ FrameGraphResource FrameGraphBuilder::present(FrameGraphResource resource)
 
 Own<FrameGraph> FrameGraphBuilder::FrameGraphBuilder::build()
 {
+    // NOTE: FrameGraph must NOT contain any cycles.
+    assert(!graph->has_cycles());
+
     graph->compile();
     return std::move(graph);
 }

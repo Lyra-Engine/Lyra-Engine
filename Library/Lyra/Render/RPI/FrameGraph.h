@@ -40,6 +40,9 @@ namespace lyra::rpi
     private:
         void compile();
 
+        bool has_cycles() const;
+        bool has_cycles(HashSet<uint>& visited_passes, HashSet<uint>& recursion_set, uint psid) const;
+
         template <typename T>
         void for_all_consumers(const FrameGraphResourceNode& resource, T&& callback)
         {
