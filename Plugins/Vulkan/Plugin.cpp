@@ -2,7 +2,7 @@
 #include <Lyra/Common/String.h>
 #include <Lyra/Common/Plugin.h>
 #include <Lyra/Render/RHI/API.h>
-#include <Lyra/Window/API.h>
+#include <Lyra/Window/WSIAPI.h>
 
 #include "VkUtils.h"
 

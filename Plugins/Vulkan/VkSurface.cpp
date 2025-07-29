@@ -1,4 +1,4 @@
-#include <Lyra/Window/Utils.h>
+#include <Lyra/Window/WSIUtils.h>
 
 #include "VkUtils.h"
 

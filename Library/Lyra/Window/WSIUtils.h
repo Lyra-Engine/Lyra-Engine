@@ -5,7 +5,7 @@
 #include <Lyra/Common/Stdint.h>
 #include <Lyra/Common/Container.h>
 #include <Lyra/Common/BitFlags.h>
-#include <Lyra/Window/Enums.h>
+#include <Lyra/Window/WSIEnums.h>
 
 namespace lyra::wsi
 {

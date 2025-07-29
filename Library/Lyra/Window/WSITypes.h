@@ -7,9 +7,9 @@
 #include <Lyra/Common/Pointer.h>
 #include <Lyra/Common/Container.h>
 #include <Lyra/Common/Enums.h>
-#include <Lyra/Window/Enums.h>
-#include <Lyra/Window/Descs.h>
-#include <Lyra/Window/Utils.h>
+#include <Lyra/Window/WSIEnums.h>
+#include <Lyra/Window/WSIDescs.h>
+#include <Lyra/Window/WSIUtils.h>
 
 namespace lyra::wsi
 {

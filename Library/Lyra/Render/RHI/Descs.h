@@ -3,7 +3,7 @@
 #ifndef LYRA_LIBRARY_RENDER_RHI_DESCS_H
 #define LYRA_LIBRARY_RENDER_RHI_DESCS_H
 
-#include <Lyra/Window/Utils.h>
+#include <Lyra/Window/WSIUtils.h>
 #include <Lyra/Render/RHI/Enums.h>
 #include <Lyra/Render/RHI/Utils.h>
 

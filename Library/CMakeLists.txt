@@ -16,7 +16,12 @@ target_sources(lyra-engine PRIVATE
     Lyra/Render/SLC/Types.cpp
 
     # window sources
-    Lyra/Window/Types.cpp
+    Lyra/Window/WSIAPI.h
+    Lyra/Window/WSIUtils.h
+    Lyra/Window/WSIDescs.h
+    Lyra/Window/WSIEnums.h
+    Lyra/Window/WSITypes.h
+    Lyra/Window/WSITypes.cpp
 )
 
 # link dependencies

@@ -3,8 +3,8 @@
 
 #include <Lyra/Common/Stdint.h>
 #include <Lyra/Common/String.h>
-#include <Lyra/Window/Enums.h>
-#include <Lyra/Window/Utils.h>
+#include <Lyra/Window/WSIEnums.h>
+#include <Lyra/Window/WSIUtils.h>
 
 namespace lyra::wsi
 {

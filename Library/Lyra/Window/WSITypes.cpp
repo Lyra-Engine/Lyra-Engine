@@ -1,6 +1,6 @@
 #include <Lyra/Common/Plugin.h>
-#include <Lyra/Window/API.h>
-#include <Lyra/Window/Types.h>
+#include <Lyra/Window/WSIAPI.h>
+#include <Lyra/Window/WSITypes.h>
 
 using namespace lyra;
 using namespace lyra::wsi;
