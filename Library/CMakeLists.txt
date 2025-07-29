@@ -4,16 +4,57 @@ lyra_shared(engine)
 # library sources
 target_sources(lyra-engine PRIVATE
     # common sources
+    Lyra/Common/Assert.h
+    Lyra/Common/BitFlags.h
+    Lyra/Common/Blackboard.h
+    Lyra/Common/Compatibility.h
+    Lyra/Common/Container.h
+    Lyra/Common/ECS.h
+    Lyra/Common/Enums.h
+    Lyra/Common/Function.h
+    Lyra/Common/GLM.h
+    Lyra/Common/Hash.h
+    Lyra/Common/Logger.h
+    Lyra/Common/Msgbox.h
     Lyra/Common/Msgbox.cpp
+    Lyra/Common/Path.h
+    Lyra/Common/Plugin.h
+    Lyra/Common/Pointer.h
+    Lyra/Common/Slotmap.h
+    Lyra/Common/Stdint.h
+    Lyra/Common/String.h
+    Lyra/Common/View.h
 
     # render sources
-    Lyra/Render/RHI/Types.cpp
-    Lyra/Render/RHI/Inits.cpp
+    Lyra/Render/RHI/RHIAPI.h
+    Lyra/Render/RHI/RHIDescs.h
+    Lyra/Render/RHI/RHIEnums.h
+    Lyra/Render/RHI/RHIError.h
+    Lyra/Render/RHI/RHIHash.h
+    Lyra/Render/RHI/RHIInits.h
+    Lyra/Render/RHI/RHIInits.cpp
+    Lyra/Render/RHI/RHITypes.h
+    Lyra/Render/RHI/RHITypes.cpp
+    Lyra/Render/RHI/RHIUtils.h
+    Lyra/Render/RPI/FrameGraph.h
     Lyra/Render/RPI/FrameGraph.cpp
-    Lyra/Render/RPI/FrameGraphBuilder.cpp
-    Lyra/Render/RPI/FrameGraphTexture.cpp
+    Lyra/Render/RPI/FrameGraphAllocator.h
     Lyra/Render/RPI/FrameGraphAllocator.cpp
-    Lyra/Render/SLC/Types.cpp
+    Lyra/Render/RPI/FrameGraphBuffer.h
+    Lyra/Render/RPI/FrameGraphBuilder.h
+    Lyra/Render/RPI/FrameGraphBuilder.cpp
+    Lyra/Render/RPI/FrameGraphEnums.h
+    Lyra/Render/RPI/FrameGraphPass.h
+    Lyra/Render/RPI/FrameGraphResource.h
+    Lyra/Render/RPI/FrameGraphTexture.h
+    Lyra/Render/RPI/FrameGraphTexture.cpp
+    Lyra/Render/RPI/FrameGraphTraits.h
+    Lyra/Render/SLC/SLCAPI.h
+    Lyra/Render/SLC/SLCDescs.h
+    Lyra/Render/SLC/SLCEnums.h
+    Lyra/Render/SLC/SLCTypes.h
+    Lyra/Render/SLC/SLCTypes.cpp
+    Lyra/Render/SLC/SLCUtils.h
 
     # window sources
     Lyra/Window/WSIAPI.h

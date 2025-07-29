@@ -1,6 +1,6 @@
 #include <Lyra/Render/RPI/FrameGraphTexture.h>
 
-using namespace lyra::rpi;
+using namespace lyra::rhi;
 
 void FrameGraphTexture::pre_read(FrameGraphContext* context, FrameGraphPass* pass, FrameGraphReadOp op)
 {

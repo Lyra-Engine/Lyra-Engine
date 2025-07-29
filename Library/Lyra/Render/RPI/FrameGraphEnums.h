@@ -3,7 +3,7 @@
 #ifndef LYRA_LIBRARY_RENDER_RPI_FRAME_GRAPH_ENUMS_H
 #define LYRA_LIBRARY_RENDER_RPI_FRAME_GRAPH_ENUMS_H
 
-namespace lyra::rpi
+namespace lyra::rhi
 {
     enum struct FrameGraphResourceType
     {
@@ -30,6 +30,6 @@ namespace lyra::rpi
     using FGWriteOp      = FrameGraphWriteOp;
     using FGResourceType = FrameGraphResourceType;
 
-} // namespace lyra::rpi
+} // namespace lyra::rhi
 
 #endif // LYRA_LIBRARY_RENDER_RPI_FRAME_GRAPH_ENUMS_H

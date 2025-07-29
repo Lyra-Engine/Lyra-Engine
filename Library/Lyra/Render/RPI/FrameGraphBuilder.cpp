@@ -1,7 +1,7 @@
 #include <Lyra/Render/RPI/FrameGraphBuilder.h>
 
 using namespace lyra;
-using namespace lyra::rpi;
+using namespace lyra::rhi;
 
 FrameGraphPass& FrameGraphBuilder::create_pass(StringView name)
 {

@@ -1,7 +1,5 @@
 #include "helper.h"
 
-using namespace lyra::rpi;
-
 CString frame_graph_program_pass1 = R"""(
 struct VertexInput
 {

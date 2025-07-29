@@ -3,11 +3,11 @@
 #ifndef LYRA_LIBRARY_RENDER_RHI_API_H
 #define LYRA_LIBRARY_RENDER_RHI_API_H
 
-#include <Lyra/Render/RHI/Enums.h>
-#include <Lyra/Render/RHI/Utils.h>
-#include <Lyra/Render/RHI/Descs.h>
-#include <Lyra/Render/RHI/Error.h>
-#include <Lyra/Render/RHI/Types.h>
+#include <Lyra/Render/RHI/RHIEnums.h>
+#include <Lyra/Render/RHI/RHIUtils.h>
+#include <Lyra/Render/RHI/RHIDescs.h>
+#include <Lyra/Render/RHI/RHIError.h>
+#include <Lyra/Render/RHI/RHITypes.h>
 
 namespace lyra::rhi
 {

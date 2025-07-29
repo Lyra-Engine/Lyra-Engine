@@ -1,6 +1,6 @@
 #include <Lyra/Render/RPI/FrameGraphAllocator.h>
 
-using namespace lyra::rpi;
+using namespace lyra::rhi;
 
 FGBufferObject FrameGraphAllocator::allocate(const GPUBufferDescriptor& descriptor)
 {

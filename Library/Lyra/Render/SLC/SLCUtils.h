@@ -8,7 +8,7 @@
 #include <Lyra/Common/Handle.h>
 #include <Lyra/Common/BitFlags.h>
 #include <Lyra/Common/Pointer.h>
-#include <Lyra/Render/SLC/Enums.h>
+#include <Lyra/Render/SLC/SLCEnums.h>
 
 ENABLE_BIT_FLAGS(lyra::rhi::CompileFlag);
 

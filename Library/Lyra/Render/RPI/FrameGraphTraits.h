@@ -5,7 +5,7 @@
 
 #include <type_traits>
 
-namespace lyra::rpi
+namespace lyra::rhi
 {
     template <typename T, typename = void>
     struct has_pre_read : std::false_type
@@ -26,6 +26,6 @@ namespace lyra::rpi
     struct has_pre_write<T, typename std::enable_if<std::is_member_function_pointer<decltype(&T::pre_write)>::value>::type> : std::true_type
     {
     };
-} // namespace lyra::rpi
+} // namespace lyra::rhi
 
 #endif // LYRA_LIBRARY_RENDER_RPI_FRAME_GRAPH_TRAITS_H

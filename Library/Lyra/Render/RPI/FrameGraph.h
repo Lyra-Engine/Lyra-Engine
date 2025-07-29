@@ -13,7 +13,7 @@
 #include <Lyra/Render/RPI/FrameGraphTexture.h>
 #include <Lyra/Render/RPI/FrameGraphBuffer.h>
 
-namespace lyra::rpi
+namespace lyra::rhi
 {
     struct FrameGraph
     {
@@ -77,6 +77,6 @@ namespace lyra::rpi
         FrameGraphResources            registry;
     }; // end of FrameGraph
 
-} // namespace lyra::rpi
+} // namespace lyra::rhi
 
 #endif // LYRA_LIBRARY_RENDER_RPI_FRAME_GRAPH_H

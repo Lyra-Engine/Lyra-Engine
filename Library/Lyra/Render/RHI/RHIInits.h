@@ -3,9 +3,9 @@
 #ifndef LYRA_LIBRARY_RENDER_RHI_INITS_H
 #define LYRA_LIBRARY_RENDER_RHI_INITS_H
 
-#include <Lyra/Render/RHI/Enums.h>
-#include <Lyra/Render/RHI/Utils.h>
-#include <Lyra/Render/RHI/Descs.h>
+#include <Lyra/Render/RHI/RHIEnums.h>
+#include <Lyra/Render/RHI/RHIUtils.h>
+#include <Lyra/Render/RHI/RHIDescs.h>
 
 namespace lyra::rhi
 {

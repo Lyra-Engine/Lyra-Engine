@@ -4,9 +4,9 @@
 #define LYRA_LIBRARY_RENDER_SLC_DESCS_H
 
 #include <Lyra/Common/Container.h>
-#include <Lyra/Render/RHI/Enums.h>
-#include <Lyra/Render/SLC/Enums.h>
-#include <Lyra/Render/SLC/Utils.h>
+#include <Lyra/Render/RHI/RHIEnums.h>
+#include <Lyra/Render/SLC/SLCEnums.h>
+#include <Lyra/Render/SLC/SLCUtils.h>
 
 namespace lyra::rhi
 {

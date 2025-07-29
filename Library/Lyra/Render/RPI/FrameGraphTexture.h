@@ -4,14 +4,14 @@
 #define LYRA_LIBRARY_RENDER_RPI_FRAME_GRAPH_TEXTURE_H
 
 #include <Lyra/Common/Hash.h>
-#include <Lyra/Render/RHI/Descs.h>
-#include <Lyra/Render/RHI/Inits.h>
+#include <Lyra/Render/RHI/RHIDescs.h>
+#include <Lyra/Render/RHI/RHIInits.h>
 #include <Lyra/Render/RPI/FrameGraphPass.h>
 #include <Lyra/Render/RPI/FrameGraphEnums.h>
 #include <Lyra/Render/RPI/FrameGraphContext.h>
 #include <Lyra/Render/RPI/FrameGraphAllocator.h>
 
-namespace lyra::rpi
+namespace lyra::rhi
 {
     using namespace lyra::rhi;
 
@@ -51,6 +51,6 @@ namespace lyra::rpi
         TransitionState      state  = undefined_state();
     };
 
-} // namespace lyra::rpi
+} // namespace lyra::rhi
 
 #endif // LYRA_LIBRARY_RENDER_RPI_FRAME_GRAPH_TEXTURE_H

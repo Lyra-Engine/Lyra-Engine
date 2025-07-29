@@ -4,7 +4,7 @@
 #include <Lyra/Common/Container.h>
 #include <Lyra/Render/RPI/FrameGraph.h>
 
-using namespace lyra::rpi;
+using namespace lyra::rhi;
 
 FrameGraph::~FrameGraph()
 {

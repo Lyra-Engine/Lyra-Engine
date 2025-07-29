@@ -6,10 +6,10 @@
 // reference: https://gpuweb.github.io/gpuweb/#
 
 #include <Lyra/Common/Pointer.h>
-#include <Lyra/Render/RHI/Enums.h>
-#include <Lyra/Render/RHI/Utils.h>
-#include <Lyra/Render/RHI/Descs.h>
-#include <Lyra/Render/RHI/Error.h>
+#include <Lyra/Render/RHI/RHIEnums.h>
+#include <Lyra/Render/RHI/RHIUtils.h>
+#include <Lyra/Render/RHI/RHIDescs.h>
+#include <Lyra/Render/RHI/RHIError.h>
 
 namespace lyra::rhi
 {

@@ -8,7 +8,7 @@
 #include <Lyra/Common/String.h>
 #include <Lyra/Common/Handle.h>
 #include <Lyra/Common/BitFlags.h>
-#include <Lyra/Render/RHI/Enums.h>
+#include <Lyra/Render/RHI/RHIEnums.h>
 
 ENABLE_BIT_FLAGS(lyra::rhi::RHIFlag);
 ENABLE_BIT_FLAGS(lyra::rhi::GPUShaderStage);

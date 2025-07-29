@@ -1,7 +1,7 @@
 #include <fstream>
 #include <Lyra/Common/Plugin.h>
-#include <Lyra/Render/SLC/API.h>
-#include <Lyra/Render/SLC/Types.h>
+#include <Lyra/Render/SLC/SLCAPI.h>
+#include <Lyra/Render/SLC/SLCTypes.h>
 #include <objidl.h>
 
 using namespace lyra;

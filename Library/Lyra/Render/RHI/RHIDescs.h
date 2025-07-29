@@ -4,8 +4,8 @@
 #define LYRA_LIBRARY_RENDER_RHI_DESCS_H
 
 #include <Lyra/Window/WSIUtils.h>
-#include <Lyra/Render/RHI/Enums.h>
-#include <Lyra/Render/RHI/Utils.h>
+#include <Lyra/Render/RHI/RHIEnums.h>
+#include <Lyra/Render/RHI/RHIUtils.h>
 
 namespace lyra::rhi
 {

@@ -5,11 +5,11 @@
 
 #include <Lyra/Common/Stdint.h>
 #include <Lyra/Common/String.h>
-#include <Lyra/Render/RHI/Descs.h>
-#include <Lyra/Render/SLC/Enums.h>
-#include <Lyra/Render/SLC/Utils.h>
-#include <Lyra/Render/SLC/Descs.h>
-#include <Lyra/Render/SLC/Types.h>
+#include <Lyra/Render/RHI/RHIDescs.h>
+#include <Lyra/Render/SLC/SLCEnums.h>
+#include <Lyra/Render/SLC/SLCUtils.h>
+#include <Lyra/Render/SLC/SLCDescs.h>
+#include <Lyra/Render/SLC/SLCTypes.h>
 
 namespace lyra::rhi
 {

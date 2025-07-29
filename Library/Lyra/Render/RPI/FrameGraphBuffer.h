@@ -3,10 +3,10 @@
 #ifndef LYRA_LIBRARY_RENDER_RPI_FRAME_GRAPH_BUFFER_H
 #define LYRA_LIBRARY_RENDER_RPI_FRAME_GRAPH_BUFFER_H
 
-#include <Lyra/Render/RHI/Descs.h>
+#include <Lyra/Render/RHI/RHIDescs.h>
 #include <Lyra/Render/RPI/FrameGraphAllocator.h>
 
-namespace lyra::rpi
+namespace lyra::rhi
 {
     using namespace lyra::rhi;
 
@@ -30,6 +30,6 @@ namespace lyra::rpi
         GPUBufferHandle buffer;
     };
 
-} // namespace lyra::rpi
+} // namespace lyra::rhi
 
 #endif // LYRA_LIBRARY_RENDER_RPI_FRAME_GRAPH_BUFFER_H

@@ -4,7 +4,7 @@
 #define LYRA_LIBRARY_RENDER_RHI_HASH_H
 
 #include <Lyra/Common/Hash.h>
-#include <Lyra/Render/RHI/Descs.h>
+#include <Lyra/Render/RHI/RHIDescs.h>
 
 template <>
 struct std::hash<lyra::rhi::GPUBufferDescriptor>

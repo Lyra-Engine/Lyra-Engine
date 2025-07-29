@@ -11,7 +11,7 @@
 #include <Lyra/Render/RPI/FrameGraphEnums.h>
 #include <Lyra/Render/RPI/FrameGraphResource.h>
 
-namespace lyra::rpi
+namespace lyra::rhi
 {
     struct FrameGraphReadResource
     {
@@ -68,6 +68,6 @@ namespace lyra::rpi
         bool active() const { return refcnt != 0 || entry->preserved; }
     };
 
-} // namespace lyra::rpi
+} // namespace lyra::rhi
 
 #endif // LYRA_LIBRARY_RENDER_RPI_FRAME_GRAPH_PASS_H

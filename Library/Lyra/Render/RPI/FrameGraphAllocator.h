@@ -4,11 +4,11 @@
 #define LYRA_LIBRARY_RENDER_RPI_FRAME_GRAPH_ALLOCATOR_H
 
 #include <Lyra/Common/Container.h>
-#include <Lyra/Render/RHI/Descs.h>
-#include <Lyra/Render/RHI/Types.h>
-#include <Lyra/Render/RHI/Hash.h>
+#include <Lyra/Render/RHI/RHIDescs.h>
+#include <Lyra/Render/RHI/RHITypes.h>
+#include <Lyra/Render/RHI/RHIHash.h>
 
-namespace lyra::rpi
+namespace lyra::rhi
 {
     using namespace lyra::rhi;
 
@@ -39,6 +39,6 @@ namespace lyra::rpi
         HashMap<GPUTextureDescriptor, FGTextureVector> textures;
     };
 
-} // namespace lyra::rpi
+} // namespace lyra::rhi
 
 #endif // LYRA_LIBRARY_RENDER_RPI_FRAME_GRAPH_ALLOCATOR_H

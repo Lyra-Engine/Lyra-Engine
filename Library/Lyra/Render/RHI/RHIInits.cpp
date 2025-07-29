@@ -1,4 +1,4 @@
-#include <Lyra/Render/RHI/Inits.h>
+#include <Lyra/Render/RHI/RHIInits.h>
 
 using namespace lyra::rhi;
 

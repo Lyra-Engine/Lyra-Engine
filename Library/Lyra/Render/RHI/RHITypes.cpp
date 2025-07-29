@@ -1,6 +1,6 @@
 #include <Lyra/Common/Plugin.h>
-#include <Lyra/Render/RHI/API.h>
-#include <Lyra/Render/RHI/Types.h>
+#include <Lyra/Render/RHI/RHIAPI.h>
+#include <Lyra/Render/RHI/RHITypes.h>
 
 using namespace lyra;
 using namespace lyra::rhi;

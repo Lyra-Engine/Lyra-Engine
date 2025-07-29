@@ -8,7 +8,7 @@
 #include <Lyra/Render/RPI/FrameGraphEnums.h>
 #include <Lyra/Render/RPI/FrameGraphTraits.h>
 
-namespace lyra::rpi
+namespace lyra::rhi
 {
     using FrameGraphResource = std::uint32_t;
 
@@ -94,6 +94,6 @@ namespace lyra::rpi
         HashMap<FrameGraphResource, FrameGraphResourceModel*> data = {};
     };
 
-} // namespace lyra::rpi
+} // namespace lyra::rhi
 
 #endif // LYRA_LIBRARY_RENDER_RPI_FRAME_GRAPH_RESOURCE_H

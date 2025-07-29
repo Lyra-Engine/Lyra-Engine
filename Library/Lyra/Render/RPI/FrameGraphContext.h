@@ -3,9 +3,9 @@
 #ifndef LYRA_LIBRARY_RENDER_RPI_FRAME_GRAPH_CONTEXT_H
 #define LYRA_LIBRARY_RENDER_RPI_FRAME_GRAPH_CONTEXT_H
 
-#include <Lyra/Render/RHI/Types.h>
+#include <Lyra/Render/RHI/RHITypes.h>
 
-namespace lyra::rpi
+namespace lyra::rhi
 {
     using namespace lyra::rhi;
 
@@ -16,6 +16,6 @@ namespace lyra::rpi
         GPUCommandBuffer cmdlist;
     };
 
-} // namespace lyra::rpi
+} // namespace lyra::rhi
 
 #endif // LYRA_LIBRARY_RENDER_RPI_FRAME_GRAPH_CONTEXT_H
