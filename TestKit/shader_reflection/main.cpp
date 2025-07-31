@@ -3,6 +3,8 @@
 void test_shader_vertex_attribute_reflection(CompileTarget target, CompileFlags flags)
 {
     String code = R"""(
+    import lyra;
+
     struct VertexInput
     {
         float3 position : POSITION;
@@ -22,6 +24,11 @@ void test_shader_vertex_attribute_reflection(CompileTarget target, CompileFlags 
         float4x4 view;
     };
 
+    struct Xform
+    {
+        float4x4 mvp;
+    };
+
     struct Hello
     {
         ConstantBuffer<Camera> cam;
@@ -30,11 +37,16 @@ void test_shader_vertex_attribute_reflection(CompileTarget target, CompileFlags 
         SamplerState smp;
     };
 
+    ParameterBlock<Hello> haha;
+    ParameterBlock<Hello> bibi;
+
     // [[vk::binding(10, 5)]]
     // ConstantBuffer<Camera> camera : register(b11, space6);
 
-    ParameterBlock<Hello> haha;
-    ParameterBlock<Hello> bibi;
+    [[vk::push_constant]]
+    ConstantBuffer<Xform> xform;
+
+    ParameterBlock<Xform> xform2;
 
     [shader("vertex")]
     VertexOutput vsmain(VertexInput input)

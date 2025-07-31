@@ -169,10 +169,11 @@ CumulativeOffset AccessPathNode::calculate_cumulative_offset(slang::ParameterCat
 
     auto unit = static_cast<SlangParameterCategory>(category);
     for (auto node = this; node != nullptr; node = node->outer) {
-        result.value += node->layout->getOffset(unit);
-        result.space += node->layout->getBindingSpace(unit);
         if (node->layout->getTypeLayout()->getKind() == slang::TypeReflection::Kind::ParameterBlock) {
             result.space += node->layout->getOffset(SLANG_PARAMETER_CATEGORY_SUB_ELEMENT_REGISTER_SPACE);
+        } else {
+            result.value += node->layout->getOffset(unit);
+            result.space += node->layout->getBindingSpace(unit);
         }
     }
     return result;
@@ -577,7 +578,7 @@ void ReflectResultInternal::init_bindings(slang::ProgramLayout* program_layout)
                 record_parameter_block_space(node);
 
                 // ParameterBlock will automatically introduce a constant buffer binding if ordinary types are observed.
-                if (typ_layout->getSize())
+                if (typ_layout->getElementTypeLayout()->getSize())
                     create_automatic_constant_buffer(node);
 
                 return WalkAction::CONTINUE;
@@ -682,9 +683,6 @@ void ReflectResultInternal::create_binding(AccessPathNode node)
     uint binding = offset.value;
 
     auto val = GPUBindGroupLayoutEntry{};
-    std::memset(&val, 1, sizeof(val)); // completely clear this struct
-
-    val.binding.index = binding; // binding index within the space
     fill_binding_type(val, type);
     fill_binding_index(val, offset);
     fill_binding_count(val, type);
