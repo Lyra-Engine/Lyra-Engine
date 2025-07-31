@@ -1,7 +1,7 @@
 // global module headers
 #include <Lyra/Common/String.h>
 #include <Lyra/Common/Plugin.h>
-#include <Lyra/Render/SLC/API.h>
+#include <Lyra/Render/SLC/SLCAPI.h>
 
 #include "SlangUtils.h"
 

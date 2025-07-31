@@ -8,7 +8,7 @@
 // both Slang and spdlog includes
 #include <Lyra/Common/Logger.h>
 #include <Lyra/Common/Function.h>
-#include <Lyra/Render/SLC/API.h>
+#include <Lyra/Render/SLC/SLCAPI.h>
 
 using namespace lyra;
 using namespace lyra::rhi;
