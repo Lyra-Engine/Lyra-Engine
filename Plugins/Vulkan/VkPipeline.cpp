@@ -77,9 +77,9 @@ VulkanPipeline::VulkanPipeline(const GPURenderPipelineDescriptor& desc)
     // dummy viewport (supposed to be replaced by vkCmdSetViewport)
     auto viewport     = VkViewport{};
     viewport.x        = 0;
-    viewport.y        = extent.height;
+    viewport.y        = 0;
     viewport.width    = extent.width;
-    viewport.height   = -extent.height;
+    viewport.height   = extent.height;
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
 

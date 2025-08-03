@@ -39,7 +39,7 @@ void test_shader_vertex_attribute_reflection(CompileTarget target, CompileFlags 
     };
 
     [[vk::push_constant]]
-    ConstantBuffer<Xform> xform1 : ROOT_CONSTANT;
+    ConstantBuffer<Xform> xform1 : PUSH_CONSTANT;
 
     ParameterBlock<Hello> haha;
     ParameterBlock<Hello> bibi;

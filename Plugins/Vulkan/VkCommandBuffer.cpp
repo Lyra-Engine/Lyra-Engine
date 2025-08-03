@@ -453,9 +453,9 @@ void cmd::set_viewport(GPUCommandEncoderHandle cmdbuffer, float x, float y, floa
 
     auto viewport     = VkViewport{};
     viewport.x        = x;
-    viewport.y        = y + h;
+    viewport.y        = y;
     viewport.width    = w;
-    viewport.height   = -h;
+    viewport.height   = h;
     viewport.minDepth = min_depth;
     viewport.maxDepth = max_depth;
 

@@ -222,7 +222,7 @@ CompilerWrapper::CompilerWrapper(const CompilerDescriptor& descriptor)
 
     Vector<slang::CompilerOptionEntry> options;
 
-    static String root_constant_key = "ROOT_CONSTANT";
+    static String root_constant_key = "PUSH_CONSTANT";
     static String root_constant_val = "register(b0, space" + std::to_string(PushConstantRegisterSpace) + ")";
 
     // special treatment for root constants

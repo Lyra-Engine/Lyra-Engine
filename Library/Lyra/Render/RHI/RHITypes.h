@@ -257,7 +257,10 @@ namespace lyra::rhi
         void set_push_constants(GPUShaderStageFlags visibility, uint offset, uint size, uint8_t* data) const;
 
         template <typename T>
-        void set_push_constants(GPUShaderStageFlags visibility, uint offset, T data) const { set_push_constants(visibility, offset, sizeof(T), &data); }
+        void set_push_constants(GPUShaderStageFlags visibility, uint offset, T data) const
+        {
+            set_push_constants(visibility, offset, sizeof(T), reinterpret_cast<uint8_t*>(&data));
+        }
 
         void dispatch_workgroups(GPUSize32 x, GPUSize32 y = 1, GPUSize32 z = 1) const;
 
