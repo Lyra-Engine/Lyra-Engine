@@ -3,6 +3,8 @@
 
 static ComPtr<slang::IGlobalSession> GLOBAL_SESSION;
 
+static uint ROOT_CONSTANT_SPACE = 999;
+
 static Logger logger = init_stderr_logger("Slang", LogLevel::trace);
 
 static CString builtin_module_source = R"""(
@@ -102,6 +104,12 @@ Logger get_logger()
     return logger;
 }
 
+template <typename T>
+uint round_up_to_next_multiple_of(T size, T align)
+{
+    return (size + align - 1) / align * align;
+}
+
 void diagnose_if_needed(slang::IBlob* diagnosticsBlob)
 {
     if (diagnosticsBlob != nullptr) {
@@ -169,7 +177,7 @@ CumulativeOffset AccessPathNode::calculate_cumulative_offset(slang::ParameterCat
 
     auto unit = static_cast<SlangParameterCategory>(category);
     for (auto node = this; node != nullptr; node = node->outer) {
-        if (node->layout->getTypeLayout()->getKind() == slang::TypeReflection::Kind::ParameterBlock) {
+        if (node->layout->getTypeLayout()->getParameterCategory() == slang::ParameterCategory::SubElementRegisterSpace) {
             result.space += node->layout->getOffset(SLANG_PARAMETER_CATEGORY_SUB_ELEMENT_REGISTER_SPACE);
         } else {
             result.value += node->layout->getOffset(unit);
@@ -214,15 +222,28 @@ CompilerWrapper::CompilerWrapper(const CompilerDescriptor& descriptor)
 {
     this->target = descriptor.target;
 
-    auto target_desc    = slang::TargetDesc{};
-    target_desc.format  = select_target(descriptor);
-    target_desc.profile = select_profile(descriptor);
-
-    auto session_desc        = slang::SessionDesc{};
-    session_desc.targets     = &target_desc;
-    session_desc.targetCount = 1;
-
     Vector<slang::CompilerOptionEntry> options;
+
+    static CString root_constant_key = "ROOT_CONSTANT";
+    static CString root_constant_val = "register(b0, space999)";
+
+    // special treatment for root constants
+    {
+        auto entry               = slang::CompilerOptionEntry{};
+        entry.name               = slang::CompilerOptionName::MacroDefine;
+        entry.value.kind         = slang::CompilerOptionValueKind::String;
+        entry.value.stringValue0 = root_constant_key;
+        entry.value.stringValue1 = root_constant_val;
+        options.push_back(entry);
+    }
+
+    // invert y-axis for spirv-based shaders
+    if (target == CompileTarget::SPIRV) {
+        auto entry            = slang::CompilerOptionEntry{};
+        entry.name            = slang::CompilerOptionName::VulkanInvertY;
+        entry.value.intValue0 = 1;
+        options.push_back(entry);
+    }
 
     // include dirs
     for (auto& include : descriptor.includes) {
@@ -251,6 +272,16 @@ CompilerWrapper::CompilerWrapper(const CompilerDescriptor& descriptor)
         emit.value.intValue0 = 1;
         options.push_back(emit);
     }
+
+    auto target_desc    = slang::TargetDesc{};
+    target_desc.format  = select_target(descriptor);
+    target_desc.profile = select_profile(descriptor);
+
+    auto session_desc                     = slang::SessionDesc{};
+    session_desc.targets                  = &target_desc;
+    session_desc.targetCount              = 1;
+    session_desc.compilerOptionEntryCount = static_cast<uint>(options.size());
+    session_desc.compilerOptionEntries    = options.data();
 
     GLOBAL_SESSION->createSession(session_desc, session.writeRef());
 
@@ -357,10 +388,9 @@ bool CompilerWrapper::reflect(ShaderEntryPoints entries, ReflectResultInternal& 
     // associate stages with ICompileRequests*
     auto layout = linked_program->getLayout();
     for (auto& entry : entries) {
-        auto module = reinterpret_cast<CompileResultInternal*>(entry.module.handle);
-        auto refl   = layout->findEntryPointByName(entry.entry);
-        uint index  = get_shader_entry_point_index(layout, refl);
-        auto stage  = to_stage(refl->getStage());
+        auto refl  = layout->findEntryPointByName(entry.entry);
+        uint index = get_shader_entry_point_index(layout, refl);
+        auto stage = to_stage(refl->getStage());
 
         slang::IMetadata*    metadata;
         ComPtr<slang::IBlob> diagnostics;
@@ -374,7 +404,7 @@ bool CompilerWrapper::reflect(ShaderEntryPoints entries, ReflectResultInternal& 
 
     result.target = target;
     result.init(layout);
-    return true;
+    return !result.has_error;
 }
 #pragma endregion CompilerWrapper
 
@@ -468,9 +498,10 @@ bool CompileResultInternal::get_shader_blob(CString entry, ShaderBlob& blob)
 #pragma region ReflectResultInternal
 bool ReflectResultInternal::get_vertex_attributes(ShaderAttributes attrs, GPUVertexAttribute* attributes) const
 {
-    bool pass = true;
+    if (has_error) return false;
 
     // assume attributes has been properly allocated
+    bool pass = true;
     for (uint i = 0; i < attrs.size(); i++) {
         auto& attr = attrs.at(i);
         auto  iter = name2attributes.find(attr.name);
@@ -487,6 +518,8 @@ bool ReflectResultInternal::get_vertex_attributes(ShaderAttributes attrs, GPUVer
 
 bool ReflectResultInternal::get_bind_group_layouts(uint& count, GPUBindGroupLayoutDescriptor* layouts) const
 {
+    if (has_error) return false;
+
     count = static_cast<uint>(bind_groups.size());
 
     // check if layouts is provided, if null, simply return count
@@ -514,6 +547,8 @@ bool ReflectResultInternal::get_bind_group_layouts(uint& count, GPUBindGroupLayo
 
 bool ReflectResultInternal::get_bind_group_location(CString name, uint& group) const
 {
+    if (has_error) return false;
+
     auto it = name2bindgroups.find(name);
     if (it == name2bindgroups.end()) {
         get_logger()->error("Failed to find bind group with name: {}!", name);
@@ -522,6 +557,23 @@ bool ReflectResultInternal::get_bind_group_location(CString name, uint& group) c
 
     // assign the group and binding
     group = it->second;
+    return true;
+}
+
+bool ReflectResultInternal::get_push_constant_ranges(uint& count, GPUPushConstantRange* ranges) const
+{
+    if (has_error) return false;
+
+    count = static_cast<uint>(push_constant_ranges.size());
+
+    // check if ranges is provided, if null, simply return count
+    if (ranges == nullptr)
+        return true;
+
+    // copy the push constant ranges to caller
+    for (uint i = 0; i < count; i++)
+        ranges[i] = push_constant_ranges.at(i);
+
     return true;
 }
 
@@ -670,8 +722,12 @@ void ReflectResultInternal::create_automatic_constant_buffer(AccessPathNode node
     fill_binding_stages(val, node);
     fill_dynamic_uniform_buffer(val, node.layout);
 
-    bind_groups[space].push_back(val);
-    get_logger()->info("[BINDGROUP] NAME:{}\t SPACE:{} BINDING:{} (AUTOMATIC)", node.layout->getName(), space, binding);
+    if (is_constant_buffer(node)) {
+        create_push_constant(node, space, val);
+    } else {
+        bind_groups[space].push_back(val);
+        get_logger()->info("[BINDGROUP] NAME:{}\t SPACE:{} BINDING:{} (AUTOMATIC)", node.layout->getName(), space, binding);
+    }
 }
 
 void ReflectResultInternal::create_binding(AccessPathNode node)
@@ -689,9 +745,55 @@ void ReflectResultInternal::create_binding(AccessPathNode node)
     fill_binding_stages(val, node);
     fill_dynamic_uniform_buffer(val, node.layout);
 
-    // append to bindings
-    bind_groups[space].push_back(val);
-    get_logger()->info("[BINDGROUP] NAME:{}\t SPACE:{} BINDING:{}", node.layout->getName(), space, binding);
+    // check for push constant vs constant buffer view binding
+    if (is_constant_buffer(node)) {
+        create_push_constant(node, space, val);
+    } else {
+        // append to bindings
+        bind_groups[space].push_back(val);
+        get_logger()->info("[BINDGROUP] NAME:{}\t SPACE:{} BINDING:{}", node.layout->getName(), space, binding);
+    }
+}
+
+void ReflectResultInternal::create_push_constant(AccessPathNode node, uint space, const GPUBindGroupLayoutEntry& binding)
+{
+    if (space != ROOT_CONSTANT_SPACE) {
+        get_logger()->error("Please use ROOT_CONSTANT to denote the binding register space.");
+        has_error = true;
+        return;
+    }
+
+    if (node.layout->getType()->getKind() != slang::TypeReflection::Kind::ConstantBuffer) {
+        get_logger()->error("Please directly define push constant / root constant using ConstantBuffer<T>.");
+        has_error = true;
+        return;
+    }
+
+    if (num_push_constant_buffers++ >= 1) {
+        get_logger()->error("Please specify all push constant / root constant using only one ConstantBuffer<T>. Using multiple ConstantBuffer<T> is not allowed!");
+        has_error = true;
+        return;
+    }
+
+    // reflect each field in the push constant block
+    auto push_constant_type = node.layout->getTypeLayout()->getElementTypeLayout();
+    for (unsigned j = 0; j < push_constant_type->getFieldCount(); j++) {
+        auto push_constant_field  = push_constant_type->getFieldByIndex(j);
+        auto push_constant_offset = push_constant_field->getOffset(SLANG_PARAMETER_CATEGORY_UNIFORM);
+        auto push_constant_size   = push_constant_field->getTypeLayout()->getSize(SLANG_PARAMETER_CATEGORY_UNIFORM);
+        auto push_constant_range  = GPUPushConstantRange{
+            static_cast<uint>(push_constant_offset),
+            static_cast<uint>(push_constant_size),
+            binding.visibility,
+        };
+        get_logger()->info("[PUSH CONSTANT] NAME:{}.{}\t OFFSET:{} SIZE:{}",
+            node.layout->getName(),
+            push_constant_field->getName(),
+            push_constant_range.offset,
+            push_constant_range.size);
+
+        push_constant_ranges.push_back(push_constant_range);
+    }
 }
 
 void ReflectResultInternal::fill_binding_index(GPUBindGroupLayoutEntry& entry, CumulativeOffset offset) const
@@ -1025,5 +1127,15 @@ GPUVertexFormat ReflectResultInternal::infer_vertex_format(slang::TypeLayoutRefl
 
     assert(!!!"Failed to infer vertex format!");
     return GPUVertexFormat::FLOAT32x4;
+}
+
+bool ReflectResultInternal::is_constant_buffer(AccessPathNode node) const
+{
+    auto type = node.layout->getTypeLayout();
+    if (type->getParameterCategory() == slang::ParameterCategory::PushConstantBuffer)
+        return true;
+
+    auto var = node.layout->getVariable();
+    return var->findUserAttributeByName(GLOBAL_SESSION, "vk_push_constant");
 }
 #pragma endregion ReflectResultInternal

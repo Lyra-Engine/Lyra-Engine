@@ -12,6 +12,9 @@ auto get_api_name() -> CString { return "Slang"; }
 
 bool create_compiler(CompilerHandle& compiler, const CompilerDescriptor& descriptor)
 {
+    // control log level from CompilerDescriptor
+    get_logger()->set_level(descriptor.log_level);
+
     compiler.handle = new CompilerWrapper(descriptor);
     return true;
 }
@@ -48,10 +51,10 @@ bool create_reflection(CompilerHandle compiler, ShaderEntryPoints entries, Shade
 {
     auto internal = std::make_unique<ReflectResultInternal>();
     auto handle   = compiler.astype<CompilerWrapper>();
-    handle->reflect(entries, *internal);
+    bool success  = handle->reflect(entries, *internal);
 
     reflection = ShaderReflectionHandle{internal.release()};
-    return true;
+    return success;
 }
 
 void delete_reflection(ShaderReflectionHandle reflection)
@@ -71,15 +74,19 @@ bool get_shader_blob(ShaderEntryPoint entry, ShaderBlob& blob)
 bool get_vertex_attributes(ShaderReflectionHandle reflection, ShaderAttributes attrs, GPUVertexAttribute* attributes)
 {
     auto res = reinterpret_cast<ReflectResultInternal*>(reflection.handle);
-    res->get_vertex_attributes(attrs, attributes);
-    return true;
+    return res->get_vertex_attributes(attrs, attributes);
+}
+
+bool get_push_constant_ranges(ShaderReflectionHandle reflection, uint& count, GPUPushConstantRange* ranges)
+{
+    auto res = reinterpret_cast<ReflectResultInternal*>(reflection.handle);
+    return res->get_push_constant_ranges(count, ranges);
 }
 
 bool get_bind_group_layouts(ShaderReflectionHandle reflection, uint& count, GPUBindGroupLayoutDescriptor* layouts)
 {
     auto res = reinterpret_cast<ReflectResultInternal*>(reflection.handle);
-    res->get_bind_group_layouts(count, layouts);
-    return true;
+    return res->get_bind_group_layouts(count, layouts);
 }
 
 bool get_bind_group_location(ShaderReflectionHandle handle, CString name, uint& group)
@@ -99,16 +106,17 @@ LYRA_EXPORT auto cleanup() -> void
 
 LYRA_EXPORT auto create() -> ShaderAPI
 {
-    auto api                   = ShaderAPI{};
-    api.get_api_name           = get_api_name;
-    api.create_compiler        = create_compiler;
-    api.delete_compiler        = delete_compiler;
-    api.create_module          = create_module;
-    api.delete_module          = delete_module;
-    api.create_reflection      = create_reflection;
-    api.delete_reflection      = delete_reflection;
-    api.get_shader_blob        = get_shader_blob;
-    api.get_vertex_attributes  = get_vertex_attributes;
-    api.get_bind_group_layouts = get_bind_group_layouts;
+    auto api                     = ShaderAPI{};
+    api.get_api_name             = get_api_name;
+    api.create_compiler          = create_compiler;
+    api.delete_compiler          = delete_compiler;
+    api.create_module            = create_module;
+    api.delete_module            = delete_module;
+    api.create_reflection        = create_reflection;
+    api.delete_reflection        = delete_reflection;
+    api.get_shader_blob          = get_shader_blob;
+    api.get_vertex_attributes    = get_vertex_attributes;
+    api.get_bind_group_layouts   = get_bind_group_layouts;
+    api.get_push_constant_ranges = get_push_constant_ranges;
     return api;
 }

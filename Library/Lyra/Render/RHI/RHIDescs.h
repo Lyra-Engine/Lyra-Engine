@@ -155,6 +155,7 @@ namespace lyra::rhi
     struct GPUPipelineLayoutDescriptor : public GPUObjectDescriptorBase
     {
         GPUBindGroupLayoutHandles bind_group_layouts;
+        GPUPushConstantRanges     push_constant_ranges;
     };
 
     struct GPUPipelineDescriptorBase : public GPUObjectDescriptorBase

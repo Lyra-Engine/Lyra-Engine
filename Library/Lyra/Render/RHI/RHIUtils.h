@@ -90,6 +90,9 @@ namespace lyra::rhi
     struct GPUBindGroupLayoutDescriptor;
     using GPUBindGroupLayoutDescriptors = TypedView<GPUBindGroupLayoutDescriptor>;
 
+    struct GPUPushConstantRange;
+    using GPUPushConstantRanges = TypedView<GPUPushConstantRange>;
+
     struct GPUVertexAttribute;
     using GPUVertexAttributes = TypedView<GPUVertexAttribute>;
 
@@ -581,6 +584,14 @@ namespace lyra::rhi
         GPUSize32 mip_level_count  = 1;
         GPUSize32 base_array_layer = 0;
         GPUSize32 array_layers     = 1;
+    };
+
+    // NOTE: Non-WebGPU standard API
+    struct GPUPushConstantRange
+    {
+        uint                offset;
+        uint                size;
+        GPUShaderStageFlags visibility;
     };
 
     // NOTE: Non-WebGPU standard API
