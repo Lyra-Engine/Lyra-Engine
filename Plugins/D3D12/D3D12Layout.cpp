@@ -2,6 +2,11 @@
 #include "D3D12Utils.h"
 #include "d3d12.h"
 
+uint round_up_to_multiple_of(uint size, uint align)
+{
+    return (size + align - 1) / align * align;
+}
+
 bool is_dynamic_bind_group_entry(const GPUBindGroupLayoutEntry& entry)
 {
     return entry.type == GPUBindingResourceType::BUFFER
@@ -79,6 +84,7 @@ D3D12PipelineLayout::D3D12PipelineLayout(const GPUPipelineLayoutDescriptor& desc
     bindgroups.resize(desc.bind_group_layouts.size());
     root_parameters.reserve(desc.bind_group_layouts.size() * 2);
 
+    // regular bindings
     for (auto& layout_handle : desc.bind_group_layouts) {
         auto& layout = fetch_resource(rhi->bind_group_layouts, layout_handle);
 
@@ -129,6 +135,27 @@ D3D12PipelineLayout::D3D12PipelineLayout(const GPUPipelineLayoutDescriptor& desc
         }
 
         register_space_index++;
+    }
+
+    // root constants
+    if (!desc.push_constant_ranges.empty()) {
+        auto visibility = GPUShaderStageFlags(0);
+        for (auto& range : desc.push_constant_ranges)
+            visibility = visibility | range.visibility;
+
+        uint bytes = 0;
+        for (auto& range : desc.push_constant_ranges)
+            bytes = std::max(bytes, range.offset + range.size);
+
+        root_parameters.push_back({});
+        auto& root_param                    = root_parameters.back();
+        root_param.ParameterType            = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+        root_param.ShaderVisibility         = d3d12enum(visibility);
+        root_param.Constants.ShaderRegister = 0;
+        root_param.Constants.RegisterSpace  = PushConstantRegisterSpace;
+        root_param.Constants.Num32BitValues = round_up_to_multiple_of(bytes, 4);
+
+        this->push_constant_root_parameter = root_parameter_index++;
     }
 
     // create root signature descriptor
@@ -336,18 +363,7 @@ D3D12BindGroupLayout::D3D12BindGroupLayout(const GPUBindGroupLayoutDescriptor& d
     }
 
     // optimize shader visibility if possible
-    bool has_compute  = stages.contains(GPUShaderStage::COMPUTE);
-    bool has_vertex   = stages.contains(GPUShaderStage::VERTEX);
-    bool has_fragment = stages.contains(GPUShaderStage::FRAGMENT);
-    if (has_compute) {
-        visibility = D3D12_SHADER_VISIBILITY_ALL; // Compute uses ALL
-    } else if (has_vertex && !has_fragment && !has_compute) {
-        visibility = D3D12_SHADER_VISIBILITY_VERTEX;
-    } else if (has_fragment && !has_vertex && !has_compute) {
-        visibility = D3D12_SHADER_VISIBILITY_PIXEL;
-    } else {
-        visibility = D3D12_SHADER_VISIBILITY_ALL; // Multiple stages or mixed usage
-    }
+    visibility = d3d12enum(stages);
 }
 
 void D3D12BindGroupLayout::destroy()

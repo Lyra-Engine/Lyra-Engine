@@ -20,6 +20,13 @@ ENABLE_BIT_FLAGS(lyra::rhi::GPUBarrierAccess);
 
 namespace lyra::rhi
 {
+    // NOTE: D3D12 uses root constants to implement push constants,
+    // but root constant is similar to other descriptor table based
+    // bind group layouts that requires both a register space, and
+    // a base register. For simplicity, we force that push constant
+    // always use space999 (max).
+    static constexpr uint PushConstantRegisterSpace = 999;
+
     using BufferSource = uint8_t*;
 
     using GPUBufferDynamicOffset   = uint32_t;

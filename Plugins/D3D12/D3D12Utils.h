@@ -355,7 +355,11 @@ struct D3D12PipelineLayout
 {
     ID3D12RootSignature* layout = nullptr;
 
+    // regular bind groups
     Vector<D3D12BindGroupInfo> bindgroups = {};
+
+    // push constant is treated differently
+    uint push_constant_root_parameter = -1;
 
     // really awkward design, but I have no choice
     struct
@@ -448,6 +452,7 @@ struct D3D12CommandBuffer
 
     struct PSOStatus
     {
+        bool                 compute  = false;
         D3D12Pipeline*       pipeline = nullptr;
         D3D12PipelineLayout* layout   = nullptr;
     };
@@ -763,6 +768,7 @@ namespace cmd
     void set_compute_pipeline(GPUCommandEncoderHandle cmdbuffer, GPUComputePipelineHandle pipeline);
     void set_raytracing_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURayTracingPipelineHandle pipeline);
     void set_bind_group(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 index, GPUBindGroupHandle bind_group, GPUBufferDynamicOffsets dynamic_offsets);
+    void set_push_constants(GPUCommandEncoderHandle cmdbuffer, GPUShaderStageFlags visibility, uint offset, uint size, uint8_t* data);
     void set_index_buffer(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle buffer, GPUIndexFormat format, GPUSize64 offset, GPUSize64 size);
     void set_vertex_buffer(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 slot, GPUBufferHandle buffer, GPUSize64 offset, GPUSize64 size);
     void draw(GPUCommandEncoderHandle cmdbuffer, GPUSize32 vertex_count, GPUSize32 instance_count, GPUSize32 first_vertex, GPUSize32 first_instance);
@@ -807,6 +813,7 @@ auto infer_texture_format(GPUTextureFormat format) -> DXGI_FORMAT;
 auto infer_topology_type(GPUPrimitiveTopology topology) -> D3D12_PRIMITIVE_TOPOLOGY_TYPE;
 auto infer_topology(GPUPrimitiveTopology topology) -> D3D12_PRIMITIVE_TOPOLOGY;
 auto infer_row_pitch(DXGI_FORMAT format, uint width, uint bytes_per_row) -> uint;
+auto d3d12enum(GPUShaderStageFlags visbility) -> D3D12_SHADER_VISIBILITY;
 auto d3d12enum(GPUCompareFunction compare, bool enable) -> D3D12_COMPARISON_FUNC;
 auto d3d12enum(GPUFilterMode min, GPUFilterMode mag, GPUMipmapFilterMode mip) -> D3D12_FILTER;
 auto d3d12enum(GPUAddressMode mode) -> D3D12_TEXTURE_ADDRESS_MODE;

@@ -309,6 +309,25 @@ uint infer_row_pitch(DXGI_FORMAT format, uint width, uint bytes_per_row)
     return (size_of(format) * width + alignment - 1) & ~(alignment - 1);
 }
 
+D3D12_SHADER_VISIBILITY d3d12enum(GPUShaderStageFlags stages)
+{
+    bool has_compute  = stages.contains(GPUShaderStage::COMPUTE);
+    bool has_vertex   = stages.contains(GPUShaderStage::VERTEX);
+    bool has_fragment = stages.contains(GPUShaderStage::FRAGMENT);
+
+    D3D12_SHADER_VISIBILITY visibility;
+    if (has_compute) {
+        visibility = D3D12_SHADER_VISIBILITY_ALL; // Compute uses ALL
+    } else if (has_vertex && !has_fragment && !has_compute) {
+        visibility = D3D12_SHADER_VISIBILITY_VERTEX;
+    } else if (has_fragment && !has_vertex && !has_compute) {
+        visibility = D3D12_SHADER_VISIBILITY_PIXEL;
+    } else {
+        visibility = D3D12_SHADER_VISIBILITY_ALL; // Multiple stages or mixed usage
+    }
+    return visibility;
+}
+
 D3D12_COMPARISON_FUNC d3d12enum(GPUCompareFunction compare, bool enable)
 {
     if (!enable)

@@ -482,6 +482,11 @@ void GPUCommandEncoder::set_bind_group(GPUIndex32 index, const GPUBindGroup& bin
     RHI::api()->cmd_set_bind_group(handle, index, bind_group, dynamic_offsets);
 }
 
+void GPUCommandEncoder::set_push_constants(GPUShaderStageFlags visibility, uint offset, uint size, uint8_t* data) const
+{
+    RHI::api()->cmd_set_push_constants(handle, visibility, offset, size, data);
+}
+
 void GPUCommandEncoder::dispatch_workgroups(GPUSize32 x, GPUSize32 y, GPUSize32 z) const
 {
     RHI::api()->cmd_dispatch_workgroups(handle, x, y, z);

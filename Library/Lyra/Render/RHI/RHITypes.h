@@ -254,6 +254,11 @@ namespace lyra::rhi
 
         void set_bind_group(GPUIndex32 index, const GPUBindGroup& bind_group, const Vector<GPUBufferDynamicOffset>& dynamic_offsets = {}) const;
 
+        void set_push_constants(GPUShaderStageFlags visibility, uint offset, uint size, uint8_t* data) const;
+
+        template <typename T>
+        void set_push_constants(GPUShaderStageFlags visibility, uint offset, T data) const { set_push_constants(visibility, offset, sizeof(T), &data); }
+
         void dispatch_workgroups(GPUSize32 x, GPUSize32 y = 1, GPUSize32 z = 1) const;
 
         void dispatch_workgroups_indirect(const GPUBuffer& indirect_buffer, GPUSize64 indirect_offset) const;

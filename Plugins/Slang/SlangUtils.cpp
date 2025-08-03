@@ -3,8 +3,6 @@
 
 static ComPtr<slang::IGlobalSession> GLOBAL_SESSION;
 
-static uint ROOT_CONSTANT_SPACE = 999;
-
 static Logger logger = init_stderr_logger("Slang", LogLevel::trace);
 
 static CString builtin_module_source = R"""(
@@ -224,16 +222,16 @@ CompilerWrapper::CompilerWrapper(const CompilerDescriptor& descriptor)
 
     Vector<slang::CompilerOptionEntry> options;
 
-    static CString root_constant_key = "ROOT_CONSTANT";
-    static CString root_constant_val = "register(b0, space999)";
+    static String root_constant_key = "ROOT_CONSTANT";
+    static String root_constant_val = "register(b0, space" + std::to_string(PushConstantRegisterSpace) + ")";
 
     // special treatment for root constants
     {
         auto entry               = slang::CompilerOptionEntry{};
         entry.name               = slang::CompilerOptionName::MacroDefine;
         entry.value.kind         = slang::CompilerOptionValueKind::String;
-        entry.value.stringValue0 = root_constant_key;
-        entry.value.stringValue1 = root_constant_val;
+        entry.value.stringValue0 = root_constant_key.c_str();
+        entry.value.stringValue1 = root_constant_val.c_str();
         options.push_back(entry);
     }
 
@@ -757,7 +755,7 @@ void ReflectResultInternal::create_binding(AccessPathNode node)
 
 void ReflectResultInternal::create_push_constant(AccessPathNode node, uint space, const GPUBindGroupLayoutEntry& binding)
 {
-    if (space != ROOT_CONSTANT_SPACE) {
+    if (space != PushConstantRegisterSpace) {
         get_logger()->error("Please use ROOT_CONSTANT to denote the binding register space.");
         has_error = true;
         return;
