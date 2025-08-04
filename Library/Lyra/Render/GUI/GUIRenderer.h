@@ -96,7 +96,7 @@ namespace lyra::gui
         static auto init(Compiler* compiler, const GUIDescriptor& descriptor) -> OwnedResource<GUIRenderer>;
 
         void reset(); // start of a new frame
-        void render(GPUCommandBuffer cmdbuffer, ImDrawData* draw_data);
+        void render(GPUCommandBuffer cmdbuffer, GPUSurfaceTexture backbuffer, ImDrawData* draw_data);
         void destroy();
 
         // ImGuiContext* is initialized inside engine DLLs.
@@ -105,9 +105,11 @@ namespace lyra::gui
 
     private:
         void init_imgui_setup(const GUIDescriptor& descriptor);
-        void init_backend_data(const GUIDescriptor& descriptor);
+        void init_platform_data(const GUIDescriptor& descriptor);
         void init_renderer_data(Compiler* compiler);
-        void init_multi_viewport();
+        void init_multi_viewport(const GUIDescriptor& descriptor);
+        void init_backend_flags(const GUIDescriptor& descriptor);
+        void init_dummy_texture();
 
         void process_texture(GPUCommandBuffer cmdbuffer, ImTextureData* tex);
         void create_texture(ImTextureData* tex);
@@ -119,6 +121,7 @@ namespace lyra::gui
 
         void create_vertex_buffers(ImDrawData* draw_data);
         void create_texture_descriptors();
+        void begin_render_pass(GPUCommandBuffer cmdbuffer, GPUSurfaceTexture backbuffer);
         void setup_render_state(GPUCommandBuffer cmdbuffer, ImDrawData* draw_data, int width, int height);
 
         void create_window_context(WindowHandle window, ImGuiContext* context);

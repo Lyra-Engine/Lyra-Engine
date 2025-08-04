@@ -81,18 +81,6 @@ void Application::render()
     // current backbuffer
     auto backbuffer = surface.get_current_texture();
 
-    // color attachments
-    auto color_attachment        = GPURenderPassColorAttachment{};
-    color_attachment.clear_value = GPUColor{0.0f, 0.0f, 0.0f, 0.0f};
-    color_attachment.load_op     = GPULoadOp::CLEAR;
-    color_attachment.store_op    = GPUStoreOp::STORE;
-    color_attachment.view        = backbuffer.view;
-
-    // render pass info
-    auto render_pass                     = GPURenderPassDescriptor{};
-    render_pass.color_attachments        = color_attachment;
-    render_pass.depth_stencil_attachment = {};
-
     // synchronization
     command.wait(backbuffer.available, GPUBarrierSync::PIXEL_SHADING);
     command.signal(backbuffer.complete, GPUBarrierSync::RENDER_TARGET);
@@ -102,11 +90,13 @@ void Application::render()
     {
         ImDrawData* main_draw_data = ImGui::GetDrawData();
         gui->reset();
-        gui->render(command, main_draw_data);
+        gui->render(command, backbuffer, main_draw_data);
     }
     command.resource_barrier(state_transition(backbuffer.texture, color_attachment_state(), present_src_state()));
-    command.end_render_pass();
     command.submit();
+
+    // swapchain presentation
+    backbuffer.present();
 }
 
 void Application::resize(const lyra::wsi::WindowInfo& info)

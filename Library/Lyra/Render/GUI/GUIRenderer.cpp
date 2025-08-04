@@ -1,3 +1,5 @@
+#include <iostream>
+#include <Lyra/Common/GLM.h>
 #include <Lyra/Common/Plugin.h>
 #include <Lyra/Common/Pointer.h>
 #include <Lyra/Common/Function.h>
@@ -50,13 +52,121 @@ float4 fsmain(VertexOutput input) : SV_Target
 }
 )""";
 
+static WindowHandle& platform_get_window_handle(ImGuiViewport* viewport)
+{
+    return (reinterpret_cast<GUIViewportData*>(viewport->PlatformUserData))->window;
+}
+
+static void platform_create_window(ImGuiViewport* viewport)
+{
+    WindowDescriptor desc{};
+    desc.title  = "Platform Window";
+    desc.width  = static_cast<uint>(viewport->Size.x);
+    desc.height = static_cast<uint>(viewport->Size.y);
+    desc.flags  = 0;
+    Window::api()->create_window(desc, platform_get_window_handle(viewport));
+}
+
+static void platform_delete_window(ImGuiViewport* viewport)
+{
+    if (!viewport->PlatformUserData) return;
+
+    auto vd = reinterpret_cast<GUIViewportData*>(viewport->PlatformUserData);
+    if (vd->owned) {
+        Window::api()->delete_window(vd->window);
+    }
+
+    delete vd;
+    viewport->PlatformUserData = nullptr;
+}
+
+static void platform_show_window(ImGuiViewport* viewport)
+{
+    Window::api()->show_window(platform_get_window_handle(viewport));
+}
+
+static void platform_update_window(ImGuiViewport* viewport, const WindowInputState& state)
+{
+    // TODO: implement this later
+}
+
+static void platform_render_window(ImGuiViewport* viewport, void*)
+{
+    // TODO: implement this later
+}
+
+static void platform_swap_buffers(ImGuiViewport* viewport, void*)
+{
+    Window::api()->swap_buffer(platform_get_window_handle(viewport));
+}
+
+static void platform_set_window_pos(ImGuiViewport* viewport, ImVec2 pos)
+{
+    Window::api()->set_window_pos(platform_get_window_handle(viewport), pos.x, pos.y);
+}
+
+static ImVec2 platform_get_window_pos(ImGuiViewport* viewport)
+{
+    uint xpos, ypos;
+    Window::api()->get_window_pos(platform_get_window_handle(viewport), xpos, ypos);
+    ImVec2 pos(xpos, ypos);
+    return pos;
+}
+
+static void platform_set_window_size(ImGuiViewport* viewport, ImVec2 size)
+{
+    Window::api()->set_window_size(platform_get_window_handle(viewport), size.x, size.y);
+}
+
+static ImVec2 platform_get_window_size(ImGuiViewport* viewport)
+{
+    uint xsiz, ysiz;
+    Window::api()->get_window_size(platform_get_window_handle(viewport), xsiz, ysiz);
+    return ImVec2(xsiz, ysiz);
+}
+
+static ImVec2 platform_get_window_scale(ImGuiViewport* viewport)
+{
+    float xscale, yscale;
+    Window::api()->get_window_scale(platform_get_window_handle(viewport), xscale, yscale);
+    return ImVec2(xscale, yscale);
+}
+
+static void platform_set_window_title(ImGuiViewport* viewport, CString title)
+{
+    Window::api()->set_window_title(platform_get_window_handle(viewport), title);
+}
+
+static void platform_set_window_focus(ImGuiViewport* viewport)
+{
+    Window::api()->set_window_focus(platform_get_window_handle(viewport));
+}
+
+static bool platform_get_window_focus(ImGuiViewport* viewport)
+{
+    return Window::api()->get_window_focus(platform_get_window_handle(viewport));
+}
+
+static bool platform_get_window_minimized(ImGuiViewport* viewport)
+{
+    return Window::api()->get_window_minimized(platform_get_window_handle(viewport));
+}
+
+static void platform_set_window_alpha(ImGuiViewport* viewport, float alpha)
+{
+    return Window::api()->set_window_alpha(platform_get_window_handle(viewport), alpha);
+}
+
 #pragma region GUIRenderer
 OwnedResource<GUIRenderer> GUIRenderer::init(Compiler* compiler, const GUIDescriptor& descriptor)
 {
     OwnedResource<GUIRenderer> gui(new GUIRenderer());
     gui->init_imgui_setup(descriptor);
-    gui->init_backend_data(descriptor);
+    gui->init_platform_data(descriptor);
     gui->init_renderer_data(compiler);
+    gui->init_multi_viewport(descriptor);
+    gui->init_backend_flags(descriptor);
+    gui->init_dummy_texture();
     return gui;
 }
 
@@ -66,26 +176,30 @@ void GUIRenderer::reset()
     assert(renderer_data && "ImGui renderer data has not been initialized!");
 
     // reclaim unused buffers
-    for (auto it = renderer_data->garbage_buffers.begin(); it != renderer_data->garbage_buffers.end(); it++) {
+    for (auto it = renderer_data->garbage_buffers.begin(); it != renderer_data->garbage_buffers.end();) {
         auto& garbage = *it;
         if (garbage.should_remove(renderer_data->image_count)) {
             garbage.object.destroy();
             it = renderer_data->garbage_buffers.erase(it);
+        } else {
+            it++;
         }
     }
 
     // reclaim unused textures
-    for (auto it = renderer_data->garbage_textures.begin(); it != renderer_data->garbage_textures.end(); it++) {
+    for (auto it = renderer_data->garbage_textures.begin(); it != renderer_data->garbage_textures.end();) {
         auto& garbage = *it;
         if (garbage.should_remove(renderer_data->image_count)) {
             if (garbage.object.texture.valid()) garbage.object.texture.destroy();
             if (garbage.object.view.valid()) garbage.object.view.destroy();
             it = renderer_data->garbage_textures.erase(it);
+        } else {
+            it++;
         }
     }
 }
 
-void GUIRenderer::render(GPUCommandBuffer cmdbuffer, ImDrawData* draw_data)
+void GUIRenderer::render(GPUCommandBuffer cmdbuffer, GPUSurfaceTexture backbuffer, ImDrawData* draw_data)
 {
     // avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
     int fb_width  = static_cast<int>(draw_data->DisplaySize.x * draw_data->FramebufferScale.x);
@@ -104,6 +218,9 @@ void GUIRenderer::render(GPUCommandBuffer cmdbuffer, ImDrawData* draw_data)
 
     // refresh all texture descriptors (because bind group / descriptors only have a life time within a frame)
     create_texture_descriptors();
+
+    // render pass
+    begin_render_pass(cmdbuffer, backbuffer);
 
     // initial render state setup
     setup_render_state(cmdbuffer, draw_data, fb_width, fb_height);
@@ -152,21 +269,23 @@ void GUIRenderer::render(GPUCommandBuffer cmdbuffer, ImDrawData* draw_data)
 
     // reset scissor rect for future commands
     cmdbuffer.set_scissor_rect(0, 0, fb_width, fb_height);
+    cmdbuffer.end_render_pass();
 }
 
 void GUIRenderer::destroy()
 {
     RHI::api()->wait_idle();
 
+    // unset all backend user data (pointers will be reclaimed by unique_ptr)
+    ImGuiIO& io                = ImGui::GetIO();
+    io.BackendFlags            = 0;
+    io.BackendPlatformUserData = nullptr;
+    io.BackendRendererUserData = nullptr;
+    delete_window_context(platform_data->primary_window);
+
     // clean up Dear ImGui context
     ImGui::DestroyPlatformWindows();
     ImGui::DestroyContext();
-
-    ImGuiIO& io                = ImGui::GetIO();
-    io.BackendPlatformName     = nullptr;
-    io.BackendPlatformUserData = nullptr;
-    io.BackendFlags            = 0;
-    delete_window_context(platform_data->primary_window);
 }
 
 ImGuiContext* GUIRenderer::context() const
@@ -181,9 +300,19 @@ void GUIRenderer::init_imgui_setup(const GUIDescriptor& descriptor)
     // setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
+
+    uint width, height;
+    Window::api()->get_window_size(descriptor.window, width, height);
+
+    float xscale, yscale;
+    Window::api()->get_window_scale(descriptor.window, xscale, yscale);
+
+    auto& io                   = ImGui::GetIO();
+    io.DisplaySize             = ImVec2(width, height);
+    io.DisplayFramebufferScale = ImVec2(xscale, yscale);
 }
 
-void GUIRenderer::init_backend_data(const GUIDescriptor& descriptor)
+void GUIRenderer::init_platform_data(const GUIDescriptor& descriptor)
 {
     ImGuiIO& io = ImGui::GetIO();
     assert(io.BackendPlatformUserData == nullptr && "Already initialized a platform backend!");
@@ -194,15 +323,9 @@ void GUIRenderer::init_backend_data(const GUIDescriptor& descriptor)
     platform_data->elapsed        = 0.0f;
     assert(platform_data->primary_window.window != nullptr && "Expect a valid handle for primary window!");
 
+    // initialize platform backend data
     io.BackendPlatformUserData = platform_data.get();
     io.BackendPlatformName     = "lyra-window";
-    io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors; // We can honor GetMouseCursor() values (optional)
-    io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;  // We can honor io.WantSetMousePos requests (optional, rarely used)
-
-    if (descriptor.viewports) {
-        init_multi_viewport();
-        io.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports;
-    }
 
     ImGuiContext* context = ImGui::GetCurrentContext();
     create_window_context(descriptor.window, context);
@@ -210,6 +333,9 @@ void GUIRenderer::init_backend_data(const GUIDescriptor& descriptor)
 
 void GUIRenderer::init_renderer_data(Compiler* compiler)
 {
+    ImGuiIO& io = ImGui::GetIO();
+    assert(io.BackendRendererUserData == nullptr && "Already initialized a renderer backend!");
+
     renderer_data = std::make_unique<GUIRendererData>();
 
     auto& device = RHI::get_current_device();
@@ -283,7 +409,7 @@ void GUIRenderer::init_renderer_data(Compiler* compiler)
 
         // color target
         GPUColorTargetState color_state{};
-        color_state.format                 = GPUTextureFormat::RGBA8UNORM_SRGB;
+        color_state.format                 = GPUTextureFormat::BGRA8UNORM_SRGB; // TODO: need to select correct format for different backend
         color_state.blend_enable           = true;
         color_state.blend.color.operation  = GPUBlendOperation::ADD;
         color_state.blend.color.src_factor = GPUBlendFactor::SRC_ALPHA;
@@ -302,8 +428,8 @@ void GUIRenderer::init_renderer_data(Compiler* compiler)
         desc.fragment.module      = renderer_data->fshader;
         desc.fragment.targets     = color_state;
         desc.multisample.count    = 1;
-        desc.primitive.cull_mode  = GPUCullMode::BACK;
-        desc.primitive.front_face = GPUFrontFace::CCW;
+        desc.primitive.cull_mode  = GPUCullMode::NONE;
+        desc.primitive.front_face = GPUFrontFace::CW;
         desc.primitive.topology   = GPUPrimitiveTopology::TRIANGLE_LIST;
 
         return device.create_render_pipeline(desc);
@@ -325,26 +451,32 @@ void GUIRenderer::init_renderer_data(Compiler* compiler)
         desc.max_anisotropy = 1.0;
         return device.create_sampler(desc);
     });
+
+    // initialize renderer backend data
+    io.BackendRendererUserData = renderer_data.get();
+    io.BackendRendererName     = "lyra-renderer";
 }
 
-void GUIRenderer::init_multi_viewport()
+void GUIRenderer::init_multi_viewport(const GUIDescriptor& descriptor)
 {
-    // ImGuiPlatformIO& platform_io                   = ImGui::GetPlatformIO();
-    // platform_io.Platform_CreateWindow              = GUIRenderer::api()->create_window;
-    // platform_io.Platform_DestroyWindow             = GUIRenderer::api()->delete_window;
-    // platform_io.Platform_ShowWindow                = GUIRenderer::api()->show_window;
-    // platform_io.Platform_SetWindowPos              = GUIRenderer::api()->set_window_pos;
-    // platform_io.Platform_GetWindowPos              = GUIRenderer::api()->get_window_pos;
-    // platform_io.Platform_SetWindowSize             = GUIRenderer::api()->set_window_size;
-    // platform_io.Platform_GetWindowSize             = GUIRenderer::api()->get_window_size;
-    // platform_io.Platform_GetWindowFramebufferScale = GUIRenderer::api()->get_window_scale;
-    // platform_io.Platform_SetWindowFocus            = GUIRenderer::api()->set_window_focus;
-    // platform_io.Platform_GetWindowFocus            = GUIRenderer::api()->get_window_focus;
-    // platform_io.Platform_GetWindowMinimized        = GUIRenderer::api()->get_window_minimized;
-    // platform_io.Platform_SetWindowTitle            = GUIRenderer::api()->set_window_title;
-    // platform_io.Platform_RenderWindow              = GUIRenderer::api()->render_window;
-    // platform_io.Platform_SwapBuffers               = GUIRenderer::api()->swap_buffers;
-    // platform_io.Platform_SetWindowAlpha            = GUIRenderer::api()->set_window_alpha;
+    if (!descriptor.viewports) return;
+
+    ImGuiPlatformIO& platform_io                   = ImGui::GetPlatformIO();
+    platform_io.Platform_CreateWindow              = platform_create_window;
+    platform_io.Platform_DestroyWindow             = platform_delete_window;
+    platform_io.Platform_ShowWindow                = platform_show_window;
+    platform_io.Platform_SetWindowPos              = platform_set_window_pos;
+    platform_io.Platform_GetWindowPos              = platform_get_window_pos;
+    platform_io.Platform_SetWindowSize             = platform_set_window_size;
+    platform_io.Platform_GetWindowSize             = platform_get_window_size;
+    platform_io.Platform_GetWindowFramebufferScale = platform_get_window_scale;
+    platform_io.Platform_SetWindowFocus            = platform_set_window_focus;
+    platform_io.Platform_GetWindowFocus            = platform_get_window_focus;
+    platform_io.Platform_GetWindowMinimized        = platform_get_window_minimized;
+    platform_io.Platform_SetWindowTitle            = platform_set_window_title;
+    platform_io.Platform_RenderWindow              = platform_render_window;
+    platform_io.Platform_SwapBuffers               = platform_swap_buffers;
+    platform_io.Platform_SetWindowAlpha            = platform_set_window_alpha;
 
     // register main window handle (which is owned by the main application, not by us)
     GUIViewportData* vd = new GUIViewportData{};
@@ -354,6 +486,33 @@ void GUIRenderer::init_multi_viewport()
     ImGuiViewport* viewport     = ImGui::GetMainViewport();
     viewport->PlatformUserData  = vd;
     viewport->PlatformHandleRaw = vd->window.window;
+}
+
+void GUIRenderer::init_backend_flags(const GUIDescriptor& descriptor)
+{
+    ImGuiIO& io = ImGui::GetIO();
+
+    io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;      // we can honor GetMouseCursor() values (optional)
+    io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;       // we can honor io.WantSetMousePos requests (optional, rarely used)
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset; // we can honor the ImDrawCmd::VtxOffset field, allowing for large meshes.
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasTextures;  // we can honor ImGuiPlatformIO::Textures[] requests during render
+
+    if (descriptor.viewports) {
+        io.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports;
+        io.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;
+    }
+}
+
+void GUIRenderer::init_dummy_texture()
+{
+    // NOTE: ImTetxureID(0) is treated as invalid texture,
+    // therefore we simply occupy slotmap at index 0, so that
+    // we will never receive an invalid texID.
+
+    GUITexture texinfo{};
+    texinfo.texture.handle.reset();
+    texinfo.view.handle.reset();
+    renderer_data->textures.add(texinfo);
 }
 
 void GUIRenderer::process_texture(GPUCommandBuffer cmdbuffer, ImTextureData* tex)
@@ -410,7 +569,8 @@ void GUIRenderer::update_texture(GPUCommandBuffer cmdbuffer, ImTextureData* tex)
 
     // copy from texture data to staging buffer
     auto staging = create_buffer(buf_size, GPUBufferUsage::COPY_SRC | GPUBufferUsage::MAP_WRITE);
-    auto mapped  = staging.get_mapped_range();
+    staging.map(GPUMapMode::WRITE);
+    auto mapped = staging.get_mapped_range();
     for (uint i = 0; i < tex->Height; i++) {
         uint8_t* dst = mapped.data + row_pitch * i;
         uint8_t* src = (uint8_t*)tex->GetPixels() + tex->GetPitch() * i;
@@ -445,6 +605,9 @@ void GUIRenderer::update_texture(GPUCommandBuffer cmdbuffer, ImTextureData* tex)
 
     // deferred deletion of the staging buffer, because this buffer is still used before the command buffer completes.
     renderer_data->garbage_buffers.push_back(GUIGarbageBuffer{staging, 0});
+
+    // update the texture status back to OK (required by ImGui)
+    tex->SetStatus(ImTextureStatus_OK);
 }
 
 void GUIRenderer::delete_texture(ImTextureData* tex)
@@ -480,13 +643,16 @@ GPUBuffer GUIRenderer::create_buffer(uint size, GPUBufferUsageFlags usages)
         GPUBufferDescriptor desc{};
         desc.size               = size;
         desc.usage              = usages;
-        desc.mapped_at_creation = true;
+        desc.mapped_at_creation = false;
         return device.create_buffer(desc);
     });
 }
 
 void GUIRenderer::create_vertex_buffers(ImDrawData* draw_data)
 {
+    // no vertex/index data
+    if (draw_data->TotalVtxCount == 0) return;
+
     // create/resize index buffer on the fly
     renderer_data->ibuffer = prepare_buffer(
         renderer_data->ibuffer,
@@ -524,17 +690,19 @@ void GUIRenderer::create_texture_descriptors()
         if (texinfo.view.valid()) {
             Array<GPUBindGroupEntry, 2> entries;
 
+            entries.at(0).binding = 0;
             entries.at(0).index   = 0;
             entries.at(0).type    = GPUBindingResourceType::TEXTURE;
             entries.at(0).texture = texinfo.view;
 
-            entries.at(1).index   = 1;
+            entries.at(1).binding = 1;
+            entries.at(1).index   = 0;
             entries.at(1).type    = GPUBindingResourceType::SAMPLER;
             entries.at(1).sampler = renderer_data->sampler;
 
             texinfo.bindgroup = execute([&]() {
                 GPUBindGroupDescriptor desc{};
-                desc.layout  = renderer_data->blayouts.at(1);
+                desc.layout  = renderer_data->blayouts.at(0);
                 desc.entries = entries;
                 return device.create_bind_group(desc);
             });
@@ -565,14 +733,26 @@ void GUIRenderer::setup_render_state(GPUCommandBuffer cmdbuffer, ImDrawData* dra
         float T = draw_data->DisplayPos.y;
         float B = draw_data->DisplayPos.y + draw_data->DisplaySize.y;
 
-        glm::mat4 mvp = glm::mat4({
-            {2.0f / (R - L), 0.0f, 0.0f, 0.0f},
-            {0.0f, 2.0f / (T - B), 0.0f, 0.0f},
-            {0.0f, 0.0f, 0.5f, 0.0f},
-            {(R + L) / (L - R), (T + B) / (B - T), 0.5f, 1.0f},
-        });
+        glm::mat4 mvp = glm::ortho(L, R, B, T);
         cmdbuffer.set_push_constants(GPUShaderStage::VERTEX, 0, mvp);
     }
+}
+
+void GUIRenderer::begin_render_pass(GPUCommandBuffer cmdbuffer, GPUSurfaceTexture backbuffer)
+{
+    // color attachments
+    auto color_attachment        = GPURenderPassColorAttachment{};
+    color_attachment.clear_value = GPUColor{0.0f, 0.0f, 0.0f, 0.0f};
+    color_attachment.load_op     = GPULoadOp::CLEAR;
+    color_attachment.store_op    = GPUStoreOp::STORE;
+    color_attachment.view        = backbuffer.view;
+
+    // render pass info
+    auto render_pass                     = GPURenderPassDescriptor{};
+    render_pass.color_attachments        = color_attachment;
+    render_pass.depth_stencil_attachment = {};
+
+    cmdbuffer.begin_render_pass(render_pass);
 }
 
 void GUIRenderer::create_window_context(WindowHandle window, ImGuiContext* context)
@@ -584,8 +764,12 @@ void GUIRenderer::create_window_context(WindowHandle window, ImGuiContext* conte
 void GUIRenderer::delete_window_context(WindowHandle window)
 {
     auto& window_contexts = platform_data->window_contexts;
-    for (auto it = window_contexts.begin(); it != window_contexts.end(); it++)
-        if (it->window.window == window.window)
+    for (auto it = window_contexts.begin(); it != window_contexts.end();) {
+        if (it->window.window == window.window) {
             it = window_contexts.erase(it);
+        } else {
+            it++;
+        }
+    }
 }
 #pragma endregion GUIRenderer

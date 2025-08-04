@@ -38,6 +38,9 @@ namespace lyra::wsi
 
         void (*bind_window_callback)(WindowHandle window, WindowCallback&& callback);
 
+        void (*show_window)(WindowHandle window);
+        void (*swap_buffer)(WindowHandle window);
+
         void (*run_in_loop)();
     };
 

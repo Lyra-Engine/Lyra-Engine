@@ -46,7 +46,7 @@ struct EventLoopInternal
 static EventLoopInternal global_event_loop;
 
 #ifdef USE_PLATFORM_WINDOWS
-void create_window_handle(GLFWwindow* win, WindowHandle& window)
+static void create_window_handle(GLFWwindow* win, WindowHandle& window)
 {
     window.window = win;
     window.native = glfwGetWin32Window(win);
@@ -56,7 +56,7 @@ void create_window_handle(GLFWwindow* win, WindowHandle& window)
 #ifdef USE_PLATFORM_MACOS
 void* get_metal_layer(void* window);
 
-void create_window_handle(GLFWwindow* win, WindowHandle& window)
+static void create_window_handle(GLFWwindow* win, WindowHandle& window)
 {
     window.window = win;
     window.native = get_metal_layer(glfwGetCocoaWindow(win));
@@ -64,19 +64,19 @@ void create_window_handle(GLFWwindow* win, WindowHandle& window)
 #endif
 
 #ifdef USE_PLATFORM_LINUX
-void create_window_handle(GLFWwindow* win, WindowHandle& window)
+static void create_window_handle(GLFWwindow* win, WindowHandle& window)
 {
     window.window = win;
     window.native = glfwGetX11Window(win);
 }
 #endif
 
-Logger get_logger()
+static Logger get_logger()
 {
     return logger;
 }
 
-ButtonState to_button_state(int action)
+static ButtonState to_button_state(int action)
 {
     switch (action) {
         case GLFW_PRESS:
@@ -89,7 +89,7 @@ ButtonState to_button_state(int action)
     throw std::invalid_argument("Unsupport GLFW keyboard action!");
 }
 
-void update_mods(WindowInputState& state, int mods)
+static void update_mods(WindowInputState& state, int mods)
 {
     if (mods & GLFW_MOD_ALT)
         state.keyboard.modifiers.set(Modifier::ALT);
@@ -107,17 +107,17 @@ void update_mods(WindowInputState& state, int mods)
         state.keyboard.modifiers.unset(Modifier::CTRL);
 }
 
-auto get_api_name() -> CString
+static auto get_api_name() -> CString
 {
     return "Window";
 }
 
-void error_callback(int error, const char* description)
+static void error_callback(int error, const char* description)
 {
     get_logger()->error(description);
 }
 
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     auto& user  = *static_cast<UserState*>(glfwGetWindowUserPointer(window));
     auto& state = user.input_state;
@@ -209,7 +209,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     // clang-format off
 }
 
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
     auto& user  = *static_cast<UserState*>(glfwGetWindowUserPointer(window));
     auto& state = user.input_state;
@@ -230,7 +230,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
     }
 }
 
-void mouse_position_callback(GLFWwindow* window, double xpos, double ypos)
+static void mouse_position_callback(GLFWwindow* window, double xpos, double ypos)
 {
     auto& user  = *static_cast<UserState*>(glfwGetWindowUserPointer(window));
     auto& state = user.input_state;
@@ -238,7 +238,7 @@ void mouse_position_callback(GLFWwindow* window, double xpos, double ypos)
     state.mouse.position.y = static_cast<float>(ypos);
 }
 
-void window_close_callback(GLFWwindow* window) {
+static void window_close_callback(GLFWwindow* window) {
     // clean up user states
     auto user = static_cast<UserState*>(glfwGetWindowUserPointer(window));
     user->callback(WindowEvent::CLOSE);
@@ -257,7 +257,7 @@ void window_close_callback(GLFWwindow* window) {
         global_event_loop.windows.erase(it);
 }
 
-void bind_window_events(WindowHandle window)
+static void bind_window_events(WindowHandle window)
 {
     auto user        = new UserState{};
     user->input_state = {};
@@ -275,7 +275,7 @@ void bind_window_events(WindowHandle window)
     });
 }
 
-bool create_window(const WindowDescriptor& desc, WindowHandle& window)
+static bool create_window(const WindowDescriptor& desc, WindowHandle& window)
 {
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     GLFWwindow* win = glfwCreateWindow(desc.width, desc.height, desc.title, NULL, NULL);
@@ -287,12 +287,12 @@ bool create_window(const WindowDescriptor& desc, WindowHandle& window)
     return true;
 }
 
-void set_window_pos(WindowHandle window, uint x, uint y)
+static void set_window_pos(WindowHandle window, uint x, uint y)
 {
     glfwSetWindowPos((GLFWwindow*)window.window, x, y);
 }
 
-void get_window_pos(WindowHandle window, uint& x, uint& y)
+static void get_window_pos(WindowHandle window, uint& x, uint& y)
 {
     int32_t xpos, ypos;
     glfwGetWindowPos((GLFWwindow*)window.window, &xpos, &ypos);
@@ -300,12 +300,12 @@ void get_window_pos(WindowHandle window, uint& x, uint& y)
     y = ypos;
 }
 
-void set_window_size(WindowHandle window, uint width, uint height)
+static void set_window_size(WindowHandle window, uint width, uint height)
 {
     glfwSetWindowSize((GLFWwindow*)window.window, width, height);
 }
 
-void get_window_size(WindowHandle window, uint& width, uint& height)
+static void get_window_size(WindowHandle window, uint& width, uint& height)
 {
     int32_t w, h;
     glfwGetWindowSize((GLFWwindow*)window.window, &w, &h);
@@ -313,47 +313,47 @@ void get_window_size(WindowHandle window, uint& width, uint& height)
     height = static_cast<uint32_t>(h);
 }
 
-void get_window_scale(WindowHandle window, float& xscale, float& yscale)
+static void get_window_scale(WindowHandle window, float& xscale, float& yscale)
 {
     glfwGetWindowContentScale((GLFWwindow*)window.window, &xscale, &yscale);
 }
 
-void set_window_focus(WindowHandle window)
+static void set_window_focus(WindowHandle window)
 {
     glfwFocusWindow((GLFWwindow*)window.window);
 }
 
-bool get_window_focus(WindowHandle window)
+static bool get_window_focus(WindowHandle window)
 {
     return glfwGetWindowAttrib((GLFWwindow*)window.window, GLFW_FOCUSED);
 }
 
-void set_window_alpha(WindowHandle window, float alpha)
+static void set_window_alpha(WindowHandle window, float alpha)
 {
     glfwSetWindowOpacity((GLFWwindow*)window.window, alpha);
 }
 
-float get_window_alpha(WindowHandle window)
+static float get_window_alpha(WindowHandle window)
 {
     return glfwGetWindowOpacity((GLFWwindow*)window.window);
 }
 
-void set_window_title(WindowHandle window, CString title)
+static void set_window_title(WindowHandle window, CString title)
 {
     glfwSetWindowTitle((GLFWwindow*)window.window, title);
 }
 
-CString get_window_title(WindowHandle window)
+static CString get_window_title(WindowHandle window)
 {
     return glfwGetWindowTitle((GLFWwindow*)window.window);
 }
 
-bool get_window_minimized(WindowHandle window)
+static bool get_window_minimized(WindowHandle window)
 {
     return glfwGetWindowAttrib((GLFWwindow*)window.window, GLFW_ICONIFIED);
 }
 
-void get_input_state(WindowHandle window, WindowInputState& state)
+static void get_input_state(WindowHandle window, WindowInputState& state)
 {
     auto  handle = reinterpret_cast<GLFWwindow*>(window.window);
     auto& user   = *static_cast<UserState*>(glfwGetWindowUserPointer(handle));
@@ -362,19 +362,29 @@ void get_input_state(WindowHandle window, WindowInputState& state)
     state = user.input_state;
 }
 
-auto delete_window(WindowHandle window) -> void
+static auto delete_window(WindowHandle window) -> void
 {
     glfwDestroyWindow(reinterpret_cast<GLFWwindow*>(window.window));
 }
 
-void bind_window_callback(WindowHandle window, WindowCallback&& callback)
+static void swap_buffer(WindowHandle window)
+{
+    glfwSwapBuffers(reinterpret_cast<GLFWwindow*>(window.window));
+}
+
+static void show_window(WindowHandle window)
+{
+    glfwShowWindow(reinterpret_cast<GLFWwindow*>(window.window));
+}
+
+static void bind_window_callback(WindowHandle window, WindowCallback&& callback)
 {
     auto  handle = reinterpret_cast<GLFWwindow*>(window.window);
     auto& user   = *static_cast<UserState*>(glfwGetWindowUserPointer(handle));
     user.callback = std::move(callback);
 }
 
-void run_in_loop()
+static void run_in_loop()
 {
     // START
     for (auto& window : global_event_loop.windows) {
@@ -443,6 +453,8 @@ LYRA_EXPORT auto create() -> WindowAPI
     api.get_window_minimized = get_window_minimized;
     api.get_input_state      = get_input_state;
     api.bind_window_callback = bind_window_callback;
+    api.show_window          = show_window;
+    api.swap_buffer          = swap_buffer;
     api.run_in_loop          = run_in_loop;
     return api;
 }
