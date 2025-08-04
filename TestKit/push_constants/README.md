@@ -1,7 +1,7 @@
-# Dynamic Uniform
+# Push Constants
 
 ## Description
-This test renders multiple triangles using the same uniform buffer with different dynamic uniform offset.
+This test renders multiple triangles using the same different push constants.
 
 ## Reference
 ![Reference](reference.png "Reference")

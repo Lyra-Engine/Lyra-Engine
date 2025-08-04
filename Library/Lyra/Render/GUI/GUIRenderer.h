@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Lyra/Common/Slotmap.h"
 #ifndef LYRA_LIBRARY_RENDER_GUI_RENDERER_H
 #define LYRA_LIBRARY_RENDER_GUI_RENDERER_H
 
@@ -16,12 +17,13 @@ namespace lyra::gui
 {
     using namespace lyra::rhi;
 
+    template <typename T>
     struct GUIGarbage
     {
-        GPUBuffer buffer;
-        uint      unused_frames = 0;
+        T    object;
+        uint unused = 0;
 
-        bool should_remove(uint threshold) { return unused_frames++ >= threshold; }
+        bool should_remove(uint threshold) { return unused++ >= threshold; }
     };
 
     struct GUIDescriptor
@@ -36,6 +38,8 @@ namespace lyra::gui
         GPUBindGroup   bindgroup;
         GPUTexture     texture;
         GPUTextureView view;
+
+        bool valid() const { return texture.valid() || view.valid(); }
     };
 
     struct GUIWindowContext
@@ -58,19 +62,31 @@ namespace lyra::gui
         Vector<GUIWindowContext> window_contexts = {};
     };
 
+    struct GUITextureDeleter
+    {
+        // doing nothing here, deferred deletion
+        void operator()(GUITexture& texture) {}
+    };
+
+    using GUIGarbageBuffer   = GUIGarbage<GPUBuffer>;
+    using GUIGarbageBuffers  = Vector<GUIGarbageBuffer>;
+    using GUIGarbageTexture  = GUIGarbage<GUITexture>;
+    using GUIGarbageTextures = Vector<GUIGarbageTexture>;
+    using GUITextureManager  = Slotmap<GUITexture, GUITextureDeleter>;
+
     struct GUIRendererData
     {
         GPURenderPipeline                pipeline;
         GPUPipelineLayout                playout;
         GPUShaderModule                  vshader;
         GPUShaderModule                  fshader;
-        GPUBuffer                        transform;
         GPUBuffer                        vbuffer;
         GPUBuffer                        ibuffer;
         GPUSampler                       sampler;
         Vector<GPUBindGroupLayoutHandle> blayouts;
-        List<GUITexture>                 textures;
-        Vector<GUIGarbage>               garbages;
+        GUITextureManager                textures;
+        GUIGarbageBuffers                garbage_buffers;
+        GUIGarbageTextures               garbage_textures;
         uint                             image_count = 3;
     };
 
@@ -83,7 +99,12 @@ namespace lyra::gui
         void render(GPUCommandBuffer cmdbuffer, ImDrawData* draw_data);
         void destroy();
 
+        // ImGuiContext* is initialized inside engine DLLs.
+        // User application needs the same context in order to use ImGui.
+        auto context() const -> ImGuiContext*;
+
     private:
+        void init_imgui_setup(const GUIDescriptor& descriptor);
         void init_backend_data(const GUIDescriptor& descriptor);
         void init_renderer_data(Compiler* compiler);
         void init_multi_viewport();
@@ -93,8 +114,12 @@ namespace lyra::gui
         void update_texture(GPUCommandBuffer cmdbuffer, ImTextureData* tex);
         void delete_texture(ImTextureData* tex);
 
+        auto prepare_buffer(GPUBuffer buffer, uint size, GPUBufferUsageFlags usages) -> GPUBuffer;
+        auto create_buffer(uint size, GPUBufferUsageFlags usages) -> GPUBuffer;
+
+        void create_vertex_buffers(ImDrawData* draw_data);
         void create_texture_descriptors();
-        void setup_render_state(GPUCommandBuffer cmdbuffer, int width, int height);
+        void setup_render_state(GPUCommandBuffer cmdbuffer, ImDrawData* draw_data, int width, int height);
 
         void create_window_context(WindowHandle window, ImGuiContext* context);
         void delete_window_context(WindowHandle window);

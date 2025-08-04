@@ -32,6 +32,8 @@ namespace lyra::rhi
 
         void destroy();
 
+        bool valid() const { return handle.valid(); }
+
         operator GPUFenceHandle() const { return handle; }
     };
 
@@ -44,6 +46,8 @@ namespace lyra::rhi
         GPUSampler(GPUSamplerHandle handle) : handle(handle) {}
 
         void destroy();
+
+        bool valid() const { return handle.valid(); }
 
         operator GPUSamplerHandle() const { return handle; }
     };
@@ -58,6 +62,8 @@ namespace lyra::rhi
 
         void destroy();
 
+        bool valid() const { return handle.valid(); }
+
         operator GPUShaderModuleHandle() const { return handle; }
     };
 
@@ -70,6 +76,8 @@ namespace lyra::rhi
         GPUTextureView(GPUTextureViewHandle handle) : handle(handle) {}
 
         void destroy();
+
+        bool valid() const { return handle.valid(); }
 
         operator GPUTextureViewHandle() const { return handle; }
     };
@@ -93,6 +101,8 @@ namespace lyra::rhi
         auto create_view(GPUTextureViewDescriptor descriptor) -> GPUTextureView;
 
         void destroy();
+
+        bool valid() const { return handle.valid(); }
 
         operator GPUTextureHandle() const { return handle; }
     };
@@ -124,6 +134,8 @@ namespace lyra::rhi
 
         void destroy();
 
+        bool valid() const { return handle.valid(); }
+
         operator GPUBufferHandle() const { return handle; }
     };
 
@@ -135,6 +147,8 @@ namespace lyra::rhi
         GPUSize32    count;
 
         auto destroy() -> void;
+
+        bool valid() const { return handle.valid(); }
 
         operator GPUQuerySetHandle() const { return handle; }
     };
@@ -149,6 +163,8 @@ namespace lyra::rhi
 
         auto destroy() -> void;
 
+        bool valid() const { return handle.valid(); }
+
         operator GPUTlasHandle() const { return handle; }
     };
 
@@ -161,6 +177,8 @@ namespace lyra::rhi
         GPUBlas(GPUBlasHandle handle) : handle(handle) {}
 
         auto destroy() -> void;
+
+        bool valid() const { return handle.valid(); }
 
         operator GPUBlasHandle() const { return handle; }
     };
@@ -176,6 +194,8 @@ namespace lyra::rhi
         GPUBindGroup() : handle() {}
         GPUBindGroup(GPUBindGroupHandle handle) : handle(handle) {}
 
+        bool valid() const { return handle.valid(); }
+
         operator GPUBindGroupHandle() const { return handle; }
     };
 
@@ -188,6 +208,8 @@ namespace lyra::rhi
         GPUBindGroupLayout(GPUBindGroupLayoutHandle handle) : handle(handle) {}
 
         void destroy();
+
+        bool valid() const { return handle.valid(); }
 
         operator GPUBindGroupLayoutHandle() const { return handle; }
     };
@@ -202,6 +224,8 @@ namespace lyra::rhi
 
         void destroy();
 
+        bool valid() const { return handle.valid(); }
+
         operator GPUPipelineLayoutHandle() const { return handle; }
     };
 
@@ -210,6 +234,8 @@ namespace lyra::rhi
         GPURenderPipelineHandle handle;
 
         void destroy();
+
+        bool valid() const { return handle.valid(); }
 
         operator GPURenderPipelineHandle() const { return handle; }
     };
@@ -220,6 +246,8 @@ namespace lyra::rhi
 
         void destroy();
 
+        bool valid() const { return handle.valid(); }
+
         operator GPUComputePipelineHandle() const { return handle; }
     };
 
@@ -228,6 +256,8 @@ namespace lyra::rhi
         GPURayTracingPipelineHandle handle;
 
         void destroy();
+
+        bool valid() const { return handle.valid(); }
 
         operator GPURayTracingPipelineHandle() const { return handle; }
     };
@@ -254,7 +284,7 @@ namespace lyra::rhi
 
         void set_bind_group(GPUIndex32 index, const GPUBindGroup& bind_group, const Vector<GPUBufferDynamicOffset>& dynamic_offsets = {}) const;
 
-        void set_push_constants(GPUShaderStageFlags visibility, uint offset, uint size, uint8_t* data) const;
+        void set_push_constants(GPUShaderStageFlags visibility, uint offset, uint size, void* data) const;
 
         template <typename T>
         void set_push_constants(GPUShaderStageFlags visibility, uint offset, T data) const
@@ -323,11 +353,15 @@ namespace lyra::rhi
 
     struct GPUCommandBundle : public GPUCommandEncoder
     {
+        bool valid() const { return handle.valid(); }
+
         operator GPUCommandEncoderHandle() const { return handle; }
     };
 
     struct GPUCommandBuffer : public GPUCommandEncoder
     {
+        bool valid() const { return handle.valid(); }
+
         operator GPUCommandEncoderHandle() const { return handle; }
 
         void submit() const;

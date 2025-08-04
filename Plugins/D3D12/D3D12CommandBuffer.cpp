@@ -287,7 +287,7 @@ void cmd::set_bind_group(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 index, GP
     }
 }
 
-void cmd::set_push_constants(GPUCommandEncoderHandle cmdbuffer, GPUShaderStageFlags visibility, uint offset, uint size, uint8_t* data)
+void cmd::set_push_constants(GPUCommandEncoderHandle cmdbuffer, GPUShaderStageFlags visibility, uint offset, uint size, void* data)
 {
     // we are not using this.
     (void)visibility;
@@ -301,9 +301,9 @@ void cmd::set_push_constants(GPUCommandEncoderHandle cmdbuffer, GPUShaderStageFl
 
     uint size_in_32b = (size + sizeof(uint32_t) - 1) / sizeof(uint32_t) * sizeof(uint32_t);
     if (cmd.pso.compute) {
-        cmd.command_buffer->SetComputeRoot32BitConstants(root_parameter, size_in_32b, (void*)data, offset);
+        cmd.command_buffer->SetComputeRoot32BitConstants(root_parameter, size_in_32b, data, offset);
     } else {
-        cmd.command_buffer->SetGraphicsRoot32BitConstants(root_parameter, size_in_32b, (void*)data, offset);
+        cmd.command_buffer->SetGraphicsRoot32BitConstants(root_parameter, size_in_32b, data, offset);
     }
 }
 

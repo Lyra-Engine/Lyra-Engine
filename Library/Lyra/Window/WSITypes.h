@@ -83,7 +83,12 @@ namespace lyra::wsi
         template <WindowEvent E, typename F, typename T>
         void bind(F&& f, T* user)
         {
-            bind<E>(std::bind(f, user, std::placeholders::_1));
+            auto bind_member = [&user](auto member_func) {
+                return [&user, member_func](auto&&... args) {
+                    return ((*user).*member_func)(std::forward<decltype(args)>(args)...);
+                };
+            };
+            bind<E>(bind_member(f));
         }
 
         template <WindowEvent E, typename F>

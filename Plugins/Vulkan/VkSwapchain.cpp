@@ -9,6 +9,8 @@ VulkanSwapchain::VulkanSwapchain()
 
 VulkanSwapchain::VulkanSwapchain(const GPUSurfaceDescriptor& desc, VkSurfaceKHR surface) : desc(desc), surface(surface)
 {
+    assert(surface && "Input VkSurfaceKHR is invalid!");
+
     recreate();
 
     uint image_frame_count = static_cast<uint>(frames.size());

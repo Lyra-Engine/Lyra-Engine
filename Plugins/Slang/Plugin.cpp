@@ -31,8 +31,7 @@ bool create_module(CompilerHandle compiler, const CompileDescriptor& desc, Shade
 {
     auto internal = std::make_unique<CompileResultInternal>();
     auto handle   = compiler.astype<CompilerWrapper>();
-    handle->compile(desc, *internal);
-    if (internal->module) {
+    if (handle->compile(desc, *internal)) {
         module = ShaderModuleHandle{internal.release()};
         return true;
     }

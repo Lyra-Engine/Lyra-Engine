@@ -17,7 +17,10 @@
 namespace lyra
 {
     template <typename... T>
-    using List = std::forward_list<T...>;
+    using List = std::list<T...>;
+
+    template <typename... T>
+    using FList = std::forward_list<T...>;
 
     template <typename... T>
     using Deque = std::deque<T...>;

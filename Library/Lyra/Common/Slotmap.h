@@ -8,12 +8,36 @@
 
 namespace lyra
 {
-    template <typename T, typename Destroyer, typename I = uint32_t>
+    // primary template - defaults to false
+    template <typename T, typename = void>
+    struct has_valid : std::false_type
+    {
+    };
+
+    // specialization that checks for valid() -> bool
+    template <typename T>
+    struct has_valid<T, std::void_t<decltype(std::declval<T>().valid())>> : std::bool_constant<std::is_same_v<decltype(std::declval<T>().valid()), bool>>
+    {
+    };
+
+    template <typename T, typename Deleter, typename I = uint32_t, typename = std::enable_if<has_valid<T>::value, bool>>
     struct Slotmap
     {
         std::vector<T> data = {};
         std::vector<I> free = {};
         I              rear = 0;
+
+        virtual ~Slotmap()
+        {
+            clear();
+        }
+
+        void clear()
+        {
+            for (auto& item : data)
+                if (item.valid())
+                    Deleter()(item);
+        }
 
         auto add(const T& value) -> I
         {
@@ -26,7 +50,7 @@ namespace lyra
         void remove(I index)
         {
             assert(index < data.size());
-            Destroyer()(data.at(index));
+            Deleter()(data.at(index));
             free.push_back(index);
         }
 
@@ -54,9 +78,11 @@ namespace lyra
 
         void resize_data()
         {
-            size_t size = data.size();
-            data.resize(size * 2 + 1);
-            rear = static_cast<I>(size);
+            size_t old_size = data.size();
+            size_t tgt_size = old_size * 2 + 1;
+            size_t new_size = tgt_size > 2048 ? 2048 : tgt_size;
+            data.resize(new_size);
+            rear = static_cast<I>(old_size);
         }
     };
 

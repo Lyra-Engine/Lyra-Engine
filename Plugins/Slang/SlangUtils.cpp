@@ -111,7 +111,7 @@ uint round_up_to_next_multiple_of(T size, T align)
 void diagnose_if_needed(slang::IBlob* diagnosticsBlob)
 {
     if (diagnosticsBlob != nullptr) {
-        get_logger()->info("Slang diagnostics: {}", (const char*)diagnosticsBlob->getBufferPointer());
+        get_logger()->error("Slang diagnostics: {}", (const char*)diagnosticsBlob->getBufferPointer());
     }
 }
 
@@ -789,7 +789,20 @@ void ReflectResultInternal::create_push_constant(AccessPathNode node, uint space
             push_constant_field->getName(),
             push_constant_range.offset,
             push_constant_range.size);
+        push_constant_ranges.push_back(push_constant_range);
+    }
 
+    // fallback for basic types (non-struct types)
+    if (push_constant_type->getFieldCount() == 0) {
+        auto push_constant_range = GPUPushConstantRange{
+            static_cast<uint>(0),
+            static_cast<uint>(push_constant_type->getSize()),
+            binding.visibility,
+        };
+        get_logger()->info("[PUSH CONSTANT] NAME:{}\t OFFSET:{} SIZE:{}",
+            node.layout->getName(),
+            push_constant_range.offset,
+            push_constant_range.size);
         push_constant_ranges.push_back(push_constant_range);
     }
 }

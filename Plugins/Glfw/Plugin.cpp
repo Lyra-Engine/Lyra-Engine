@@ -275,7 +275,7 @@ void bind_window_events(WindowHandle window)
     });
 }
 
-auto create_window(const WindowDescriptor& desc, WindowHandle& window) -> bool
+bool create_window(const WindowDescriptor& desc, WindowHandle& window)
 {
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     GLFWwindow* win = glfwCreateWindow(desc.width, desc.height, desc.title, NULL, NULL);
@@ -287,23 +287,79 @@ auto create_window(const WindowDescriptor& desc, WindowHandle& window) -> bool
     return true;
 }
 
-bool get_window_size(WindowHandle window, uint& width, uint& height)
+void set_window_pos(WindowHandle window, uint x, uint y)
+{
+    glfwSetWindowPos((GLFWwindow*)window.window, x, y);
+}
+
+void get_window_pos(WindowHandle window, uint& x, uint& y)
+{
+    int32_t xpos, ypos;
+    glfwGetWindowPos((GLFWwindow*)window.window, &xpos, &ypos);
+    x = xpos;
+    y = ypos;
+}
+
+void set_window_size(WindowHandle window, uint width, uint height)
+{
+    glfwSetWindowSize((GLFWwindow*)window.window, width, height);
+}
+
+void get_window_size(WindowHandle window, uint& width, uint& height)
 {
     int32_t w, h;
     glfwGetWindowSize((GLFWwindow*)window.window, &w, &h);
     width  = static_cast<uint32_t>(w);
     height = static_cast<uint32_t>(h);
-    return true;
 }
 
-bool get_input_state(WindowHandle window, WindowInputState& state)
+void get_window_scale(WindowHandle window, float& xscale, float& yscale)
+{
+    glfwGetWindowContentScale((GLFWwindow*)window.window, &xscale, &yscale);
+}
+
+void set_window_focus(WindowHandle window)
+{
+    glfwFocusWindow((GLFWwindow*)window.window);
+}
+
+bool get_window_focus(WindowHandle window)
+{
+    return glfwGetWindowAttrib((GLFWwindow*)window.window, GLFW_FOCUSED);
+}
+
+void set_window_alpha(WindowHandle window, float alpha)
+{
+    glfwSetWindowOpacity((GLFWwindow*)window.window, alpha);
+}
+
+float get_window_alpha(WindowHandle window)
+{
+    return glfwGetWindowOpacity((GLFWwindow*)window.window);
+}
+
+void set_window_title(WindowHandle window, CString title)
+{
+    glfwSetWindowTitle((GLFWwindow*)window.window, title);
+}
+
+CString get_window_title(WindowHandle window)
+{
+    return glfwGetWindowTitle((GLFWwindow*)window.window);
+}
+
+bool get_window_minimized(WindowHandle window)
+{
+    return glfwGetWindowAttrib((GLFWwindow*)window.window, GLFW_ICONIFIED);
+}
+
+void get_input_state(WindowHandle window, WindowInputState& state)
 {
     auto  handle = reinterpret_cast<GLFWwindow*>(window.window);
     auto& user   = *static_cast<UserState*>(glfwGetWindowUserPointer(handle));
 
     // copy the input state back to user
     state = user.input_state;
-    return true;
 }
 
 auto delete_window(WindowHandle window) -> void
@@ -311,12 +367,11 @@ auto delete_window(WindowHandle window) -> void
     glfwDestroyWindow(reinterpret_cast<GLFWwindow*>(window.window));
 }
 
-bool bind_window_callback(WindowHandle window, WindowCallback&& callback)
+void bind_window_callback(WindowHandle window, WindowCallback&& callback)
 {
     auto  handle = reinterpret_cast<GLFWwindow*>(window.window);
     auto& user   = *static_cast<UserState*>(glfwGetWindowUserPointer(handle));
     user.callback = std::move(callback);
-    return true;
 }
 
 void run_in_loop()
@@ -372,10 +427,21 @@ LYRA_EXPORT auto create() -> WindowAPI
 {
     auto api                 = WindowAPI{};
     api.get_api_name         = get_api_name;
-    api.get_window_size      = get_window_size;
-    api.get_input_state      = get_input_state;
     api.create_window        = create_window;
     api.delete_window        = delete_window;
+    api.set_window_pos       = set_window_pos;
+    api.get_window_pos       = get_window_pos;
+    api.set_window_size      = set_window_size;
+    api.get_window_size      = get_window_size;
+    api.get_window_scale     = get_window_scale;
+    api.set_window_focus     = set_window_focus;
+    api.get_window_focus     = get_window_focus;
+    api.set_window_alpha     = set_window_alpha;
+    api.get_window_alpha     = get_window_alpha;
+    api.set_window_title     = set_window_title;
+    api.get_window_title     = get_window_title;
+    api.get_window_minimized = get_window_minimized;
+    api.get_input_state      = get_input_state;
     api.bind_window_callback = bind_window_callback;
     api.run_in_loop          = run_in_loop;
     return api;

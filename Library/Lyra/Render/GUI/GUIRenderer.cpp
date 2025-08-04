@@ -1,6 +1,7 @@
 #include <Lyra/Common/Plugin.h>
 #include <Lyra/Common/Pointer.h>
 #include <Lyra/Common/Function.h>
+#include <Lyra/Render/RHI/RHIInits.h>
 #include <Lyra/Render/GUI/GUIRenderer.h>
 
 using namespace lyra;
@@ -27,14 +28,16 @@ struct TextureInput
     SamplerState      smp;
 };
 
-ParameterBlock<float4x4>     proj;
-ParameterBlock<TextureInput> tinp;
+[[vk::push_constant]]
+ConstantBuffer<float4x4> xform : PUSH_CONSTANT;
+
+ParameterBlock<TextureInput> image;
 
 [shader("vertex")]
 VertexOutput vsmain(VertexInput input)
 {
     VertexOutput output;
-    output.pos   = mul(float4(input.position, 0.0, 1.0), proj);
+    output.pos   = mul(float4(input.pos, 0.0, 1.0), xform);
     output.uv    = input.uv;
     output.color = input.color;
     return output;
@@ -43,7 +46,7 @@ VertexOutput vsmain(VertexInput input)
 [shader("fragment")]
 float4 fsmain(VertexOutput input) : SV_Target
 {
-    return tinp.tex.Sample(tinp.smp, input.uv) * input.color;
+    return image.tex.Sample(image.smp, input.uv) * input.color;
 }
 )""";
 
@@ -51,6 +54,7 @@ float4 fsmain(VertexOutput input) : SV_Target
 OwnedResource<GUIRenderer> GUIRenderer::init(Compiler* compiler, const GUIDescriptor& descriptor)
 {
     OwnedResource<GUIRenderer> gui(new GUIRenderer());
+    gui->init_imgui_setup(descriptor);
     gui->init_backend_data(descriptor);
     gui->init_renderer_data(compiler);
     return gui;
@@ -60,6 +64,25 @@ void GUIRenderer::reset()
 {
     assert(platform_data && "ImGui platform data has not been initialized!");
     assert(renderer_data && "ImGui renderer data has not been initialized!");
+
+    // reclaim unused buffers
+    for (auto it = renderer_data->garbage_buffers.begin(); it != renderer_data->garbage_buffers.end(); it++) {
+        auto& garbage = *it;
+        if (garbage.should_remove(renderer_data->image_count)) {
+            garbage.object.destroy();
+            it = renderer_data->garbage_buffers.erase(it);
+        }
+    }
+
+    // reclaim unused textures
+    for (auto it = renderer_data->garbage_textures.begin(); it != renderer_data->garbage_textures.end(); it++) {
+        auto& garbage = *it;
+        if (garbage.should_remove(renderer_data->image_count)) {
+            if (garbage.object.texture.valid()) garbage.object.texture.destroy();
+            if (garbage.object.view.valid()) garbage.object.view.destroy();
+            it = renderer_data->garbage_textures.erase(it);
+        }
+    }
 }
 
 void GUIRenderer::render(GPUCommandBuffer cmdbuffer, ImDrawData* draw_data)
@@ -74,17 +97,70 @@ void GUIRenderer::render(GPUCommandBuffer cmdbuffer, ImDrawData* draw_data)
     if (draw_data->Textures != nullptr)
         for (ImTextureData* tex : *draw_data->Textures)
             if (tex->Status != ImTextureStatus_OK)
-                update_texture(cmdbuffer, tex);
+                process_texture(cmdbuffer, tex);
+
+    // refresh index/vertex buffers
+    create_vertex_buffers(draw_data);
 
     // refresh all texture descriptors (because bind group / descriptors only have a life time within a frame)
     create_texture_descriptors();
+
+    // initial render state setup
+    setup_render_state(cmdbuffer, draw_data, fb_width, fb_height);
+
+    // Will project scissor/clipping rectangles into framebuffer space
+    ImVec2 clip_off   = draw_data->DisplayPos;       // (0,0) unless using multi-viewports
+    ImVec2 clip_scale = draw_data->FramebufferScale; // (1,1) unless using retina display which are often (2,2)
+
+    // render command lists
+    // (because we merged all buffers into a single one, we maintain our own offset into them)
+    int global_vtx_offset = 0;
+    int global_idx_offset = 0;
+    for (const ImDrawList* draw_list : draw_data->CmdLists) {
+        for (const ImDrawCmd& draw_cmd : draw_list->CmdBuffer) {
+            // project scissor/clipping rectangles into framebuffer space
+            ImVec2 clip_min((draw_cmd.ClipRect.x - clip_off.x) * clip_scale.x, (draw_cmd.ClipRect.y - clip_off.y) * clip_scale.y);
+            ImVec2 clip_max((draw_cmd.ClipRect.z - clip_off.x) * clip_scale.x, (draw_cmd.ClipRect.w - clip_off.y) * clip_scale.y);
+
+            // clamp to viewport as set_scissors() won't accept values that are off bounds
+            if (clip_min.x < 0.0f) { clip_min.x = 0.0f; }
+            if (clip_min.y < 0.0f) { clip_min.y = 0.0f; }
+            if (clip_max.x > fb_width) { clip_max.x = (float)fb_width; }
+            if (clip_max.y > fb_height) { clip_max.y = (float)fb_height; }
+            if (clip_max.x <= clip_min.x || clip_max.y <= clip_min.y)
+                continue;
+
+            // apply scissor/clipping rectangle
+            cmdbuffer.set_scissor_rect(clip_min.x, clip_min.y, clip_max.x - clip_min.x, clip_max.y - clip_min.y);
+
+            // bind texture
+            uint texid   = static_cast<uint>(draw_cmd.GetTexID());
+            auto texinfo = renderer_data->textures.at(texid).bindgroup;
+            cmdbuffer.set_bind_group(0, texinfo);
+
+            // draw
+            cmdbuffer.draw_indexed(
+                draw_cmd.ElemCount, 1,
+                draw_cmd.IdxOffset + global_idx_offset,
+                draw_cmd.VtxOffset + global_vtx_offset,
+                0);
+        }
+
+        global_vtx_offset += draw_list->VtxBuffer.Size;
+        global_idx_offset += draw_list->IdxBuffer.Size;
+    }
+
+    // reset scissor rect for future commands
+    cmdbuffer.set_scissor_rect(0, 0, fb_width, fb_height);
 }
 
 void GUIRenderer::destroy()
 {
     RHI::api()->wait_idle();
 
+    // clean up Dear ImGui context
     ImGui::DestroyPlatformWindows();
+    ImGui::DestroyContext();
 
     ImGuiIO& io                = ImGui::GetIO();
     io.BackendPlatformName     = nullptr;
@@ -93,17 +169,30 @@ void GUIRenderer::destroy()
     delete_window_context(platform_data->primary_window);
 }
 
+ImGuiContext* GUIRenderer::context() const
+{
+    return ImGui::GetCurrentContext();
+}
+
+void GUIRenderer::init_imgui_setup(const GUIDescriptor& descriptor)
+{
+    (void)descriptor;
+
+    // setup Dear ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+}
+
 void GUIRenderer::init_backend_data(const GUIDescriptor& descriptor)
 {
     ImGuiIO& io = ImGui::GetIO();
-    IMGUI_CHECKVERSION();
-    IM_ASSERT(io.BackendPlatformUserData == nullptr && "Already initialized a platform backend!");
+    assert(io.BackendPlatformUserData == nullptr && "Already initialized a platform backend!");
 
     platform_data                 = std::make_unique<GUIPlatformData>();
     platform_data->primary_window = descriptor.window;
     platform_data->context        = ImGui::GetCurrentContext();
     platform_data->elapsed        = 0.0f;
-    IM_ASSERT(platform_data->primary_window.window == nullptr && "Expect a valid handle for primary window!");
+    assert(platform_data->primary_window.window != nullptr && "Expect a valid handle for primary window!");
 
     io.BackendPlatformUserData = platform_data.get();
     io.BackendPlatformName     = "lyra-window";
@@ -166,15 +255,16 @@ void GUIRenderer::init_renderer_data(Compiler* compiler)
         renderer_data->blayouts.push_back(blayout.handle);
     }
 
-    // pipelie layout
+    // pipeline layout
     renderer_data->playout = execute([&]() {
-        auto desc               = GPUPipelineLayoutDescriptor{};
-        desc.label              = "imgui_layout";
-        desc.bind_group_layouts = renderer_data->blayouts;
+        auto desc                 = GPUPipelineLayoutDescriptor{};
+        desc.label                = "imgui_pipeline_layout";
+        desc.bind_group_layouts   = renderer_data->blayouts;
+        desc.push_constant_ranges = refl->get_push_constant_ranges();
         return device.create_pipeline_layout(desc);
     });
 
-    // pipeline layout
+    // pipeline state
     renderer_data->pipeline = execute([&]() {
         auto attributes = refl->get_vertex_attributes({
             {"pos", offsetof(ImDrawVert, pos)},
@@ -182,8 +272,8 @@ void GUIRenderer::init_renderer_data(Compiler* compiler)
             {"color", offsetof(ImDrawVert, col)},
         });
 
-        // slight modification to color vertex attribute
-        attributes.at(2).format = GPUVertexFormat::UINT8x4;
+        // slight modification to color vertex attribute (use unorm8x4 instead of f32x4)
+        attributes.at(2).format = GPUVertexFormat::UNORM8x4;
 
         // vertex buffer layout
         GPUVertexBufferLayout buffer{};
@@ -234,16 +324,6 @@ void GUIRenderer::init_renderer_data(Compiler* compiler)
         desc.mipmap_filter  = GPUMipmapFilterMode::LINEAR;
         desc.max_anisotropy = 1.0;
         return device.create_sampler(desc);
-    });
-
-    // buffer
-    renderer_data->transform = execute([&]() {
-        GPUBufferDescriptor desc{};
-        desc.label              = "imgui_buffer";
-        desc.size               = sizeof(glm::mat4x4);
-        desc.usage              = GPUBufferUsage::UNIFORM | GPUBufferUsage::MAP_WRITE;
-        desc.mapped_at_creation = true;
-        return device.create_buffer(desc);
     });
 }
 
@@ -301,7 +381,9 @@ void GUIRenderer::create_texture(ImTextureData* tex)
     auto texture = execute([&]() {
         GPUTextureDescriptor desc{};
         desc.dimension       = GPUTextureDimension::x2D;
-        desc.format          = GPUTextureFormat::RGBA8UNORM;
+        desc.format          = tex->Format == ImTextureFormat_RGBA32
+                                   ? GPUTextureFormat::RGBA8UNORM
+                                   : GPUTextureFormat::R8UNORM;
         desc.size.width      = tex->Width;
         desc.size.height     = tex->Height;
         desc.size.depth      = 1;
@@ -316,46 +398,181 @@ void GUIRenderer::create_texture(ImTextureData* tex)
     texinfo.texture = texture;
     texinfo.view    = texture.create_view();
 
-    renderer_data->textures.push_front(texinfo);
-    tex->BackendUserData = &renderer_data->textures.front();
+    auto texid = renderer_data->textures.add(texinfo);
+    tex->SetTexID(texid);
 }
 
 void GUIRenderer::update_texture(GPUCommandBuffer cmdbuffer, ImTextureData* tex)
 {
+    uint alignment = RHI::get_current_adapter().properties.texture_row_pitch_alignment;
+    uint row_pitch = (tex->GetPitch() + alignment - 1) & ~(alignment - 1);
+    uint buf_size  = row_pitch * tex->Height;
+
+    // copy from texture data to staging buffer
+    auto staging = create_buffer(buf_size, GPUBufferUsage::COPY_SRC | GPUBufferUsage::MAP_WRITE);
+    auto mapped  = staging.get_mapped_range();
+    for (uint i = 0; i < tex->Height; i++) {
+        uint8_t* dst = mapped.data + row_pitch * i;
+        uint8_t* src = (uint8_t*)tex->GetPixels() + tex->GetPitch() * i;
+        std::memcpy(dst, src, tex->GetPitch());
+    }
+    staging.unmap();
+
+    uint  texid   = tex->GetTexID();
+    auto& texture = renderer_data->textures.at(texid);
+
+    GPUTexelCopyBufferInfo source{};
+    source.buffer         = staging;
+    source.bytes_per_row  = tex->GetPitch();
+    source.offset         = 0;
+    source.rows_per_image = tex->Height;
+
+    GPUTexelCopyTextureInfo dest{};
+    dest.texture   = texture.texture;
+    dest.aspect    = GPUTextureAspect::COLOR;
+    dest.mip_level = 0;
+    dest.origin    = {0, 0, 0};
+
+    GPUExtent3D copy_size{};
+    copy_size.width  = tex->Width;
+    copy_size.height = tex->Height;
+    copy_size.depth  = 1;
+
+    // copy from staging buffer to texture
+    cmdbuffer.resource_barrier(state_transition(texture.texture, undefined_state(), copy_dst_state()));
+    cmdbuffer.copy_buffer_to_texture(source, dest, copy_size);
+    cmdbuffer.resource_barrier(state_transition(texture.texture, copy_dst_state(), shader_resource_state(GPUBarrierSync::PIXEL_SHADING)));
+
+    // deferred deletion of the staging buffer, because this buffer is still used before the command buffer completes.
+    renderer_data->garbage_buffers.push_back(GUIGarbageBuffer{staging, 0});
 }
 
 void GUIRenderer::delete_texture(ImTextureData* tex)
 {
+    uint texid = tex->GetTexID();
+
+    // deferred deletion of texture, because the current texture/view might still be used in some frames in flight
+    auto& texinfo = renderer_data->textures.at(texid);
+    renderer_data->textures.remove(texid);
+    renderer_data->garbage_textures.push_back(GUIGarbageTexture{texinfo, 0});
+}
+
+GPUBuffer GUIRenderer::prepare_buffer(GPUBuffer buffer, uint size, GPUBufferUsageFlags usages)
+{
+    // check if buffer is valid
+    if (!buffer.handle.valid())
+        return create_buffer(size, usages);
+
+    // check if buffer is big enough
+    if (buffer.size < size) {
+        renderer_data->garbage_buffers.push_back(GUIGarbageBuffer{buffer, 0});
+        return create_buffer(size, usages);
+    }
+
+    // keep using the original buffer
+    return buffer;
+}
+
+GPUBuffer GUIRenderer::create_buffer(uint size, GPUBufferUsageFlags usages)
+{
+    auto& device = RHI::get_current_device();
+    return execute([&]() {
+        GPUBufferDescriptor desc{};
+        desc.size               = size;
+        desc.usage              = usages;
+        desc.mapped_at_creation = true;
+        return device.create_buffer(desc);
+    });
+}
+
+void GUIRenderer::create_vertex_buffers(ImDrawData* draw_data)
+{
+    // create/resize index buffer on the fly
+    renderer_data->ibuffer = prepare_buffer(
+        renderer_data->ibuffer,
+        draw_data->TotalIdxCount * sizeof(ImDrawIdx),
+        GPUBufferUsage::INDEX | GPUBufferUsage::MAP_WRITE);
+
+    // create/resize vertex buffer on the fly
+    renderer_data->vbuffer = prepare_buffer(
+        renderer_data->vbuffer,
+        draw_data->TotalVtxCount * sizeof(ImDrawVert),
+        GPUBufferUsage::VERTEX | GPUBufferUsage::MAP_WRITE);
+
+    renderer_data->ibuffer.map(GPUMapMode::WRITE);
+    renderer_data->vbuffer.map(GPUMapMode::WRITE);
+
+    // copy index/vertex from all cmdlists
+    auto idx_dst = renderer_data->ibuffer.get_mapped_range<ImDrawIdx>().data;
+    auto vtx_dst = renderer_data->vbuffer.get_mapped_range<ImDrawVert>().data;
+    for (const ImDrawList* draw_list : draw_data->CmdLists) {
+        std::memcpy(vtx_dst, draw_list->VtxBuffer.Data, draw_list->VtxBuffer.Size * sizeof(ImDrawVert));
+        std::memcpy(idx_dst, draw_list->IdxBuffer.Data, draw_list->IdxBuffer.Size * sizeof(ImDrawIdx));
+        vtx_dst += draw_list->VtxBuffer.Size;
+        idx_dst += draw_list->IdxBuffer.Size;
+    }
+
+    renderer_data->ibuffer.unmap();
+    renderer_data->vbuffer.unmap();
 }
 
 void GUIRenderer::create_texture_descriptors()
 {
     auto& device = RHI::get_current_device();
 
-    for (auto& texinfo : renderer_data->textures) {
-        Array<GPUBindGroupEntry, 2> entries;
+    for (auto& texinfo : renderer_data->textures.data) {
+        if (texinfo.view.valid()) {
+            Array<GPUBindGroupEntry, 2> entries;
 
-        entries.at(0).index   = 0;
-        entries.at(0).type    = GPUBindingResourceType::TEXTURE;
-        entries.at(0).texture = texinfo.view;
+            entries.at(0).index   = 0;
+            entries.at(0).type    = GPUBindingResourceType::TEXTURE;
+            entries.at(0).texture = texinfo.view;
 
-        entries.at(1).index   = 1;
-        entries.at(1).type    = GPUBindingResourceType::SAMPLER;
-        entries.at(1).sampler = renderer_data->sampler;
+            entries.at(1).index   = 1;
+            entries.at(1).type    = GPUBindingResourceType::SAMPLER;
+            entries.at(1).sampler = renderer_data->sampler;
 
-        texinfo.bindgroup = execute([&]() {
-            GPUBindGroupDescriptor desc{};
-            desc.layout  = renderer_data->blayouts.at(1);
-            desc.entries = entries;
-            return device.create_bind_group(desc);
-        });
+            texinfo.bindgroup = execute([&]() {
+                GPUBindGroupDescriptor desc{};
+                desc.layout  = renderer_data->blayouts.at(1);
+                desc.entries = entries;
+                return device.create_bind_group(desc);
+            });
+        }
     }
 }
 
-void GUIRenderer::setup_render_state(GPUCommandBuffer cmdbuffer, int width, int height)
+void GUIRenderer::setup_render_state(GPUCommandBuffer cmdbuffer, ImDrawData* draw_data, int width, int height)
 {
+    // bind pipeline
     cmdbuffer.set_pipeline(renderer_data->pipeline);
+
+    // bind viewport
     cmdbuffer.set_viewport(0, 0, (float)width, (float)height);
+
+    // bind index/vertex buffers
+    if (draw_data->TotalVtxCount > 0) {
+        cmdbuffer.set_vertex_buffer(0, renderer_data->vbuffer);
+        cmdbuffer.set_index_buffer(renderer_data->ibuffer, sizeof(ImDrawIdx) == 2 ? GPUIndexFormat::UINT16 : GPUIndexFormat::UINT32);
+    }
+
+    // setup scale and translation:
+    // our visible imgui space lies from draw_data->DisplayPps (top left) to draw_data->DisplayPos + data_data->DisplaySize (bottom right).
+    // DisplayPos is (0,0) for single viewport apps.
+    {
+        float L = draw_data->DisplayPos.x;
+        float R = draw_data->DisplayPos.x + draw_data->DisplaySize.x;
+        float T = draw_data->DisplayPos.y;
+        float B = draw_data->DisplayPos.y + draw_data->DisplaySize.y;
+
+        glm::mat4 mvp = glm::mat4({
+            {2.0f / (R - L), 0.0f, 0.0f, 0.0f},
+            {0.0f, 2.0f / (T - B), 0.0f, 0.0f},
+            {0.0f, 0.0f, 0.5f, 0.0f},
+            {(R + L) / (L - R), (T + B) / (B - T), 0.5f, 1.0f},
+        });
+        cmdbuffer.set_push_constants(GPUShaderStage::VERTEX, 0, mvp);
+    }
 }
 
 void GUIRenderer::create_window_context(WindowHandle window, ImGuiContext* context)
