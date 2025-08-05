@@ -30,10 +30,57 @@ using namespace lyra::wsi;
 
 static Logger logger = init_stderr_logger("GLFW", LogLevel::trace);
 
+static Logger get_logger()
+{
+    return logger;
+}
+
 struct UserState
 {
-    WindowInputState input_state;
-    WindowCallback   callback;
+    WindowCallback  callback;
+    InputEventQuery events;
+
+    void reset_events()
+    {
+        events.num_events = 0;
+    }
+
+    bool is_event_queue_full() const
+    {
+        return events.num_events >= events.input_events.size();
+    }
+
+    void set_mouse_position(float x, float y)
+    {
+        events.mouse_position.x = x;
+        events.mouse_position.y = y;
+    }
+
+    void add_mouse_event(MouseButton key, ButtonState state)
+    {
+        if (is_event_queue_full()) {
+            get_logger()->warn("Ignore mouse event beacause event queue is full!");
+            return;
+        }
+
+        auto& event        = events.input_events[events.num_events++];
+        event.type         = InputEventType::MOUSE;
+        event.mouse.button = key;
+        event.mouse.state  = state;
+    }
+
+    void add_keyboard_event(KeyButton key, ButtonState state)
+    {
+        if (is_event_queue_full()) {
+            get_logger()->warn("Ignore keyboard event beacause event queue is full!");
+            return;
+        }
+
+        auto& event           = events.input_events[events.num_events++];
+        event.type            = InputEventType::KEYBOARD;
+        event.keyboard.button = key;
+        event.keyboard.state  = state;
+    }
 };
 
 struct EventLoopInternal
@@ -71,11 +118,6 @@ static void create_window_handle(GLFWwindow* win, WindowHandle& window)
 }
 #endif
 
-static Logger get_logger()
-{
-    return logger;
-}
-
 static ButtonState to_button_state(int action)
 {
     switch (action) {
@@ -87,24 +129,6 @@ static ButtonState to_button_state(int action)
             return ButtonState::ON;
     }
     throw std::invalid_argument("Unsupport GLFW keyboard action!");
-}
-
-static void update_mods(WindowInputState& state, int mods)
-{
-    if (mods & GLFW_MOD_ALT)
-        state.keyboard.modifiers.set(Modifier::ALT);
-    else
-        state.keyboard.modifiers.unset(Modifier::ALT);
-
-    if (mods & GLFW_MOD_SHIFT)
-        state.keyboard.modifiers.set(Modifier::SHIFT);
-    else
-        state.keyboard.modifiers.unset(Modifier::SHIFT);
-
-    if (mods & GLFW_MOD_CONTROL)
-        state.keyboard.modifiers.set(Modifier::CTRL);
-    else
-        state.keyboard.modifiers.unset(Modifier::CTRL);
 }
 
 static auto get_api_name() -> CString
@@ -119,92 +143,94 @@ static void error_callback(int error, const char* description)
 
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    auto& user  = *static_cast<UserState*>(glfwGetWindowUserPointer(window));
-    auto& state = user.input_state;
-    update_mods(state, mods);
+    auto& user = *static_cast<UserState*>(glfwGetWindowUserPointer(window));
 
     // clang-format off
     switch (key) {
-        case GLFW_KEY_TAB:       state.keyboard.status.at((int)KeyButton::TAB)       = to_button_state(action); break;
-        case GLFW_KEY_ESCAPE:    state.keyboard.status.at((int)KeyButton::ESC)       = to_button_state(action); break;
-        case GLFW_KEY_SPACE:     state.keyboard.status.at((int)KeyButton::SPACE)     = to_button_state(action); break;
-        case GLFW_KEY_BACKSPACE: state.keyboard.status.at((int)KeyButton::BACKSPACE) = to_button_state(action); break;
-        case GLFW_KEY_DELETE:    state.keyboard.status.at((int)KeyButton::DEL)       = to_button_state(action); break;
-        case GLFW_KEY_ENTER:     state.keyboard.status.at((int)KeyButton::ENTER)     = to_button_state(action); break;
-        case GLFW_KEY_PAGE_UP:   state.keyboard.status.at((int)KeyButton::PAGE_UP)   = to_button_state(action); break;
-        case GLFW_KEY_PAGE_DOWN: state.keyboard.status.at((int)KeyButton::PAGE_DOWN) = to_button_state(action); break;
-        case GLFW_KEY_HOME:      state.keyboard.status.at((int)KeyButton::HOME)      = to_button_state(action); break;
-        case GLFW_KEY_END:       state.keyboard.status.at((int)KeyButton::END)       = to_button_state(action); break;
+        // misc keys
+        case GLFW_KEY_TAB:           user.add_keyboard_event(KeyButton::TAB        , to_button_state(action)); break;
+        case GLFW_KEY_ESCAPE:        user.add_keyboard_event(KeyButton::ESC        , to_button_state(action)); break;
+        case GLFW_KEY_CAPS_LOCK:     user.add_keyboard_event(KeyButton::CAPS_LOCK  , to_button_state(action)); break;
+        case GLFW_KEY_SPACE:         user.add_keyboard_event(KeyButton::SPACE      , to_button_state(action)); break;
+        case GLFW_KEY_BACKSPACE:     user.add_keyboard_event(KeyButton::BACKSPACE  , to_button_state(action)); break;
+        case GLFW_KEY_DELETE:        user.add_keyboard_event(KeyButton::DEL        , to_button_state(action)); break;
+        case GLFW_KEY_ENTER:         user.add_keyboard_event(KeyButton::ENTER      , to_button_state(action)); break;
+        case GLFW_KEY_PAGE_UP:       user.add_keyboard_event(KeyButton::PAGE_UP    , to_button_state(action)); break;
+        case GLFW_KEY_PAGE_DOWN:     user.add_keyboard_event(KeyButton::PAGE_DOWN  , to_button_state(action)); break;
+        case GLFW_KEY_HOME:          user.add_keyboard_event(KeyButton::HOME       , to_button_state(action)); break;
+        case GLFW_KEY_END:           user.add_keyboard_event(KeyButton::END        , to_button_state(action)); break;
 
-        case GLFW_KEY_UP:        state.keyboard.status.at((int)KeyButton::UP)        = to_button_state(action); break;
-        case GLFW_KEY_DOWN:      state.keyboard.status.at((int)KeyButton::DOWN)      = to_button_state(action); break;
-        case GLFW_KEY_LEFT:      state.keyboard.status.at((int)KeyButton::LEFT)      = to_button_state(action); break;
-        case GLFW_KEY_RIGHT:     state.keyboard.status.at((int)KeyButton::RIGHT)     = to_button_state(action); break;
+        // mod keys
+        case GLFW_KEY_LEFT_ALT:      user.add_keyboard_event(KeyButton::ALT        , to_button_state(action)); break;
+        case GLFW_KEY_RIGHT_ALT:     user.add_keyboard_event(KeyButton::ALT        , to_button_state(action)); break;
+        case GLFW_KEY_LEFT_CONTROL:  user.add_keyboard_event(KeyButton::CTRL       , to_button_state(action)); break;
+        case GLFW_KEY_RIGHT_CONTROL: user.add_keyboard_event(KeyButton::CTRL       , to_button_state(action)); break;
+        case GLFW_KEY_LEFT_SHIFT:    user.add_keyboard_event(KeyButton::SHIFT      , to_button_state(action)); break;
+        case GLFW_KEY_RIGHT_SHIFT:   user.add_keyboard_event(KeyButton::SHIFT      , to_button_state(action)); break;
+        case GLFW_KEY_LEFT_SUPER:    user.add_keyboard_event(KeyButton::SUPER      , to_button_state(action)); break;
+        case GLFW_KEY_RIGHT_SUPER:   user.add_keyboard_event(KeyButton::SUPER      , to_button_state(action)); break;
 
-        case GLFW_KEY_0:         state.keyboard.status.at((int)KeyButton::D0)        = to_button_state(action); break;
-        case GLFW_KEY_1:         state.keyboard.status.at((int)KeyButton::D1)        = to_button_state(action); break;
-        case GLFW_KEY_2:         state.keyboard.status.at((int)KeyButton::D2)        = to_button_state(action); break;
-        case GLFW_KEY_3:         state.keyboard.status.at((int)KeyButton::D3)        = to_button_state(action); break;
-        case GLFW_KEY_4:         state.keyboard.status.at((int)KeyButton::D4)        = to_button_state(action); break;
-        case GLFW_KEY_5:         state.keyboard.status.at((int)KeyButton::D5)        = to_button_state(action); break;
-        case GLFW_KEY_6:         state.keyboard.status.at((int)KeyButton::D6)        = to_button_state(action); break;
-        case GLFW_KEY_7:         state.keyboard.status.at((int)KeyButton::D7)        = to_button_state(action); break;
-        case GLFW_KEY_8:         state.keyboard.status.at((int)KeyButton::D8)        = to_button_state(action); break;
-        case GLFW_KEY_9:         state.keyboard.status.at((int)KeyButton::D9)        = to_button_state(action); break;
+        // arrow keys
+        case GLFW_KEY_UP:            user.add_keyboard_event(KeyButton::UP         , to_button_state(action)); break;
+        case GLFW_KEY_DOWN:          user.add_keyboard_event(KeyButton::DOWN       , to_button_state(action)); break;
+        case GLFW_KEY_LEFT:          user.add_keyboard_event(KeyButton::LEFT       , to_button_state(action)); break;
+        case GLFW_KEY_RIGHT:         user.add_keyboard_event(KeyButton::RIGHT      , to_button_state(action)); break;
 
-        case GLFW_KEY_F1:        state.keyboard.status.at((int)KeyButton::F1)        = to_button_state(action); break;
-        case GLFW_KEY_F2:        state.keyboard.status.at((int)KeyButton::F2)        = to_button_state(action); break;
-        case GLFW_KEY_F3:        state.keyboard.status.at((int)KeyButton::F3)        = to_button_state(action); break;
-        case GLFW_KEY_F4:        state.keyboard.status.at((int)KeyButton::F4)        = to_button_state(action); break;
-        case GLFW_KEY_F5:        state.keyboard.status.at((int)KeyButton::F5)        = to_button_state(action); break;
-        case GLFW_KEY_F6:        state.keyboard.status.at((int)KeyButton::F6)        = to_button_state(action); break;
-        case GLFW_KEY_F7:        state.keyboard.status.at((int)KeyButton::F7)        = to_button_state(action); break;
-        case GLFW_KEY_F8:        state.keyboard.status.at((int)KeyButton::F8)        = to_button_state(action); break;
-        case GLFW_KEY_F9:        state.keyboard.status.at((int)KeyButton::F9)        = to_button_state(action); break;
-        case GLFW_KEY_F10:       state.keyboard.status.at((int)KeyButton::F10)       = to_button_state(action); break;
-        case GLFW_KEY_F11:       state.keyboard.status.at((int)KeyButton::F11)       = to_button_state(action); break;
-        case GLFW_KEY_F12:       state.keyboard.status.at((int)KeyButton::F12)       = to_button_state(action); break;
+        // numpad keys
+        case GLFW_KEY_0:             user.add_keyboard_event(KeyButton::D0         , to_button_state(action)); break;
+        case GLFW_KEY_1:             user.add_keyboard_event(KeyButton::D1         , to_button_state(action)); break;
+        case GLFW_KEY_2:             user.add_keyboard_event(KeyButton::D2         , to_button_state(action)); break;
+        case GLFW_KEY_3:             user.add_keyboard_event(KeyButton::D3         , to_button_state(action)); break;
+        case GLFW_KEY_4:             user.add_keyboard_event(KeyButton::D4         , to_button_state(action)); break;
+        case GLFW_KEY_5:             user.add_keyboard_event(KeyButton::D5         , to_button_state(action)); break;
+        case GLFW_KEY_6:             user.add_keyboard_event(KeyButton::D6         , to_button_state(action)); break;
+        case GLFW_KEY_7:             user.add_keyboard_event(KeyButton::D7         , to_button_state(action)); break;
+        case GLFW_KEY_8:             user.add_keyboard_event(KeyButton::D8         , to_button_state(action)); break;
+        case GLFW_KEY_9:             user.add_keyboard_event(KeyButton::D9         , to_button_state(action)); break;
 
-        case GLFW_KEY_A:         state.keyboard.status.at((int)KeyButton::A)         = to_button_state(action); break;
-        case GLFW_KEY_B:         state.keyboard.status.at((int)KeyButton::B)         = to_button_state(action); break;
-        case GLFW_KEY_C:         state.keyboard.status.at((int)KeyButton::C)         = to_button_state(action); break;
-        case GLFW_KEY_D:         state.keyboard.status.at((int)KeyButton::D)         = to_button_state(action); break;
-        case GLFW_KEY_E:         state.keyboard.status.at((int)KeyButton::E)         = to_button_state(action); break;
-        case GLFW_KEY_F:         state.keyboard.status.at((int)KeyButton::F)         = to_button_state(action); break;
-        case GLFW_KEY_G:         state.keyboard.status.at((int)KeyButton::G)         = to_button_state(action); break;
-        case GLFW_KEY_H:         state.keyboard.status.at((int)KeyButton::H)         = to_button_state(action); break;
-        case GLFW_KEY_I:         state.keyboard.status.at((int)KeyButton::I)         = to_button_state(action); break;
-        case GLFW_KEY_J:         state.keyboard.status.at((int)KeyButton::J)         = to_button_state(action); break;
-        case GLFW_KEY_K:         state.keyboard.status.at((int)KeyButton::K)         = to_button_state(action); break;
-        case GLFW_KEY_L:         state.keyboard.status.at((int)KeyButton::L)         = to_button_state(action); break;
-        case GLFW_KEY_M:         state.keyboard.status.at((int)KeyButton::M)         = to_button_state(action); break;
-        case GLFW_KEY_N:         state.keyboard.status.at((int)KeyButton::N)         = to_button_state(action); break;
-        case GLFW_KEY_O:         state.keyboard.status.at((int)KeyButton::O)         = to_button_state(action); break;
-        case GLFW_KEY_P:         state.keyboard.status.at((int)KeyButton::P)         = to_button_state(action); break;
-        case GLFW_KEY_Q:         state.keyboard.status.at((int)KeyButton::Q)         = to_button_state(action); break;
-        case GLFW_KEY_R:         state.keyboard.status.at((int)KeyButton::R)         = to_button_state(action); break;
-        case GLFW_KEY_S:         state.keyboard.status.at((int)KeyButton::S)         = to_button_state(action); break;
-        case GLFW_KEY_T:         state.keyboard.status.at((int)KeyButton::T)         = to_button_state(action); break;
-        case GLFW_KEY_U:         state.keyboard.status.at((int)KeyButton::U)         = to_button_state(action); break;
-        case GLFW_KEY_V:         state.keyboard.status.at((int)KeyButton::V)         = to_button_state(action); break;
-        case GLFW_KEY_W:         state.keyboard.status.at((int)KeyButton::W)         = to_button_state(action); break;
-        case GLFW_KEY_X:         state.keyboard.status.at((int)KeyButton::X)         = to_button_state(action); break;
-        case GLFW_KEY_Y:         state.keyboard.status.at((int)KeyButton::Y)         = to_button_state(action); break;
-        case GLFW_KEY_Z:         state.keyboard.status.at((int)KeyButton::Z)         = to_button_state(action); break;
+        // function keys
+        case GLFW_KEY_F1:            user.add_keyboard_event(KeyButton::F1         , to_button_state(action)); break;
+        case GLFW_KEY_F2:            user.add_keyboard_event(KeyButton::F2         , to_button_state(action)); break;
+        case GLFW_KEY_F3:            user.add_keyboard_event(KeyButton::F3         , to_button_state(action)); break;
+        case GLFW_KEY_F4:            user.add_keyboard_event(KeyButton::F4         , to_button_state(action)); break;
+        case GLFW_KEY_F5:            user.add_keyboard_event(KeyButton::F5         , to_button_state(action)); break;
+        case GLFW_KEY_F6:            user.add_keyboard_event(KeyButton::F6         , to_button_state(action)); break;
+        case GLFW_KEY_F7:            user.add_keyboard_event(KeyButton::F7         , to_button_state(action)); break;
+        case GLFW_KEY_F8:            user.add_keyboard_event(KeyButton::F8         , to_button_state(action)); break;
+        case GLFW_KEY_F9:            user.add_keyboard_event(KeyButton::F9         , to_button_state(action)); break;
+        case GLFW_KEY_F10:           user.add_keyboard_event(KeyButton::F10        , to_button_state(action)); break;
+        case GLFW_KEY_F11:           user.add_keyboard_event(KeyButton::F11        , to_button_state(action)); break;
+        case GLFW_KEY_F12:           user.add_keyboard_event(KeyButton::F12        , to_button_state(action)); break;
 
-        // ignore control keys
-        case GLFW_KEY_CAPS_LOCK:
-        case GLFW_KEY_LEFT_ALT:
-        case GLFW_KEY_LEFT_SHIFT:
-        case GLFW_KEY_LEFT_SUPER:
-        case GLFW_KEY_LEFT_CONTROL:
-        case GLFW_KEY_RIGHT_ALT:
-        case GLFW_KEY_RIGHT_SHIFT:
-        case GLFW_KEY_RIGHT_SUPER:
-        case GLFW_KEY_RIGHT_CONTROL:
-            break;
+        // ascii keys
+        case GLFW_KEY_A:             user.add_keyboard_event(KeyButton::A          , to_button_state(action)); break;
+        case GLFW_KEY_B:             user.add_keyboard_event(KeyButton::B          , to_button_state(action)); break;
+        case GLFW_KEY_C:             user.add_keyboard_event(KeyButton::C          , to_button_state(action)); break;
+        case GLFW_KEY_D:             user.add_keyboard_event(KeyButton::D          , to_button_state(action)); break;
+        case GLFW_KEY_E:             user.add_keyboard_event(KeyButton::E          , to_button_state(action)); break;
+        case GLFW_KEY_F:             user.add_keyboard_event(KeyButton::F          , to_button_state(action)); break;
+        case GLFW_KEY_G:             user.add_keyboard_event(KeyButton::G          , to_button_state(action)); break;
+        case GLFW_KEY_H:             user.add_keyboard_event(KeyButton::H          , to_button_state(action)); break;
+        case GLFW_KEY_I:             user.add_keyboard_event(KeyButton::I          , to_button_state(action)); break;
+        case GLFW_KEY_J:             user.add_keyboard_event(KeyButton::J          , to_button_state(action)); break;
+        case GLFW_KEY_K:             user.add_keyboard_event(KeyButton::K          , to_button_state(action)); break;
+        case GLFW_KEY_L:             user.add_keyboard_event(KeyButton::L          , to_button_state(action)); break;
+        case GLFW_KEY_M:             user.add_keyboard_event(KeyButton::M          , to_button_state(action)); break;
+        case GLFW_KEY_N:             user.add_keyboard_event(KeyButton::N          , to_button_state(action)); break;
+        case GLFW_KEY_O:             user.add_keyboard_event(KeyButton::O          , to_button_state(action)); break;
+        case GLFW_KEY_P:             user.add_keyboard_event(KeyButton::P          , to_button_state(action)); break;
+        case GLFW_KEY_Q:             user.add_keyboard_event(KeyButton::Q          , to_button_state(action)); break;
+        case GLFW_KEY_R:             user.add_keyboard_event(KeyButton::R          , to_button_state(action)); break;
+        case GLFW_KEY_S:             user.add_keyboard_event(KeyButton::S          , to_button_state(action)); break;
+        case GLFW_KEY_T:             user.add_keyboard_event(KeyButton::T          , to_button_state(action)); break;
+        case GLFW_KEY_U:             user.add_keyboard_event(KeyButton::U          , to_button_state(action)); break;
+        case GLFW_KEY_V:             user.add_keyboard_event(KeyButton::V          , to_button_state(action)); break;
+        case GLFW_KEY_W:             user.add_keyboard_event(KeyButton::W          , to_button_state(action)); break;
+        case GLFW_KEY_X:             user.add_keyboard_event(KeyButton::X          , to_button_state(action)); break;
+        case GLFW_KEY_Y:             user.add_keyboard_event(KeyButton::Y          , to_button_state(action)); break;
+        case GLFW_KEY_Z:             user.add_keyboard_event(KeyButton::Z          , to_button_state(action)); break;
 
-        default: get_logger()->error("[GLFW] unhandled key stroke!");
+        default: get_logger()->warn("Unhandled key stroke!");
     }
     // clang-format off
 }
@@ -212,33 +238,25 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
     auto& user  = *static_cast<UserState*>(glfwGetWindowUserPointer(window));
-    auto& state = user.input_state;
-    update_mods(state, mods);
 
+    // clang-format off
     switch (button) {
-        case GLFW_MOUSE_BUTTON_LEFT:
-            state.mouse.status[int(MouseButton::LEFT)] = to_button_state(action);
-            break;
-        case GLFW_MOUSE_BUTTON_MIDDLE:
-            state.mouse.status[int(MouseButton::MIDDLE)] = to_button_state(action);
-            break;
-        case GLFW_MOUSE_BUTTON_RIGHT:
-            state.mouse.status[int(MouseButton::RIGHT)] = to_button_state(action);
-            break;
-        default:
-            break;
+        case GLFW_MOUSE_BUTTON_LEFT:   user.add_mouse_event(MouseButton::LEFT,   to_button_state(action)); break;
+        case GLFW_MOUSE_BUTTON_MIDDLE: user.add_mouse_event(MouseButton::MIDDLE, to_button_state(action)); break;
+        case GLFW_MOUSE_BUTTON_RIGHT:  user.add_mouse_event(MouseButton::RIGHT,  to_button_state(action)); break;
+        default: get_logger()->warn("Unhandled mouse button click!");
     }
+    // clang-format on
 }
 
 static void mouse_position_callback(GLFWwindow* window, double xpos, double ypos)
 {
-    auto& user  = *static_cast<UserState*>(glfwGetWindowUserPointer(window));
-    auto& state = user.input_state;
-    state.mouse.position.x = static_cast<float>(xpos);
-    state.mouse.position.y = static_cast<float>(ypos);
+    auto& user = *static_cast<UserState*>(glfwGetWindowUserPointer(window));
+    user.set_mouse_position(xpos, ypos);
 }
 
-static void window_close_callback(GLFWwindow* window) {
+static void window_close_callback(GLFWwindow* window)
+{
     // clean up user states
     auto user = static_cast<UserState*>(glfwGetWindowUserPointer(window));
     user->callback(WindowEvent::CLOSE);
@@ -246,11 +264,11 @@ static void window_close_callback(GLFWwindow* window) {
 
     // find corresponding window handle
     auto it = std::find_if(
-            global_event_loop.windows.begin(),
-            global_event_loop.windows.end(),
-            [&](const WindowHandle& handle) {
-            return window == reinterpret_cast<GLFWwindow*>(handle.window);
-            });
+        global_event_loop.windows.begin(),
+        global_event_loop.windows.end(),
+        [&](const WindowHandle& handle) {
+        return window == reinterpret_cast<GLFWwindow*>(handle.window);
+    });
 
     // remove window from tracking
     if (it != global_event_loop.windows.end())
@@ -259,8 +277,8 @@ static void window_close_callback(GLFWwindow* window) {
 
 static void bind_window_events(WindowHandle window)
 {
-    auto user        = new UserState{};
-    user->input_state = {};
+    auto user    = new UserState{};
+    user->events = {};
 
     // callback
     auto handle = reinterpret_cast<GLFWwindow*>(window.window);
@@ -313,7 +331,7 @@ static void get_window_size(WindowHandle window, uint& width, uint& height)
     height = static_cast<uint32_t>(h);
 }
 
-static void get_window_scale(WindowHandle window, float& xscale, float& yscale)
+static void get_content_scale(WindowHandle window, float& xscale, float& yscale)
 {
     glfwGetWindowContentScale((GLFWwindow*)window.window, &xscale, &yscale);
 }
@@ -348,28 +366,33 @@ static CString get_window_title(WindowHandle window)
     return glfwGetWindowTitle((GLFWwindow*)window.window);
 }
 
+static void set_clipboard_text(WindowHandle window, CString text)
+{
+    glfwSetClipboardString((GLFWwindow*)window.window, text);
+}
+
+static CString get_clipboard_text(WindowHandle window)
+{
+    return glfwGetClipboardString((GLFWwindow*)window.window);
+}
+
 static bool get_window_minimized(WindowHandle window)
 {
     return glfwGetWindowAttrib((GLFWwindow*)window.window, GLFW_ICONIFIED);
 }
 
-static void get_input_state(WindowHandle window, WindowInputState& state)
+static void query_input_events(WindowHandle window, InputEventQuery& query)
 {
     auto  handle = reinterpret_cast<GLFWwindow*>(window.window);
     auto& user   = *static_cast<UserState*>(glfwGetWindowUserPointer(handle));
 
     // copy the input state back to user
-    state = user.input_state;
+    query = user.events;
 }
 
 static auto delete_window(WindowHandle window) -> void
 {
     glfwDestroyWindow(reinterpret_cast<GLFWwindow*>(window.window));
-}
-
-static void swap_buffer(WindowHandle window)
-{
-    glfwSwapBuffers(reinterpret_cast<GLFWwindow*>(window.window));
 }
 
 static void show_window(WindowHandle window)
@@ -379,8 +402,8 @@ static void show_window(WindowHandle window)
 
 static void bind_window_callback(WindowHandle window, WindowCallback&& callback)
 {
-    auto  handle = reinterpret_cast<GLFWwindow*>(window.window);
-    auto& user   = *static_cast<UserState*>(glfwGetWindowUserPointer(handle));
+    auto  handle  = reinterpret_cast<GLFWwindow*>(window.window);
+    auto& user    = *static_cast<UserState*>(glfwGetWindowUserPointer(handle));
     user.callback = std::move(callback);
 }
 
@@ -388,7 +411,7 @@ static void run_in_loop()
 {
     // START
     for (auto& window : global_event_loop.windows) {
-        auto handle = reinterpret_cast<GLFWwindow*>(window.window);
+        auto  handle = reinterpret_cast<GLFWwindow*>(window.window);
         auto& user   = *static_cast<UserState*>(glfwGetWindowUserPointer(handle));
         std::invoke(user.callback, WindowEvent::START);
     }
@@ -398,7 +421,7 @@ static void run_in_loop()
 
         // UPDATE
         for (auto& window : global_event_loop.windows) {
-            auto handle = reinterpret_cast<GLFWwindow*>(window.window);
+            auto  handle = reinterpret_cast<GLFWwindow*>(window.window);
             auto& user   = *static_cast<UserState*>(glfwGetWindowUserPointer(handle));
             std::invoke(user.callback, WindowEvent::UPDATE);
         }
@@ -406,11 +429,18 @@ static void run_in_loop()
         // RENDER
         RHI::new_frame(); // prior to frame begin
         for (auto& window : global_event_loop.windows) {
-            auto handle = reinterpret_cast<GLFWwindow*>(window.window);
+            auto  handle = reinterpret_cast<GLFWwindow*>(window.window);
             auto& user   = *static_cast<UserState*>(glfwGetWindowUserPointer(handle));
             std::invoke(user.callback, WindowEvent::RENDER);
         }
         RHI::end_frame(); // post frame end
+
+        // RESET EVENTS
+        for (auto& window : global_event_loop.windows) {
+            auto  handle = reinterpret_cast<GLFWwindow*>(window.window);
+            auto& user   = *static_cast<UserState*>(glfwGetWindowUserPointer(handle));
+            user.reset_events();
+        }
 
         glfwPollEvents();
     }
@@ -443,18 +473,19 @@ LYRA_EXPORT auto create() -> WindowAPI
     api.get_window_pos       = get_window_pos;
     api.set_window_size      = set_window_size;
     api.get_window_size      = get_window_size;
-    api.get_window_scale     = get_window_scale;
+    api.get_content_scale    = get_content_scale;
     api.set_window_focus     = set_window_focus;
     api.get_window_focus     = get_window_focus;
     api.set_window_alpha     = set_window_alpha;
     api.get_window_alpha     = get_window_alpha;
     api.set_window_title     = set_window_title;
     api.get_window_title     = get_window_title;
+    api.set_clipboard_text   = set_clipboard_text;
+    api.get_clipboard_text   = get_clipboard_text;
     api.get_window_minimized = get_window_minimized;
-    api.get_input_state      = get_input_state;
+    api.query_input_events   = query_input_events;
     api.bind_window_callback = bind_window_callback;
     api.show_window          = show_window;
-    api.swap_buffer          = swap_buffer;
     api.run_in_loop          = run_in_loop;
     return api;
 }

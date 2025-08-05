@@ -29,11 +29,11 @@ struct Application
 
     void destroy();
 
-    void update(const lyra::wsi::WindowInput& input);
+    void update(const Window& window);
 
     void render();
 
-    void resize(const lyra::wsi::WindowInfo& info);
+    void resize();
 
 private:
     AppDescriptor desc;

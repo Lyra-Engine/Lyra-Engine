@@ -5,13 +5,13 @@
 
 namespace lyra::wsi
 {
-    enum struct WindowFlag
+    enum struct WindowFlag : uint
     {
         DECORATED  = 0x1,
         FULLSCREEN = 0x2,
     };
 
-    enum struct WindowEvent
+    enum struct WindowEvent : uint
     {
         START,  // window opened
         CLOSE,  // window closed
@@ -21,20 +21,19 @@ namespace lyra::wsi
         RESIZE, // window resized
     };
 
-    enum struct Modifier : uint
+    enum struct InputEventType : uint
     {
-        ALT   = 0x0001,
-        CTRL  = 0x0002,
-        SHIFT = 0x0004,
+        MOUSE,
+        KEYBOARD,
     };
 
-    enum struct ButtonState
+    enum struct ButtonState : uint
     {
         OFF,
         ON,
     };
 
-    enum struct MouseButton
+    enum struct MouseButton : uint
     {
         LEFT,
         RIGHT,
@@ -42,10 +41,13 @@ namespace lyra::wsi
     };
 
     // clang-format off
-    enum struct KeyButton
+    enum struct KeyButton : uint
     {
         // misc keys
-        TAB, ESC, SPACE, BACKSPACE, DEL, ENTER, PAGE_UP, PAGE_DOWN, HOME, END,
+        TAB, ESC, CAPS_LOCK, SPACE, BACKSPACE, DEL, ENTER, PAGE_UP, PAGE_DOWN, HOME, END,
+
+        // modifier keys
+        ALT, CTRL, SHIFT, SUPER,
 
         // ASCII keys
         A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
@@ -53,10 +55,10 @@ namespace lyra::wsi
         // arrow keys
         UP, DOWN, LEFT, RIGHT,
 
-        // numeric keys
+        // numerical keys
         D0, D1, D2, D3, D4, D5, D6, D7, D8, D9,
 
-        // functional keys
+        // function keys
         F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12,
     };
     // clang-format on

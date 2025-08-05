@@ -4,7 +4,7 @@
 #include <Lyra/Window/WSIEnums.h>
 #include <Lyra/Window/WSIUtils.h>
 #include <Lyra/Window/WSIDescs.h>
-#include <Lyra/Window/WSITypes.h>
+#include <Lyra/Window/WSIState.h>
 
 namespace lyra::wsi
 {
@@ -22,8 +22,6 @@ namespace lyra::wsi
         void (*set_window_size)(WindowHandle window, uint width, uint height);
         void (*get_window_size)(WindowHandle window, uint& width, uint& height);
 
-        void (*get_window_scale)(WindowHandle window, float& xscale, float& yscale);
-
         void (*set_window_focus)(WindowHandle window);
         bool (*get_window_focus)(WindowHandle window);
 
@@ -33,13 +31,18 @@ namespace lyra::wsi
         void (*set_window_title)(WindowHandle window, CString title);
         CString (*get_window_title)(WindowHandle window);
 
+        void (*set_clipboard_text)(WindowHandle window, CString text);
+        CString (*get_clipboard_text)(WindowHandle window);
+
+        void (*get_content_scale)(WindowHandle window, float& xscale, float& yscale);
+
         bool (*get_window_minimized)(WindowHandle window);
-        void (*get_input_state)(WindowHandle window, WindowInputState& state);
 
         void (*bind_window_callback)(WindowHandle window, WindowCallback&& callback);
 
+        void (*query_input_events)(WindowHandle window, InputEventQuery& query);
+
         void (*show_window)(WindowHandle window);
-        void (*swap_buffer)(WindowHandle window);
 
         void (*run_in_loop)();
     };

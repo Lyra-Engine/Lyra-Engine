@@ -1,71 +1,36 @@
 #ifndef LYRA_LIBRARY_WINDOW_TYPES_H
 #define LYRA_LIBRARY_WINDOW_TYPES_H
 
-#include <chrono>
-#include <functional>
-
-#include <Lyra/Common/Pointer.h>
-#include <Lyra/Common/Container.h>
 #include <Lyra/Common/Enums.h>
+#include <Lyra/Common/Pointer.h>
+#include <Lyra/Common/Function.h>
+#include <Lyra/Common/Container.h>
 #include <Lyra/Window/WSIEnums.h>
 #include <Lyra/Window/WSIDescs.h>
 #include <Lyra/Window/WSIUtils.h>
+#include <Lyra/Window/WSIEvent.h>
+#include <Lyra/Window/WSIState.h>
 
 namespace lyra::wsi
 {
-
-    using WindowCallback = std::function<void(WindowEvent)>;
-
+    struct Window;
     struct WindowAPI;
-
-    struct WindowInfo
-    {
-        uint32_t width;        // logical window width
-        uint32_t height;       // logical window height
-        float    scale = 1.0f; // reserved for high DPI
-    };
-
-    struct WindowInput
-    {
-        using TimePoint = std::chrono::time_point<std::chrono::steady_clock>;
-
-        WindowInputState states[2];
-
-        uint state_index = 0;
-
-        float delta_time = 0.0f; // in seconds
-
-        TimePoint elapsed_time;
-
-        explicit WindowInput();
-
-        void update(const WindowHandle& handle);
-
-        bool is_mouse_moved(MouseButton button) const;
-        bool is_mouse_dragged(MouseButton button) const;
-        bool is_mouse_pressed(MouseButton button) const;
-        bool is_mouse_released(MouseButton button) const;
-
-        bool is_key_down(KeyButton key) const;     // when key is pressed down and hold (simply the current status)
-        bool is_key_pressed(KeyButton key) const;  // exactly once when key is pressed down
-        bool is_key_released(KeyButton key) const; // exactly once when key is released up
-
-        auto current_state() const -> const WindowInputState& { return states[state_index]; }
-        auto previous_state() const -> const WindowInputState& { return states[(state_index + 1) % 2]; }
-    };
 
     struct WindowCallbacks
     {
-        Vector<std::function<void()>>                   start;
-        Vector<std::function<void()>>                   close;
-        Vector<std::function<void()>>                   timer;
-        Vector<std::function<void(const WindowInput&)>> update;
-        Vector<std::function<void()>>                   render;
-        Vector<std::function<void(const WindowInfo&)>>  resize;
+        Vector<std::function<void(const Window&)>> start;
+        Vector<std::function<void(const Window&)>> close;
+        Vector<std::function<void(const Window&)>> timer;
+        Vector<std::function<void(const Window&)>> update;
+        Vector<std::function<void(const Window&)>> render;
+        Vector<std::function<void(const Window&)>> resize;
     };
 
     struct Window
     {
+        using GeneralCallback  = std::function<void()>;
+        using ExplicitCallback = std::function<void(const Window&)>;
+
         friend struct EventLoop;
 
         static auto init(const WindowDescriptor& descriptor) -> OwnedResource<Window>;
@@ -78,21 +43,40 @@ namespace lyra::wsi
 
         void destroy();
 
-        auto get_window_info() const -> WindowInfo;
+        auto get_input_state() const -> const WindowInput& { return inputs; }
+
+        void get_extent(uint& width, uint& height) const;
+
+        void get_content_scale(float& xscale, float& yscale) const;
 
         template <WindowEvent E, typename F, typename T>
         void bind(F&& f, T* user)
         {
-            auto bind_member = [&user](auto member_func) {
-                return [&user, member_func](auto&&... args) {
-                    return ((*user).*member_func)(std::forward<decltype(args)>(args)...);
-                };
-            };
-            bind<E>(bind_member(f));
+            static_assert(function_traits<F>::arity <= 1, "Bound function can at most take 1 argument with type const Window&");
+
+            if constexpr (function_traits<F>::arity == 0) {
+                bind<E>([&user, f](const Window& window) {
+                    return ((*user).*f)();
+                });
+                return;
+            }
+
+            if constexpr (function_traits<F>::arity == 1) {
+                bind<E>([&user, f](const Window& window) {
+                    return ((*user).*f)(window);
+                });
+                return;
+            }
         }
 
-        template <WindowEvent E, typename F>
-        void bind(F&& f)
+        template <WindowEvent E>
+        void bind(GeneralCallback&& f)
+        {
+            bind<E>([f](const Window&) { f(); });
+        }
+
+        template <WindowEvent E>
+        void bind(ExplicitCallback&& f)
         {
             if constexpr (E == WindowEvent::START) {
                 callbacks.start.push_back(f);
@@ -125,7 +109,6 @@ namespace lyra::wsi
     private:
         WindowCallbacks callbacks;
         WindowInput     inputs;
-        WindowInfo      info;
     };
 
     struct EventLoop

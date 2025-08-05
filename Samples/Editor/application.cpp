@@ -1,5 +1,6 @@
 #include "application.h"
 #include "Lyra/Common/Function.h"
+#include "imgui.h"
 
 void Application::init()
 {
@@ -62,11 +63,21 @@ void Application::destroy()
     rhi->wait();
 }
 
-void Application::update(const lyra::wsi::WindowInput& input)
+void Application::update(const Window& window)
 {
     ImGui::NewFrame();
     ImGui::ShowDemoWindow();
+
+    Vector<char>    name(1024, 0);
+    Array<float, 3> scale = {};
+    ImGui::Begin("Hello");
+    ImGui::InputText("Name", name.data(), 1024);
+    ImGui::InputFloat3("Scale", scale.data());
+    ImGui::End();
+
     ImGui::Render();
+
+    gui->update();
 }
 
 void Application::render()
@@ -88,9 +99,8 @@ void Application::render()
     // command recording
     command.resource_barrier(state_transition(backbuffer.texture, undefined_state(), color_attachment_state()));
     {
-        ImDrawData* main_draw_data = ImGui::GetDrawData();
         gui->reset();
-        gui->render(command, backbuffer, main_draw_data);
+        gui->render(command, backbuffer, ImGui::GetDrawData());
     }
     command.resource_barrier(state_transition(backbuffer.texture, color_attachment_state(), present_src_state()));
     command.submit();
@@ -99,6 +109,6 @@ void Application::render()
     backbuffer.present();
 }
 
-void Application::resize(const lyra::wsi::WindowInfo& info)
+void Application::resize()
 {
 }

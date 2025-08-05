@@ -65,8 +65,8 @@ void TestApp::run()
 
 void TestApp::run_with_window()
 {
-    win->bind<WindowEvent::UPDATE>([&](const WindowInput& input) {
-        this->update(input);
+    win->bind<WindowEvent::UPDATE>([&](const Window& window) {
+        this->update(window.get_input_state());
     });
 
     win->bind<WindowEvent::RENDER>([&]() {

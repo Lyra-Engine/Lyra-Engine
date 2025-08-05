@@ -30,6 +30,9 @@ target_sources(lyra-engine PRIVATE
     Lyra/Window/WSIUtils.h
     Lyra/Window/WSIDescs.h
     Lyra/Window/WSIEnums.h
+    Lyra/Window/WSIState.h
+    Lyra/Window/WSIState.cpp
+    Lyra/Window/WSIEvent.h
     Lyra/Window/WSITypes.h
     Lyra/Window/WSITypes.cpp
 

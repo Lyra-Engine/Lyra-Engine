@@ -1,4 +1,3 @@
-#include <iostream>
 #include <Lyra/Common/GLM.h>
 #include <Lyra/Common/Plugin.h>
 #include <Lyra/Common/Pointer.h>
@@ -52,6 +51,11 @@ float4 fsmain(VertexOutput input) : SV_Target
 }
 )""";
 
+namespace ImGui
+{
+    extern ImGuiIO& GetIO(ImGuiContext*);
+}
+
 static WindowHandle& platform_get_window_handle(ImGuiViewport* viewport)
 {
     return (reinterpret_cast<GUIViewportData*>(viewport->PlatformUserData))->window;
@@ -85,7 +89,7 @@ static void platform_show_window(ImGuiViewport* viewport)
     Window::api()->show_window(platform_get_window_handle(viewport));
 }
 
-static void platform_update_window(ImGuiViewport* viewport, const WindowInputState& state)
+static void platform_update_window(ImGuiViewport* viewport, const WindowInput& input)
 {
     // TODO: implement this later
 }
@@ -97,7 +101,7 @@ static void platform_render_window(ImGuiViewport* viewport, void*)
 
 static void platform_swap_buffers(ImGuiViewport* viewport, void*)
 {
-    Window::api()->swap_buffer(platform_get_window_handle(viewport));
+    // NOTE: our implementation does not rely on window system for double buffering
 }
 
 static void platform_set_window_pos(ImGuiViewport* viewport, ImVec2 pos)
@@ -125,10 +129,10 @@ static ImVec2 platform_get_window_size(ImGuiViewport* viewport)
     return ImVec2(xsiz, ysiz);
 }
 
-static ImVec2 platform_get_window_scale(ImGuiViewport* viewport)
+static ImVec2 platform_get_content_scale(ImGuiViewport* viewport)
 {
     float xscale, yscale;
-    Window::api()->get_window_scale(platform_get_window_handle(viewport), xscale, yscale);
+    Window::api()->get_content_scale(platform_get_window_handle(viewport), xscale, yscale);
     return ImVec2(xscale, yscale);
 }
 
@@ -155,6 +159,110 @@ static bool platform_get_window_minimized(ImGuiViewport* viewport)
 static void platform_set_window_alpha(ImGuiViewport* viewport, float alpha)
 {
     return Window::api()->set_window_alpha(platform_get_window_handle(viewport), alpha);
+}
+
+static ImGuiKey to_imgui_key_button(KeyButton button)
+{
+    // clang-format off
+    switch (button) {
+        // misc keys
+        case KeyButton::TAB:       return ImGuiKey_Tab;
+        case KeyButton::ESC:       return ImGuiKey_Escape;
+        case KeyButton::CAPS_LOCK: return ImGuiKey_CapsLock;
+        case KeyButton::SPACE:     return ImGuiKey_Space;
+        case KeyButton::BACKSPACE: return ImGuiKey_Backspace;
+        case KeyButton::DEL:       return ImGuiKey_Delete;
+        case KeyButton::ENTER:     return ImGuiKey_Enter;
+        case KeyButton::PAGE_UP:   return ImGuiKey_PageUp;
+        case KeyButton::PAGE_DOWN: return ImGuiKey_PageDown;
+        case KeyButton::HOME:      return ImGuiKey_Home;
+        case KeyButton::END:       return ImGuiKey_End;
+
+        // modifier keys
+        case KeyButton::ALT:       return ImGuiKey_ModAlt;
+        case KeyButton::CTRL:      return ImGuiKey_ModCtrl;
+        case KeyButton::SHIFT:     return ImGuiKey_ModShift;
+        case KeyButton::SUPER:     return ImGuiKey_ModSuper;
+
+        // ASCII keys
+        case KeyButton::A:         return ImGuiKey_A;
+        case KeyButton::B:         return ImGuiKey_B;
+        case KeyButton::C:         return ImGuiKey_C;
+        case KeyButton::D:         return ImGuiKey_D;
+        case KeyButton::E:         return ImGuiKey_E;
+        case KeyButton::F:         return ImGuiKey_F;
+        case KeyButton::G:         return ImGuiKey_G;
+        case KeyButton::H:         return ImGuiKey_H;
+        case KeyButton::I:         return ImGuiKey_I;
+        case KeyButton::J:         return ImGuiKey_J;
+        case KeyButton::K:         return ImGuiKey_K;
+        case KeyButton::L:         return ImGuiKey_L;
+        case KeyButton::M:         return ImGuiKey_M;
+        case KeyButton::N:         return ImGuiKey_N;
+        case KeyButton::O:         return ImGuiKey_O;
+        case KeyButton::P:         return ImGuiKey_P;
+        case KeyButton::Q:         return ImGuiKey_Q;
+        case KeyButton::R:         return ImGuiKey_R;
+        case KeyButton::S:         return ImGuiKey_S;
+        case KeyButton::T:         return ImGuiKey_T;
+        case KeyButton::U:         return ImGuiKey_U;
+        case KeyButton::V:         return ImGuiKey_V;
+        case KeyButton::W:         return ImGuiKey_W;
+        case KeyButton::X:         return ImGuiKey_X;
+        case KeyButton::Y:         return ImGuiKey_Y;
+        case KeyButton::Z:         return ImGuiKey_Z;
+
+        // arrow keys
+        case KeyButton::UP:        return ImGuiKey_UpArrow;
+        case KeyButton::DOWN:      return ImGuiKey_DownArrow;
+        case KeyButton::LEFT:      return ImGuiKey_LeftArrow;
+        case KeyButton::RIGHT:     return ImGuiKey_RightArrow;
+
+        // numerical keys
+        case KeyButton::D0:         return ImGuiKey_0;
+        case KeyButton::D1:         return ImGuiKey_1;
+        case KeyButton::D2:         return ImGuiKey_2;
+        case KeyButton::D3:         return ImGuiKey_3;
+        case KeyButton::D4:         return ImGuiKey_4;
+        case KeyButton::D5:         return ImGuiKey_5;
+        case KeyButton::D6:         return ImGuiKey_6;
+        case KeyButton::D7:         return ImGuiKey_7;
+        case KeyButton::D8:         return ImGuiKey_8;
+        case KeyButton::D9:         return ImGuiKey_9;
+
+        // function keys
+        case KeyButton::F1:         return ImGuiKey_F1;
+        case KeyButton::F2:         return ImGuiKey_F2;
+        case KeyButton::F3:         return ImGuiKey_F3;
+        case KeyButton::F4:         return ImGuiKey_F4;
+        case KeyButton::F5:         return ImGuiKey_F5;
+        case KeyButton::F6:         return ImGuiKey_F6;
+        case KeyButton::F7:         return ImGuiKey_F7;
+        case KeyButton::F8:         return ImGuiKey_F8;
+        case KeyButton::F9:         return ImGuiKey_F9;
+        case KeyButton::F10:        return ImGuiKey_F10;
+        case KeyButton::F11:        return ImGuiKey_F11;
+        case KeyButton::F12:        return ImGuiKey_F12;
+
+        default:
+            assert(!!!"Invalid keyboard button!");
+             return ImGuiKey_None;
+    }
+    // clang-format on
+}
+
+static ImGuiMouseButton to_imgui_mouse_button(MouseButton button)
+{
+    // clang-format off
+    switch (button) {
+        case MouseButton::LEFT:   return ImGuiMouseButton_Left;
+        case MouseButton::RIGHT:  return ImGuiMouseButton_Right;
+        case MouseButton::MIDDLE: return ImGuiMouseButton_Middle;
+        default:
+            assert(!!!"Invalid mouse button!");
+             return ImGuiMouseButton_Left;
+    }
+    // clang-format on
 }
 
 #pragma region GUIRenderer
@@ -272,6 +380,18 @@ void GUIRenderer::render(GPUCommandBuffer cmdbuffer, GPUSurfaceTexture backbuffe
     cmdbuffer.end_render_pass();
 }
 
+void GUIRenderer::update()
+{
+    // update window inputs
+    for (auto& window : platform_data->window_contexts) {
+        Window::api()->query_input_events(window.window, window.events);
+
+        ImGuiIO& io = ImGui::GetIO(window.context);
+        update_key_state(io, window);
+        update_mouse_state(io, window);
+    }
+}
+
 void GUIRenderer::destroy()
 {
     RHI::api()->wait_idle();
@@ -305,11 +425,12 @@ void GUIRenderer::init_imgui_setup(const GUIDescriptor& descriptor)
     Window::api()->get_window_size(descriptor.window, width, height);
 
     float xscale, yscale;
-    Window::api()->get_window_scale(descriptor.window, xscale, yscale);
+    Window::api()->get_content_scale(descriptor.window, xscale, yscale);
 
     auto& io                   = ImGui::GetIO();
     io.DisplaySize             = ImVec2(width, height);
     io.DisplayFramebufferScale = ImVec2(xscale, yscale);
+    io.FontGlobalScale         = 1.0f; // keep this at 1.0, let DisplayFramebufferScale handle it
 }
 
 void GUIRenderer::init_platform_data(const GUIDescriptor& descriptor)
@@ -442,13 +563,13 @@ void GUIRenderer::init_renderer_data(Compiler* compiler)
         desc.address_mode_u = GPUAddressMode::CLAMP_TO_EDGE;
         desc.address_mode_v = GPUAddressMode::CLAMP_TO_EDGE;
         desc.address_mode_w = GPUAddressMode::CLAMP_TO_EDGE;
-        desc.lod_min_clamp  = 1.0;
-        desc.lod_max_clamp  = 1.0;
+        desc.lod_min_clamp  = 0.0f;
+        desc.lod_max_clamp  = 1000.0f;
         desc.compare_enable = false;
         desc.min_filter     = GPUFilterMode::LINEAR;
         desc.mag_filter     = GPUFilterMode::LINEAR;
         desc.mipmap_filter  = GPUMipmapFilterMode::LINEAR;
-        desc.max_anisotropy = 1.0;
+        desc.max_anisotropy = 1.0f;
         return device.create_sampler(desc);
     });
 
@@ -459,24 +580,28 @@ void GUIRenderer::init_renderer_data(Compiler* compiler)
 
 void GUIRenderer::init_multi_viewport(const GUIDescriptor& descriptor)
 {
-    if (!descriptor.viewports) return;
+    ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
 
-    ImGuiPlatformIO& platform_io                   = ImGui::GetPlatformIO();
-    platform_io.Platform_CreateWindow              = platform_create_window;
-    platform_io.Platform_DestroyWindow             = platform_delete_window;
-    platform_io.Platform_ShowWindow                = platform_show_window;
-    platform_io.Platform_SetWindowPos              = platform_set_window_pos;
-    platform_io.Platform_GetWindowPos              = platform_get_window_pos;
-    platform_io.Platform_SetWindowSize             = platform_set_window_size;
-    platform_io.Platform_GetWindowSize             = platform_get_window_size;
-    platform_io.Platform_GetWindowFramebufferScale = platform_get_window_scale;
-    platform_io.Platform_SetWindowFocus            = platform_set_window_focus;
-    platform_io.Platform_GetWindowFocus            = platform_get_window_focus;
-    platform_io.Platform_GetWindowMinimized        = platform_get_window_minimized;
-    platform_io.Platform_SetWindowTitle            = platform_set_window_title;
-    platform_io.Platform_RenderWindow              = platform_render_window;
-    platform_io.Platform_SwapBuffers               = platform_swap_buffers;
-    platform_io.Platform_SetWindowAlpha            = platform_set_window_alpha;
+    // general platform methods
+
+    // multi-viewport specific methods
+    if (descriptor.viewports) {
+        platform_io.Platform_CreateWindow              = platform_create_window;
+        platform_io.Platform_DestroyWindow             = platform_delete_window;
+        platform_io.Platform_ShowWindow                = platform_show_window;
+        platform_io.Platform_SetWindowPos              = platform_set_window_pos;
+        platform_io.Platform_GetWindowPos              = platform_get_window_pos;
+        platform_io.Platform_SetWindowSize             = platform_set_window_size;
+        platform_io.Platform_GetWindowSize             = platform_get_window_size;
+        platform_io.Platform_GetWindowFramebufferScale = platform_get_content_scale;
+        platform_io.Platform_SetWindowFocus            = platform_set_window_focus;
+        platform_io.Platform_GetWindowFocus            = platform_get_window_focus;
+        platform_io.Platform_GetWindowMinimized        = platform_get_window_minimized;
+        platform_io.Platform_SetWindowTitle            = platform_set_window_title;
+        platform_io.Platform_RenderWindow              = platform_render_window;
+        platform_io.Platform_SwapBuffers               = platform_swap_buffers;
+        platform_io.Platform_SetWindowAlpha            = platform_set_window_alpha;
+    }
 
     // register main window handle (which is owned by the main application, not by us)
     GUIViewportData* vd = new GUIViewportData{};
@@ -492,11 +617,16 @@ void GUIRenderer::init_backend_flags(const GUIDescriptor& descriptor)
 {
     ImGuiIO& io = ImGui::GetIO();
 
-    io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;      // we can honor GetMouseCursor() values (optional)
-    io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;       // we can honor io.WantSetMousePos requests (optional, rarely used)
+    // platform backend flags
+    io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;         // we can honor GetMouseCursor() values (optional)
+    io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;          // we can honor io.WantSetMousePos requests (optional, rarely used)
+    io.BackendFlags |= ImGuiBackendFlags_HasMouseHoveredViewport; // we can call io.AddMouseViewportEvent() with correct data (optional)
+
+    // renderer backend flags
     io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset; // we can honor the ImDrawCmd::VtxOffset field, allowing for large meshes.
     io.BackendFlags |= ImGuiBackendFlags_RendererHasTextures;  // we can honor ImGuiPlatformIO::Textures[] requests during render
 
+    // viewport backend flags
     if (descriptor.viewports) {
         io.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports;
         io.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;
@@ -753,6 +883,45 @@ void GUIRenderer::begin_render_pass(GPUCommandBuffer cmdbuffer, GPUSurfaceTextur
     render_pass.depth_stencil_attachment = {};
 
     cmdbuffer.begin_render_pass(render_pass);
+}
+
+void GUIRenderer::update_key_state(ImGuiIO& io, const GUIWindowContext& ctx)
+{
+    const auto& query = ctx.events;
+
+    // update key events
+    for (uint i = 0; i < query.num_events; i++) {
+        const auto& event = query.input_events.at(i);
+        if (event.type == InputEventType::KEYBOARD)
+            io.AddKeyEvent(to_imgui_key_button(event.keyboard.button), event.keyboard.state == ButtonState::ON);
+    }
+}
+
+void GUIRenderer::update_mouse_state(ImGuiIO& io, const GUIWindowContext& ctx)
+{
+    const auto& query = ctx.events;
+
+    // update mouse button events
+    for (uint i = 0; i < query.num_events; i++) {
+        const auto& event = query.input_events.at(i);
+        if (event.type == InputEventType::MOUSE)
+            io.AddMouseButtonEvent(to_imgui_mouse_button(event.mouse.button), event.keyboard.state == ButtonState::ON);
+    }
+
+    // update mouse position events
+    float x = query.mouse_position.x;
+    float y = query.mouse_position.y;
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+        uint xpos, ypos;
+        Window::api()->get_window_pos(ctx.window, xpos, ypos);
+        x += static_cast<float>(xpos);
+        y += static_cast<float>(ypos);
+    }
+
+    // account for DPI scaling
+    x /= io.DisplayFramebufferScale.x;
+    y /= io.DisplayFramebufferScale.y;
+    io.AddMousePosEvent(x, y);
 }
 
 void GUIRenderer::create_window_context(WindowHandle window, ImGuiContext* context)
