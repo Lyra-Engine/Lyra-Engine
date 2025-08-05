@@ -111,6 +111,7 @@ namespace lyra::gui
         void init_platform_data(const GUIDescriptor& descriptor);
         void init_renderer_data(Compiler* compiler);
         void init_multi_viewport(const GUIDescriptor& descriptor);
+        void init_config_flags(const GUIDescriptor& descriptor);
         void init_backend_flags(const GUIDescriptor& descriptor);
         void init_dummy_texture();
 

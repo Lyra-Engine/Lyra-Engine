@@ -24,6 +24,9 @@ void InputState::update(const WindowHandle& handle)
             case InputEventType::KEYBOARD:
                 keyboard.status.at(static_cast<uint>(event.keyboard.button)) = event.keyboard.state;
                 break;
+            case InputEventType::CHARACTER:
+                // ignore character inputs for now
+                break;
             default:
                 assert(!!!"Invalid window input event type!");
         }

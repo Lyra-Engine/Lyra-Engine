@@ -13,6 +13,12 @@ namespace lyra::wsi
         float y;
     };
 
+    // character typed event
+    struct CharacterEvent
+    {
+        uint code;
+    };
+
     // keyboard press/release event
     struct KeyboardEvent
     {
@@ -33,8 +39,9 @@ namespace lyra::wsi
         InputEventType type;
         union
         {
-            MouseEvent    mouse;
-            KeyboardEvent keyboard;
+            MouseEvent     mouse;
+            KeyboardEvent  keyboard;
+            CharacterEvent character;
         };
     };
 

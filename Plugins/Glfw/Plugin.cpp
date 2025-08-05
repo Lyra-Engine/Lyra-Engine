@@ -81,6 +81,18 @@ struct UserState
         event.keyboard.button = key;
         event.keyboard.state  = state;
     }
+
+    void add_character_event(uint code)
+    {
+        if (is_event_queue_full()) {
+            get_logger()->warn("Ignore character event beacause event queue is full!");
+            return;
+        }
+
+        auto& event          = events.input_events[events.num_events++];
+        event.type           = InputEventType::CHARACTER;
+        event.character.code = code;
+    }
 };
 
 struct EventLoopInternal
@@ -148,91 +160,114 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
     // clang-format off
     switch (key) {
         // misc keys
-        case GLFW_KEY_TAB:           user.add_keyboard_event(KeyButton::TAB        , to_button_state(action)); break;
-        case GLFW_KEY_ESCAPE:        user.add_keyboard_event(KeyButton::ESC        , to_button_state(action)); break;
-        case GLFW_KEY_CAPS_LOCK:     user.add_keyboard_event(KeyButton::CAPS_LOCK  , to_button_state(action)); break;
-        case GLFW_KEY_SPACE:         user.add_keyboard_event(KeyButton::SPACE      , to_button_state(action)); break;
-        case GLFW_KEY_BACKSPACE:     user.add_keyboard_event(KeyButton::BACKSPACE  , to_button_state(action)); break;
-        case GLFW_KEY_DELETE:        user.add_keyboard_event(KeyButton::DEL        , to_button_state(action)); break;
-        case GLFW_KEY_ENTER:         user.add_keyboard_event(KeyButton::ENTER      , to_button_state(action)); break;
-        case GLFW_KEY_PAGE_UP:       user.add_keyboard_event(KeyButton::PAGE_UP    , to_button_state(action)); break;
-        case GLFW_KEY_PAGE_DOWN:     user.add_keyboard_event(KeyButton::PAGE_DOWN  , to_button_state(action)); break;
-        case GLFW_KEY_HOME:          user.add_keyboard_event(KeyButton::HOME       , to_button_state(action)); break;
-        case GLFW_KEY_END:           user.add_keyboard_event(KeyButton::END        , to_button_state(action)); break;
+        case GLFW_KEY_TAB:           user.add_keyboard_event(KeyButton::TAB           , to_button_state(action)); break;
+        case GLFW_KEY_ESCAPE:        user.add_keyboard_event(KeyButton::ESC           , to_button_state(action)); break;
+        case GLFW_KEY_SPACE:         user.add_keyboard_event(KeyButton::SPACE         , to_button_state(action)); break;
+        case GLFW_KEY_BACKSPACE:     user.add_keyboard_event(KeyButton::BACKSPACE     , to_button_state(action)); break;
+        case GLFW_KEY_DELETE:        user.add_keyboard_event(KeyButton::DEL           , to_button_state(action)); break;
+        case GLFW_KEY_ENTER:         user.add_keyboard_event(KeyButton::ENTER         , to_button_state(action)); break;
+        case GLFW_KEY_PAGE_UP:       user.add_keyboard_event(KeyButton::PAGE_UP       , to_button_state(action)); break;
+        case GLFW_KEY_PAGE_DOWN:     user.add_keyboard_event(KeyButton::PAGE_DOWN     , to_button_state(action)); break;
+        case GLFW_KEY_HOME:          user.add_keyboard_event(KeyButton::HOME          , to_button_state(action)); break;
+        case GLFW_KEY_END:           user.add_keyboard_event(KeyButton::END           , to_button_state(action)); break;
+        case GLFW_KEY_PAUSE:         user.add_keyboard_event(KeyButton::PAUSE         , to_button_state(action)); break;
+        case GLFW_KEY_NUM_LOCK:      user.add_keyboard_event(KeyButton::NUM_LOCK      , to_button_state(action)); break;
+        case GLFW_KEY_CAPS_LOCK:     user.add_keyboard_event(KeyButton::CAPS_LOCK     , to_button_state(action)); break;
+        case GLFW_KEY_SCROLL_LOCK:   user.add_keyboard_event(KeyButton::SCROLL_LOCK   , to_button_state(action)); break;
+        case GLFW_KEY_PRINT_SCREEN:  user.add_keyboard_event(KeyButton::PRINT_SCREEN  , to_button_state(action)); break;
 
         // mod keys
-        case GLFW_KEY_LEFT_ALT:      user.add_keyboard_event(KeyButton::ALT        , to_button_state(action)); break;
-        case GLFW_KEY_RIGHT_ALT:     user.add_keyboard_event(KeyButton::ALT        , to_button_state(action)); break;
-        case GLFW_KEY_LEFT_CONTROL:  user.add_keyboard_event(KeyButton::CTRL       , to_button_state(action)); break;
-        case GLFW_KEY_RIGHT_CONTROL: user.add_keyboard_event(KeyButton::CTRL       , to_button_state(action)); break;
-        case GLFW_KEY_LEFT_SHIFT:    user.add_keyboard_event(KeyButton::SHIFT      , to_button_state(action)); break;
-        case GLFW_KEY_RIGHT_SHIFT:   user.add_keyboard_event(KeyButton::SHIFT      , to_button_state(action)); break;
-        case GLFW_KEY_LEFT_SUPER:    user.add_keyboard_event(KeyButton::SUPER      , to_button_state(action)); break;
-        case GLFW_KEY_RIGHT_SUPER:   user.add_keyboard_event(KeyButton::SUPER      , to_button_state(action)); break;
+        case GLFW_KEY_LEFT_ALT:      user.add_keyboard_event(KeyButton::ALT           , to_button_state(action)); break;
+        case GLFW_KEY_RIGHT_ALT:     user.add_keyboard_event(KeyButton::ALT           , to_button_state(action)); break;
+        case GLFW_KEY_LEFT_CONTROL:  user.add_keyboard_event(KeyButton::CTRL          , to_button_state(action)); break;
+        case GLFW_KEY_RIGHT_CONTROL: user.add_keyboard_event(KeyButton::CTRL          , to_button_state(action)); break;
+        case GLFW_KEY_LEFT_SHIFT:    user.add_keyboard_event(KeyButton::SHIFT         , to_button_state(action)); break;
+        case GLFW_KEY_RIGHT_SHIFT:   user.add_keyboard_event(KeyButton::SHIFT         , to_button_state(action)); break;
+        case GLFW_KEY_LEFT_SUPER:    user.add_keyboard_event(KeyButton::SUPER         , to_button_state(action)); break;
+        case GLFW_KEY_RIGHT_SUPER:   user.add_keyboard_event(KeyButton::SUPER         , to_button_state(action)); break;
 
         // arrow keys
-        case GLFW_KEY_UP:            user.add_keyboard_event(KeyButton::UP         , to_button_state(action)); break;
-        case GLFW_KEY_DOWN:          user.add_keyboard_event(KeyButton::DOWN       , to_button_state(action)); break;
-        case GLFW_KEY_LEFT:          user.add_keyboard_event(KeyButton::LEFT       , to_button_state(action)); break;
-        case GLFW_KEY_RIGHT:         user.add_keyboard_event(KeyButton::RIGHT      , to_button_state(action)); break;
+        case GLFW_KEY_UP:            user.add_keyboard_event(KeyButton::UP            , to_button_state(action)); break;
+        case GLFW_KEY_DOWN:          user.add_keyboard_event(KeyButton::DOWN          , to_button_state(action)); break;
+        case GLFW_KEY_LEFT:          user.add_keyboard_event(KeyButton::LEFT          , to_button_state(action)); break;
+        case GLFW_KEY_RIGHT:         user.add_keyboard_event(KeyButton::RIGHT         , to_button_state(action)); break;
 
         // numpad keys
-        case GLFW_KEY_0:             user.add_keyboard_event(KeyButton::D0         , to_button_state(action)); break;
-        case GLFW_KEY_1:             user.add_keyboard_event(KeyButton::D1         , to_button_state(action)); break;
-        case GLFW_KEY_2:             user.add_keyboard_event(KeyButton::D2         , to_button_state(action)); break;
-        case GLFW_KEY_3:             user.add_keyboard_event(KeyButton::D3         , to_button_state(action)); break;
-        case GLFW_KEY_4:             user.add_keyboard_event(KeyButton::D4         , to_button_state(action)); break;
-        case GLFW_KEY_5:             user.add_keyboard_event(KeyButton::D5         , to_button_state(action)); break;
-        case GLFW_KEY_6:             user.add_keyboard_event(KeyButton::D6         , to_button_state(action)); break;
-        case GLFW_KEY_7:             user.add_keyboard_event(KeyButton::D7         , to_button_state(action)); break;
-        case GLFW_KEY_8:             user.add_keyboard_event(KeyButton::D8         , to_button_state(action)); break;
-        case GLFW_KEY_9:             user.add_keyboard_event(KeyButton::D9         , to_button_state(action)); break;
+        case GLFW_KEY_0:             user.add_keyboard_event(KeyButton::D0            , to_button_state(action)); break;
+        case GLFW_KEY_1:             user.add_keyboard_event(KeyButton::D1            , to_button_state(action)); break;
+        case GLFW_KEY_2:             user.add_keyboard_event(KeyButton::D2            , to_button_state(action)); break;
+        case GLFW_KEY_3:             user.add_keyboard_event(KeyButton::D3            , to_button_state(action)); break;
+        case GLFW_KEY_4:             user.add_keyboard_event(KeyButton::D4            , to_button_state(action)); break;
+        case GLFW_KEY_5:             user.add_keyboard_event(KeyButton::D5            , to_button_state(action)); break;
+        case GLFW_KEY_6:             user.add_keyboard_event(KeyButton::D6            , to_button_state(action)); break;
+        case GLFW_KEY_7:             user.add_keyboard_event(KeyButton::D7            , to_button_state(action)); break;
+        case GLFW_KEY_8:             user.add_keyboard_event(KeyButton::D8            , to_button_state(action)); break;
+        case GLFW_KEY_9:             user.add_keyboard_event(KeyButton::D9            , to_button_state(action)); break;
 
         // function keys
-        case GLFW_KEY_F1:            user.add_keyboard_event(KeyButton::F1         , to_button_state(action)); break;
-        case GLFW_KEY_F2:            user.add_keyboard_event(KeyButton::F2         , to_button_state(action)); break;
-        case GLFW_KEY_F3:            user.add_keyboard_event(KeyButton::F3         , to_button_state(action)); break;
-        case GLFW_KEY_F4:            user.add_keyboard_event(KeyButton::F4         , to_button_state(action)); break;
-        case GLFW_KEY_F5:            user.add_keyboard_event(KeyButton::F5         , to_button_state(action)); break;
-        case GLFW_KEY_F6:            user.add_keyboard_event(KeyButton::F6         , to_button_state(action)); break;
-        case GLFW_KEY_F7:            user.add_keyboard_event(KeyButton::F7         , to_button_state(action)); break;
-        case GLFW_KEY_F8:            user.add_keyboard_event(KeyButton::F8         , to_button_state(action)); break;
-        case GLFW_KEY_F9:            user.add_keyboard_event(KeyButton::F9         , to_button_state(action)); break;
-        case GLFW_KEY_F10:           user.add_keyboard_event(KeyButton::F10        , to_button_state(action)); break;
-        case GLFW_KEY_F11:           user.add_keyboard_event(KeyButton::F11        , to_button_state(action)); break;
-        case GLFW_KEY_F12:           user.add_keyboard_event(KeyButton::F12        , to_button_state(action)); break;
+        case GLFW_KEY_F1:            user.add_keyboard_event(KeyButton::F1            , to_button_state(action)); break;
+        case GLFW_KEY_F2:            user.add_keyboard_event(KeyButton::F2            , to_button_state(action)); break;
+        case GLFW_KEY_F3:            user.add_keyboard_event(KeyButton::F3            , to_button_state(action)); break;
+        case GLFW_KEY_F4:            user.add_keyboard_event(KeyButton::F4            , to_button_state(action)); break;
+        case GLFW_KEY_F5:            user.add_keyboard_event(KeyButton::F5            , to_button_state(action)); break;
+        case GLFW_KEY_F6:            user.add_keyboard_event(KeyButton::F6            , to_button_state(action)); break;
+        case GLFW_KEY_F7:            user.add_keyboard_event(KeyButton::F7            , to_button_state(action)); break;
+        case GLFW_KEY_F8:            user.add_keyboard_event(KeyButton::F8            , to_button_state(action)); break;
+        case GLFW_KEY_F9:            user.add_keyboard_event(KeyButton::F9            , to_button_state(action)); break;
+        case GLFW_KEY_F10:           user.add_keyboard_event(KeyButton::F10           , to_button_state(action)); break;
+        case GLFW_KEY_F11:           user.add_keyboard_event(KeyButton::F11           , to_button_state(action)); break;
+        case GLFW_KEY_F12:           user.add_keyboard_event(KeyButton::F12           , to_button_state(action)); break;
 
-        // ascii keys
-        case GLFW_KEY_A:             user.add_keyboard_event(KeyButton::A          , to_button_state(action)); break;
-        case GLFW_KEY_B:             user.add_keyboard_event(KeyButton::B          , to_button_state(action)); break;
-        case GLFW_KEY_C:             user.add_keyboard_event(KeyButton::C          , to_button_state(action)); break;
-        case GLFW_KEY_D:             user.add_keyboard_event(KeyButton::D          , to_button_state(action)); break;
-        case GLFW_KEY_E:             user.add_keyboard_event(KeyButton::E          , to_button_state(action)); break;
-        case GLFW_KEY_F:             user.add_keyboard_event(KeyButton::F          , to_button_state(action)); break;
-        case GLFW_KEY_G:             user.add_keyboard_event(KeyButton::G          , to_button_state(action)); break;
-        case GLFW_KEY_H:             user.add_keyboard_event(KeyButton::H          , to_button_state(action)); break;
-        case GLFW_KEY_I:             user.add_keyboard_event(KeyButton::I          , to_button_state(action)); break;
-        case GLFW_KEY_J:             user.add_keyboard_event(KeyButton::J          , to_button_state(action)); break;
-        case GLFW_KEY_K:             user.add_keyboard_event(KeyButton::K          , to_button_state(action)); break;
-        case GLFW_KEY_L:             user.add_keyboard_event(KeyButton::L          , to_button_state(action)); break;
-        case GLFW_KEY_M:             user.add_keyboard_event(KeyButton::M          , to_button_state(action)); break;
-        case GLFW_KEY_N:             user.add_keyboard_event(KeyButton::N          , to_button_state(action)); break;
-        case GLFW_KEY_O:             user.add_keyboard_event(KeyButton::O          , to_button_state(action)); break;
-        case GLFW_KEY_P:             user.add_keyboard_event(KeyButton::P          , to_button_state(action)); break;
-        case GLFW_KEY_Q:             user.add_keyboard_event(KeyButton::Q          , to_button_state(action)); break;
-        case GLFW_KEY_R:             user.add_keyboard_event(KeyButton::R          , to_button_state(action)); break;
-        case GLFW_KEY_S:             user.add_keyboard_event(KeyButton::S          , to_button_state(action)); break;
-        case GLFW_KEY_T:             user.add_keyboard_event(KeyButton::T          , to_button_state(action)); break;
-        case GLFW_KEY_U:             user.add_keyboard_event(KeyButton::U          , to_button_state(action)); break;
-        case GLFW_KEY_V:             user.add_keyboard_event(KeyButton::V          , to_button_state(action)); break;
-        case GLFW_KEY_W:             user.add_keyboard_event(KeyButton::W          , to_button_state(action)); break;
-        case GLFW_KEY_X:             user.add_keyboard_event(KeyButton::X          , to_button_state(action)); break;
-        case GLFW_KEY_Y:             user.add_keyboard_event(KeyButton::Y          , to_button_state(action)); break;
-        case GLFW_KEY_Z:             user.add_keyboard_event(KeyButton::Z          , to_button_state(action)); break;
+        // character keys
+        case GLFW_KEY_A:             user.add_keyboard_event(KeyButton::A             , to_button_state(action)); break;
+        case GLFW_KEY_B:             user.add_keyboard_event(KeyButton::B             , to_button_state(action)); break;
+        case GLFW_KEY_C:             user.add_keyboard_event(KeyButton::C             , to_button_state(action)); break;
+        case GLFW_KEY_D:             user.add_keyboard_event(KeyButton::D             , to_button_state(action)); break;
+        case GLFW_KEY_E:             user.add_keyboard_event(KeyButton::E             , to_button_state(action)); break;
+        case GLFW_KEY_F:             user.add_keyboard_event(KeyButton::F             , to_button_state(action)); break;
+        case GLFW_KEY_G:             user.add_keyboard_event(KeyButton::G             , to_button_state(action)); break;
+        case GLFW_KEY_H:             user.add_keyboard_event(KeyButton::H             , to_button_state(action)); break;
+        case GLFW_KEY_I:             user.add_keyboard_event(KeyButton::I             , to_button_state(action)); break;
+        case GLFW_KEY_J:             user.add_keyboard_event(KeyButton::J             , to_button_state(action)); break;
+        case GLFW_KEY_K:             user.add_keyboard_event(KeyButton::K             , to_button_state(action)); break;
+        case GLFW_KEY_L:             user.add_keyboard_event(KeyButton::L             , to_button_state(action)); break;
+        case GLFW_KEY_M:             user.add_keyboard_event(KeyButton::M             , to_button_state(action)); break;
+        case GLFW_KEY_N:             user.add_keyboard_event(KeyButton::N             , to_button_state(action)); break;
+        case GLFW_KEY_O:             user.add_keyboard_event(KeyButton::O             , to_button_state(action)); break;
+        case GLFW_KEY_P:             user.add_keyboard_event(KeyButton::P             , to_button_state(action)); break;
+        case GLFW_KEY_Q:             user.add_keyboard_event(KeyButton::Q             , to_button_state(action)); break;
+        case GLFW_KEY_R:             user.add_keyboard_event(KeyButton::R             , to_button_state(action)); break;
+        case GLFW_KEY_S:             user.add_keyboard_event(KeyButton::S             , to_button_state(action)); break;
+        case GLFW_KEY_T:             user.add_keyboard_event(KeyButton::T             , to_button_state(action)); break;
+        case GLFW_KEY_U:             user.add_keyboard_event(KeyButton::U             , to_button_state(action)); break;
+        case GLFW_KEY_V:             user.add_keyboard_event(KeyButton::V             , to_button_state(action)); break;
+        case GLFW_KEY_W:             user.add_keyboard_event(KeyButton::W             , to_button_state(action)); break;
+        case GLFW_KEY_X:             user.add_keyboard_event(KeyButton::X             , to_button_state(action)); break;
+        case GLFW_KEY_Y:             user.add_keyboard_event(KeyButton::Y             , to_button_state(action)); break;
+        case GLFW_KEY_Z:             user.add_keyboard_event(KeyButton::Z             , to_button_state(action)); break;
+
+        // non-character ascii keys
+        case GLFW_KEY_APOSTROPHE:    user.add_keyboard_event(KeyButton::APOSTROPHE    , to_button_state(action)); break;
+        case GLFW_KEY_COMMA:         user.add_keyboard_event(KeyButton::COMMA         , to_button_state(action)); break;
+        case GLFW_KEY_MINUS:         user.add_keyboard_event(KeyButton::MINUS         , to_button_state(action)); break;
+        case GLFW_KEY_PERIOD:        user.add_keyboard_event(KeyButton::PERIOD        , to_button_state(action)); break;
+        case GLFW_KEY_SLASH:         user.add_keyboard_event(KeyButton::SLASH         , to_button_state(action)); break;
+        case GLFW_KEY_BACKSLASH:     user.add_keyboard_event(KeyButton::BACKSLASH     , to_button_state(action)); break;
+        case GLFW_KEY_SEMICOLON:     user.add_keyboard_event(KeyButton::SEMICOLON     , to_button_state(action)); break;
+        case GLFW_KEY_EQUAL:         user.add_keyboard_event(KeyButton::EQUAL         , to_button_state(action)); break;
+        case GLFW_KEY_LEFT_BRACKET:  user.add_keyboard_event(KeyButton::LEFT_BRACKET  , to_button_state(action)); break;
+        case GLFW_KEY_RIGHT_BRACKET: user.add_keyboard_event(KeyButton::RIGHT_BRACKET , to_button_state(action)); break;
+        case GLFW_KEY_GRAVE_ACCENT:  user.add_keyboard_event(KeyButton::GRAVE_ACCENT  , to_button_state(action)); break;
 
         default: get_logger()->warn("Unhandled key stroke!");
     }
     // clang-format off
+}
+
+static void key_character_callback(GLFWwindow* window, uint code)
+{
+    auto& user  = *static_cast<UserState*>(glfwGetWindowUserPointer(window));
+    user.add_character_event(code);
 }
 
 static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
@@ -285,6 +320,7 @@ static void bind_window_events(WindowHandle window)
     glfwSetWindowUserPointer(handle, user);
     glfwSetWindowCloseCallback(handle, window_close_callback);
     glfwSetKeyCallback(handle, key_callback);
+    glfwSetCharCallback(handle, key_character_callback);
     glfwSetCursorPosCallback(handle, mouse_position_callback);
     glfwSetMouseButtonCallback(handle, mouse_button_callback);
     glfwSetWindowSizeCallback(handle, [](GLFWwindow* window, int width, int height) {
