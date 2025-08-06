@@ -58,6 +58,13 @@ namespace lyra::rhi
 
         static auto api() -> ShaderAPI*;
 
+        // implicit conversion
+        Compiler() : handle() {}
+        Compiler(CompilerHandle handle) : handle(handle) {}
+
+        operator CompilerHandle() { return handle; }
+        operator CompilerHandle() const { return handle; }
+
         void destroy();
 
         auto compile(const Path& path) -> Own<ShaderModule>;

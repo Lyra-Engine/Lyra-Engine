@@ -14,6 +14,9 @@ void InputState::update(const WindowHandle& handle)
     // update mouse position
     mouse.position = query.mouse_position;
 
+    // update scroll movement
+    mouse.scroll = query.scroll_movement;
+
     // loop over events and update input state
     for (uint i = 0; i < query.num_events; i++) {
         const auto& event = query.input_events.at(i);

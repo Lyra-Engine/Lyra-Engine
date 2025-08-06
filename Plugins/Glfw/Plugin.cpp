@@ -56,6 +56,12 @@ struct UserState
         events.mouse_position.y = y;
     }
 
+    void set_scroll_movement(float x, float y)
+    {
+        events.scroll_movement.x = x;
+        events.scroll_movement.y = y;
+    }
+
     void add_mouse_event(MouseButton key, ButtonState state)
     {
         if (is_event_queue_full()) {
@@ -290,6 +296,12 @@ static void mouse_position_callback(GLFWwindow* window, double xpos, double ypos
     user.set_mouse_position(xpos, ypos);
 }
 
+static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    auto& user = *static_cast<UserState*>(glfwGetWindowUserPointer(window));
+    user.set_scroll_movement(xoffset, yoffset);
+}
+
 static void window_close_callback(GLFWwindow* window)
 {
     // clean up user states
@@ -323,6 +335,7 @@ static void bind_window_events(WindowHandle window)
     glfwSetCharCallback(handle, key_character_callback);
     glfwSetCursorPosCallback(handle, mouse_position_callback);
     glfwSetMouseButtonCallback(handle, mouse_button_callback);
+    glfwSetScrollCallback(handle, scroll_callback);
     glfwSetWindowSizeCallback(handle, [](GLFWwindow* window, int width, int height) {
         auto& user = *static_cast<UserState*>(glfwGetWindowUserPointer(window));
         std::invoke(user.callback, WindowEvent::RESIZE);

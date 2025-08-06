@@ -126,6 +126,11 @@ GPUExtent2D GPUSurface::get_current_extent() const
     return extent;
 }
 
+uint GPUSurface::get_image_count() const
+{
+    return RHI::api()->get_surface_frames(handle);
+}
+
 void GPUSurface::destroy() const
 {
     RHI::api()->delete_surface(handle);

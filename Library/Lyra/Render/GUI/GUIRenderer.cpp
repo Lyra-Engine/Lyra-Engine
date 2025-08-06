@@ -3,6 +3,7 @@
 #include <Lyra/Common/Pointer.h>
 #include <Lyra/Common/Function.h>
 #include <Lyra/Render/RHI/RHIInits.h>
+#include <Lyra/Render/RHI/RHITypes.h>
 #include <Lyra/Render/GUI/GUIRenderer.h>
 
 using namespace lyra;
@@ -281,12 +282,12 @@ static ImGuiMouseButton to_imgui_mouse_button(MouseButton button)
 }
 
 #pragma region GUIRenderer
-OwnedResource<GUIRenderer> GUIRenderer::init(Compiler* compiler, const GUIDescriptor& descriptor)
+OwnedResource<GUIRenderer> GUIRenderer::init(const GUIDescriptor& descriptor)
 {
     OwnedResource<GUIRenderer> gui(new GUIRenderer());
     gui->init_imgui_setup(descriptor);
     gui->init_platform_data(descriptor);
-    gui->init_renderer_data(compiler);
+    gui->init_renderer_data(descriptor);
     gui->init_multi_viewport(descriptor);
     gui->init_config_flags(descriptor);
     gui->init_backend_flags(descriptor);
@@ -302,7 +303,7 @@ void GUIRenderer::reset()
     // reclaim unused buffers
     for (auto it = renderer_data->garbage_buffers.begin(); it != renderer_data->garbage_buffers.end();) {
         auto& garbage = *it;
-        if (garbage.should_remove(renderer_data->image_count)) {
+        if (garbage.should_remove(renderer_data->frame_count)) {
             garbage.object.destroy();
             it = renderer_data->garbage_buffers.erase(it);
         } else {
@@ -313,7 +314,7 @@ void GUIRenderer::reset()
     // reclaim unused textures
     for (auto it = renderer_data->garbage_textures.begin(); it != renderer_data->garbage_textures.end();) {
         auto& garbage = *it;
-        if (garbage.should_remove(renderer_data->image_count)) {
+        if (garbage.should_remove(renderer_data->frame_count)) {
             if (garbage.object.texture.valid()) garbage.object.texture.destroy();
             if (garbage.object.view.valid()) garbage.object.view.destroy();
             it = renderer_data->garbage_textures.erase(it);
@@ -321,6 +322,9 @@ void GUIRenderer::reset()
             it++;
         }
     }
+
+    // update frame index
+    renderer_data->frame_index = (renderer_data->frame_index + 1) % renderer_data->frame_count;
 }
 
 void GUIRenderer::render(GPUCommandBuffer cmdbuffer, GPUSurfaceTexture backbuffer, ImDrawData* draw_data)
@@ -468,14 +472,20 @@ void GUIRenderer::init_platform_data(const GUIDescriptor& descriptor)
     create_window_context(descriptor.window, context);
 }
 
-void GUIRenderer::init_renderer_data(Compiler* compiler)
+void GUIRenderer::init_renderer_data(const GUIDescriptor& descriptor)
 {
     ImGuiIO& io = ImGui::GetIO();
     assert(io.BackendRendererUserData == nullptr && "Already initialized a renderer backend!");
 
-    renderer_data = std::make_unique<GUIRendererData>();
+    auto& device   = RHI::get_current_device();
+    auto  surface  = GPUSurface(descriptor.surface);
+    auto  compiler = Compiler(descriptor.compiler);
 
-    auto& device = RHI::get_current_device();
+    renderer_data              = std::make_unique<GUIRendererData>();
+    renderer_data->frame_count = surface.get_image_count();
+    renderer_data->frame_index = 0;
+    renderer_data->vbuffers.resize(renderer_data->frame_count);
+    renderer_data->ibuffers.resize(renderer_data->frame_count);
 
     // shader module
     auto module = execute([&]() {
@@ -483,11 +493,11 @@ void GUIRenderer::init_renderer_data(Compiler* compiler)
         desc.module = "imgui";
         desc.path   = "imgui.slang";
         desc.source = imgui_shader_source;
-        return compiler->compile(desc);
+        return compiler.compile(desc);
     });
 
     // shader reflection
-    auto refl = compiler->reflect({
+    auto refl = compiler.reflect({
         {*module, "vsmain"},
         {*module, "fsmain"},
     });
@@ -695,7 +705,7 @@ void GUIRenderer::process_texture(GPUCommandBuffer cmdbuffer, ImTextureData* tex
         update_texture(cmdbuffer, tex);
 
     // delete texture if necessary
-    if (tex->Status == ImTextureStatus_WantDestroy && tex->UnusedFrames >= renderer_data->image_count)
+    if (tex->Status == ImTextureStatus_WantDestroy)
         delete_texture(tex);
 }
 
@@ -782,8 +792,14 @@ void GUIRenderer::delete_texture(ImTextureData* tex)
 
     // deferred deletion of texture, because the current texture/view might still be used in some frames in flight
     auto& texinfo = renderer_data->textures.at(texid);
-    renderer_data->textures.remove(texid);
-    renderer_data->garbage_textures.push_back(GUIGarbageTexture{texinfo, 0});
+    if (texinfo.valid()) {
+        renderer_data->textures.remove(texid);
+        renderer_data->garbage_textures.push_back(GUIGarbageTexture{texinfo, (uint)tex->UnusedFrames});
+    }
+
+    // reset texture id
+    tex->SetTexID(ImTextureID_Invalid);
+    tex->SetStatus(ImTextureStatus_Destroyed);
 }
 
 GPUBuffer GUIRenderer::prepare_buffer(GPUBuffer buffer, uint size, GPUBufferUsageFlags usages)
@@ -819,24 +835,27 @@ void GUIRenderer::create_vertex_buffers(ImDrawData* draw_data)
     // no vertex/index data
     if (draw_data->TotalVtxCount == 0) return;
 
+    auto& vbuffer = renderer_data->vbuffers.at(renderer_data->frame_index);
+    auto& ibuffer = renderer_data->ibuffers.at(renderer_data->frame_index);
+
     // create/resize index buffer on the fly
-    renderer_data->ibuffer = prepare_buffer(
-        renderer_data->ibuffer,
+    ibuffer = prepare_buffer(
+        ibuffer,
         draw_data->TotalIdxCount * sizeof(ImDrawIdx),
         GPUBufferUsage::INDEX | GPUBufferUsage::MAP_WRITE);
 
     // create/resize vertex buffer on the fly
-    renderer_data->vbuffer = prepare_buffer(
-        renderer_data->vbuffer,
+    vbuffer = prepare_buffer(
+        vbuffer,
         draw_data->TotalVtxCount * sizeof(ImDrawVert),
         GPUBufferUsage::VERTEX | GPUBufferUsage::MAP_WRITE);
 
-    renderer_data->ibuffer.map(GPUMapMode::WRITE);
-    renderer_data->vbuffer.map(GPUMapMode::WRITE);
+    ibuffer.map(GPUMapMode::WRITE);
+    vbuffer.map(GPUMapMode::WRITE);
 
     // copy index/vertex from all cmdlists
-    auto idx_dst = renderer_data->ibuffer.get_mapped_range<ImDrawIdx>().data;
-    auto vtx_dst = renderer_data->vbuffer.get_mapped_range<ImDrawVert>().data;
+    auto idx_dst = ibuffer.get_mapped_range<ImDrawIdx>().data;
+    auto vtx_dst = vbuffer.get_mapped_range<ImDrawVert>().data;
     for (const ImDrawList* draw_list : draw_data->CmdLists) {
         std::memcpy(vtx_dst, draw_list->VtxBuffer.Data, draw_list->VtxBuffer.Size * sizeof(ImDrawVert));
         std::memcpy(idx_dst, draw_list->IdxBuffer.Data, draw_list->IdxBuffer.Size * sizeof(ImDrawIdx));
@@ -844,8 +863,8 @@ void GUIRenderer::create_vertex_buffers(ImDrawData* draw_data)
         idx_dst += draw_list->IdxBuffer.Size;
     }
 
-    renderer_data->ibuffer.unmap();
-    renderer_data->vbuffer.unmap();
+    ibuffer.unmap();
+    vbuffer.unmap();
 }
 
 void GUIRenderer::create_texture_descriptors()
@@ -886,8 +905,11 @@ void GUIRenderer::setup_render_state(GPUCommandBuffer cmdbuffer, ImDrawData* dra
 
     // bind index/vertex buffers
     if (draw_data->TotalVtxCount > 0) {
-        cmdbuffer.set_vertex_buffer(0, renderer_data->vbuffer);
-        cmdbuffer.set_index_buffer(renderer_data->ibuffer, sizeof(ImDrawIdx) == 2 ? GPUIndexFormat::UINT16 : GPUIndexFormat::UINT32);
+        auto& vbuffer = renderer_data->vbuffers.at(renderer_data->frame_index);
+        auto& ibuffer = renderer_data->ibuffers.at(renderer_data->frame_index);
+        auto  iformat = sizeof(ImDrawIdx) == 2 ? GPUIndexFormat::UINT16 : GPUIndexFormat::UINT32;
+        cmdbuffer.set_vertex_buffer(0, vbuffer);
+        cmdbuffer.set_index_buffer(ibuffer, iformat);
     }
 
     // setup scale and translation:
@@ -954,6 +976,11 @@ void GUIRenderer::update_mouse_state(ImGuiIO& io, const GUIWindowContext& ctx)
         Window::api()->get_window_pos(ctx.window, xpos, ypos);
         x += static_cast<float>(xpos);
         y += static_cast<float>(ypos);
+    }
+
+    // update mouse scroll wheel
+    if (std::abs(query.scroll_movement.x) + std::abs(query.scroll_movement.y)) {
+        io.AddMouseWheelEvent(query.scroll_movement.x, query.scroll_movement.y);
     }
 
     // account for DPI scaling

@@ -11,8 +11,8 @@
 #include <Lyra/Window/WSIAPI.h>
 #include <Lyra/Window/WSITypes.h>
 #include <Lyra/Render/RHI/RHIAPI.h>
-#include <Lyra/Render/RHI/RHITypes.h>
-#include <Lyra/Render/SLC/SLCTypes.h>
+#include <Lyra/Render/RHI/RHIAPI.h>
+#include <Lyra/Render/SLC/SLCAPI.h>
 
 namespace lyra::gui
 {
@@ -29,7 +29,9 @@ namespace lyra::gui
 
     struct GUIDescriptor
     {
-        WindowHandle window; // primary window
+        WindowHandle     window;  // primary window
+        GPUSurfaceHandle surface; // primary surface/swapchain
+        CompilerHandle   compiler;
 
         bool viewports = true;
     };
@@ -66,8 +68,12 @@ namespace lyra::gui
 
     struct GUITextureDeleter
     {
-        // doing nothing here, deferred deletion
-        void operator()(GUITexture& texture) {}
+        // deferred deletion, only reset the handles
+        void operator()(GUITexture& texture)
+        {
+            texture.texture.handle.reset();
+            texture.view.handle.reset();
+        }
     };
 
     using GUIGarbageBuffer   = GUIGarbage<GPUBuffer>;
@@ -82,20 +88,21 @@ namespace lyra::gui
         GPUPipelineLayout                playout;
         GPUShaderModule                  vshader;
         GPUShaderModule                  fshader;
-        GPUBuffer                        vbuffer;
-        GPUBuffer                        ibuffer;
         GPUSampler                       sampler;
+        Vector<GPUBuffer>                vbuffers;
+        Vector<GPUBuffer>                ibuffers;
         Vector<GPUBindGroupLayoutHandle> blayouts;
         GUITextureManager                textures;
         GUIGarbageBuffers                garbage_buffers;
         GUIGarbageTextures               garbage_textures;
-        uint                             image_count = 3;
+        uint                             frame_count = 3;
+        uint                             frame_index = 0;
     };
 
     struct GUIRenderer
     {
     public:
-        static auto init(Compiler* compiler, const GUIDescriptor& descriptor) -> OwnedResource<GUIRenderer>;
+        static auto init(const GUIDescriptor& descriptor) -> OwnedResource<GUIRenderer>;
 
         void reset(); // start of a new frame
         void render(GPUCommandBuffer cmdbuffer, GPUSurfaceTexture backbuffer, ImDrawData* draw_data);
@@ -109,7 +116,7 @@ namespace lyra::gui
     private:
         void init_imgui_setup(const GUIDescriptor& descriptor);
         void init_platform_data(const GUIDescriptor& descriptor);
-        void init_renderer_data(Compiler* compiler);
+        void init_renderer_data(const GUIDescriptor& descriptor);
         void init_multi_viewport(const GUIDescriptor& descriptor);
         void init_config_flags(const GUIDescriptor& descriptor);
         void init_backend_flags(const GUIDescriptor& descriptor);

@@ -550,6 +550,7 @@ namespace api
     void delete_surface(GPUSurfaceHandle surface);
     bool get_surface_extent(GPUSurfaceHandle surface, GPUExtent2D& extent);
     bool get_surface_format(GPUSurfaceHandle surface, GPUTextureFormat& format);
+    uint get_surface_frames(GPUSurfaceHandle surface);
 
     // adapter apis
     bool create_adapter(GPUAdapter& adapter, const GPUAdapterDescriptor& descriptor);

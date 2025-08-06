@@ -17,11 +17,11 @@ D3D12Swapchain::D3D12Swapchain(const GPUSurfaceDescriptor& desc) : desc(desc)
     recreate();
 
     uint image_frame_count = static_cast<uint>(frames.size());
-    uint logic_frame_count = static_cast<uint>(desc.frames_inflight);
+    uint logic_frame_count = static_cast<uint>(desc.frames);
 
     // initialize swap frame
-    assert(frames.size() == 0 || frames.size() == desc.frames_inflight);
-    for (uint i = 0; i < desc.frames_inflight; i++)
+    assert(frames.size() == 0 || frames.size() == desc.frames);
+    for (uint i = 0; i < desc.frames; i++)
         frames.at(i).init(this, i, extent.width, extent.height);
 
     // create image available semaphores
@@ -45,9 +45,9 @@ D3D12Swapchain::D3D12Swapchain(const GPUSurfaceDescriptor& desc) : desc(desc)
     // create frames if not already done so
     auto rhi                   = get_rhi();
     uint existing_frames_count = static_cast<uint>(rhi->frames.size());
-    if (existing_frames_count < desc.frames_inflight) {
-        rhi->frames.resize(desc.frames_inflight);
-        for (uint i = existing_frames_count; i < desc.frames_inflight; i++)
+    if (existing_frames_count < desc.frames) {
+        rhi->frames.resize(desc.frames);
+        for (uint i = existing_frames_count; i < desc.frames; i++)
             rhi->frames.at(i).init();
     }
 }
@@ -63,7 +63,7 @@ void D3D12Swapchain::recreate()
     extent.height = height;
 
     // query number of backbuffers
-    uint num_backbuffers = desc.frames_inflight;
+    uint num_backbuffers = desc.frames;
 
     // present mode
     present_mode = infer_present_mode(desc.present_mode);
@@ -100,7 +100,7 @@ void D3D12Swapchain::recreate()
     uint existing_frames_count = static_cast<uint>(frames.size());
     assert(frames.size() == 0 || frames.size() == num_backbuffers);
     frames.resize(num_backbuffers);
-    for (uint i = existing_frames_count; i < desc.frames_inflight; i++)
+    for (uint i = existing_frames_count; i < desc.frames; i++)
         frames.at(i).init(this, i, extent.width, extent.height);
 }
 
@@ -232,7 +232,7 @@ bool api::acquire_next_frame(GPUSurfaceHandle surface, GPUTextureHandle& texture
 
     // query the swapchain
     auto& swp = fetch_resource(rhi->swapchains, surface);
-    auto  ind = rhi->current_frame_index % swp.desc.frames_inflight;
+    auto  ind = rhi->current_frame_index % swp.desc.frames;
 
     // backbuffer
     uint  backbuffer_index   = swp.swapchain->GetCurrentBackBufferIndex();

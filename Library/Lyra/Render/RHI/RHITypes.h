@@ -233,6 +233,10 @@ namespace lyra::rhi
     {
         GPURenderPipelineHandle handle;
 
+        // implicit conversion
+        GPURenderPipeline() : handle() {}
+        GPURenderPipeline(GPURenderPipelineHandle handle) : handle(handle) {}
+
         void destroy();
 
         bool valid() const { return handle.valid(); }
@@ -243,6 +247,10 @@ namespace lyra::rhi
     struct GPUComputePipeline : public GPUObjectBase
     {
         GPUComputePipelineHandle handle;
+
+        // implicit conversion
+        GPUComputePipeline() : handle() {}
+        GPUComputePipeline(GPUComputePipelineHandle handle) : handle(handle) {}
 
         void destroy();
 
@@ -255,6 +263,10 @@ namespace lyra::rhi
     {
         GPURayTracingPipelineHandle handle;
 
+        // implicit conversion
+        GPURayTracingPipeline() : handle() {}
+        GPURayTracingPipeline(GPURayTracingPipelineHandle handle) : handle(handle) {}
+
         void destroy();
 
         bool valid() const { return handle.valid(); }
@@ -265,6 +277,10 @@ namespace lyra::rhi
     struct GPUCommandEncoder : public GPUObjectBase
     {
         GPUCommandEncoderHandle handle;
+
+        // implicit conversion
+        GPUCommandEncoder() : handle() {}
+        GPUCommandEncoder(GPUCommandEncoderHandle handle) : handle(handle) {}
 
         void insert_debug_marker(CString marker_label);
 
@@ -353,6 +369,10 @@ namespace lyra::rhi
 
     struct GPUCommandBundle : public GPUCommandEncoder
     {
+        // implicit conversion
+        GPUCommandBundle() : GPUCommandEncoder() {}
+        GPUCommandBundle(GPUCommandEncoderHandle handle) : GPUCommandEncoder(handle) {}
+
         bool valid() const { return handle.valid(); }
 
         operator GPUCommandEncoderHandle() const { return handle; }
@@ -360,6 +380,10 @@ namespace lyra::rhi
 
     struct GPUCommandBuffer : public GPUCommandEncoder
     {
+        // implicit conversion
+        GPUCommandBuffer() : GPUCommandEncoder() {}
+        GPUCommandBuffer(GPUCommandEncoderHandle handle) : GPUCommandEncoder(handle) {}
+
         bool valid() const { return handle.valid(); }
 
         operator GPUCommandEncoderHandle() const { return handle; }
@@ -431,11 +455,17 @@ namespace lyra::rhi
     {
         GPUSurfaceHandle handle;
 
+        // implicit conversion
+        GPUSurface() : handle() {}
+        GPUSurface(GPUSurfaceHandle handle) : handle(handle) {}
+
         auto get_current_texture() const -> GPUSurfaceTexture;
 
         auto get_current_format() const -> GPUTextureFormat;
 
         auto get_current_extent() const -> GPUExtent2D;
+
+        uint get_image_count() const;
 
         auto destroy() const -> void;
 

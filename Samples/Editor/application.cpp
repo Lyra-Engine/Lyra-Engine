@@ -50,8 +50,10 @@ void Application::init()
     gui = lyra::execute([&]() {
         auto desc      = GUIDescriptor{};
         desc.window    = this->desc.window;
+        desc.surface   = surface;
+        desc.compiler  = *slc;
         desc.viewports = true;
-        return GUIRenderer::init(slc.get(), desc);
+        return GUIRenderer::init(desc);
     });
 
     // need to export the ImGui Context from DLL

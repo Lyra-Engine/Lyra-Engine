@@ -26,6 +26,7 @@ namespace lyra::rhi
         void (*delete_surface)(GPUSurfaceHandle surface);
         bool (*get_surface_extent)(GPUSurfaceHandle surface, GPUExtent2D& extent);
         bool (*get_surface_format)(GPUSurfaceHandle surface, GPUTextureFormat& format);
+        uint (*get_surface_frames)(GPUSurfaceHandle surface);
 
         bool (*create_device)(const GPUDeviceDescriptor& descriptor);
         void (*delete_device)();

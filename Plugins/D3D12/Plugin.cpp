@@ -31,6 +31,14 @@ bool api::get_surface_format(GPUSurfaceHandle surface, GPUTextureFormat& format)
     return true;
 }
 
+uint api::get_surface_frames(GPUSurfaceHandle surface)
+{
+    auto rhi = get_rhi();
+
+    auto& swapchain = fetch_resource(rhi->swapchains, surface);
+    return static_cast<uint>(swapchain.frames.size());
+}
+
 bool api::create_surface(GPUSurfaceHandle& surface, const GPUSurfaceDescriptor& desc)
 {
     auto rhi = get_rhi();
@@ -402,6 +410,7 @@ LYRA_EXPORT auto create() -> RenderAPI
     api.delete_surface                   = api::delete_surface;
     api.get_surface_extent               = api::get_surface_extent;
     api.get_surface_format               = api::get_surface_format;
+    api.get_surface_frames               = api::get_surface_frames;
     api.create_buffer                    = api::create_buffer;
     api.delete_buffer                    = api::delete_buffer;
     api.create_texture                   = api::create_texture;

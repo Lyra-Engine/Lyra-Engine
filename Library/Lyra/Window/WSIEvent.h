@@ -13,6 +13,13 @@ namespace lyra::wsi
         float y;
     };
 
+    // scroll movement
+    struct ScrollMovement
+    {
+        float x;
+        float y;
+    };
+
     // character typed event
     struct CharacterEvent
     {
@@ -54,6 +61,7 @@ namespace lyra::wsi
         uint                          num_events = 0;
         Array<InputEvent, MAX_EVENTS> input_events;
         MousePosition                 mouse_position;
+        ScrollMovement                scroll_movement;
     };
 
 } // namespace lyra::wsi
