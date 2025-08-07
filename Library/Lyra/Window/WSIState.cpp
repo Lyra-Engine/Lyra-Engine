@@ -11,27 +11,19 @@ void InputState::update(const WindowHandle& handle)
     InputEventQuery query{};
     Window::api()->query_input_events(handle, query);
 
-    // update mouse position
-    mouse.position = query.mouse_position;
-
-    // update scroll movement
-    mouse.scroll = query.scroll_movement;
-
     // loop over events and update input state
     for (uint i = 0; i < query.num_events; i++) {
         const auto& event = query.input_events.at(i);
         switch (event.type) {
-            case InputEventType::MOUSE:
-                mouse.status.at(static_cast<uint>(event.mouse.button)) = event.mouse.state;
+            case InputEventType::MOUSE_BUTTON:
+                mouse.status.at(static_cast<uint>(event.mouse_button.button)) = event.mouse_button.state;
                 break;
-            case InputEventType::KEYBOARD:
-                keyboard.status.at(static_cast<uint>(event.keyboard.button)) = event.keyboard.state;
-                break;
-            case InputEventType::CHARACTER:
-                // ignore character inputs for now
+            case InputEventType::KEY_BUTTON:
+                keyboard.status.at(static_cast<uint>(event.key_button.button)) = event.key_button.state;
                 break;
             default:
-                assert(!!!"Invalid window input event type!");
+                // TODO: ignore other events for now
+                break;
         }
     }
 }
@@ -57,8 +49,8 @@ bool WindowInput::is_mouse_moved(MouseButton button) const
 {
     auto& curr_mouse = current_state().mouse;
     auto& prev_mouse = previous_state().mouse;
-    float delta_x    = std::abs(curr_mouse.position.x - prev_mouse.position.x);
-    float delta_y    = std::abs(curr_mouse.position.y - prev_mouse.position.y);
+    float delta_x    = std::abs(curr_mouse.position.xpos - prev_mouse.position.xpos);
+    float delta_y    = std::abs(curr_mouse.position.ypos - prev_mouse.position.ypos);
     return (prev_mouse.status[(int)button] == ButtonState::OFF) &&
            (curr_mouse.status[(int)button] == ButtonState::OFF) &&
            ((delta_x > 1) || (delta_y > 1));
@@ -68,8 +60,8 @@ bool WindowInput::is_mouse_dragged(MouseButton button) const
 {
     auto& curr_mouse = current_state().mouse;
     auto& prev_mouse = previous_state().mouse;
-    float delta_x    = std::abs(curr_mouse.position.x - prev_mouse.position.x);
-    float delta_y    = std::abs(curr_mouse.position.y - prev_mouse.position.y);
+    float delta_x    = std::abs(curr_mouse.position.xpos - prev_mouse.position.xpos);
+    float delta_y    = std::abs(curr_mouse.position.ypos - prev_mouse.position.ypos);
     return (prev_mouse.status[(int)button] == ButtonState::ON) &&
            (curr_mouse.status[(int)button] == ButtonState::ON) &&
            ((delta_x > 1) || (delta_y > 1));

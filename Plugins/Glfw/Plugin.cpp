@@ -50,16 +50,68 @@ struct UserState
         return events.num_events >= events.input_events.size();
     }
 
-    void set_mouse_position(float x, float y)
+    void add_mouse_move_event(float xpos, float ypos)
     {
-        events.mouse_position.x = x;
-        events.mouse_position.y = y;
+        if (is_event_queue_full()) {
+            get_logger()->warn("Ignore mouse move event beacause event queue is full!");
+            return;
+        }
+
+        auto& event           = events.input_events[events.num_events++];
+        event.type            = InputEventType::MOUSE_MOVE;
+        event.mouse_move.xpos = xpos;
+        event.mouse_move.ypos = ypos;
     }
 
-    void set_scroll_movement(float x, float y)
+    void add_mouse_wheel_event(float x, float y)
     {
-        events.scroll_movement.x = x;
-        events.scroll_movement.y = y;
+        if (is_event_queue_full()) {
+            get_logger()->warn("Ignore mouse wheel event beacause event queue is full!");
+            return;
+        }
+
+        auto& event         = events.input_events[events.num_events++];
+        event.type          = InputEventType::MOUSE_WHEEL;
+        event.mouse_wheel.x = x;
+        event.mouse_wheel.y = y;
+    }
+
+    void add_window_move_event(int xpos, int ypos)
+    {
+        if (is_event_queue_full()) {
+            get_logger()->warn("Ignore window move event beacause event queue is full!");
+            return;
+        }
+
+        auto& event            = events.input_events[events.num_events++];
+        event.type             = InputEventType::WINDOW_MOVE;
+        event.window_move.xpos = static_cast<uint>(std::max(0, xpos));
+        event.window_move.ypos = static_cast<uint>(std::max(0, ypos));
+    }
+
+    void add_window_focus_event(bool focus)
+    {
+        if (is_event_queue_full()) {
+            get_logger()->warn("Ignore window focus event beacause event queue is full!");
+            return;
+        }
+
+        auto& event                = events.input_events[events.num_events++];
+        event.type                 = InputEventType::WINDOW_FOCUS;
+        event.window_focus.focused = focus;
+    }
+
+    void add_win_resize_event(int width, int height)
+    {
+        if (is_event_queue_full()) {
+            get_logger()->warn("Ignore window resize event beacause event queue is full!");
+            return;
+        }
+
+        auto& event                = events.input_events[events.num_events++];
+        event.type                 = InputEventType::WINDOW_RESIZE;
+        event.window_resize.width  = static_cast<uint>(std::max(0, width));
+        event.window_resize.height = static_cast<uint>(std::max(0, height));
     }
 
     void add_mouse_event(MouseButton key, ButtonState state)
@@ -69,10 +121,10 @@ struct UserState
             return;
         }
 
-        auto& event        = events.input_events[events.num_events++];
-        event.type         = InputEventType::MOUSE;
-        event.mouse.button = key;
-        event.mouse.state  = state;
+        auto& event               = events.input_events[events.num_events++];
+        event.type                = InputEventType::MOUSE_BUTTON;
+        event.mouse_button.button = key;
+        event.mouse_button.state  = state;
     }
 
     void add_keyboard_event(KeyButton key, ButtonState state)
@@ -82,10 +134,10 @@ struct UserState
             return;
         }
 
-        auto& event           = events.input_events[events.num_events++];
-        event.type            = InputEventType::KEYBOARD;
-        event.keyboard.button = key;
-        event.keyboard.state  = state;
+        auto& event             = events.input_events[events.num_events++];
+        event.type              = InputEventType::KEY_BUTTON;
+        event.key_button.button = key;
+        event.key_button.state  = state;
     }
 
     void add_character_event(uint code)
@@ -95,9 +147,9 @@ struct UserState
             return;
         }
 
-        auto& event          = events.input_events[events.num_events++];
-        event.type           = InputEventType::CHARACTER;
-        event.character.code = code;
+        auto& event           = events.input_events[events.num_events++];
+        event.type            = InputEventType::KEY_TYPING;
+        event.key_typing.code = code;
     }
 };
 
@@ -293,13 +345,13 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
 static void mouse_position_callback(GLFWwindow* window, double xpos, double ypos)
 {
     auto& user = *static_cast<UserState*>(glfwGetWindowUserPointer(window));
-    user.set_mouse_position(xpos, ypos);
+    user.add_mouse_move_event(xpos, ypos);
 }
 
-static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+static void mouse_scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     auto& user = *static_cast<UserState*>(glfwGetWindowUserPointer(window));
-    user.set_scroll_movement(xoffset, yoffset);
+    user.add_mouse_wheel_event(xoffset, yoffset);
 }
 
 static void window_close_callback(GLFWwindow* window)
@@ -307,7 +359,6 @@ static void window_close_callback(GLFWwindow* window)
     // clean up user states
     auto user = static_cast<UserState*>(glfwGetWindowUserPointer(window));
     user->callback(WindowEvent::CLOSE);
-    delete user;
 
     // find corresponding window handle
     auto it = std::find_if(
@@ -320,6 +371,33 @@ static void window_close_callback(GLFWwindow* window)
     // remove window from tracking
     if (it != global_event_loop.windows.end())
         global_event_loop.windows.erase(it);
+
+    // hide window on close
+    glfwHideWindow(window);
+}
+
+static void window_position_callback(GLFWwindow* window, int xpos, int ypos)
+{
+    // clean up user states
+    auto user = static_cast<UserState*>(glfwGetWindowUserPointer(window));
+    user->add_window_move_event(xpos, ypos);
+}
+
+static void window_focus_callback(GLFWwindow* window, int focused)
+{
+    // clean up user states
+    auto user = static_cast<UserState*>(glfwGetWindowUserPointer(window));
+    user->add_window_focus_event(focused);
+}
+
+static void window_resize_callback(GLFWwindow* window, int width, int height)
+{
+    // clean up user states
+    auto user = static_cast<UserState*>(glfwGetWindowUserPointer(window));
+    user->add_win_resize_event(width, height);
+
+    // call user callback function
+    std::invoke(user->callback, WindowEvent::RESIZE);
 }
 
 static void bind_window_events(WindowHandle window)
@@ -335,16 +413,21 @@ static void bind_window_events(WindowHandle window)
     glfwSetCharCallback(handle, key_character_callback);
     glfwSetCursorPosCallback(handle, mouse_position_callback);
     glfwSetMouseButtonCallback(handle, mouse_button_callback);
-    glfwSetScrollCallback(handle, scroll_callback);
-    glfwSetWindowSizeCallback(handle, [](GLFWwindow* window, int width, int height) {
-        auto& user = *static_cast<UserState*>(glfwGetWindowUserPointer(window));
-        std::invoke(user.callback, WindowEvent::RESIZE);
-    });
+    glfwSetScrollCallback(handle, mouse_scroll_callback);
+    glfwSetWindowPosCallback(handle, window_position_callback);
+    glfwSetWindowFocusCallback(handle, window_focus_callback);
+    glfwSetWindowSizeCallback(handle, window_resize_callback);
 }
 
 static bool create_window(const WindowDescriptor& desc, WindowHandle& window)
 {
+    // no OpenGL context
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+
+    // set the window hint for no decorations
+    if (!desc.flags.contains(WindowFlag::DECORATED))
+        glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+
     GLFWwindow* win = glfwCreateWindow(desc.width, desc.height, desc.title, NULL, NULL);
     if (win != nullptr) {
         create_window_handle(win, window);
@@ -441,7 +524,9 @@ static void query_input_events(WindowHandle window, InputEventQuery& query)
 
 static auto delete_window(WindowHandle window) -> void
 {
-    glfwDestroyWindow(reinterpret_cast<GLFWwindow*>(window.window));
+    auto handle = reinterpret_cast<GLFWwindow*>(window.window);
+    delete static_cast<UserState*>(glfwGetWindowUserPointer(handle));
+    glfwDestroyWindow(handle);
 }
 
 static void show_window(WindowHandle window)
@@ -472,6 +557,7 @@ static void run_in_loop()
         for (auto& window : global_event_loop.windows) {
             auto  handle = reinterpret_cast<GLFWwindow*>(window.window);
             auto& user   = *static_cast<UserState*>(glfwGetWindowUserPointer(handle));
+
             std::invoke(user.callback, WindowEvent::UPDATE);
         }
 
@@ -498,6 +584,54 @@ static void run_in_loop()
     RHI::wait();
 }
 
+static void list_monitors(uint& count, MonitorInfo* monitor_infos)
+{
+    static_assert(sizeof(uint) == sizeof(int));
+
+    auto monitors = glfwGetMonitors(reinterpret_cast<int*>(&count));
+    if (monitor_infos == nullptr) return;
+
+    for (uint i = 0; i < count; i++) {
+        auto  monitor = monitors[i];
+        auto& info    = monitor_infos[i];
+
+        const GLFWvidmode* vid_mode = glfwGetVideoMode(monitor);
+        if (vid_mode == nullptr)
+            continue; // failed to get video mode (e.g. Emscripten does not support this function)
+
+        int monitor_pos_x, monitor_pos_y;
+        glfwGetMonitorPos(monitor, &monitor_pos_x, &monitor_pos_y);
+
+        int workarea_pos_x, workarea_pos_y;
+        int workarea_width, workarea_height;
+        glfwGetMonitorWorkarea(monitor, &workarea_pos_x, &workarea_pos_y, &workarea_width, &workarea_height);
+
+        float scale_x, scale_y;
+        glfwGetMonitorContentScale(monitor, &scale_x, &scale_y);
+
+        info.monitor_pos_x  = monitor_pos_x;
+        info.monitor_pos_y  = monitor_pos_y;
+        info.monitor_width  = vid_mode->width;
+        info.monitor_height = vid_mode->height;
+
+        // workaround a small GLFW issue reporting zero on monitor changes: https://github.com/glfw/glfw/pull/1761
+        if (workarea_width > 0 && workarea_height > 0) {
+            info.workarea_pos_x  = workarea_pos_x;
+            info.workarea_pos_y  = workarea_pos_y;
+            info.workarea_width  = workarea_width;
+            info.workarea_height = workarea_height;
+        } else {
+            info.workarea_pos_x  = info.monitor_pos_x;
+            info.workarea_pos_y  = info.monitor_pos_y;
+            info.workarea_width  = info.monitor_width;
+            info.workarea_height = info.monitor_height;
+        }
+
+        info.dpi_scale_x = scale_x;
+        info.dpi_scale_y = scale_y;
+    }
+}
+
 LYRA_EXPORT auto prepare() -> void
 {
     if (!glfwInit()) {
@@ -516,6 +650,7 @@ LYRA_EXPORT auto create() -> WindowAPI
 {
     auto api                 = WindowAPI{};
     api.get_api_name         = get_api_name;
+    api.list_monitors        = list_monitors;
     api.create_window        = create_window;
     api.delete_window        = delete_window;
     api.set_window_pos       = set_window_pos;

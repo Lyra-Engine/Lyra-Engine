@@ -16,8 +16,8 @@ namespace lyra::wsi
     {
         static constexpr size_t COUNT = magic_enum::enum_count<MouseButton>();
 
-        MousePosition             position;
-        ScrollMovement            scroll;
+        MouseMoveEvent            position;
+        MouseWheelEvent           scroll;
         Array<ButtonState, COUNT> status;
     };
 

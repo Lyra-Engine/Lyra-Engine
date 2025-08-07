@@ -6,38 +6,58 @@
 
 namespace lyra::wsi
 {
-    // mouse movement / position
-    struct MousePosition
-    {
-        float x;
-        float y;
-    };
-
-    // scroll movement
-    struct ScrollMovement
-    {
-        float x;
-        float y;
-    };
-
     // character typed event
-    struct CharacterEvent
+    struct KeyTypingEvent
     {
         uint code;
     };
 
     // keyboard press/release event
-    struct KeyboardEvent
+    struct KeyButtonEvent
     {
         KeyButton   button;
         ButtonState state;
     };
 
+    // wheel movement
+    struct MouseWheelEvent
+    {
+        float x;
+        float y;
+    };
+
+    // mouse movement / position
+    struct MouseMoveEvent
+    {
+        float xpos;
+        float ypos;
+    };
+
     // mouse click press/release event
-    struct MouseEvent
+    struct MouseButtonEvent
     {
         MouseButton button;
         ButtonState state;
+    };
+
+    // window movement event
+    struct WindowMoveEvent
+    {
+        uint xpos;
+        uint ypos;
+    };
+
+    // window focus event
+    struct WindowFocusEvent
+    {
+        bool focused;
+    };
+
+    // window resize event
+    struct WindowResizeEvent
+    {
+        uint width;
+        uint height;
     };
 
     // unified keyboard/mouse input event
@@ -46,9 +66,14 @@ namespace lyra::wsi
         InputEventType type;
         union
         {
-            MouseEvent     mouse;
-            KeyboardEvent  keyboard;
-            CharacterEvent character;
+            KeyTypingEvent    key_typing;
+            KeyButtonEvent    key_button;
+            MouseMoveEvent    mouse_move;
+            MouseWheelEvent   mouse_wheel;
+            MouseButtonEvent  mouse_button;
+            WindowMoveEvent   window_move;
+            WindowFocusEvent  window_focus;
+            WindowResizeEvent window_resize;
         };
     };
 
@@ -60,8 +85,6 @@ namespace lyra::wsi
 
         uint                          num_events = 0;
         Array<InputEvent, MAX_EVENTS> input_events;
-        MousePosition                 mouse_position;
-        ScrollMovement                scroll_movement;
     };
 
 } // namespace lyra::wsi

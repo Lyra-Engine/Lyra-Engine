@@ -23,9 +23,14 @@ namespace lyra::wsi
 
     enum struct InputEventType : uint
     {
-        MOUSE,
-        KEYBOARD,
-        CHARACTER,
+        KEY_TYPING,
+        KEY_BUTTON,
+        MOUSE_MOVE,
+        MOUSE_WHEEL,
+        MOUSE_BUTTON,
+        WINDOW_MOVE,
+        WINDOW_FOCUS,
+        WINDOW_RESIZE,
     };
 
     enum struct ButtonState : uint

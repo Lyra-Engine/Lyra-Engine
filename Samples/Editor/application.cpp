@@ -68,18 +68,17 @@ void Application::destroy()
 void Application::update(const Window& window)
 {
     ImGui::NewFrame();
+
     ImGui::ShowDemoWindow();
 
-    Vector<char>    name(1024, 0);
-    Array<float, 3> scale = {};
-    ImGui::Begin("Hello");
-    ImGui::InputText("Name", name.data(), 1024);
-    ImGui::InputFloat3("Scale", scale.data());
-    ImGui::End();
+    // Vector<char>    name(1024, 0);
+    // Array<float, 3> scale = {};
+    // ImGui::Begin("Hello");
+    // ImGui::InputText("Name", name.data(), 1024);
+    // ImGui::InputFloat3("Scale", scale.data());
+    // ImGui::End();
 
     ImGui::Render();
-
-    gui->update();
 }
 
 void Application::render()
@@ -98,17 +97,34 @@ void Application::render()
     command.wait(backbuffer.available, GPUBarrierSync::PIXEL_SHADING);
     command.signal(backbuffer.complete, GPUBarrierSync::RENDER_TARGET);
 
+    // color attachments
+    auto color_attachment        = GPURenderPassColorAttachment{};
+    color_attachment.clear_value = GPUColor{0.0f, 0.0f, 0.0f, 0.0f};
+    color_attachment.load_op     = GPULoadOp::CLEAR;
+    color_attachment.store_op    = GPUStoreOp::STORE;
+    color_attachment.view        = backbuffer.view;
+
+    // render pass info
+    auto render_pass                     = GPURenderPassDescriptor{};
+    render_pass.color_attachments        = color_attachment;
+    render_pass.depth_stencil_attachment = {};
+
+    gui->update();
+    gui->begin();
+    gui->prepare(command);
+
     // command recording
     command.resource_barrier(state_transition(backbuffer.texture, undefined_state(), color_attachment_state()));
-    {
-        gui->reset();
-        gui->render(command, backbuffer, ImGui::GetDrawData());
-    }
+    command.begin_render_pass(render_pass);
+    gui->render(command, backbuffer);
+    command.end_render_pass();
     command.resource_barrier(state_transition(backbuffer.texture, color_attachment_state(), present_src_state()));
     command.submit();
 
     // swapchain presentation
     backbuffer.present();
+
+    gui->end();
 }
 
 void Application::resize()

@@ -69,7 +69,7 @@ void VulkanSwapchain::recreate()
 
     auto create_info             = VkSwapchainCreateInfoKHR{};
     create_info.sType            = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    create_info.surface          = rhi->surface;
+    create_info.surface          = surface;
     create_info.minImageCount    = image_count;
     create_info.imageFormat      = surface_format.format;
     create_info.imageColorSpace  = surface_format.colorSpace;
@@ -81,7 +81,7 @@ void VulkanSwapchain::recreate()
     create_info.preTransform     = swapchain_support.capabilities.currentTransform;
     create_info.compositeAlpha   = vkenum(desc.alpha_mode);
 
-    auto indices              = find_queue_family_indices(rhi->adapter, rhi->surface);
+    auto indices              = find_queue_family_indices(rhi->adapter, surface);
     uint queueFamilyIndices[] = {indices.graphics.value(), indices.present.value()};
     if (indices.graphics != indices.present) {
         create_info.imageSharingMode      = VK_SHARING_MODE_CONCURRENT;

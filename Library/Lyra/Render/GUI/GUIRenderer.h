@@ -52,10 +52,15 @@ namespace lyra::gui
         InputEventQuery events;
     };
 
+    struct GUIPipelineData;
+    struct GUIRendererData;
     struct GUIViewportData
     {
-        WindowHandle window;
-        bool         owned;
+        GUIPipelineData* pipeline = nullptr;
+        GUIRendererData* renderer = nullptr;
+        GPUSurfaceHandle surface;
+        WindowHandle     window;
+        bool             owned;
     };
 
     struct GUIPlatformData
@@ -82,16 +87,14 @@ namespace lyra::gui
     using GUIGarbageTextures = Vector<GUIGarbageTexture>;
     using GUITextureManager  = Slotmap<GUITexture, GUITextureDeleter>;
 
-    struct GUIRendererData
+    struct GUIPipelineData
     {
         GPURenderPipeline                pipeline;
         GPUPipelineLayout                playout;
+        Vector<GPUBindGroupLayoutHandle> blayouts;
         GPUShaderModule                  vshader;
         GPUShaderModule                  fshader;
         GPUSampler                       sampler;
-        Vector<GPUBuffer>                vbuffers;
-        Vector<GPUBuffer>                ibuffers;
-        Vector<GPUBindGroupLayoutHandle> blayouts;
         GUITextureManager                textures;
         GUIGarbageBuffers                garbage_buffers;
         GUIGarbageTextures               garbage_textures;
@@ -99,13 +102,21 @@ namespace lyra::gui
         uint                             frame_index = 0;
     };
 
+    struct GUIRendererData
+    {
+        Vector<GPUBuffer> vbuffers;
+        Vector<GPUBuffer> ibuffers;
+    };
+
     struct GUIRenderer
     {
     public:
         static auto init(const GUIDescriptor& descriptor) -> OwnedResource<GUIRenderer>;
 
-        void reset(); // start of a new frame
-        void render(GPUCommandBuffer cmdbuffer, GPUSurfaceTexture backbuffer, ImDrawData* draw_data);
+        void begin();
+        void end();
+        void prepare(GPUCommandBuffer cmdbuffer);
+        void render(GPUCommandBuffer cmdbuffer, GPUSurfaceTexture backbuffer);
         void update();
         void destroy();
 
@@ -115,34 +126,26 @@ namespace lyra::gui
 
     private:
         void init_imgui_setup(const GUIDescriptor& descriptor);
-        void init_platform_data(const GUIDescriptor& descriptor);
-        void init_renderer_data(const GUIDescriptor& descriptor);
-        void init_multi_viewport(const GUIDescriptor& descriptor);
         void init_config_flags(const GUIDescriptor& descriptor);
         void init_backend_flags(const GUIDescriptor& descriptor);
+        void init_platform_data(const GUIDescriptor& descriptor);
+        void init_pipeline_data(const GUIDescriptor& descriptor);
+        void init_renderer_data(const GUIDescriptor& descriptor);
+        void init_viewport_data(const GUIDescriptor& descriptor);
         void init_dummy_texture();
 
-        void process_texture(GPUCommandBuffer cmdbuffer, ImTextureData* tex);
-        void create_texture(ImTextureData* tex);
-        void update_texture(GPUCommandBuffer cmdbuffer, ImTextureData* tex);
-        void delete_texture(ImTextureData* tex);
-
-        auto prepare_buffer(GPUBuffer buffer, uint size, GPUBufferUsageFlags usages) -> GPUBuffer;
-        auto create_buffer(uint size, GPUBufferUsageFlags usages) -> GPUBuffer;
-
-        void create_vertex_buffers(ImDrawData* draw_data);
-        void create_texture_descriptors();
         void begin_render_pass(GPUCommandBuffer cmdbuffer, GPUSurfaceTexture backbuffer);
         void setup_render_state(GPUCommandBuffer cmdbuffer, ImDrawData* draw_data, int width, int height);
 
         void update_key_state(ImGuiIO& io, const GUIWindowContext& ctx);
         void update_mouse_state(ImGuiIO& io, const GUIWindowContext& ctx);
-
-        void create_window_context(WindowHandle window, ImGuiContext* context);
-        void delete_window_context(WindowHandle window);
+        void update_viewport_state(ImGuiIO& io, const GUIWindowContext& ctx);
+        void update_monitor_state();
 
         Own<GUIPlatformData> platform_data = nullptr;
+        Own<GUIPipelineData> pipeline_data = nullptr;
         Own<GUIRendererData> renderer_data = nullptr;
+        Vector<MonitorInfo>  monitors;
     };
 
 } // namespace lyra::gui
