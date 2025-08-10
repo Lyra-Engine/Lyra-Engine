@@ -431,7 +431,7 @@ static void platform_create_window(ImGuiViewport* viewport)
     desc.title  = "Viewport Window";
     desc.width  = static_cast<uint>(viewport->Size.x);
     desc.height = static_cast<uint>(viewport->Size.y);
-    // desc.flags  = 0;
+    desc.flags  = 0;
 
     WindowHandle window;
     Window::api()->create_window(desc, window);
@@ -475,6 +475,13 @@ static void platform_create_window(ImGuiViewport* viewport)
 
     ImGuiContext* context = ImGui::GetCurrentContext();
     imgui_create_window_context(platform_data, window, context);
+
+    // initialize the window focus state
+    bool focused = Window::api()->get_window_focus(vd->window);
+
+    ImGuiIO& io = ImGui::GetIO();
+    io.AddFocusEvent(focused);
+    io.AddMouseViewportEvent(focused ? viewport->ID : io.MouseHoveredViewport);
 }
 
 static void platform_delete_window(ImGuiViewport* viewport)
@@ -482,10 +489,14 @@ static void platform_delete_window(ImGuiViewport* viewport)
     auto pd = reinterpret_cast<GUIPlatformData*>(viewport->PlatformUserData);
     auto vd = reinterpret_cast<GUIViewportData*>(viewport->RendererUserData);
     if (vd == nullptr) return;
+
+#if 0 // temporary disable window deletion
     if (vd->owned) {
-        Window::api()->delete_window(vd->window);
+        RHI::api()->wait_idle();
         RHI::api()->delete_surface(vd->surface);
+        Window::api()->delete_window(vd->window);
     }
+#endif
 
     imgui_delete_window_context(pd, vd->window);
 
@@ -561,7 +572,9 @@ static ImVec2 platform_get_window_pos(ImGuiViewport* viewport)
 
 static void platform_set_window_size(ImGuiViewport* viewport, ImVec2 size)
 {
-    Window::api()->set_window_size(platform_get_window_handle(viewport), size.x, size.y);
+    uint w = static_cast<uint>(size.x * viewport->DpiScale);
+    uint h = static_cast<uint>(size.y * viewport->DpiScale);
+    Window::api()->set_window_size(platform_get_window_handle(viewport), w, h);
 }
 
 static ImVec2 platform_get_window_size(ImGuiViewport* viewport)

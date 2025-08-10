@@ -360,20 +360,8 @@ static void window_close_callback(GLFWwindow* window)
     auto user = static_cast<UserState*>(glfwGetWindowUserPointer(window));
     user->callback(WindowEvent::CLOSE);
 
-    // find corresponding window handle
-    auto it = std::find_if(
-        global_event_loop.windows.begin(),
-        global_event_loop.windows.end(),
-        [&](const WindowHandle& handle) {
-        return window == reinterpret_cast<GLFWwindow*>(handle.window);
-    });
-
-    // remove window from tracking
-    if (it != global_event_loop.windows.end())
-        global_event_loop.windows.erase(it);
-
-    // hide window on close
-    glfwHideWindow(window);
+    // // hide window on close
+    // glfwHideWindow(window);
 }
 
 static void window_position_callback(GLFWwindow* window, int xpos, int ypos)
@@ -435,6 +423,29 @@ static bool create_window(const WindowDescriptor& desc, WindowHandle& window)
         global_event_loop.windows.push_back(window);
     }
     return true;
+}
+
+static auto delete_window(WindowHandle window) -> void
+{
+    auto handle = reinterpret_cast<GLFWwindow*>(window.window);
+
+    // find corresponding window handle
+    auto it = std::find_if(
+        global_event_loop.windows.begin(),
+        global_event_loop.windows.end(),
+        [&](const WindowHandle& window) {
+        return handle == reinterpret_cast<GLFWwindow*>(window.window);
+    });
+
+    // remove window from tracking
+    if (it != global_event_loop.windows.end())
+        global_event_loop.windows.erase(it);
+
+    // delete window user pointer
+    delete static_cast<UserState*>(glfwGetWindowUserPointer(handle));
+
+    // destroy window pointer
+    glfwDestroyWindow(handle);
 }
 
 static void set_window_pos(WindowHandle window, uint x, uint y)
@@ -522,13 +533,6 @@ static void query_input_events(WindowHandle window, InputEventQuery& query)
     query = user.events;
 }
 
-static auto delete_window(WindowHandle window) -> void
-{
-    auto handle = reinterpret_cast<GLFWwindow*>(window.window);
-    delete static_cast<UserState*>(glfwGetWindowUserPointer(handle));
-    glfwDestroyWindow(handle);
-}
-
 static void show_window(WindowHandle window)
 {
     glfwShowWindow(reinterpret_cast<GLFWwindow*>(window.window));
@@ -557,7 +561,6 @@ static void run_in_loop()
         for (auto& window : global_event_loop.windows) {
             auto  handle = reinterpret_cast<GLFWwindow*>(window.window);
             auto& user   = *static_cast<UserState*>(glfwGetWindowUserPointer(handle));
-
             std::invoke(user.callback, WindowEvent::UPDATE);
         }
 
