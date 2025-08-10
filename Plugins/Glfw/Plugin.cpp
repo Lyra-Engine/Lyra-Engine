@@ -76,19 +76,6 @@ struct UserState
         event.mouse_wheel.y = y;
     }
 
-    void add_window_move_event(int xpos, int ypos)
-    {
-        if (is_event_queue_full()) {
-            get_logger()->warn("Ignore window move event beacause event queue is full!");
-            return;
-        }
-
-        auto& event            = events.input_events[events.num_events++];
-        event.type             = InputEventType::WINDOW_MOVE;
-        event.window_move.xpos = static_cast<uint>(std::max(0, xpos));
-        event.window_move.ypos = static_cast<uint>(std::max(0, ypos));
-    }
-
     void add_window_focus_event(bool focus)
     {
         if (is_event_queue_full()) {
@@ -101,10 +88,28 @@ struct UserState
         event.window_focus.focused = focus;
     }
 
+    void add_window_move_event(int xpos, int ypos)
+    {
+        if (is_event_queue_full()) {
+            // input query loop will freeze when window moves,
+            // therefore we just keep overwriting the last event.
+            events.num_events = events.input_events.size() - 1;
+            return;
+            return;
+        }
+
+        auto& event            = events.input_events[events.num_events++];
+        event.type             = InputEventType::WINDOW_MOVE;
+        event.window_move.xpos = static_cast<uint>(std::max(0, xpos));
+        event.window_move.ypos = static_cast<uint>(std::max(0, ypos));
+    }
+
     void add_win_resize_event(int width, int height)
     {
         if (is_event_queue_full()) {
-            get_logger()->warn("Ignore window resize event beacause event queue is full!");
+            // input query loop will freeze when window resizes,
+            // therefore we just keep overwriting the last event.
+            events.num_events = events.input_events.size() - 1;
             return;
         }
 
@@ -156,8 +161,51 @@ struct UserState
 struct EventLoopInternal
 {
     Vector<WindowHandle> windows;
+    Vector<WindowHandle> deferred_window_deletion;
 
     bool should_exit() const { return windows.empty(); }
+
+    void defer_delete(const WindowHandle& window)
+    {
+        deferred_window_deletion.push_back(window);
+    }
+
+    void cleanup_windows()
+    {
+        if (deferred_window_deletion.empty()) return;
+
+        for (auto& window : deferred_window_deletion)
+            cleanup_window(window);
+
+        deferred_window_deletion.clear();
+    }
+
+    void cleanup_window(const WindowHandle& window)
+    {
+        auto handle = reinterpret_cast<GLFWwindow*>(window.window);
+
+        // find corresponding window handle
+        auto it = std::find_if(
+            windows.begin(),
+            windows.end(),
+            [&](const WindowHandle& window) {
+            return handle == reinterpret_cast<GLFWwindow*>(window.window);
+        });
+
+        // only delete when window is active
+        if (it != windows.end()) {
+            // remove window from tracking
+            windows.erase(it);
+
+            // delete window user pointer
+            delete static_cast<UserState*>(glfwGetWindowUserPointer(handle));
+
+            // destroy window pointer
+            glfwDestroyWindow(handle);
+
+            get_logger()->debug("Destroyed window handle: {}", (void*)window.window);
+        }
+    }
 };
 
 static EventLoopInternal global_event_loop;
@@ -425,27 +473,9 @@ static bool create_window(const WindowDescriptor& desc, WindowHandle& window)
     return true;
 }
 
-static auto delete_window(WindowHandle window) -> void
+static void delete_window(WindowHandle window)
 {
-    auto handle = reinterpret_cast<GLFWwindow*>(window.window);
-
-    // find corresponding window handle
-    auto it = std::find_if(
-        global_event_loop.windows.begin(),
-        global_event_loop.windows.end(),
-        [&](const WindowHandle& window) {
-        return handle == reinterpret_cast<GLFWwindow*>(window.window);
-    });
-
-    // remove window from tracking
-    if (it != global_event_loop.windows.end())
-        global_event_loop.windows.erase(it);
-
-    // delete window user pointer
-    delete static_cast<UserState*>(glfwGetWindowUserPointer(handle));
-
-    // destroy window pointer
-    glfwDestroyWindow(handle);
+    global_event_loop.defer_delete(window);
 }
 
 static void set_window_pos(WindowHandle window, uint x, uint y)
@@ -556,6 +586,9 @@ static void run_in_loop()
 
     // glfw main loop
     while (!global_event_loop.should_exit()) {
+
+        // destroy windows in the deferred deletion queue
+        global_event_loop.cleanup_windows();
 
         // UPDATE
         for (auto& window : global_event_loop.windows) {

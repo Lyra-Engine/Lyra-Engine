@@ -490,13 +490,11 @@ static void platform_delete_window(ImGuiViewport* viewport)
     auto vd = reinterpret_cast<GUIViewportData*>(viewport->RendererUserData);
     if (vd == nullptr) return;
 
-#if 0 // temporary disable window deletion
     if (vd->owned) {
         RHI::api()->wait_idle();
         RHI::api()->delete_surface(vd->surface);
         Window::api()->delete_window(vd->window);
     }
-#endif
 
     imgui_delete_window_context(pd, vd->window);
 
