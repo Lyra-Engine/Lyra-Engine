@@ -66,7 +66,6 @@ target_sources(lyra-engine PRIVATE
     # render GUI sources
     Lyra/Render/GUI/GUIAPI.h
     Lyra/Render/GUI/GUITypes.h
-    Lyra/Render/GUI/GUITypes.cpp
 
     # shader compiler sources
     Lyra/Render/SLC/SLCAPI.h

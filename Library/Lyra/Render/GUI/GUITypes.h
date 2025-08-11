@@ -1,27 +1,32 @@
 #pragma once
 
-#ifndef LYRA_LIBRARY_RENDER_GUI_UTILS_H
-#define LYRA_LIBRARY_RENDER_GUI_UTILS_H
+#ifndef LYRA_LIBRARY_RENDER_GUI_TYPES_H
+#define LYRA_LIBRARY_RENDER_GUI_TYPES_H
 
 #include <imgui.h>
 
 #include <Lyra/Common/Plugin.h>
+#include <Lyra/Common/Pointer.h>
 #include <Lyra/Render/GUI/GUIAPI.h>
 
 namespace lyra::gui
 {
+    using GUIRenderPlugin = Plugin<GUIRenderAPI>;
+
     struct GUI
     {
-        GUIHandle handle;
+        // implicit conversion
+        FORCE_INLINE GUI() : handle() {}
+        FORCE_INLINE GUI(GUIHandle handle) : handle(handle) {}
 
         // implicit conversion
-        GUI() : handle() {}
-        GUI(GUIHandle handle) : handle(handle) {}
+        FORCE_INLINE operator GUIHandle() { return handle; }
+        FORCE_INLINE operator GUIHandle() const { return handle; }
 
-        operator GUIHandle() { return handle; }
-        operator GUIHandle() const { return handle; }
-
-        static auto api() -> GUIRenderAPI*;
+        FORCE_INLINE static auto api() -> GUIRenderAPI*
+        {
+            return get_plugin()->get_api();
+        }
 
         FORCE_INLINE static auto init(const GUIDescriptor& descriptor) -> OwnedResource<GUI>
         {
@@ -60,9 +65,24 @@ namespace lyra::gui
         }
 
     private:
-        static void init_plugin();
+        static auto get_plugin() -> Own<GUIRenderPlugin>&
+        {
+            static Own<GUIRenderPlugin> PLUGIN;
+            return PLUGIN;
+        }
+
+        static void init_plugin()
+        {
+            auto& plugin = get_plugin();
+            if (!plugin) {
+                plugin = std::make_unique<GUIRenderPlugin>("lyra-imgui");
+            }
+        }
+
+    private:
+        GUIHandle handle;
     };
 
 } // namespace lyra::gui
 
-#endif // LYRA_LIBRARY_RENDER_GUI_UTILS_H
+#endif // LYRA_LIBRARY_RENDER_GUI_TYPES_H
