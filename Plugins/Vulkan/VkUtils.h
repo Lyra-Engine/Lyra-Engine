@@ -505,6 +505,9 @@ struct VulkanRHI
     uint current_frame_index = 0;
     uint current_image_index = 0;
 
+    // swapchain tracker
+    GPUSurfaceHandle surface_tracker;
+
     // collection of objects
     VulkanResourceManager<VulkanSwapchain>       swapchains;
     VulkanResourceManager<VulkanSemaphore>       fences;

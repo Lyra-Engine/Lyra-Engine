@@ -41,15 +41,15 @@ private:
     // logging
     lyra::Logger logger;
 
-    // RHI related stuff
+    // RHI related items
     OwnedResource<RHI>      rhi;
     OwnedResource<Compiler> slc;
     GPUDevice               device;
     GPUAdapter              adapter;
     GPUSurface              surface;
 
-    // rendering related stuff
-    OwnedResource<GUIRenderer> gui;
+    // GUI related items
+    OwnedResource<GUI> gui;
 };
 
 #endif // LYRA_SAMPLES_EDITOR_H

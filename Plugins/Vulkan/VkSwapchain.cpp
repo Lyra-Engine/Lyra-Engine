@@ -284,6 +284,12 @@ bool api::acquire_next_frame(GPUSurfaceHandle surface, GPUTextureHandle& texture
 {
     auto rhi = get_rhi();
 
+    // initialize swpachain tracker
+    if (rhi->surface_tracker.valid()) {
+        assert(rhi->surface_tracker == surface && "Caller must call present_curr_frame() prior to calling acquire_next_frame() again!");
+        rhi->surface_tracker = surface;
+    }
+
     // query the swapchain
     auto& swp = fetch_resource(rhi->swapchains, surface);
     auto  ind = rhi->current_frame_index % swp.desc.frames;
@@ -327,6 +333,12 @@ bool api::acquire_next_frame(GPUSurfaceHandle surface, GPUTextureHandle& texture
 bool api::present_curr_frame(GPUSurfaceHandle surface)
 {
     auto rhi = get_rhi();
+
+    // validator swpachain tracker
+    if (rhi->surface_tracker.valid()) {
+        assert(rhi->surface_tracker == surface && "Caller must call acquire_next_frame() prior to calling present_curr_frame()!");
+        rhi->surface_tracker.reset();
+    }
 
     // query the swapchain
     auto& swp = fetch_resource(rhi->swapchains, surface);

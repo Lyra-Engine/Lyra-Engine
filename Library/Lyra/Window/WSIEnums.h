@@ -30,6 +30,7 @@ namespace lyra::wsi
         MOUSE_BUTTON,
         WINDOW_MOVE,
         WINDOW_FOCUS,
+        WINDOW_CLOSE,
         WINDOW_RESIZE,
     };
 

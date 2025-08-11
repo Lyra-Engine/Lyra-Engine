@@ -88,6 +88,17 @@ struct UserState
         event.window_focus.focused = focus;
     }
 
+    void add_window_close_event(bool focus)
+    {
+        if (is_event_queue_full()) {
+            get_logger()->warn("Ignore window close event beacause event queue is full!");
+            return;
+        }
+
+        auto& event = events.input_events[events.num_events++];
+        event.type  = InputEventType::WINDOW_CLOSE;
+    }
+
     void add_window_move_event(int xpos, int ypos)
     {
         if (is_event_queue_full()) {
@@ -408,8 +419,10 @@ static void window_close_callback(GLFWwindow* window)
     auto user = static_cast<UserState*>(glfwGetWindowUserPointer(window));
     user->callback(WindowEvent::CLOSE);
 
-    // // hide window on close
-    // glfwHideWindow(window);
+    auto handle   = WindowHandle{};
+    handle.window = window;
+    handle.native = nullptr;
+    global_event_loop.defer_delete(handle);
 }
 
 static void window_position_callback(GLFWwindow* window, int xpos, int ypos)

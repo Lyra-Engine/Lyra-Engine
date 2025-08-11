@@ -53,6 +53,12 @@ namespace lyra::wsi
         bool focused;
     };
 
+    // window close event
+    struct WindowCloseEvent
+    {
+        // no additional information
+    };
+
     // window resize event
     struct WindowResizeEvent
     {
@@ -73,6 +79,7 @@ namespace lyra::wsi
             MouseButtonEvent  mouse_button;
             WindowMoveEvent   window_move;
             WindowFocusEvent  window_focus;
+            WindowCloseEvent  window_close;
             WindowResizeEvent window_resize;
         };
     };

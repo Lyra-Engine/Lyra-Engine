@@ -623,6 +623,9 @@ struct D3D12RHI
     uint current_frame_index = 0;
     uint current_image_index = 0;
 
+    // swapchain tracker
+    GPUSurfaceHandle surface_tracker;
+
     // collection of objects
     D3D12ResourceManager<D3D12Fence>           fences;
     D3D12ResourceManager<D3D12Buffer>          buffers;

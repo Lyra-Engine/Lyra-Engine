@@ -64,8 +64,9 @@ target_sources(lyra-engine PRIVATE
     Lyra/Render/RPI/FrameGraphTraits.h
 
     # render GUI sources
-    Lyra/Render/GUI/GUIRenderer.h
-    Lyra/Render/GUI/GUIRenderer.cpp
+    Lyra/Render/GUI/GUIAPI.h
+    Lyra/Render/GUI/GUITypes.h
+    Lyra/Render/GUI/GUITypes.cpp
 
     # shader compiler sources
     Lyra/Render/SLC/SLCAPI.h

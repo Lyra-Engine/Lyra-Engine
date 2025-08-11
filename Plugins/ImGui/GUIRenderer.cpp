@@ -1,13 +1,19 @@
+// library headers
 #include <Lyra/Common/GLM.h>
 #include <Lyra/Common/Plugin.h>
+#include <Lyra/Common/Assert.h>
 #include <Lyra/Common/Pointer.h>
 #include <Lyra/Common/Function.h>
 #include <Lyra/Render/RHI/RHIInits.h>
 #include <Lyra/Render/RHI/RHITypes.h>
-#include <Lyra/Render/GUI/GUIRenderer.h>
+
+// local headers
+#include "GUIRenderer.h"
 
 using namespace lyra;
 using namespace lyra::gui;
+
+static Logger logger = init_stderr_logger("ImGui", LogLevel::trace);
 
 static const char* imgui_shader_source = R"""(
 struct VertexInput
@@ -52,11 +58,14 @@ float4 fsmain(VertexOutput input) : SV_Target
 }
 )""";
 
-static GUIRenderer* global_gui_renderer = nullptr;
-
 namespace ImGui
 {
     extern ImGuiIO& GetIO(ImGuiContext*);
+}
+
+static Logger get_logger()
+{
+    return logger;
 }
 
 static GUIRendererData* imgui_make_renderer(uint frame_count)
@@ -321,14 +330,14 @@ static void imgui_setup_render_state(GPUCommandBuffer cmdbuffer, GUIPipelineData
     }
 }
 
-static void imgui_begin_render_pass(GPUCommandBuffer cmdbuffer, GPUSurfaceTexture backbuffer)
+static void imgui_begin_render_pass(GPUCommandBuffer cmdbuffer, GPUTextureViewHandle backbuffer)
 {
     // color attachments
     auto color_attachment        = GPURenderPassColorAttachment{};
     color_attachment.clear_value = GPUColor{0.0f, 0.0f, 0.0f, 0.0f};
     color_attachment.load_op     = GPULoadOp::CLEAR;
     color_attachment.store_op    = GPUStoreOp::STORE;
-    color_attachment.view        = backbuffer.view;
+    color_attachment.view        = backbuffer;
 
     // render pass info
     auto render_pass                     = GPURenderPassDescriptor{};
@@ -343,7 +352,7 @@ static void imgui_end_render_pass(GPUCommandBuffer cmdbuffer)
     cmdbuffer.end_render_pass();
 }
 
-static void imgui_render(GPUCommandBuffer cmdbuffer, GPUSurfaceTexture backbuffer, GUIPipelineData* pipeline_data, GUIRendererData* renderer_data, ImDrawData* draw_data)
+static void imgui_render(GPUCommandBuffer cmdbuffer, GPUTextureViewHandle backbuffer, GUIPipelineData* pipeline_data, GUIRendererData* renderer_data, ImDrawData* draw_data)
 {
     // avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
     int fb_width  = static_cast<int>(draw_data->DisplaySize.x * draw_data->FramebufferScale.x);
@@ -372,7 +381,6 @@ static void imgui_render(GPUCommandBuffer cmdbuffer, GPUSurfaceTexture backbuffe
 
             // clamp to viewport as set_scissors() won't accept values that are off bounds
             if (clip_min.x < 0.0f) { clip_min.x = 0.0f; }
-            if (clip_min.y < 0.0f) { clip_min.y = 0.0f; }
             if (clip_max.x > fb_width) { clip_max.x = (float)fb_width; }
             if (clip_max.y > fb_height) { clip_max.y = (float)fb_height; }
             if (clip_max.x <= clip_min.x || clip_max.y <= clip_min.y)
@@ -508,11 +516,6 @@ static void platform_delete_window(ImGuiViewport* viewport)
 static void platform_show_window(ImGuiViewport* viewport)
 {
     Window::api()->show_window(platform_get_window_handle(viewport));
-}
-
-static void platform_update_window(ImGuiViewport* viewport, const WindowInput& input)
-{
-    // TODO: implement this later
 }
 
 static void platform_render_window(ImGuiViewport* viewport, void*)
@@ -734,23 +737,24 @@ static ImGuiMouseButton to_imgui_mouse_button(MouseButton button)
 }
 
 #pragma region GUIRenderer
-OwnedResource<GUIRenderer> GUIRenderer::init(const GUIDescriptor& descriptor)
+GUIRenderer::GUIRenderer(const GUIDescriptor& descriptor)
 {
-    OwnedResource<GUIRenderer> gui(new GUIRenderer());
-    gui->init_imgui_setup(descriptor);
-    gui->init_config_flags(descriptor);
-    gui->init_backend_flags(descriptor);
-    gui->init_pipeline_data(descriptor);
-    gui->init_renderer_data(descriptor);
-    gui->init_platform_data(descriptor);
-    gui->init_viewport_data(descriptor);
-    gui->init_dummy_texture();
-
-    global_gui_renderer = gui.get();
-    return gui;
+    init(descriptor);
 }
 
-void GUIRenderer::begin()
+void GUIRenderer::init(const GUIDescriptor& descriptor)
+{
+    init_imgui_setup(descriptor);
+    init_config_flags(descriptor);
+    init_backend_flags(descriptor);
+    init_pipeline_data(descriptor);
+    init_renderer_data(descriptor);
+    init_platform_data(descriptor);
+    init_viewport_data(descriptor);
+    init_dummy_texture();
+}
+
+void GUIRenderer::reset()
 {
     assert(platform_data && "ImGui platform data has not been initialized!");
     assert(renderer_data && "ImGui renderer data has not been initialized!");
@@ -793,23 +797,13 @@ void GUIRenderer::begin()
     imgui_reset_texture_descriptors(pipeline_data.get());
 }
 
-void GUIRenderer::end()
-{
-    ImGuiIO& io = ImGui::GetIO();
-
-    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-        ImGui::UpdatePlatformWindows();
-        ImGui::RenderPlatformWindowsDefault();
-    }
-}
-
 void GUIRenderer::prepare(GPUCommandBuffer cmdbuffer)
 {
     auto draw_data = ImGui::GetDrawData();
     imgui_prepare(cmdbuffer, pipeline_data.get(), renderer_data.get(), draw_data);
 }
 
-void GUIRenderer::render(GPUCommandBuffer cmdbuffer, GPUSurfaceTexture backbuffer)
+void GUIRenderer::render(GPUCommandBuffer cmdbuffer, GPUTextureViewHandle backbuffer)
 {
     auto draw_data = ImGui::GetDrawData();
     imgui_render(cmdbuffer, backbuffer, pipeline_data.get(), renderer_data.get(), draw_data);
@@ -850,16 +844,26 @@ void GUIRenderer::destroy()
     ImGui::DestroyContext();
 }
 
+void GUIRenderer::begin_render_pass(GPUCommandBuffer cmdbuffer, GPUTextureViewHandle backbuffer) const
+{
+    imgui_begin_render_pass(cmdbuffer, backbuffer);
+}
+
+void GUIRenderer::end_render_pass(GPUCommandBuffer cmdbuffer) const
+{
+    imgui_end_render_pass(cmdbuffer);
+}
+
 ImGuiContext* GUIRenderer::context() const
 {
-    return ImGui::GetCurrentContext();
+    return imgui_context;
 }
 
 void GUIRenderer::init_imgui_setup(const GUIDescriptor& descriptor)
 {
     // setup Dear ImGui context
     IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
+    imgui_context = ImGui::CreateContext();
 
     uint width, height;
     Window::api()->get_window_size(descriptor.window, width, height);
@@ -1206,6 +1210,9 @@ void GUIRenderer::update_viewport_state(ImGuiIO& io, const GUIWindowContext& ctx
         }
         if (event.type == InputEventType::WINDOW_RESIZE) {
             viewport->PlatformRequestResize = true;
+        }
+        if (event.type == InputEventType::WINDOW_CLOSE) {
+            viewport->PlatformRequestClose = true;
         }
     }
 }
