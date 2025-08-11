@@ -37,6 +37,7 @@ namespace lyra::wsi
         CString (*get_clipboard_text)(WindowHandle window);
 
         void (*get_content_scale)(WindowHandle window, float& xscale, float& yscale);
+        void (*get_framebuffer_scale)(WindowHandle window, float& xscale, float& yscale);
 
         bool (*get_window_minimized)(WindowHandle window);
 

@@ -573,8 +573,8 @@ static ImVec2 platform_get_window_pos(ImGuiViewport* viewport)
 
 static void platform_set_window_size(ImGuiViewport* viewport, ImVec2 size)
 {
-    uint w = static_cast<uint>(size.x * viewport->DpiScale);
-    uint h = static_cast<uint>(size.y * viewport->DpiScale);
+    uint w = static_cast<uint>(size.x);
+    uint h = static_cast<uint>(size.y);
     Window::api()->set_window_size(platform_get_window_handle(viewport), w, h);
 }
 
@@ -585,10 +585,10 @@ static ImVec2 platform_get_window_size(ImGuiViewport* viewport)
     return ImVec2(xsiz, ysiz);
 }
 
-static ImVec2 platform_get_content_scale(ImGuiViewport* viewport)
+static ImVec2 platform_get_framebuffer_scale(ImGuiViewport* viewport)
 {
     float xscale, yscale;
-    Window::api()->get_content_scale(platform_get_window_handle(viewport), xscale, yscale);
+    Window::api()->get_framebuffer_scale(platform_get_window_handle(viewport), xscale, yscale);
     return ImVec2(xscale, yscale);
 }
 
@@ -868,13 +868,18 @@ void GUIRenderer::init_imgui_setup(const GUIDescriptor& descriptor)
     uint width, height;
     Window::api()->get_window_size(descriptor.window, width, height);
 
-    float xscale, yscale;
-    Window::api()->get_content_scale(descriptor.window, xscale, yscale);
+    float fb_xscale, fb_yscale;
+    Window::api()->get_framebuffer_scale(descriptor.window, fb_xscale, fb_yscale);
+
+    float dpi_xscale, dpi_yscale;
+    Window::api()->get_content_scale(descriptor.window, dpi_xscale, dpi_yscale);
 
     auto& io                   = ImGui::GetIO();
     io.DisplaySize             = ImVec2(width, height);
-    io.DisplayFramebufferScale = ImVec2(xscale, yscale);
-    io.FontGlobalScale         = 1.0f; // keep this at 1.0, let DisplayFramebufferScale handle it
+    io.DisplayFramebufferScale = ImVec2(fb_xscale, fb_yscale);
+    io.FontGlobalScale         = std::max(dpi_xscale, dpi_yscale);
+    io.ConfigDpiScaleFonts     = true; // [Experimental] Automatically overwrite style.FontScaleDpi in Begin() when Monitor DPI changes. This will scale fonts but _NOT_ scale sizes/padding for now.
+    io.ConfigDpiScaleViewports = true; // [Experimental] Scale Dear ImGui and Platform Windows when Monitor DPI changes.
 }
 
 void GUIRenderer::init_config_flags(const GUIDescriptor& descriptor)
@@ -1100,7 +1105,7 @@ void GUIRenderer::init_viewport_data(const GUIDescriptor& descriptor)
         platform_io.Platform_GetWindowPos              = platform_get_window_pos;
         platform_io.Platform_SetWindowSize             = platform_set_window_size;
         platform_io.Platform_GetWindowSize             = platform_get_window_size;
-        platform_io.Platform_GetWindowFramebufferScale = platform_get_content_scale;
+        platform_io.Platform_GetWindowFramebufferScale = platform_get_framebuffer_scale;
         platform_io.Platform_SetWindowFocus            = platform_set_window_focus;
         platform_io.Platform_GetWindowFocus            = platform_get_window_focus;
         platform_io.Platform_GetWindowMinimized        = platform_get_window_minimized;
@@ -1161,11 +1166,9 @@ void GUIRenderer::update_mouse_state(ImGuiIO& io, const GUIWindowContext& ctx)
         const auto& event = query.input_events.at(i);
         if (event.type == InputEventType::MOUSE_BUTTON) {
             io.AddMouseButtonEvent(to_imgui_mouse_button(event.mouse_button.button), event.mouse_button.state == ButtonState::ON);
-        }
-        if (event.type == InputEventType::MOUSE_WHEEL) {
+        } else if (event.type == InputEventType::MOUSE_WHEEL) {
             io.AddMouseWheelEvent(event.mouse_wheel.x, event.mouse_wheel.y);
-        }
-        if (event.type == InputEventType::MOUSE_MOVE) {
+        } else if (event.type == InputEventType::MOUSE_MOVE) {
             // calculate mouse position
             float x = event.mouse_move.xpos;
             float y = event.mouse_move.ypos;
@@ -1189,12 +1192,11 @@ void GUIRenderer::update_mouse_state(ImGuiIO& io, const GUIWindowContext& ctx)
 
 void GUIRenderer::update_viewport_state(ImGuiIO& io, const GUIWindowContext& ctx)
 {
-    const auto& query = ctx.events;
-
     ImGuiViewport* viewport = ImGui::FindViewportByPlatformHandle(ctx.window.window);
     assert(viewport && "Failed to find viewport by window handle!");
 
     // update viewport events
+    const auto& query = ctx.events;
     for (uint i = 0; i < query.num_events; i++) {
         const auto& event = query.input_events.at(i);
         if (event.type == InputEventType::WINDOW_FOCUS) {
@@ -1204,14 +1206,11 @@ void GUIRenderer::update_viewport_state(ImGuiIO& io, const GUIWindowContext& ctx
                     io.AddMouseViewportEvent(viewport->ID);
             }
             io.AddFocusEvent(focus);
-        }
-        if (event.type == InputEventType::WINDOW_MOVE) {
+        } else if (event.type == InputEventType::WINDOW_MOVE) {
             viewport->PlatformRequestMove = true;
-        }
-        if (event.type == InputEventType::WINDOW_RESIZE) {
+        } else if (event.type == InputEventType::WINDOW_RESIZE) {
             viewport->PlatformRequestResize = true;
-        }
-        if (event.type == InputEventType::WINDOW_CLOSE) {
+        } else if (event.type == InputEventType::WINDOW_CLOSE) {
             viewport->PlatformRequestClose = true;
         }
     }

@@ -60,6 +60,7 @@ void Application::init()
 void Application::destroy()
 {
     rhi->wait();
+    gui.reset();
 }
 
 void Application::update(const Window& window)

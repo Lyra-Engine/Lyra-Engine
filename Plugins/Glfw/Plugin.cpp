@@ -213,8 +213,6 @@ struct EventLoopInternal
 
             // destroy window pointer
             glfwDestroyWindow(handle);
-
-            get_logger()->debug("Destroyed window handle: {}", (void*)window.window);
         }
     }
 };
@@ -522,6 +520,21 @@ static void get_content_scale(WindowHandle window, float& xscale, float& yscale)
     glfwGetWindowContentScale((GLFWwindow*)window.window, &xscale, &yscale);
 }
 
+static void get_framebuffer_scale(WindowHandle window, float& xscale, float& yscale)
+{
+    int w, h;
+    int display_w, display_h;
+    glfwGetWindowSize((GLFWwindow*)window.window, &w, &h);
+    glfwGetFramebufferSize((GLFWwindow*)window.window, &display_w, &display_h);
+    if (w > 0 && h > 0) {
+        xscale = static_cast<float>(display_w) / static_cast<float>(w);
+        yscale = static_cast<float>(display_h) / static_cast<float>(h);
+    } else {
+        xscale = 1.0f;
+        yscale = 1.0f;
+    }
+}
+
 static void set_window_focus(WindowHandle window)
 {
     glfwFocusWindow((GLFWwindow*)window.window);
@@ -697,28 +710,29 @@ LYRA_EXPORT auto cleanup() -> void
 
 LYRA_EXPORT auto create() -> WindowAPI
 {
-    auto api                 = WindowAPI{};
-    api.get_api_name         = get_api_name;
-    api.list_monitors        = list_monitors;
-    api.create_window        = create_window;
-    api.delete_window        = delete_window;
-    api.set_window_pos       = set_window_pos;
-    api.get_window_pos       = get_window_pos;
-    api.set_window_size      = set_window_size;
-    api.get_window_size      = get_window_size;
-    api.get_content_scale    = get_content_scale;
-    api.set_window_focus     = set_window_focus;
-    api.get_window_focus     = get_window_focus;
-    api.set_window_alpha     = set_window_alpha;
-    api.get_window_alpha     = get_window_alpha;
-    api.set_window_title     = set_window_title;
-    api.get_window_title     = get_window_title;
-    api.set_clipboard_text   = set_clipboard_text;
-    api.get_clipboard_text   = get_clipboard_text;
-    api.get_window_minimized = get_window_minimized;
-    api.query_input_events   = query_input_events;
-    api.bind_window_callback = bind_window_callback;
-    api.show_window          = show_window;
-    api.run_in_loop          = run_in_loop;
+    auto api                  = WindowAPI{};
+    api.get_api_name          = get_api_name;
+    api.list_monitors         = list_monitors;
+    api.create_window         = create_window;
+    api.delete_window         = delete_window;
+    api.set_window_pos        = set_window_pos;
+    api.get_window_pos        = get_window_pos;
+    api.set_window_size       = set_window_size;
+    api.get_window_size       = get_window_size;
+    api.get_content_scale     = get_content_scale;
+    api.get_framebuffer_scale = get_framebuffer_scale;
+    api.set_window_focus      = set_window_focus;
+    api.get_window_focus      = get_window_focus;
+    api.set_window_alpha      = set_window_alpha;
+    api.get_window_alpha      = get_window_alpha;
+    api.set_window_title      = set_window_title;
+    api.get_window_title      = get_window_title;
+    api.set_clipboard_text    = set_clipboard_text;
+    api.get_clipboard_text    = get_clipboard_text;
+    api.get_window_minimized  = get_window_minimized;
+    api.query_input_events    = query_input_events;
+    api.bind_window_callback  = bind_window_callback;
+    api.show_window           = show_window;
+    api.run_in_loop           = run_in_loop;
     return api;
 }
