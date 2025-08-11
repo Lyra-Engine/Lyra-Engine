@@ -7,7 +7,6 @@
 #include <Lyra/Render/RHI/RHIUtils.h>
 #include <Lyra/Render/RHI/RHIDescs.h>
 #include <Lyra/Render/RHI/RHIError.h>
-#include <Lyra/Render/RHI/RHITypes.h>
 
 namespace lyra::rhi
 {
@@ -19,7 +18,7 @@ namespace lyra::rhi
         bool (*create_instance)(const RHIDescriptor& descriptor);
         void (*delete_instance)();
 
-        bool (*create_adapter)(GPUAdapter& adapter, const GPUAdapterDescriptor& descriptor);
+        bool (*create_adapter)(GPUAdapterProps& adapter, const GPUAdapterDescriptor& descriptor);
         void (*delete_adapter)();
 
         bool (*create_surface)(GPUSurfaceHandle& surface, const GPUSurfaceDescriptor& descriptor);

@@ -96,7 +96,7 @@ void populate_adapter_properties(GPUSupportedLimits& limits, GPUProperties& prop
     }
 }
 
-bool api::create_adapter(GPUAdapter& adapter, const GPUAdapterDescriptor& desc)
+bool api::create_adapter(GPUAdapterProps& adapter, const GPUAdapterDescriptor& desc)
 {
     auto rhi = get_rhi();
 

@@ -260,6 +260,14 @@ namespace lyra::rhi
         String vendor       = "";
     };
 
+    struct GPUAdapterProps
+    {
+        GPUAdapterInfo       info       = {};
+        GPUSupportedFeatures features   = {};
+        GPUSupportedLimits   limits     = {};
+        GPUProperties        properties = {};
+    };
+
     struct GPUColor
     {
         float r = 0.0f;

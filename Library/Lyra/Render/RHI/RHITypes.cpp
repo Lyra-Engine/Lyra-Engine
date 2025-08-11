@@ -79,8 +79,14 @@ GPUDevice& RHI::get_current_device()
 
 GPUAdapter RHI::request_adapter(const GPUAdapterDescriptor& descriptor) const
 {
-    auto& adapter = RHI::get_current_adapter();
-    RHI::api()->create_adapter(adapter, descriptor);
+    GPUAdapterProps props;
+    RHI::api()->create_adapter(props, descriptor);
+
+    auto& adapter      = RHI::get_current_adapter();
+    adapter.info       = props.info;
+    adapter.features   = props.features;
+    adapter.limits     = props.limits;
+    adapter.properties = props.properties;
     return adapter;
 }
 

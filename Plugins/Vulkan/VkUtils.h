@@ -556,7 +556,7 @@ namespace api
     uint get_surface_frames(GPUSurfaceHandle surface);
 
     // adapter apis
-    bool create_adapter(GPUAdapter& adapter, const GPUAdapterDescriptor& descriptor);
+    bool create_adapter(GPUAdapterProps& adapter, const GPUAdapterDescriptor& descriptor);
     void delete_adapter();
 
     // device apis
