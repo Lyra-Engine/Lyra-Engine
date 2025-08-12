@@ -483,13 +483,6 @@ static void platform_create_window(ImGuiViewport* viewport)
 
     ImGuiContext* context = ImGui::GetCurrentContext();
     imgui_create_window_context(platform_data, window, context);
-
-    // initialize the window focus state
-    bool focused = Window::api()->get_window_focus(vd->window);
-
-    ImGuiIO& io = ImGui::GetIO();
-    io.AddFocusEvent(focused);
-    io.AddMouseViewportEvent(focused ? viewport->ID : io.MouseHoveredViewport);
 }
 
 static void platform_delete_window(ImGuiViewport* viewport)
@@ -497,20 +490,15 @@ static void platform_delete_window(ImGuiViewport* viewport)
     auto pd = reinterpret_cast<GUIPlatformData*>(viewport->PlatformUserData);
     auto vd = reinterpret_cast<GUIViewportData*>(viewport->RendererUserData);
     if (vd == nullptr) return;
-
-    if (vd->owned) {
-        RHI::api()->wait_idle();
-        RHI::api()->delete_surface(vd->surface);
-        Window::api()->delete_window(vd->window);
-    }
+    pd->garbage_viewports.push_back(vd);
 
     imgui_delete_window_context(pd, vd->window);
 
-    delete vd;
-    viewport->RendererUserData  = nullptr;
-    viewport->PlatformUserData  = nullptr;
-    viewport->PlatformHandle    = nullptr;
-    viewport->PlatformHandleRaw = nullptr;
+    viewport->RendererUserData      = nullptr;
+    viewport->PlatformUserData      = nullptr;
+    viewport->PlatformHandle        = nullptr;
+    viewport->PlatformHandleRaw     = nullptr;
+    viewport->PlatformWindowCreated = false;
 }
 
 static void platform_show_window(ImGuiViewport* viewport)
@@ -811,6 +799,19 @@ void GUIRenderer::render(GPUCommandBuffer cmdbuffer, GPUTextureViewHandle backbu
 
 void GUIRenderer::update()
 {
+    // clean-up garbage viewports
+    if (!platform_data->garbage_viewports.empty()) {
+        RHI::api()->wait_idle();
+        for (auto viewport : platform_data->garbage_viewports) {
+            if (viewport->owned) {
+                RHI::api()->delete_surface(viewport->surface);
+                Window::api()->delete_window(viewport->window);
+            }
+            delete viewport;
+        }
+        platform_data->garbage_viewports.clear();
+    }
+
     // update window inputs
     for (auto& window : platform_data->window_contexts) {
         Window::api()->query_input_events(window.window, window.events);
@@ -887,7 +888,8 @@ void GUIRenderer::init_config_flags(const GUIDescriptor& descriptor)
     ImGuiIO& io = ImGui::GetIO();
 
     // configure window docking
-    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+    if (descriptor.docking)
+        io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
     // configure viewports for multi-window support
     if (descriptor.viewports)
@@ -1186,6 +1188,11 @@ void GUIRenderer::update_mouse_state(ImGuiIO& io, const GUIWindowContext& ctx)
             }
 
             io.AddMousePosEvent(x, y);
+
+            // capture mouse focus over viewport
+            if (io.BackendFlags & ImGuiBackendFlags_HasMouseHoveredViewport)
+                if (auto viewport = ImGui::FindViewportByPlatformHandle(ctx.window.window))
+                    io.AddMouseViewportEvent(viewport->ID);
         }
     }
 }

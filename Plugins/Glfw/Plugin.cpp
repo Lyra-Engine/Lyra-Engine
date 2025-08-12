@@ -172,22 +172,30 @@ struct UserState
 struct EventLoopInternal
 {
     Vector<WindowHandle> windows;
+    Vector<WindowHandle> deferred_window_creation;
     Vector<WindowHandle> deferred_window_deletion;
 
     bool should_exit() const { return windows.empty(); }
+
+    void defer_create(const WindowHandle& window)
+    {
+        deferred_window_creation.push_back(window);
+    }
 
     void defer_delete(const WindowHandle& window)
     {
         deferred_window_deletion.push_back(window);
     }
 
-    void cleanup_windows()
+    void update_windows()
     {
-        if (deferred_window_deletion.empty()) return;
+        for (auto& window : deferred_window_creation)
+            windows.push_back(window);
 
         for (auto& window : deferred_window_deletion)
             cleanup_window(window);
 
+        deferred_window_creation.clear();
         deferred_window_deletion.clear();
     }
 
@@ -479,7 +487,7 @@ static bool create_window(const WindowDescriptor& desc, WindowHandle& window)
     if (win != nullptr) {
         create_window_handle(win, window);
         bind_window_events(window);
-        global_event_loop.windows.push_back(window);
+        global_event_loop.defer_create(window);
     }
     return true;
 }
@@ -603,6 +611,9 @@ static void bind_window_callback(WindowHandle window, WindowCallback&& callback)
 
 static void run_in_loop()
 {
+    // create/destroy windows in the deferred deletion queue
+    global_event_loop.update_windows();
+
     // START
     for (auto& window : global_event_loop.windows) {
         auto  handle = reinterpret_cast<GLFWwindow*>(window.window);
@@ -613,30 +624,30 @@ static void run_in_loop()
     // glfw main loop
     while (!global_event_loop.should_exit()) {
 
-        // destroy windows in the deferred deletion queue
-        global_event_loop.cleanup_windows();
+        // create/destroy windows in the deferred deletion queue
+        global_event_loop.update_windows();
 
         // UPDATE
         for (auto& window : global_event_loop.windows) {
-            auto  handle = reinterpret_cast<GLFWwindow*>(window.window);
-            auto& user   = *static_cast<UserState*>(glfwGetWindowUserPointer(handle));
-            std::invoke(user.callback, WindowEvent::UPDATE);
+            auto handle = reinterpret_cast<GLFWwindow*>(window.window);
+            auto user   = static_cast<UserState*>(glfwGetWindowUserPointer(handle));
+            std::invoke(user->callback, WindowEvent::UPDATE);
         }
 
         // RENDER
         RHI::new_frame(); // prior to frame begin
         for (auto& window : global_event_loop.windows) {
-            auto  handle = reinterpret_cast<GLFWwindow*>(window.window);
-            auto& user   = *static_cast<UserState*>(glfwGetWindowUserPointer(handle));
-            std::invoke(user.callback, WindowEvent::RENDER);
+            auto handle = reinterpret_cast<GLFWwindow*>(window.window);
+            auto user   = static_cast<UserState*>(glfwGetWindowUserPointer(handle));
+            std::invoke(user->callback, WindowEvent::RENDER);
         }
         RHI::end_frame(); // post frame end
 
         // RESET EVENTS
         for (auto& window : global_event_loop.windows) {
-            auto  handle = reinterpret_cast<GLFWwindow*>(window.window);
-            auto& user   = *static_cast<UserState*>(glfwGetWindowUserPointer(handle));
-            user.reset_events();
+            auto handle = reinterpret_cast<GLFWwindow*>(window.window);
+            auto user   = static_cast<UserState*>(glfwGetWindowUserPointer(handle));
+            user->reset_events();
         }
 
         glfwPollEvents();

@@ -59,9 +59,10 @@ struct GUIViewportData
 struct GUIPlatformData
 {
     WindowHandle             primary_window;
-    ImGuiContext*            context         = nullptr;
-    float                    elapsed         = 0.0f;
-    Vector<GUIWindowContext> window_contexts = {};
+    ImGuiContext*            context           = nullptr;
+    float                    elapsed           = 0.0f;
+    Vector<GUIWindowContext> window_contexts   = {};
+    Vector<GUIViewportData*> garbage_viewports = {};
 };
 
 struct GUITextureDeleter

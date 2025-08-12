@@ -18,6 +18,8 @@ namespace lyra::gui
         GPUSurfaceHandle surface; // primary surface/swapchain
         CompilerHandle   compiler;
 
+        // options
+        bool docking   = true;
         bool viewports = true;
     };
 
