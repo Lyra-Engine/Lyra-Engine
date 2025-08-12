@@ -497,17 +497,14 @@ static void delete_window(WindowHandle window)
     global_event_loop.defer_delete(window);
 }
 
-static void set_window_pos(WindowHandle window, uint x, uint y)
+static void set_window_pos(WindowHandle window, int x, int y)
 {
     glfwSetWindowPos((GLFWwindow*)window.window, x, y);
 }
 
-static void get_window_pos(WindowHandle window, uint& x, uint& y)
+static void get_window_pos(WindowHandle window, int& x, int& y)
 {
-    int32_t xpos, ypos;
-    glfwGetWindowPos((GLFWwindow*)window.window, &xpos, &ypos);
-    x = xpos;
-    y = ypos;
+    glfwGetWindowPos((GLFWwindow*)window.window, &x, &y);
 }
 
 static void set_window_size(WindowHandle window, uint width, uint height)

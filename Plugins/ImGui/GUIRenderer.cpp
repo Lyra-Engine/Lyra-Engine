@@ -442,8 +442,8 @@ static void platform_create_window(ImGuiViewport* viewport)
     desc.flags  = 0;
 
     WindowHandle window;
-    Window::api()->create_window(desc, window);
-    Window::api()->bind_window_callback(window, [](WindowEvent) {
+    WSI::api()->create_window(desc, window);
+    WSI::api()->bind_window_callback(window, [](WindowEvent) {
         // dummy callback, do nothing
     });
 
@@ -503,7 +503,7 @@ static void platform_delete_window(ImGuiViewport* viewport)
 
 static void platform_show_window(ImGuiViewport* viewport)
 {
-    Window::api()->show_window(platform_get_window_handle(viewport));
+    WSI::api()->show_window(platform_get_window_handle(viewport));
 }
 
 static void platform_render_window(ImGuiViewport* viewport, void*)
@@ -545,7 +545,7 @@ static void platform_swap_buffers(ImGuiViewport* viewport, void*)
 
 static void platform_set_window_pos(ImGuiViewport* viewport, ImVec2 pos)
 {
-    Window::api()->set_window_pos(
+    WSI::api()->set_window_pos(
         platform_get_window_handle(viewport),
         static_cast<uint>(std::max(pos.x, 0.0f)),
         static_cast<uint>(std::max(pos.y, 0.0f)));
@@ -553,8 +553,8 @@ static void platform_set_window_pos(ImGuiViewport* viewport, ImVec2 pos)
 
 static ImVec2 platform_get_window_pos(ImGuiViewport* viewport)
 {
-    uint xpos, ypos;
-    Window::api()->get_window_pos(platform_get_window_handle(viewport), xpos, ypos);
+    int xpos, ypos;
+    WSI::api()->get_window_pos(platform_get_window_handle(viewport), xpos, ypos);
     ImVec2 pos(xpos, ypos);
     return pos;
 }
@@ -563,46 +563,46 @@ static void platform_set_window_size(ImGuiViewport* viewport, ImVec2 size)
 {
     uint w = static_cast<uint>(size.x);
     uint h = static_cast<uint>(size.y);
-    Window::api()->set_window_size(platform_get_window_handle(viewport), w, h);
+    WSI::api()->set_window_size(platform_get_window_handle(viewport), w, h);
 }
 
 static ImVec2 platform_get_window_size(ImGuiViewport* viewport)
 {
     uint xsiz, ysiz;
-    Window::api()->get_window_size(platform_get_window_handle(viewport), xsiz, ysiz);
+    WSI::api()->get_window_size(platform_get_window_handle(viewport), xsiz, ysiz);
     return ImVec2(xsiz, ysiz);
 }
 
 static ImVec2 platform_get_framebuffer_scale(ImGuiViewport* viewport)
 {
     float xscale, yscale;
-    Window::api()->get_framebuffer_scale(platform_get_window_handle(viewport), xscale, yscale);
+    WSI::api()->get_framebuffer_scale(platform_get_window_handle(viewport), xscale, yscale);
     return ImVec2(xscale, yscale);
 }
 
 static void platform_set_window_title(ImGuiViewport* viewport, CString title)
 {
-    Window::api()->set_window_title(platform_get_window_handle(viewport), title);
+    WSI::api()->set_window_title(platform_get_window_handle(viewport), title);
 }
 
 static void platform_set_window_focus(ImGuiViewport* viewport)
 {
-    Window::api()->set_window_focus(platform_get_window_handle(viewport));
+    WSI::api()->set_window_focus(platform_get_window_handle(viewport));
 }
 
 static bool platform_get_window_focus(ImGuiViewport* viewport)
 {
-    return Window::api()->get_window_focus(platform_get_window_handle(viewport));
+    return WSI::api()->get_window_focus(platform_get_window_handle(viewport));
 }
 
 static bool platform_get_window_minimized(ImGuiViewport* viewport)
 {
-    return Window::api()->get_window_minimized(platform_get_window_handle(viewport));
+    return WSI::api()->get_window_minimized(platform_get_window_handle(viewport));
 }
 
 static void platform_set_window_alpha(ImGuiViewport* viewport, float alpha)
 {
-    return Window::api()->set_window_alpha(platform_get_window_handle(viewport), alpha);
+    return WSI::api()->set_window_alpha(platform_get_window_handle(viewport), alpha);
 }
 
 static ImGuiKey to_imgui_key_button(KeyButton button)
@@ -805,7 +805,7 @@ void GUIRenderer::update()
         for (auto viewport : platform_data->garbage_viewports) {
             if (viewport->owned) {
                 RHI::api()->delete_surface(viewport->surface);
-                Window::api()->delete_window(viewport->window);
+                WSI::api()->delete_window(viewport->window);
             }
             delete viewport;
         }
@@ -814,7 +814,7 @@ void GUIRenderer::update()
 
     // update window inputs
     for (auto& window : platform_data->window_contexts) {
-        Window::api()->query_input_events(window.window, window.events);
+        WSI::api()->query_input_events(window.window, window.events);
 
         ImGuiIO& io = ImGui::GetIO(window.context);
         update_viewport_state(io, window);
@@ -867,13 +867,13 @@ void GUIRenderer::init_imgui_setup(const GUIDescriptor& descriptor)
     imgui_context = ImGui::CreateContext();
 
     uint width, height;
-    Window::api()->get_window_size(descriptor.window, width, height);
+    WSI::api()->get_window_size(descriptor.window, width, height);
 
     float fb_xscale, fb_yscale;
-    Window::api()->get_framebuffer_scale(descriptor.window, fb_xscale, fb_yscale);
+    WSI::api()->get_framebuffer_scale(descriptor.window, fb_xscale, fb_yscale);
 
     float dpi_xscale, dpi_yscale;
-    Window::api()->get_content_scale(descriptor.window, dpi_xscale, dpi_yscale);
+    WSI::api()->get_content_scale(descriptor.window, dpi_xscale, dpi_yscale);
 
     auto& io                   = ImGui::GetIO();
     io.DisplaySize             = ImVec2(width, height);
@@ -1092,8 +1092,8 @@ void GUIRenderer::init_viewport_data(const GUIDescriptor& descriptor)
     // query window properties
     uint  width, height;
     float xscale, yscale;
-    Window::api()->get_window_size(descriptor.window, width, height);
-    Window::api()->get_content_scale(descriptor.window, xscale, yscale);
+    WSI::api()->get_window_size(descriptor.window, width, height);
+    WSI::api()->get_content_scale(descriptor.window, xscale, yscale);
 
     // setup platform monitors
     update_monitor_state();
@@ -1181,8 +1181,8 @@ void GUIRenderer::update_mouse_state(ImGuiIO& io, const GUIWindowContext& ctx)
 
             // account for viewport window offset
             if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-                uint xpos, ypos;
-                Window::api()->get_window_pos(ctx.window, xpos, ypos);
+                int xpos, ypos;
+                WSI::api()->get_window_pos(ctx.window, xpos, ypos);
                 x += static_cast<float>(xpos);
                 y += static_cast<float>(ypos);
             }
@@ -1207,7 +1207,7 @@ void GUIRenderer::update_viewport_state(ImGuiIO& io, const GUIWindowContext& ctx
     for (uint i = 0; i < query.num_events; i++) {
         const auto& event = query.input_events.at(i);
         if (event.type == InputEventType::WINDOW_FOCUS) {
-            bool focus = Window::api()->get_window_focus(ctx.window);
+            bool focus = WSI::api()->get_window_focus(ctx.window);
             if (focus) {
                 if (io.BackendFlags & ImGuiBackendFlags_HasMouseHoveredViewport)
                     io.AddMouseViewportEvent(viewport->ID);
@@ -1217,6 +1217,12 @@ void GUIRenderer::update_viewport_state(ImGuiIO& io, const GUIWindowContext& ctx
             viewport->PlatformRequestMove = true;
         } else if (event.type == InputEventType::WINDOW_RESIZE) {
             viewport->PlatformRequestResize = true;
+
+            // detect primary viewport
+            if (viewport->ParentViewportId == 0) {
+                io.DisplaySize.x = static_cast<float>(event.window_resize.width);
+                io.DisplaySize.y = static_cast<float>(event.window_resize.height);
+            }
         } else if (event.type == InputEventType::WINDOW_CLOSE) {
             viewport->PlatformRequestClose = true;
         }
@@ -1229,9 +1235,9 @@ void GUIRenderer::update_monitor_state()
 
     // query monitors
     uint monitor_count = 0;
-    Window::api()->list_monitors(monitor_count, nullptr);
+    WSI::api()->list_monitors(monitor_count, nullptr);
     monitors.resize(monitor_count);
-    Window::api()->list_monitors(monitor_count, monitors.data());
+    WSI::api()->list_monitors(monitor_count, monitors.data());
 
     // update platform monitors
     platform_io.Monitors.clear();

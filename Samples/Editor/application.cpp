@@ -127,6 +127,7 @@ void Application::render()
     gui->render_side_viewports();
 }
 
-void Application::resize()
+void Application::resize(const Window& window)
 {
+    (void)window;
 }

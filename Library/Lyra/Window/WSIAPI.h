@@ -18,8 +18,8 @@ namespace lyra::wsi
         bool (*create_window)(const WindowDescriptor& desc, WindowHandle& window);
         void (*delete_window)(WindowHandle window);
 
-        void (*set_window_pos)(WindowHandle window, uint x, uint y);
-        void (*get_window_pos)(WindowHandle window, uint& x, uint& y);
+        void (*set_window_pos)(WindowHandle window, int x, int y);
+        void (*get_window_pos)(WindowHandle window, int& x, int& y);
 
         void (*set_window_size)(WindowHandle window, uint width, uint height);
         void (*get_window_size)(WindowHandle window, uint& width, uint& height);

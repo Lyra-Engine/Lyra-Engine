@@ -45,9 +45,13 @@ namespace lyra::wsi
 
         auto get_input_state() const -> const WindowInput& { return inputs; }
 
+        void get_position(int& x, int& y) const;
+
         void get_extent(uint& width, uint& height) const;
 
         void get_content_scale(float& xscale, float& yscale) const;
+
+        void get_framebuffer_scale(float& xscale, float& yscale) const;
 
         template <WindowEvent E, typename F, typename T>
         void bind(F&& f, T* user)
@@ -117,6 +121,8 @@ namespace lyra::wsi
 
         static void run();
     };
+
+    using WSI = Window;
 
 } // namespace lyra::wsi
 

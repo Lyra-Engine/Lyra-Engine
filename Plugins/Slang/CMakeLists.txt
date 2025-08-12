@@ -3,8 +3,9 @@ lyra_plugin(slang)
 
 # plugin sources
 target_sources(lyra-slang PRIVATE
-    Plugin.cpp
+    SlangPlugin.cpp
     SlangUtils.cpp
+    SlangUtils.h
 )
 
 # link dependencies

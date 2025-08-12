@@ -39,6 +39,11 @@ void Window::destroy()
     Window::api()->delete_window(this->handle);
 }
 
+void Window::get_position(int& width, int& height) const
+{
+    Window::api()->get_window_pos(this->handle, width, height);
+}
+
 void Window::get_extent(uint& width, uint& height) const
 {
     Window::api()->get_window_size(this->handle, width, height);
@@ -47,6 +52,11 @@ void Window::get_extent(uint& width, uint& height) const
 void Window::get_content_scale(float& xscale, float& yscale) const
 {
     Window::api()->get_content_scale(this->handle, xscale, yscale);
+}
+
+void Window::get_framebuffer_scale(float& xscale, float& yscale) const
+{
+    Window::api()->get_framebuffer_scale(this->handle, xscale, yscale);
 }
 
 void EventLoop::bind(Window& window)

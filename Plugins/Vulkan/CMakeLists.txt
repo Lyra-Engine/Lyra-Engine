@@ -3,7 +3,7 @@ lyra_plugin(vulkan)
 
 # plugin sources
 target_sources(lyra-vulkan PRIVATE
-    Plugin.cpp
+    VkPlugin.cpp
     VkUtils.h
     VkUtils.cpp
     VkMappings.cpp

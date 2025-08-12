@@ -5,7 +5,7 @@ find_package(D3D12)
 
 # plugin sources
 target_sources(lyra-d3d12 PRIVATE
-    Plugin.cpp
+    D3D12Plugin.cpp
     D3D12Utils.cpp
     D3D12Heap.cpp
     D3D12Factory.cpp

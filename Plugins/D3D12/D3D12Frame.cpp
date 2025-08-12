@@ -56,12 +56,14 @@ void D3D12Frame::free()
     graphics_command_pool.reset();
     transfer_command_pool.reset();
 
-    // clean up descriptor heap
-    default_heap.reset();
-    sampler_heap.reset();
-    dynamic_heap.free();
+    // NOTE: no need to reset descriptor pool,
+    // descriptor pools are already reset every frame,
+    // inserting extra resets will complicate the lifetime of descriptors.
+    // default_heap.reset();
+    // sampler_heap.reset();
+    // dynamic_heap.free();
 
-    // destroy command buffers
+    // reset and free all commands
     for (auto& cmd : allocated_command_buffers)
         cmd.cmd.destroy();
 

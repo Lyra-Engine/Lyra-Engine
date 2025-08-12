@@ -10,6 +10,7 @@ int main(int argc, const char* argv[])
         return Window::init(desc);
     });
 
+#if 1
     auto app = lyra::execute([&]() {
         auto desc        = AppDescriptor{};
         desc.window      = win->handle;
@@ -19,6 +20,17 @@ int main(int argc, const char* argv[])
         desc.slc_flags   = CompileFlag::DEBUG | CompileFlag::REFLECT;
         return Application(desc);
     });
+#else
+    auto app = lyra::execute([&]() {
+        auto desc        = AppDescriptor{};
+        desc.window      = win->handle;
+        desc.rhi_backend = RHIBackend::D3D12;
+        desc.rhi_flags   = RHIFlag::DEBUG | RHIFlag::VALIDATION;
+        desc.slc_target  = CompileTarget::DXIL;
+        desc.slc_flags   = CompileFlag::DEBUG | CompileFlag::REFLECT;
+        return Application(desc);
+    });
+#endif
 
     // bind window callbacks
     win->bind<WindowEvent::START>(&Application::init, &app);

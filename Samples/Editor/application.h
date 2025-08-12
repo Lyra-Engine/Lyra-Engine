@@ -33,7 +33,7 @@ struct Application
 
     void render();
 
-    void resize();
+    void resize(const Window& window);
 
 private:
     AppDescriptor desc;

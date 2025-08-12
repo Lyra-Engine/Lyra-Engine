@@ -13,12 +13,12 @@ namespace lyra::wsi
 
     struct MonitorInfo
     {
-        uint  monitor_pos_x;
-        uint  monitor_pos_y;
+        int   monitor_pos_x;
+        int   monitor_pos_y;
         uint  monitor_width;
         uint  monitor_height;
-        uint  workarea_pos_x;
-        uint  workarea_pos_y;
+        int   workarea_pos_x;
+        int   workarea_pos_y;
         uint  workarea_width;
         uint  workarea_height;
         float dpi_scale_x;
