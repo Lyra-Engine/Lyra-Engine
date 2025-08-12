@@ -81,7 +81,7 @@ void D3D12Swapchain::recreate()
         swapchain_desc.Stereo                = false;
         swapchain_desc.BufferUsage           = DXGI_USAGE_RENDER_TARGET_OUTPUT; // D3D12 disallows UAV access on back buffer textures (no direct compute shader write)
         swapchain_desc.BufferCount           = num_backbuffers;
-        swapchain_desc.AlphaMode             = DXGI_ALPHA_MODE_UNSPECIFIED;
+        swapchain_desc.AlphaMode             = d3d12enum(desc.alpha_mode);
         swapchain_desc.SwapEffect            = DXGI_SWAP_EFFECT_FLIP_DISCARD;
         swapchain_desc.SampleDesc.Count      = 1;
         swapchain_desc.SampleDesc.Quality    = 0;
@@ -119,8 +119,10 @@ void D3D12Swapchain::destroy()
         api::delete_fence(semaphore);
 
     // destroy swapchain
-    if (swapchain != nullptr)
+    if (swapchain != nullptr) {
         swapchain->Release();
+        swapchain = nullptr;
+    }
 
     frames.clear();
     image_available_fences.clear();
@@ -240,6 +242,9 @@ bool api::acquire_next_frame(GPUSurfaceHandle surface, GPUTextureHandle& texture
     auto& swp = fetch_resource(rhi->swapchains, surface);
     auto  ind = rhi->current_frame_index % swp.desc.frames;
 
+    // swapchain sanity check
+    assert(swp.valid());
+
     // backbuffer
     uint  backbuffer_index   = swp.swapchain->GetCurrentBackBufferIndex();
     auto& backbuffer         = swp.frames.at(backbuffer_index);
@@ -258,9 +263,8 @@ bool api::acquire_next_frame(GPUSurfaceHandle surface, GPUTextureHandle& texture
     current_frame.render_complete_fence = render_complete_fence;
     current_frame.image_available_fence = image_available_fence;
 
-    // keep track of the fence
-    auto fence = fetch_resource(rhi->fences, render_complete_fence).fence;
-    current_frame.existing_fences.push_back(fence);
+    // keep track of the render complete fences
+    current_frame.existing_fences.push_back(render_complete_fence);
 
     // update swapchain view (this must be done after current_image_index is updated)
     texture = backbuffer.texture;
@@ -281,6 +285,9 @@ bool api::present_curr_frame(GPUSurfaceHandle surface)
 
     // query the swapchain
     auto& swp = fetch_resource(rhi->swapchains, surface);
+
+    // swapchain sanity check
+    assert(swp.valid());
 
     // query the current frame (also update the frame index)
     auto& frame = rhi->current_frame();
@@ -307,6 +314,5 @@ bool api::present_curr_frame(GPUSurfaceHandle surface)
 
     // present to swapchain
     swp.swapchain->Present(swp.present_mode.sync_interval, swp.present_mode.sync_flags);
-    rhi->current_frame_index++;
     return true;
 }

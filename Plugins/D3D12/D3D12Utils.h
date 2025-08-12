@@ -511,9 +511,9 @@ struct D3D12Frame
     uint32_t frame_id = 0u;
 
     // D3D12Frame does NOT own this!!!
-    GPUFenceHandle       image_available_fence;
-    GPUFenceHandle       render_complete_fence;
-    Vector<ID3D12Fence*> existing_fences;
+    GPUFenceHandle         image_available_fence;
+    GPUFenceHandle         render_complete_fence;
+    Vector<GPUFenceHandle> existing_fences;
 
     D3D12CommandPool bundle_command_pool;
     D3D12CommandPool compute_command_pool;
@@ -579,8 +579,8 @@ struct D3D12Swapchain
     // objects for swapchain recreation
     GPUSurfaceDescriptor desc     = {};
     GPUExtent2D          extent   = {};
-    GPUTextureFormat     format   = GPUTextureFormat::RGBA8UNORM;
-    DXGI_FORMAT          dxformat = DXGI_FORMAT_R8G8B8A8_UNORM;
+    GPUTextureFormat     format   = GPUTextureFormat::BGRA8UNORM;
+    DXGI_FORMAT          dxformat = DXGI_FORMAT_B8G8R8A8_UNORM;
 
     // similar to Vulkan's VkPresentModeKHR
     D3D12PresentMode present_mode = {};
@@ -817,6 +817,8 @@ auto infer_texture_format(GPUTextureFormat format) -> DXGI_FORMAT;
 auto infer_topology_type(GPUPrimitiveTopology topology) -> D3D12_PRIMITIVE_TOPOLOGY_TYPE;
 auto infer_topology(GPUPrimitiveTopology topology) -> D3D12_PRIMITIVE_TOPOLOGY;
 auto infer_row_pitch(DXGI_FORMAT format, uint width, uint bytes_per_row) -> uint;
+auto d3d12enum(GPUCompositeAlphaMode mode) -> DXGI_ALPHA_MODE;
+auto d3d12enum(GPUPresentMode mode) -> DXGI_SWAP_EFFECT;
 auto d3d12enum(GPUShaderStageFlags visbility) -> D3D12_SHADER_VISIBILITY;
 auto d3d12enum(GPUCompareFunction compare, bool enable) -> D3D12_COMPARISON_FUNC;
 auto d3d12enum(GPUFilterMode min, GPUFilterMode mag, GPUMipmapFilterMode mip) -> D3D12_FILTER;

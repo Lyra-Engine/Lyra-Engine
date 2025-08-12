@@ -299,11 +299,12 @@ void cmd::set_push_constants(GPUCommandEncoderHandle cmdbuffer, GPUShaderStageFl
     uint root_parameter = cmd.pso.layout->push_constant_root_parameter;
     assert(root_parameter != -1 && "The currently bound pipeline does not support push constants!");
 
-    uint size_in_32b = (size + sizeof(uint32_t) - 1) / sizeof(uint32_t) * sizeof(uint32_t);
+    uint size_in_32b   = (size + sizeof(uint32_t) - 1) / sizeof(uint32_t);
+    uint offset_in_32b = (offset + sizeof(uint32_t) - 1) / sizeof(uint32_t);
     if (cmd.pso.compute) {
-        cmd.command_buffer->SetComputeRoot32BitConstants(root_parameter, size_in_32b, data, offset);
+        cmd.command_buffer->SetComputeRoot32BitConstants(root_parameter, size_in_32b, data, offset_in_32b);
     } else {
-        cmd.command_buffer->SetGraphicsRoot32BitConstants(root_parameter, size_in_32b, data, offset);
+        cmd.command_buffer->SetGraphicsRoot32BitConstants(root_parameter, size_in_32b, data, offset_in_32b);
     }
 }
 

@@ -28,8 +28,8 @@ bool api::get_surface_format(GPUSurfaceHandle surface, GPUTextureFormat& format)
 
     auto& swapchain = fetch_resource(rhi->swapchains, surface);
     switch (swapchain.format) {
-        case VK_FORMAT_B8G8R8A8_SRGB:
-            format = GPUTextureFormat::BGRA8UNORM_SRGB;
+        case VK_FORMAT_B8G8R8A8_UNORM:
+            format = GPUTextureFormat::BGRA8UNORM;
             return true;
         default:
             throw std::runtime_error("Failed to match the corresponding swapchain format");
@@ -369,9 +369,19 @@ void api::wait_idle()
     auto rhi = get_rhi();
     vk_check(rhi->vtable.vkDeviceWaitIdle(rhi->device));
 
-    // optional: clean up all pools from all frames
+    // clean up all pools from all frames
     for (auto& frame : rhi->frames)
         frame.free();
+
+    // reset all fences
+    for (auto& frame : rhi->frames) {
+        if (!frame.existing_fences.empty()) {
+            auto rhi = get_rhi();
+            uint cnt = static_cast<uint>(frame.existing_fences.size());
+            rhi->vtable.vkResetFences(rhi->device, cnt, frame.existing_fences.data());
+            frame.existing_fences.clear();
+        }
+    }
 }
 
 void api::wait_fence(GPUFenceHandle handle)

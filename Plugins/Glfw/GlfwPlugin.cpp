@@ -88,7 +88,7 @@ struct UserState
         event.window_focus.focused = focus;
     }
 
-    void add_window_close_event(bool focus)
+    void add_window_close_event()
     {
         if (is_event_queue_full()) {
             get_logger()->warn("Ignore window close event beacause event queue is full!");
@@ -172,8 +172,8 @@ struct UserState
 struct EventLoopInternal
 {
     Vector<WindowHandle> windows;
-    Vector<WindowHandle> deferred_window_creation;
-    Vector<WindowHandle> deferred_window_deletion;
+    Deque<WindowHandle>  deferred_window_creation;
+    Deque<WindowHandle>  deferred_window_deletion;
 
     bool should_exit() const { return windows.empty(); }
 
@@ -189,14 +189,17 @@ struct EventLoopInternal
 
     void update_windows()
     {
-        for (auto& window : deferred_window_creation)
+        if (!deferred_window_creation.empty()) {
+            auto& window = deferred_window_creation.front();
             windows.push_back(window);
+            deferred_window_creation.pop_front();
+        }
 
-        for (auto& window : deferred_window_deletion)
+        if (!deferred_window_deletion.empty()) {
+            auto& window = deferred_window_deletion.front();
             cleanup_window(window);
-
-        deferred_window_creation.clear();
-        deferred_window_deletion.clear();
+            deferred_window_deletion.pop_front();
+        }
     }
 
     void cleanup_window(const WindowHandle& window)
@@ -213,14 +216,19 @@ struct EventLoopInternal
 
         // only delete when window is active
         if (it != windows.end()) {
+            auto user = reinterpret_cast<UserState*>(glfwGetWindowUserPointer(handle));
+
             // remove window from tracking
             windows.erase(it);
 
-            // delete window user pointer
-            delete static_cast<UserState*>(glfwGetWindowUserPointer(handle));
-
             // destroy window pointer
             glfwDestroyWindow(handle);
+
+            // call user close event
+            user->callback(WindowEvent::CLOSE);
+
+            // delete window user pointer
+            delete user;
         }
     }
 };
@@ -423,7 +431,7 @@ static void window_close_callback(GLFWwindow* window)
 {
     // clean up user states
     auto user = static_cast<UserState*>(glfwGetWindowUserPointer(window));
-    user->callback(WindowEvent::CLOSE);
+    user->add_window_close_event();
 
     auto handle   = WindowHandle{};
     handle.window = window;

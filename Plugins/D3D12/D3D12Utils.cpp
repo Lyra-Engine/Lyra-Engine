@@ -309,6 +309,37 @@ uint infer_row_pitch(DXGI_FORMAT format, uint width, uint bytes_per_row)
     return (size_of(format) * width + alignment - 1) & ~(alignment - 1);
 }
 
+DXGI_ALPHA_MODE d3d12enum(GPUCompositeAlphaMode mode)
+{
+    switch (mode) {
+        case GPUCompositeAlphaMode::Opaque:
+            return DXGI_ALPHA_MODE_IGNORE;
+        case GPUCompositeAlphaMode::PreMultiplied:
+            return DXGI_ALPHA_MODE_PREMULTIPLIED;
+        case GPUCompositeAlphaMode::PostMultiplied:
+            return DXGI_ALPHA_MODE_STRAIGHT;
+        default:
+            // handle error case
+            return DXGI_ALPHA_MODE_UNSPECIFIED;
+    }
+}
+DXGI_SWAP_EFFECT d3d12enum(GPUPresentMode mode)
+{
+    switch (mode) {
+        case GPUPresentMode::Fifo:
+            return DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
+        case GPUPresentMode::FifoRelaxed:
+            return DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
+        case GPUPresentMode::Immediate:
+            return DXGI_SWAP_EFFECT_FLIP_DISCARD;
+        case GPUPresentMode::Mailbox:
+            return DXGI_SWAP_EFFECT_FLIP_DISCARD;
+        default:
+            // handle error case
+            return DXGI_SWAP_EFFECT_FLIP_DISCARD;
+    }
+}
+
 D3D12_SHADER_VISIBILITY d3d12enum(GPUShaderStageFlags stages)
 {
     bool has_compute  = stages.contains(GPUShaderStage::COMPUTE);

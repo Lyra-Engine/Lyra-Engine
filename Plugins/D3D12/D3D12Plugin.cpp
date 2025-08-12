@@ -375,9 +375,18 @@ void api::wait_idle()
     auto rhi = get_rhi();
     rhi->wait_idle();
 
-    // optional: clean up all pools from all frames
-    for (auto& frame : rhi->frames)
+    // clean up all pools from all frames
+    for (auto& frame : rhi->frames) {
+        frame.wait();
         frame.free();
+    }
+
+    // reset all fences
+    for (auto& frame : rhi->frames) {
+        for (auto& fence : frame.existing_fences)
+            fence.reset();
+        frame.existing_fences.clear();
+    }
 }
 
 void api::wait_fence(GPUFenceHandle handle)

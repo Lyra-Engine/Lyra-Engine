@@ -840,6 +840,11 @@ void GUIRenderer::destroy()
     viewport->RendererUserData = nullptr;
     viewport->PlatformUserData = nullptr;
 
+    // manually clean up rest of the viewports
+    auto& window_contexts = platform_data->window_contexts;
+    for (auto& window_context : window_contexts)
+        WSI::api()->delete_window(window_context.window);
+
     // clean up Dear ImGui context
     ImGui::DestroyPlatformWindows();
     ImGui::DestroyContext();
@@ -894,20 +899,6 @@ void GUIRenderer::init_config_flags(const GUIDescriptor& descriptor)
     // configure viewports for multi-window support
     if (descriptor.viewports)
         io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
-
-    // // Encourage docking over viewports
-    // io.ConfigDockingWithShift          = false; // Don't require Shift for docking
-    // io.ConfigDockingAlwaysTabBar       = true;  // Always show tab bars in dock nodes
-    // io.ConfigDockingTransparentPayload = true;  // Visual feedback for docking
-
-    // // enable keyboard navigation
-    // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-
-    // // enable gamepad navigation (if you want both keyboard and gamepad)
-    // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
-    //
-    // // disable mouse navigation when using keyboard
-    // io.ConfigFlags |= ImGuiConfigFlags_NavNoCaptureKeyboard;
 }
 
 void GUIRenderer::init_backend_flags(const GUIDescriptor& descriptor)

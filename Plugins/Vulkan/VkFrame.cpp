@@ -51,14 +51,6 @@ void VulkanFrame::free()
     for (auto& command_buffer : allocated_command_buffers)
         command_buffer.reset();
 
-    // reset all fences (and clear)
-    if (!existing_fences.empty()) {
-        auto rhi = get_rhi();
-        uint cnt = static_cast<uint>(existing_fences.size());
-        rhi->vtable.vkResetFences(rhi->device, cnt, existing_fences.data());
-        existing_fences.clear();
-    }
-
     // NOTE: no need to reset descriptor pool,
     // descriptor pools are already reset every frame,
     // inserting extra resets will complicate the lifetime of descriptors.

@@ -294,6 +294,9 @@ bool api::acquire_next_frame(GPUSurfaceHandle surface, GPUTextureHandle& texture
     auto& swp = fetch_resource(rhi->swapchains, surface);
     auto  ind = rhi->current_frame_index % swp.desc.frames;
 
+    // swapchain sanity check
+    assert(swp.valid());
+
     // query the current frame (and assign the synchronization primitives for this swapchain)
     auto& frame                     = rhi->current_frame();
     frame.frame_id                  = rhi->current_frame_index;
@@ -342,6 +345,9 @@ bool api::present_curr_frame(GPUSurfaceHandle surface)
 
     // query the swapchain
     auto& swp = fetch_resource(rhi->swapchains, surface);
+
+    // swapchain sanity check
+    assert(swp.valid());
 
     // query the current frame (also update the frame index)
     auto& frame = rhi->current_frame();

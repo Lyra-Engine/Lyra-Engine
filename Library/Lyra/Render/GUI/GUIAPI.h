@@ -19,8 +19,8 @@ namespace lyra::gui
         CompilerHandle   compiler;
 
         // options
-        bool docking   = true;
-        bool viewports = true;
+        bool docking   = false;
+        bool viewports = false;
     };
 
     using GUIHandle = TypedPointerHandle<GUI>;
