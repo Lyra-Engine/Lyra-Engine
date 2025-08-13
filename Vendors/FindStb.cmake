@@ -17,7 +17,7 @@ else()
   FetchContent_GetProperties(stb)
 
   # populate stb
-  if(NOT imgui_POPULATED)
+  if(NOT stb_POPULATED)
     FetchContent_Populate(stb)
   endif()
 

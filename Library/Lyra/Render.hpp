@@ -16,6 +16,10 @@
 #include <Lyra/Render/RPI/FrameGraphBuilder.h>
 #include <Lyra/Render/RPI/FrameGraphResource.h>
 
+// GUI (Graphics User Interface)
+#include <Lyra/Render/GUI/GUIAPI.h>
+#include <Lyra/Render/GUI/GUITypes.h>
+
 // SLC (Shader Language Compiler)
 #include <Lyra/Render/SLC/SLCAPI.h>
 #include <Lyra/Render/SLC/SLCEnums.h>

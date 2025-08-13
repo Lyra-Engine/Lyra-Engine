@@ -37,10 +37,10 @@ namespace lyra::rhi
     {
         WindowHandle window = {};
 
-        GPUCompositeAlphaMode alpha_mode      = GPUCompositeAlphaMode::Opaque;
-        GPUPresentMode        present_mode    = GPUPresentMode::Fifo;
-        GPUColorSpace         color_space     = GPUColorSpace::SRGB;
-        uint                  frames_inflight = 3;
+        GPUCompositeAlphaMode alpha_mode   = GPUCompositeAlphaMode::Opaque;
+        GPUPresentMode        present_mode = GPUPresentMode::Fifo;
+        GPUColorSpace         color_space  = GPUColorSpace::SRGB;
+        uint                  frames       = 3;
     };
 
     struct GPUQueueDescriptor : public GPUObjectDescriptorBase
@@ -155,6 +155,7 @@ namespace lyra::rhi
     struct GPUPipelineLayoutDescriptor : public GPUObjectDescriptorBase
     {
         GPUBindGroupLayoutHandles bind_group_layouts;
+        GPUPushConstantRanges     push_constant_ranges;
     };
 
     struct GPUPipelineDescriptorBase : public GPUObjectDescriptorBase

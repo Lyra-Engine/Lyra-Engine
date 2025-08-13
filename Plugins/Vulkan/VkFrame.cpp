@@ -51,7 +51,12 @@ void VulkanFrame::free()
     for (auto& command_buffer : allocated_command_buffers)
         command_buffer.reset();
 
-    descriptor_pool.reset();
+    // NOTE: no need to reset descriptor pool,
+    // descriptor pools are already reset every frame,
+    // inserting extra resets will complicate the lifetime of descriptors.
+    // descriptor_pool.reset();
+
+    // reset and free all commands
     compute_command_pool.reset(true);
     graphics_command_pool.reset(true);
     transfer_command_pool.reset(true);

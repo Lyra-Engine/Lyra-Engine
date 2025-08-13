@@ -65,6 +65,10 @@ void TestApp::run()
 
 void TestApp::run_with_window()
 {
+    win->bind<WindowEvent::UPDATE>([&](const Window& window) {
+        this->update(window.get_input_state());
+    });
+
     win->bind<WindowEvent::RENDER>([&]() {
         auto texture = this->swp.get_current_texture();
         if (!texture.suboptimal) {
@@ -85,7 +89,10 @@ void TestApp::run_without_window()
     backbuffer.texture = render_target.texture.handle;
     backbuffer.view    = render_target.view.handle;
 
+    WindowInput input{}; // dummy window input (since we have no window)
+
     RHI::new_frame();
+    update(input);
     render(backbuffer);
     RHI::end_frame();
 

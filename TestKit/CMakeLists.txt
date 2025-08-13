@@ -18,8 +18,9 @@ target_include_directories(lyra-testkit PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/comm
 add_subdirectory(depth_test)
 add_subdirectory(frame_graph)
 add_subdirectory(stencil_test)
-add_subdirectory(texture_sampling)
+add_subdirectory(push_constants)
 add_subdirectory(dynamic_uniform)
+add_subdirectory(texture_sampling)
 add_subdirectory(graphics_pipeline)
 add_subdirectory(shader_reflection)
 

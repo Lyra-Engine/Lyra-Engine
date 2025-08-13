@@ -3,6 +3,8 @@
 void test_shader_vertex_attribute_reflection(CompileTarget target, CompileFlags flags)
 {
     String code = R"""(
+    import lyra;
+
     struct VertexInput
     {
         float3 position : POSITION;
@@ -22,6 +24,12 @@ void test_shader_vertex_attribute_reflection(CompileTarget target, CompileFlags 
         float4x4 view;
     };
 
+    struct Xform
+    {
+        float3 data;
+        float4x4 mvp;
+    };
+
     struct Hello
     {
         ConstantBuffer<Camera> cam;
@@ -30,8 +38,8 @@ void test_shader_vertex_attribute_reflection(CompileTarget target, CompileFlags 
         SamplerState smp;
     };
 
-    // [[vk::binding(10, 5)]]
-    // ConstantBuffer<Camera> camera : register(b11, space6);
+    [[vk::push_constant]]
+    ConstantBuffer<Xform> xform1 : PUSH_CONSTANT;
 
     ParameterBlock<Hello> haha;
     ParameterBlock<Hello> bibi;
@@ -56,9 +64,10 @@ void test_shader_vertex_attribute_reflection(CompileTarget target, CompileFlags 
 
     // initialize compiler
     auto compiler = execute([&]() {
-        auto desc   = CompilerDescriptor{};
-        desc.target = target;
-        desc.flags  = flags;
+        auto desc      = CompilerDescriptor{};
+        desc.target    = target;
+        desc.flags     = flags;
+        desc.log_level = LogLevel::info;
         return Compiler::init(desc);
     });
 
@@ -82,15 +91,15 @@ void test_shader_vertex_attribute_reflection(CompileTarget target, CompileFlags 
 
     std::cout << "attributes.size() = " << attributes.size() << std::endl;
     for (auto& attrib : attributes) {
-        std::cout << "attrib[" << attrib.shader_location << "].offset = " << attrib.offset << std::endl;
-        std::cout << "attrib[" << attrib.shader_location << "].location = " << attrib.shader_location << std::endl;
-        std::cout << "attrib[" << attrib.shader_location << "].semantic = " << attrib.shader_semantic << std::endl;
+        std::cout << "- attrib[" << attrib.shader_location << "].offset = " << attrib.offset << std::endl;
+        std::cout << "- attrib[" << attrib.shader_location << "].location = " << attrib.shader_location << std::endl;
+        std::cout << "- attrib[" << attrib.shader_location << "].semantic = " << attrib.shader_semantic << std::endl;
     }
 
     auto bindgroups = reflection->get_bind_group_layouts();
-    std::cout << "attributes.size() = " << attributes.size() << std::endl;
+    std::cout << "bindgroups.size() = " << bindgroups.size() << std::endl;
     for (auto& bindgroup : bindgroups) {
-        std::cout << "bindgroup: " << bindgroup.label << std::endl;
+        std::cout << "bindgroup: " << (bindgroup.label ? bindgroup.label : "unnamed") << std::endl;
         for (auto& entry : bindgroup.entries) {
             std::cout << "- entries[" << entry.binding.index << "].type       = " << (int)entry.type << std::endl;
             std::cout << "- entries[" << entry.binding.index << "].binding    = " << entry.binding.index << std::endl;
@@ -101,6 +110,17 @@ void test_shader_vertex_attribute_reflection(CompileTarget target, CompileFlags 
             if (entry.visibility.contains(GPUShaderStage::COMPUTE)) std::cout << " COMPUTE";
             std::cout << std::endl;
         }
+    }
+
+    auto push_constants = reflection->get_push_constant_ranges();
+    std::cout << "push_contants.size() = " << push_constants.size() << std::endl;
+    for (auto& push_constant : push_constants) {
+        std::cout << "- push_constant.offset = " << push_constant.offset << std::endl;
+        std::cout << "- push_constant.size   = " << push_constant.size << std::endl;
+        std::cout << "- push_constant.visibility = " << std::endl;
+        if (push_constant.visibility.contains(GPUShaderStage::VERTEX)) std::cout << " VERTEX";
+        if (push_constant.visibility.contains(GPUShaderStage::FRAGMENT)) std::cout << " FRAGMENT";
+        if (push_constant.visibility.contains(GPUShaderStage::COMPUTE)) std::cout << " COMPUTE";
     }
 }
 

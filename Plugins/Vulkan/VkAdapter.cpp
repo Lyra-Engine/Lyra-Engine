@@ -94,7 +94,7 @@ void populate_device_properties(GPUProperties& properties)
     }
 }
 
-bool api::create_adapter(GPUAdapter& adapter, const GPUAdapterDescriptor& descriptor)
+bool api::create_adapter(GPUAdapterProps& adapter, const GPUAdapterDescriptor& descriptor)
 {
     auto rhi = get_rhi();
 

@@ -91,9 +91,10 @@ void SimplePipeline::init_playout(GPUDevice& device, ShaderReflection* reflectio
         blayouts.push_back(blayout);
     }
 
-    auto desc               = GPUPipelineLayoutDescriptor{};
-    desc.bind_group_layouts = blayouts;
-    playout                 = device.create_pipeline_layout(desc);
+    auto desc                 = GPUPipelineLayoutDescriptor{};
+    desc.bind_group_layouts   = blayouts;
+    desc.push_constant_ranges = reflection->get_push_constant_ranges();
+    playout                   = device.create_pipeline_layout(desc);
 }
 
 void SimpleComputePipeline::init_pipeline(GPUDevice& device, ShaderReflection* reflection)

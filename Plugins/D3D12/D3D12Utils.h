@@ -355,7 +355,11 @@ struct D3D12PipelineLayout
 {
     ID3D12RootSignature* layout = nullptr;
 
+    // regular bind groups
     Vector<D3D12BindGroupInfo> bindgroups = {};
+
+    // push constant is treated differently
+    uint push_constant_root_parameter = -1;
 
     // really awkward design, but I have no choice
     struct
@@ -448,6 +452,7 @@ struct D3D12CommandBuffer
 
     struct PSOStatus
     {
+        bool                 compute  = false;
         D3D12Pipeline*       pipeline = nullptr;
         D3D12PipelineLayout* layout   = nullptr;
     };
@@ -506,9 +511,9 @@ struct D3D12Frame
     uint32_t frame_id = 0u;
 
     // D3D12Frame does NOT own this!!!
-    GPUFenceHandle       image_available_fence;
-    GPUFenceHandle       render_complete_fence;
-    Vector<ID3D12Fence*> existing_fences;
+    GPUFenceHandle         image_available_fence;
+    GPUFenceHandle         render_complete_fence;
+    Vector<GPUFenceHandle> existing_fences;
 
     D3D12CommandPool bundle_command_pool;
     D3D12CommandPool compute_command_pool;
@@ -574,8 +579,8 @@ struct D3D12Swapchain
     // objects for swapchain recreation
     GPUSurfaceDescriptor desc     = {};
     GPUExtent2D          extent   = {};
-    GPUTextureFormat     format   = GPUTextureFormat::RGBA8UNORM;
-    DXGI_FORMAT          dxformat = DXGI_FORMAT_R8G8B8A8_UNORM;
+    GPUTextureFormat     format   = GPUTextureFormat::BGRA8UNORM;
+    DXGI_FORMAT          dxformat = DXGI_FORMAT_B8G8R8A8_UNORM;
 
     // similar to Vulkan's VkPresentModeKHR
     D3D12PresentMode present_mode = {};
@@ -617,6 +622,9 @@ struct D3D12RHI
     // frame tracker
     uint current_frame_index = 0;
     uint current_image_index = 0;
+
+    // swapchain tracker
+    GPUSurfaceHandle surface_tracker;
 
     // collection of objects
     D3D12ResourceManager<D3D12Fence>           fences;
@@ -665,9 +673,10 @@ namespace api
     void delete_surface(GPUSurfaceHandle surface);
     bool get_surface_extent(GPUSurfaceHandle surface, GPUExtent2D& extent);
     bool get_surface_format(GPUSurfaceHandle surface, GPUTextureFormat& format);
+    uint get_surface_frames(GPUSurfaceHandle surface);
 
     // adapter apis
-    bool create_adapter(GPUAdapter& adapter, const GPUAdapterDescriptor& desc);
+    bool create_adapter(GPUAdapterProps& adapter, const GPUAdapterDescriptor& desc);
     void delete_adapter();
 
     // device apis
@@ -763,6 +772,7 @@ namespace cmd
     void set_compute_pipeline(GPUCommandEncoderHandle cmdbuffer, GPUComputePipelineHandle pipeline);
     void set_raytracing_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURayTracingPipelineHandle pipeline);
     void set_bind_group(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 index, GPUBindGroupHandle bind_group, GPUBufferDynamicOffsets dynamic_offsets);
+    void set_push_constants(GPUCommandEncoderHandle cmdbuffer, GPUShaderStageFlags visibility, uint offset, uint size, void* data);
     void set_index_buffer(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle buffer, GPUIndexFormat format, GPUSize64 offset, GPUSize64 size);
     void set_vertex_buffer(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 slot, GPUBufferHandle buffer, GPUSize64 offset, GPUSize64 size);
     void draw(GPUCommandEncoderHandle cmdbuffer, GPUSize32 vertex_count, GPUSize32 instance_count, GPUSize32 first_vertex, GPUSize32 first_instance);
@@ -807,6 +817,9 @@ auto infer_texture_format(GPUTextureFormat format) -> DXGI_FORMAT;
 auto infer_topology_type(GPUPrimitiveTopology topology) -> D3D12_PRIMITIVE_TOPOLOGY_TYPE;
 auto infer_topology(GPUPrimitiveTopology topology) -> D3D12_PRIMITIVE_TOPOLOGY;
 auto infer_row_pitch(DXGI_FORMAT format, uint width, uint bytes_per_row) -> uint;
+auto d3d12enum(GPUCompositeAlphaMode mode) -> DXGI_ALPHA_MODE;
+auto d3d12enum(GPUPresentMode mode) -> DXGI_SWAP_EFFECT;
+auto d3d12enum(GPUShaderStageFlags visbility) -> D3D12_SHADER_VISIBILITY;
 auto d3d12enum(GPUCompareFunction compare, bool enable) -> D3D12_COMPARISON_FUNC;
 auto d3d12enum(GPUFilterMode min, GPUFilterMode mag, GPUMipmapFilterMode mip) -> D3D12_FILTER;
 auto d3d12enum(GPUAddressMode mode) -> D3D12_TEXTURE_ADDRESS_MODE;

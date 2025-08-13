@@ -505,6 +505,9 @@ struct VulkanRHI
     uint current_frame_index = 0;
     uint current_image_index = 0;
 
+    // swapchain tracker
+    GPUSurfaceHandle surface_tracker;
+
     // collection of objects
     VulkanResourceManager<VulkanSwapchain>       swapchains;
     VulkanResourceManager<VulkanSemaphore>       fences;
@@ -550,9 +553,10 @@ namespace api
     void delete_surface(GPUSurfaceHandle surface);
     bool get_surface_extent(GPUSurfaceHandle surface, GPUExtent2D& extent);
     bool get_surface_format(GPUSurfaceHandle surface, GPUTextureFormat& format);
+    uint get_surface_frames(GPUSurfaceHandle surface);
 
     // adapter apis
-    bool create_adapter(GPUAdapter& adapter, const GPUAdapterDescriptor& descriptor);
+    bool create_adapter(GPUAdapterProps& adapter, const GPUAdapterDescriptor& descriptor);
     void delete_adapter();
 
     // device apis
@@ -649,6 +653,7 @@ namespace cmd
     void set_compute_pipeline(GPUCommandEncoderHandle cmdbuffer, GPUComputePipelineHandle pipeline);
     void set_raytracing_pipeline(GPUCommandEncoderHandle cmdbuffer, GPURayTracingPipelineHandle pipeline);
     void set_bind_group(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 index, GPUBindGroupHandle bind_group, GPUBufferDynamicOffsets dynamic_offsets);
+    void set_push_constants(GPUCommandEncoderHandle cmdbuffer, GPUShaderStageFlags visibility, uint offset, uint size, void* data);
     void set_index_buffer(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle buffer, GPUIndexFormat format, GPUSize64 offset, GPUSize64 size);
     void set_vertex_buffer(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 slot, GPUBufferHandle buffer, GPUSize64 offset, GPUSize64 size);
     void draw(GPUCommandEncoderHandle cmdbuffer, GPUSize32 vertex_count, GPUSize32 instance_count, GPUSize32 first_vertex, GPUSize32 first_instance);

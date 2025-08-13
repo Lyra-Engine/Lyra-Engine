@@ -79,8 +79,14 @@ GPUDevice& RHI::get_current_device()
 
 GPUAdapter RHI::request_adapter(const GPUAdapterDescriptor& descriptor) const
 {
-    auto& adapter = RHI::get_current_adapter();
-    RHI::api()->create_adapter(adapter, descriptor);
+    GPUAdapterProps props;
+    RHI::api()->create_adapter(props, descriptor);
+
+    auto& adapter      = RHI::get_current_adapter();
+    adapter.info       = props.info;
+    adapter.features   = props.features;
+    adapter.limits     = props.limits;
+    adapter.properties = props.properties;
     return adapter;
 }
 
@@ -124,6 +130,11 @@ GPUExtent2D GPUSurface::get_current_extent() const
     GPUExtent2D extent;
     RHI::api()->get_surface_extent(handle, extent);
     return extent;
+}
+
+uint GPUSurface::get_image_count() const
+{
+    return RHI::api()->get_surface_frames(handle);
 }
 
 void GPUSurface::destroy() const
@@ -480,6 +491,11 @@ void GPUCommandEncoder::set_pipeline(const GPURayTracingPipeline& pipeline) cons
 void GPUCommandEncoder::set_bind_group(GPUIndex32 index, const GPUBindGroup& bind_group, const Vector<GPUBufferDynamicOffset>& dynamic_offsets) const
 {
     RHI::api()->cmd_set_bind_group(handle, index, bind_group, dynamic_offsets);
+}
+
+void GPUCommandEncoder::set_push_constants(GPUShaderStageFlags visibility, uint offset, uint size, void* data) const
+{
+    RHI::api()->cmd_set_push_constants(handle, visibility, offset, size, data);
 }
 
 void GPUCommandEncoder::dispatch_workgroups(GPUSize32 x, GPUSize32 y, GPUSize32 z) const

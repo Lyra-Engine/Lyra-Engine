@@ -309,6 +309,56 @@ uint infer_row_pitch(DXGI_FORMAT format, uint width, uint bytes_per_row)
     return (size_of(format) * width + alignment - 1) & ~(alignment - 1);
 }
 
+DXGI_ALPHA_MODE d3d12enum(GPUCompositeAlphaMode mode)
+{
+    switch (mode) {
+        case GPUCompositeAlphaMode::Opaque:
+            return DXGI_ALPHA_MODE_IGNORE;
+        case GPUCompositeAlphaMode::PreMultiplied:
+            return DXGI_ALPHA_MODE_PREMULTIPLIED;
+        case GPUCompositeAlphaMode::PostMultiplied:
+            return DXGI_ALPHA_MODE_STRAIGHT;
+        default:
+            // handle error case
+            return DXGI_ALPHA_MODE_UNSPECIFIED;
+    }
+}
+DXGI_SWAP_EFFECT d3d12enum(GPUPresentMode mode)
+{
+    switch (mode) {
+        case GPUPresentMode::Fifo:
+            return DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
+        case GPUPresentMode::FifoRelaxed:
+            return DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
+        case GPUPresentMode::Immediate:
+            return DXGI_SWAP_EFFECT_FLIP_DISCARD;
+        case GPUPresentMode::Mailbox:
+            return DXGI_SWAP_EFFECT_FLIP_DISCARD;
+        default:
+            // handle error case
+            return DXGI_SWAP_EFFECT_FLIP_DISCARD;
+    }
+}
+
+D3D12_SHADER_VISIBILITY d3d12enum(GPUShaderStageFlags stages)
+{
+    bool has_compute  = stages.contains(GPUShaderStage::COMPUTE);
+    bool has_vertex   = stages.contains(GPUShaderStage::VERTEX);
+    bool has_fragment = stages.contains(GPUShaderStage::FRAGMENT);
+
+    D3D12_SHADER_VISIBILITY visibility;
+    if (has_compute) {
+        visibility = D3D12_SHADER_VISIBILITY_ALL; // Compute uses ALL
+    } else if (has_vertex && !has_fragment && !has_compute) {
+        visibility = D3D12_SHADER_VISIBILITY_VERTEX;
+    } else if (has_fragment && !has_vertex && !has_compute) {
+        visibility = D3D12_SHADER_VISIBILITY_PIXEL;
+    } else {
+        visibility = D3D12_SHADER_VISIBILITY_ALL; // Multiple stages or mixed usage
+    }
+    return visibility;
+}
+
 D3D12_COMPARISON_FUNC d3d12enum(GPUCompareFunction compare, bool enable)
 {
     if (!enable)

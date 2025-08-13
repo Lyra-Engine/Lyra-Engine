@@ -74,5 +74,6 @@ VkSurfaceKHR create_surface(VkInstance instance, const WindowHandle& handle)
 
     VkSurfaceKHR surface = VK_NULL_HANDLE;
     vk_check(create_surface(instance, handle, surface));
+    assert(surface && "Failed to create VkSurfaceKHR!");
     return surface;
 }

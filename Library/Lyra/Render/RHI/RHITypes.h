@@ -25,14 +25,15 @@ namespace lyra::rhi
         GPUFenceHandle handle;
 
         // implicit conversion
-        GPUFence() : handle() {}
-        GPUFence(GPUFenceHandle handle) : handle(handle) {}
+        FORCE_INLINE GPUFence() : handle() {}
+        FORCE_INLINE GPUFence(GPUFenceHandle handle) : handle(handle) {}
+        FORCE_INLINE operator GPUFenceHandle() const { return handle; }
+
+        FORCE_INLINE bool valid() const { return handle.valid(); }
 
         void wait() const;
 
         void destroy();
-
-        operator GPUFenceHandle() const { return handle; }
     };
 
     struct GPUSampler : public GPUObjectBase
@@ -40,12 +41,13 @@ namespace lyra::rhi
         GPUSamplerHandle handle;
 
         // implicit conversion
-        GPUSampler() : handle() {}
-        GPUSampler(GPUSamplerHandle handle) : handle(handle) {}
+        FORCE_INLINE GPUSampler() : handle() {}
+        FORCE_INLINE GPUSampler(GPUSamplerHandle handle) : handle(handle) {}
+        FORCE_INLINE operator GPUSamplerHandle() const { return handle; }
+
+        FORCE_INLINE bool valid() const { return handle.valid(); }
 
         void destroy();
-
-        operator GPUSamplerHandle() const { return handle; }
     };
 
     struct GPUShaderModule : public GPUObjectBase
@@ -53,12 +55,13 @@ namespace lyra::rhi
         GPUShaderModuleHandle handle;
 
         // implicit conversion
-        GPUShaderModule() : handle() {}
-        GPUShaderModule(GPUShaderModuleHandle handle) : handle(handle) {}
+        FORCE_INLINE GPUShaderModule() : handle() {}
+        FORCE_INLINE GPUShaderModule(GPUShaderModuleHandle handle) : handle(handle) {}
+        FORCE_INLINE operator GPUShaderModuleHandle() const { return handle; }
+
+        FORCE_INLINE bool valid() const { return handle.valid(); }
 
         void destroy();
-
-        operator GPUShaderModuleHandle() const { return handle; }
     };
 
     struct GPUTextureView : public GPUObjectBase
@@ -66,12 +69,13 @@ namespace lyra::rhi
         GPUTextureViewHandle handle;
 
         // implicit conversion
-        GPUTextureView() : handle() {}
-        GPUTextureView(GPUTextureViewHandle handle) : handle(handle) {}
+        FORCE_INLINE GPUTextureView() : handle() {}
+        FORCE_INLINE GPUTextureView(GPUTextureViewHandle handle) : handle(handle) {}
+        FORCE_INLINE operator GPUTextureViewHandle() const { return handle; }
+
+        FORCE_INLINE bool valid() const { return handle.valid(); }
 
         void destroy();
-
-        operator GPUTextureViewHandle() const { return handle; }
     };
 
     struct GPUTexture : public GPUObjectBase
@@ -88,13 +92,16 @@ namespace lyra::rhi
         GPUTextureFormat        format;
         GPUTextureUsageFlags    usage;
 
+        // implicit conversion
+        FORCE_INLINE operator GPUTextureHandle() const { return handle; }
+
+        FORCE_INLINE bool valid() const { return handle.valid(); }
+
         auto create_view() -> GPUTextureView;
 
         auto create_view(GPUTextureViewDescriptor descriptor) -> GPUTextureView;
 
         void destroy();
-
-        operator GPUTextureHandle() const { return handle; }
     };
 
     struct GPUBuffer : public GPUObjectBase
@@ -104,8 +111,13 @@ namespace lyra::rhi
         GPUSize64Out        size  = 0;
         GPUBufferUsageFlags usage = 0;
 
+        // implicit conversion
+        FORCE_INLINE operator GPUBufferHandle() const { return handle; }
+
+        FORCE_INLINE bool valid() const { return handle.valid(); }
+
         template <typename T>
-        auto get_mapped_range() const -> TypedBufferRange<T>
+        FORCE_INLINE auto get_mapped_range() const -> TypedBufferRange<T>
         {
             auto range  = get_mapped_range();
             auto typed  = TypedBufferRange<T>{};
@@ -123,8 +135,6 @@ namespace lyra::rhi
         void unmap();
 
         void destroy();
-
-        operator GPUBufferHandle() const { return handle; }
     };
 
     struct GPUQuerySet : public GPUObjectBase
@@ -134,9 +144,12 @@ namespace lyra::rhi
         GPUQueryType type;
         GPUSize32    count;
 
-        auto destroy() -> void;
+        // implicit conversion
+        FORCE_INLINE operator GPUQuerySetHandle() const { return handle; }
 
-        operator GPUQuerySetHandle() const { return handle; }
+        FORCE_INLINE bool valid() const { return handle.valid(); }
+
+        auto destroy() -> void;
     };
 
     struct GPUTlas : public GPUObjectBase
@@ -144,12 +157,13 @@ namespace lyra::rhi
         GPUTlasHandle handle;
 
         // implicit conversion
-        GPUTlas() : handle() {}
-        GPUTlas(GPUTlasHandle handle) : handle(handle) {}
+        FORCE_INLINE GPUTlas() : handle() {}
+        FORCE_INLINE GPUTlas(GPUTlasHandle handle) : handle(handle) {}
+        FORCE_INLINE operator GPUTlasHandle() const { return handle; }
+
+        FORCE_INLINE bool valid() const { return handle.valid(); }
 
         auto destroy() -> void;
-
-        operator GPUTlasHandle() const { return handle; }
     };
 
     struct GPUBlas : public GPUObjectBase
@@ -157,12 +171,13 @@ namespace lyra::rhi
         GPUBlasHandle handle;
 
         // implicit conversion
-        GPUBlas() : handle() {}
-        GPUBlas(GPUBlasHandle handle) : handle(handle) {}
+        FORCE_INLINE GPUBlas() : handle() {}
+        FORCE_INLINE GPUBlas(GPUBlasHandle handle) : handle(handle) {}
+        FORCE_INLINE operator GPUBlasHandle() const { return handle; }
+
+        FORCE_INLINE bool valid() const { return handle.valid(); }
 
         auto destroy() -> void;
-
-        operator GPUBlasHandle() const { return handle; }
     };
 
     struct GPUBindGroup : public GPUObjectBase
@@ -173,10 +188,11 @@ namespace lyra::rhi
         // because these are automatically recycled by GC.
 
         // implicit conversion
-        GPUBindGroup() : handle() {}
-        GPUBindGroup(GPUBindGroupHandle handle) : handle(handle) {}
+        FORCE_INLINE GPUBindGroup() : handle() {}
+        FORCE_INLINE GPUBindGroup(GPUBindGroupHandle handle) : handle(handle) {}
+        FORCE_INLINE operator GPUBindGroupHandle() const { return handle; }
 
-        operator GPUBindGroupHandle() const { return handle; }
+        FORCE_INLINE bool valid() const { return handle.valid(); }
     };
 
     struct GPUBindGroupLayout : public GPUObjectBase
@@ -184,12 +200,13 @@ namespace lyra::rhi
         GPUBindGroupLayoutHandle handle;
 
         // implicit conversion
-        GPUBindGroupLayout() : handle() {}
-        GPUBindGroupLayout(GPUBindGroupLayoutHandle handle) : handle(handle) {}
+        FORCE_INLINE GPUBindGroupLayout() : handle() {}
+        FORCE_INLINE GPUBindGroupLayout(GPUBindGroupLayoutHandle handle) : handle(handle) {}
+        FORCE_INLINE operator GPUBindGroupLayoutHandle() const { return handle; }
+
+        FORCE_INLINE bool valid() const { return handle.valid(); }
 
         void destroy();
-
-        operator GPUBindGroupLayoutHandle() const { return handle; }
     };
 
     struct GPUPipelineLayout : public GPUObjectBase
@@ -197,44 +214,67 @@ namespace lyra::rhi
         GPUPipelineLayoutHandle handle;
 
         // implicit conversion
-        GPUPipelineLayout() : handle() {}
-        GPUPipelineLayout(GPUPipelineLayoutHandle handle) : handle(handle) {}
+        FORCE_INLINE GPUPipelineLayout() : handle() {}
+        FORCE_INLINE GPUPipelineLayout(GPUPipelineLayoutHandle handle) : handle(handle) {}
+        FORCE_INLINE operator GPUPipelineLayoutHandle() const { return handle; }
+
+        FORCE_INLINE bool valid() const { return handle.valid(); }
 
         void destroy();
-
-        operator GPUPipelineLayoutHandle() const { return handle; }
     };
 
     struct GPURenderPipeline : public GPUObjectBase
     {
         GPURenderPipelineHandle handle;
 
-        void destroy();
+        // implicit conversion
+        FORCE_INLINE GPURenderPipeline() : handle() {}
+        FORCE_INLINE GPURenderPipeline(GPURenderPipelineHandle handle) : handle(handle) {}
+        FORCE_INLINE operator GPURenderPipelineHandle() const { return handle; }
 
-        operator GPURenderPipelineHandle() const { return handle; }
+        FORCE_INLINE bool valid() const { return handle.valid(); }
+
+        void destroy();
     };
 
     struct GPUComputePipeline : public GPUObjectBase
     {
         GPUComputePipelineHandle handle;
 
-        void destroy();
+        // implicit conversion
+        FORCE_INLINE GPUComputePipeline() : handle() {}
+        FORCE_INLINE GPUComputePipeline(GPUComputePipelineHandle handle) : handle(handle) {}
+        FORCE_INLINE operator GPUComputePipelineHandle() const { return handle; }
 
-        operator GPUComputePipelineHandle() const { return handle; }
+        FORCE_INLINE bool valid() const { return handle.valid(); }
+
+        void destroy();
     };
 
     struct GPURayTracingPipeline : public GPUObjectBase
     {
         GPURayTracingPipelineHandle handle;
 
-        void destroy();
+        // implicit conversion
+        FORCE_INLINE GPURayTracingPipeline() : handle() {}
+        FORCE_INLINE GPURayTracingPipeline(GPURayTracingPipelineHandle handle) : handle(handle) {}
+        FORCE_INLINE operator GPURayTracingPipelineHandle() const { return handle; }
 
-        operator GPURayTracingPipelineHandle() const { return handle; }
+        FORCE_INLINE bool valid() const { return handle.valid(); }
+
+        void destroy();
     };
 
     struct GPUCommandEncoder : public GPUObjectBase
     {
         GPUCommandEncoderHandle handle;
+
+        // implicit conversion
+        FORCE_INLINE GPUCommandEncoder() : handle() {}
+        FORCE_INLINE GPUCommandEncoder(GPUCommandEncoderHandle handle) : handle(handle) {}
+        FORCE_INLINE operator GPUCommandEncoderHandle() const { return handle; }
+
+        FORCE_INLINE bool valid() const { return handle.valid(); }
 
         void insert_debug_marker(CString marker_label);
 
@@ -253,6 +293,14 @@ namespace lyra::rhi
         void set_pipeline(const GPURayTracingPipeline& pipeline) const;
 
         void set_bind_group(GPUIndex32 index, const GPUBindGroup& bind_group, const Vector<GPUBufferDynamicOffset>& dynamic_offsets = {}) const;
+
+        void set_push_constants(GPUShaderStageFlags visibility, uint offset, uint size, void* data) const;
+
+        template <typename T>
+        void set_push_constants(GPUShaderStageFlags visibility, uint offset, T data) const
+        {
+            set_push_constants(visibility, offset, sizeof(T), reinterpret_cast<uint8_t*>(&data));
+        }
 
         void dispatch_workgroups(GPUSize32 x, GPUSize32 y = 1, GPUSize32 z = 1) const;
 
@@ -315,12 +363,22 @@ namespace lyra::rhi
 
     struct GPUCommandBundle : public GPUCommandEncoder
     {
-        operator GPUCommandEncoderHandle() const { return handle; }
+        // implicit conversion
+        FORCE_INLINE GPUCommandBundle() : GPUCommandEncoder() {}
+        FORCE_INLINE GPUCommandBundle(GPUCommandEncoderHandle handle) : GPUCommandEncoder(handle) {}
+        FORCE_INLINE operator GPUCommandEncoderHandle() const { return handle; }
+
+        FORCE_INLINE bool valid() const { return handle.valid(); }
     };
 
     struct GPUCommandBuffer : public GPUCommandEncoder
     {
-        operator GPUCommandEncoderHandle() const { return handle; }
+        // implicit conversion
+        FORCE_INLINE GPUCommandBuffer() : GPUCommandEncoder() {}
+        FORCE_INLINE GPUCommandBuffer(GPUCommandEncoderHandle handle) : GPUCommandEncoder(handle) {}
+        FORCE_INLINE operator GPUCommandEncoderHandle() const { return handle; }
+
+        FORCE_INLINE bool valid() const { return handle.valid(); }
 
         void submit() const;
 
@@ -336,9 +394,10 @@ namespace lyra::rhi
         GPUFenceHandle       available;
         bool                 suboptimal;
 
-        void present() const;
+        // implicit conversion
+        FORCE_INLINE operator GPUTextureViewHandle() const { return view; }
 
-        operator GPUTextureViewHandle() const { return view; }
+        void present() const;
     };
 
     struct GPUDevice : public GPUObjectBase
@@ -389,15 +448,20 @@ namespace lyra::rhi
     {
         GPUSurfaceHandle handle;
 
+        // implicit conversion
+        FORCE_INLINE GPUSurface() : handle() {}
+        FORCE_INLINE GPUSurface(GPUSurfaceHandle handle) : handle(handle) {}
+        FORCE_INLINE operator GPUSurfaceHandle() const { return handle; }
+
         auto get_current_texture() const -> GPUSurfaceTexture;
 
         auto get_current_format() const -> GPUTextureFormat;
 
         auto get_current_extent() const -> GPUExtent2D;
 
-        auto destroy() const -> void;
+        uint get_image_count() const;
 
-        operator GPUSurfaceHandle() const { return handle; }
+        auto destroy() const -> void;
     };
 
     struct GPUAdapter : public GPUObjectBase

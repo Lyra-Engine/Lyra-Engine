@@ -28,13 +28,21 @@ bool api::get_surface_format(GPUSurfaceHandle surface, GPUTextureFormat& format)
 
     auto& swapchain = fetch_resource(rhi->swapchains, surface);
     switch (swapchain.format) {
-        case VK_FORMAT_B8G8R8A8_SRGB:
-            format = GPUTextureFormat::BGRA8UNORM_SRGB;
+        case VK_FORMAT_B8G8R8A8_UNORM:
+            format = GPUTextureFormat::BGRA8UNORM;
             return true;
         default:
             throw std::runtime_error("Failed to match the corresponding swapchain format");
             return false;
     }
+}
+
+uint api::get_surface_frames(GPUSurfaceHandle surface)
+{
+    auto rhi = get_rhi();
+
+    auto& swapchain = fetch_resource(rhi->swapchains, surface);
+    return static_cast<uint>(swapchain.frames.size());
 }
 
 bool api::create_surface(GPUSurfaceHandle& surface, const GPUSurfaceDescriptor& desc)
@@ -361,9 +369,19 @@ void api::wait_idle()
     auto rhi = get_rhi();
     vk_check(rhi->vtable.vkDeviceWaitIdle(rhi->device));
 
-    // optional: clean up all pools from all frames
+    // clean up all pools from all frames
     for (auto& frame : rhi->frames)
         frame.free();
+
+    // reset all fences
+    for (auto& frame : rhi->frames) {
+        if (!frame.existing_fences.empty()) {
+            auto rhi = get_rhi();
+            uint cnt = static_cast<uint>(frame.existing_fences.size());
+            rhi->vtable.vkResetFences(rhi->device, cnt, frame.existing_fences.data());
+            frame.existing_fences.clear();
+        }
+    }
 }
 
 void api::wait_fence(GPUFenceHandle handle)
@@ -395,6 +413,7 @@ LYRA_EXPORT auto create() -> RenderAPI
     api.delete_surface                   = api::delete_surface;
     api.get_surface_extent               = api::get_surface_extent;
     api.get_surface_format               = api::get_surface_format;
+    api.get_surface_frames               = api::get_surface_frames;
     api.create_buffer                    = api::create_buffer;
     api.delete_buffer                    = api::delete_buffer;
     api.create_texture                   = api::create_texture;
@@ -445,6 +464,7 @@ LYRA_EXPORT auto create() -> RenderAPI
     api.cmd_set_compute_pipeline         = cmd::set_compute_pipeline;
     api.cmd_set_raytracing_pipeline      = cmd::set_raytracing_pipeline;
     api.cmd_set_bind_group               = cmd::set_bind_group;
+    api.cmd_set_push_constants           = cmd::set_push_constants;
     api.cmd_set_index_buffer             = cmd::set_index_buffer;
     api.cmd_set_vertex_buffer            = cmd::set_vertex_buffer;
     api.cmd_draw                         = cmd::draw;

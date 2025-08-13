@@ -21,6 +21,7 @@ struct TestApp
     explicit TestApp(const TestAppDescriptor& desc);
 
     virtual void render(const GPUSurfaceTexture& texture) = 0;
+    virtual void update(const WindowInput& input) {}
 
     void run();
     void run_with_window();

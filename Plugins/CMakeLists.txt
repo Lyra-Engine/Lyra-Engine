@@ -1,5 +1,6 @@
 add_subdirectory(Glfw)
 add_subdirectory(Slang)
+add_subdirectory(ImGui)
 
 # build d3d12 backend on Windows
 if(WIN32)

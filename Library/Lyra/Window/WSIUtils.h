@@ -1,51 +1,34 @@
 #ifndef LYRA_LIBRARY_WINDOW_UTILS_H
 #define LYRA_LIBRARY_WINDOW_UTILS_H
 
-#include <Lyra/Common/Enums.h>
-#include <Lyra/Common/Stdint.h>
-#include <Lyra/Common/Container.h>
+#include <Lyra/Common/Function.h>
 #include <Lyra/Common/BitFlags.h>
 #include <Lyra/Window/WSIEnums.h>
 
 namespace lyra::wsi
 {
     using WindowFlags = BitFlags<WindowFlag>;
-    using Modifiers   = BitFlags<Modifier>;
 
-    struct MousePosition
+    using WindowCallback = std::function<void(WindowEvent)>;
+
+    struct MonitorInfo
     {
-        float x;
-        float y;
-    };
-
-    struct MouseState
-    {
-        static constexpr size_t COUNT = magic_enum::enum_count<MouseButton>();
-
-        MousePosition             position;
-        Array<ButtonState, COUNT> status;
-    };
-
-    struct KeyboardState
-    {
-        static constexpr size_t COUNT = magic_enum::enum_count<KeyButton>();
-
-        Modifiers                 modifiers;
-        Array<ButtonState, COUNT> status;
-    };
-
-    struct WindowInputState
-    {
-        MouseState    mouse;
-        KeyboardState keyboard;
+        int   monitor_pos_x;
+        int   monitor_pos_y;
+        uint  monitor_width;
+        uint  monitor_height;
+        int   workarea_pos_x;
+        int   workarea_pos_y;
+        uint  workarea_width;
+        uint  workarea_height;
+        float dpi_scale_x;
+        float dpi_scale_y;
     };
 
     struct WindowHandle
     {
         void* window = nullptr;
         void* native = nullptr;
-
-        WindowInputState* state = nullptr;
     };
 
 } // namespace lyra::wsi

@@ -9,10 +9,12 @@ VulkanSwapchain::VulkanSwapchain()
 
 VulkanSwapchain::VulkanSwapchain(const GPUSurfaceDescriptor& desc, VkSurfaceKHR surface) : desc(desc), surface(surface)
 {
+    assert(surface && "Input VkSurfaceKHR is invalid!");
+
     recreate();
 
     uint image_frame_count = static_cast<uint>(frames.size());
-    uint logic_frame_count = static_cast<uint>(desc.frames_inflight);
+    uint logic_frame_count = static_cast<uint>(desc.frames);
 
     // create inflight fences
     uint existing_fence_count = static_cast<uint>(inflight_fences.size());
@@ -44,9 +46,9 @@ VulkanSwapchain::VulkanSwapchain(const GPUSurfaceDescriptor& desc, VkSurfaceKHR 
     // create frames if not already done so
     auto rhi                   = get_rhi();
     uint existing_frames_count = static_cast<uint>(rhi->frames.size());
-    if (existing_frames_count < desc.frames_inflight) {
-        rhi->frames.resize(desc.frames_inflight);
-        for (uint i = existing_frames_count; i < desc.frames_inflight; i++)
+    if (existing_frames_count < desc.frames) {
+        rhi->frames.resize(desc.frames);
+        for (uint i = existing_frames_count; i < desc.frames; i++)
             rhi->frames.at(i).init();
     }
 }
@@ -61,13 +63,13 @@ void VulkanSwapchain::recreate()
     VkPresentModeKHR        present_mode      = choose_swap_present_mode(swapchain_support.present_modes);
 
     uint32_t image_count = std::clamp(
-        desc.frames_inflight,
+        desc.frames,
         swapchain_support.capabilities.minImageCount,
         swapchain_support.capabilities.maxImageCount);
 
     auto create_info             = VkSwapchainCreateInfoKHR{};
     create_info.sType            = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    create_info.surface          = rhi->surface;
+    create_info.surface          = surface;
     create_info.minImageCount    = image_count;
     create_info.imageFormat      = surface_format.format;
     create_info.imageColorSpace  = surface_format.colorSpace;
@@ -79,7 +81,7 @@ void VulkanSwapchain::recreate()
     create_info.preTransform     = swapchain_support.capabilities.currentTransform;
     create_info.compositeAlpha   = vkenum(desc.alpha_mode);
 
-    auto indices              = find_queue_family_indices(rhi->adapter, rhi->surface);
+    auto indices              = find_queue_family_indices(rhi->adapter, surface);
     uint queueFamilyIndices[] = {indices.graphics.value(), indices.present.value()};
     if (indices.graphics != indices.present) {
         create_info.imageSharingMode      = VK_SHARING_MODE_CONCURRENT;
@@ -282,9 +284,18 @@ bool api::acquire_next_frame(GPUSurfaceHandle surface, GPUTextureHandle& texture
 {
     auto rhi = get_rhi();
 
+    // initialize swpachain tracker
+    if (rhi->surface_tracker.valid()) {
+        assert(rhi->surface_tracker == surface && "Caller must call present_curr_frame() prior to calling acquire_next_frame() again!");
+        rhi->surface_tracker = surface;
+    }
+
     // query the swapchain
     auto& swp = fetch_resource(rhi->swapchains, surface);
-    auto  ind = rhi->current_frame_index % swp.desc.frames_inflight;
+    auto  ind = rhi->current_frame_index % swp.desc.frames;
+
+    // swapchain sanity check
+    assert(swp.valid());
 
     // query the current frame (and assign the synchronization primitives for this swapchain)
     auto& frame                     = rhi->current_frame();
@@ -326,8 +337,17 @@ bool api::present_curr_frame(GPUSurfaceHandle surface)
 {
     auto rhi = get_rhi();
 
+    // validator swpachain tracker
+    if (rhi->surface_tracker.valid()) {
+        assert(rhi->surface_tracker == surface && "Caller must call acquire_next_frame() prior to calling present_curr_frame()!");
+        rhi->surface_tracker.reset();
+    }
+
     // query the swapchain
     auto& swp = fetch_resource(rhi->swapchains, surface);
+
+    // swapchain sanity check
+    assert(swp.valid());
 
     // query the current frame (also update the frame index)
     auto& frame = rhi->current_frame();

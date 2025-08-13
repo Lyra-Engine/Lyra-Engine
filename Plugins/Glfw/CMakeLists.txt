@@ -2,10 +2,10 @@
 lyra_plugin(glfw)
 
 # plugin sources
-target_sources(lyra-glfw PRIVATE Plugin.cpp)
+target_sources(lyra-glfw PRIVATE GlfwPlugin.cpp)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-  target_sources(lyra-glfw PRIVATE MacOS.mm)
+  target_sources(lyra-glfw PRIVATE GlfwMacOS.mm)
   target_link_libraries(lyra-glfw PRIVATE "-framework Cocoa")
   target_link_libraries(lyra-glfw PRIVATE "-framework QuartzCore")
 endif()

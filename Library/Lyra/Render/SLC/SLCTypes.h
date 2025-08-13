@@ -40,12 +40,14 @@ namespace lyra::rhi
 
         auto get_bind_group_location(CString name) const -> uint;
         auto get_bind_group_layouts() -> GPUBindGroupLayoutDescriptors;
+        auto get_push_constant_ranges() -> GPUPushConstantRanges;
         auto get_vertex_attributes(ShaderAttributes attrs) -> GPUVertexAttributes;
         auto get_vertex_attributes(InitList<ShaderAttribute> attrs) -> GPUVertexAttributes;
 
     private:
         List<Vector<GPUVertexAttribute>>     vertex_attributes;
         Vector<GPUBindGroupLayoutDescriptor> bind_group_layouts;
+        Vector<GPUPushConstantRange>         push_constant_ranges;
     };
 
     struct Compiler
@@ -55,6 +57,13 @@ namespace lyra::rhi
         static auto init(const CompilerDescriptor& descriptor) -> OwnedResource<Compiler>;
 
         static auto api() -> ShaderAPI*;
+
+        // implicit conversion
+        Compiler() : handle() {}
+        Compiler(CompilerHandle handle) : handle(handle) {}
+
+        operator CompilerHandle() { return handle; }
+        operator CompilerHandle() const { return handle; }
 
         void destroy();
 

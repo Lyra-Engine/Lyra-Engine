@@ -17,11 +17,11 @@ D3D12Swapchain::D3D12Swapchain(const GPUSurfaceDescriptor& desc) : desc(desc)
     recreate();
 
     uint image_frame_count = static_cast<uint>(frames.size());
-    uint logic_frame_count = static_cast<uint>(desc.frames_inflight);
+    uint logic_frame_count = static_cast<uint>(desc.frames);
 
     // initialize swap frame
-    assert(frames.size() == 0 || frames.size() == desc.frames_inflight);
-    for (uint i = 0; i < desc.frames_inflight; i++)
+    assert(frames.size() == 0 || frames.size() == desc.frames);
+    for (uint i = 0; i < desc.frames; i++)
         frames.at(i).init(this, i, extent.width, extent.height);
 
     // create image available semaphores
@@ -45,9 +45,9 @@ D3D12Swapchain::D3D12Swapchain(const GPUSurfaceDescriptor& desc) : desc(desc)
     // create frames if not already done so
     auto rhi                   = get_rhi();
     uint existing_frames_count = static_cast<uint>(rhi->frames.size());
-    if (existing_frames_count < desc.frames_inflight) {
-        rhi->frames.resize(desc.frames_inflight);
-        for (uint i = existing_frames_count; i < desc.frames_inflight; i++)
+    if (existing_frames_count < desc.frames) {
+        rhi->frames.resize(desc.frames);
+        for (uint i = existing_frames_count; i < desc.frames; i++)
             rhi->frames.at(i).init();
     }
 }
@@ -63,7 +63,7 @@ void D3D12Swapchain::recreate()
     extent.height = height;
 
     // query number of backbuffers
-    uint num_backbuffers = desc.frames_inflight;
+    uint num_backbuffers = desc.frames;
 
     // present mode
     present_mode = infer_present_mode(desc.present_mode);
@@ -81,7 +81,7 @@ void D3D12Swapchain::recreate()
         swapchain_desc.Stereo                = false;
         swapchain_desc.BufferUsage           = DXGI_USAGE_RENDER_TARGET_OUTPUT; // D3D12 disallows UAV access on back buffer textures (no direct compute shader write)
         swapchain_desc.BufferCount           = num_backbuffers;
-        swapchain_desc.AlphaMode             = DXGI_ALPHA_MODE_UNSPECIFIED;
+        swapchain_desc.AlphaMode             = d3d12enum(desc.alpha_mode);
         swapchain_desc.SwapEffect            = DXGI_SWAP_EFFECT_FLIP_DISCARD;
         swapchain_desc.SampleDesc.Count      = 1;
         swapchain_desc.SampleDesc.Quality    = 0;
@@ -100,7 +100,7 @@ void D3D12Swapchain::recreate()
     uint existing_frames_count = static_cast<uint>(frames.size());
     assert(frames.size() == 0 || frames.size() == num_backbuffers);
     frames.resize(num_backbuffers);
-    for (uint i = existing_frames_count; i < desc.frames_inflight; i++)
+    for (uint i = existing_frames_count; i < desc.frames; i++)
         frames.at(i).init(this, i, extent.width, extent.height);
 }
 
@@ -119,8 +119,10 @@ void D3D12Swapchain::destroy()
         api::delete_fence(semaphore);
 
     // destroy swapchain
-    if (swapchain != nullptr)
+    if (swapchain != nullptr) {
         swapchain->Release();
+        swapchain = nullptr;
+    }
 
     frames.clear();
     image_available_fences.clear();
@@ -230,9 +232,18 @@ bool api::acquire_next_frame(GPUSurfaceHandle surface, GPUTextureHandle& texture
 {
     auto rhi = get_rhi();
 
+    // initialize swpachain tracker
+    if (rhi->surface_tracker.valid()) {
+        assert(rhi->surface_tracker == surface && "Caller must call present_curr_frame() prior to calling acquire_next_frame() again!");
+        rhi->surface_tracker = surface;
+    }
+
     // query the swapchain
     auto& swp = fetch_resource(rhi->swapchains, surface);
-    auto  ind = rhi->current_frame_index % swp.desc.frames_inflight;
+    auto  ind = rhi->current_frame_index % swp.desc.frames;
+
+    // swapchain sanity check
+    assert(swp.valid());
 
     // backbuffer
     uint  backbuffer_index   = swp.swapchain->GetCurrentBackBufferIndex();
@@ -252,9 +263,8 @@ bool api::acquire_next_frame(GPUSurfaceHandle surface, GPUTextureHandle& texture
     current_frame.render_complete_fence = render_complete_fence;
     current_frame.image_available_fence = image_available_fence;
 
-    // keep track of the fence
-    auto fence = fetch_resource(rhi->fences, render_complete_fence).fence;
-    current_frame.existing_fences.push_back(fence);
+    // keep track of the render complete fences
+    current_frame.existing_fences.push_back(render_complete_fence);
 
     // update swapchain view (this must be done after current_image_index is updated)
     texture = backbuffer.texture;
@@ -267,8 +277,17 @@ bool api::present_curr_frame(GPUSurfaceHandle surface)
 {
     auto rhi = get_rhi();
 
+    // validator swpachain tracker
+    if (rhi->surface_tracker.valid()) {
+        assert(rhi->surface_tracker == surface && "Caller must call acquire_next_frame() prior to calling present_curr_frame()!");
+        rhi->surface_tracker.reset();
+    }
+
     // query the swapchain
     auto& swp = fetch_resource(rhi->swapchains, surface);
+
+    // swapchain sanity check
+    assert(swp.valid());
 
     // query the current frame (also update the frame index)
     auto& frame = rhi->current_frame();
@@ -295,6 +314,5 @@ bool api::present_curr_frame(GPUSurfaceHandle surface)
 
     // present to swapchain
     swp.swapchain->Present(swp.present_mode.sync_interval, swp.present_mode.sync_flags);
-    rhi->current_frame_index++;
     return true;
 }

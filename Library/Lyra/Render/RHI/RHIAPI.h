@@ -7,7 +7,6 @@
 #include <Lyra/Render/RHI/RHIUtils.h>
 #include <Lyra/Render/RHI/RHIDescs.h>
 #include <Lyra/Render/RHI/RHIError.h>
-#include <Lyra/Render/RHI/RHITypes.h>
 
 namespace lyra::rhi
 {
@@ -19,13 +18,14 @@ namespace lyra::rhi
         bool (*create_instance)(const RHIDescriptor& descriptor);
         void (*delete_instance)();
 
-        bool (*create_adapter)(GPUAdapter& adapter, const GPUAdapterDescriptor& descriptor);
+        bool (*create_adapter)(GPUAdapterProps& adapter, const GPUAdapterDescriptor& descriptor);
         void (*delete_adapter)();
 
         bool (*create_surface)(GPUSurfaceHandle& surface, const GPUSurfaceDescriptor& descriptor);
         void (*delete_surface)(GPUSurfaceHandle surface);
         bool (*get_surface_extent)(GPUSurfaceHandle surface, GPUExtent2D& extent);
         bool (*get_surface_format)(GPUSurfaceHandle surface, GPUTextureFormat& format);
+        uint (*get_surface_frames)(GPUSurfaceHandle surface);
 
         bool (*create_device)(const GPUDeviceDescriptor& descriptor);
         void (*delete_device)();
@@ -101,6 +101,7 @@ namespace lyra::rhi
         void (*cmd_set_compute_pipeline)(GPUCommandEncoderHandle cmdbuffer, GPUComputePipelineHandle pipeline);
         void (*cmd_set_raytracing_pipeline)(GPUCommandEncoderHandle cmdbuffer, GPURayTracingPipelineHandle pipeline);
         void (*cmd_set_bind_group)(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 index, GPUBindGroupHandle bind_group, GPUBufferDynamicOffsets dynamic_offsets);
+        void (*cmd_set_push_constants)(GPUCommandEncoderHandle cmdbuffer, GPUShaderStageFlags visibility, uint offset, uint size, void* data);
         void (*cmd_set_index_buffer)(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle buffer, GPUIndexFormat format, GPUSize64 offset, GPUSize64 size);
         void (*cmd_set_vertex_buffer)(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 slot, GPUBufferHandle buffer, GPUSize64 offset, GPUSize64 size);
         void (*cmd_draw)(GPUCommandEncoderHandle cmdbuffer, GPUSize32 vertex_count, GPUSize32 instance_count, GPUSize32 first_vertex, GPUSize32 first_instance);

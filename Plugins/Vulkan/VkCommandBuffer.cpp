@@ -255,6 +255,13 @@ void cmd::set_bind_group(GPUCommandEncoderHandle cmdbuffer, GPUIndex32 index, GP
         static_cast<uint32_t>(dynamic_offsets.size()), dynamic_offsets.data());
 }
 
+void cmd::set_push_constants(GPUCommandEncoderHandle cmdbuffer, GPUShaderStageFlags visibility, uint offset, uint size, void* data)
+{
+    auto  rhi = get_rhi();
+    auto& cmd = rhi->current_frame().command(cmdbuffer);
+    rhi->vtable.vkCmdPushConstants(cmd.command_buffer, cmd.last_bound_layout, vkenum(visibility), offset, size, data);
+}
+
 void cmd::set_index_buffer(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle buffer, GPUIndexFormat format, GPUSize64 offset, GPUSize64 size)
 {
     auto  rhi = get_rhi();
@@ -446,9 +453,9 @@ void cmd::set_viewport(GPUCommandEncoderHandle cmdbuffer, float x, float y, floa
 
     auto viewport     = VkViewport{};
     viewport.x        = x;
-    viewport.y        = y + h;
+    viewport.y        = y;
     viewport.width    = w;
-    viewport.height   = -h;
+    viewport.height   = h;
     viewport.minDepth = min_depth;
     viewport.maxDepth = max_depth;
 
