@@ -15,6 +15,8 @@
 
 namespace lyra::rhi
 {
+    struct FrameGraphBuilder;
+
     struct FrameGraph
     {
     public:

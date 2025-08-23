@@ -85,6 +85,7 @@ namespace lyra::rhi
             // mark the resource to be created at the current pass
             auto& pass_node = graph->passes.at(pass);
             pass_node.creates.push_back(index);
+            return index;
         }
 
         [[nodiscard]] FrameGraphPass& create_pass(StringView name);

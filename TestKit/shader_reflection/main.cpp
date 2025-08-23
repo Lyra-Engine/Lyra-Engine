@@ -131,9 +131,11 @@ TEST_CASE("slc::vulkan::shader_reflection" * doctest::description("shader vertex
         CompileFlag::DEBUG | CompileFlag::REFLECT);
 }
 
+#ifdef WIN32
 TEST_CASE("slc::d3d12::shader_reflection" * doctest::description("shader vertex attributes reflection"))
 {
     test_shader_vertex_attribute_reflection(
         CompileTarget::DXIL,
         CompileFlag::DEBUG | CompileFlag::REFLECT);
 }
+#endif

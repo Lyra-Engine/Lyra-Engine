@@ -899,6 +899,8 @@ void GUIRenderer::init_config_flags(const GUIDescriptor& descriptor)
     // configure viewports for multi-window support
     if (descriptor.viewports)
         io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+
+    io.ConfigFlags |= ImGuiConfigFlags_DpiEnableScaleFonts;
 }
 
 void GUIRenderer::init_backend_flags(const GUIDescriptor& descriptor)

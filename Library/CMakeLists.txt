@@ -78,6 +78,7 @@ target_sources(lyra-engine PRIVATE
 
 # link dependencies
 find_package(glm REQUIRED)
+find_package(fmt REQUIRED)
 find_package(entt REQUIRED)
 find_package(boxer REQUIRED)
 find_package(imgui REQUIRED)
@@ -90,7 +91,8 @@ target_link_libraries(lyra-engine PUBLIC
     $<BUILD_INTERFACE:glm::glm>
     $<BUILD_INTERFACE:EnTT::EnTT>
     $<BUILD_INTERFACE:imgui::imgui>
-    $<BUILD_INTERFACE:spdlog::spdlog>
+    $<BUILD_INTERFACE:fmt::fmt-header-only>
+    $<BUILD_INTERFACE:spdlog::spdlog_header_only>
     $<BUILD_INTERFACE:libassert::assert>
     $<BUILD_INTERFACE:magic_enum::magic_enum>
 )

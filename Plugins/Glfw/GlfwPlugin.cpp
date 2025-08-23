@@ -244,12 +244,12 @@ static void create_window_handle(GLFWwindow* win, WindowHandle& window)
 #endif
 
 #ifdef USE_PLATFORM_MACOS
-void* get_metal_layer(void* window);
+void* get_metal_layer(GLFWwindow* win, void* window);
 
 static void create_window_handle(GLFWwindow* win, WindowHandle& window)
 {
     window.window = win;
-    window.native = get_metal_layer(glfwGetCocoaWindow(win));
+    window.native = get_metal_layer(win, glfwGetCocoaWindow(win));
 }
 #endif
 
@@ -575,7 +575,11 @@ static void set_window_title(WindowHandle window, CString title)
 
 static CString get_window_title(WindowHandle window)
 {
+#if defined(_WIN32)
     return glfwGetWindowTitle((GLFWwindow*)window.window);
+#else
+    return "";
+#endif
 }
 
 static void set_clipboard_text(WindowHandle window, CString text)
