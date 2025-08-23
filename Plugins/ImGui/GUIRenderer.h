@@ -113,6 +113,8 @@ public:
     void render(GPUCommandBuffer cmdbuffer, GPUTextureViewHandle backbuffer);
     void update();
     void destroy();
+    void new_frame();
+    void end_frame();
 
     void begin_render_pass(GPUCommandBuffer cmdbuffer, GPUTextureViewHandle backbuffer) const;
     void end_render_pass(GPUCommandBuffer cmdbuffer) const;

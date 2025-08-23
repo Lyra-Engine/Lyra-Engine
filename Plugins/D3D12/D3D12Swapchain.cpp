@@ -56,11 +56,15 @@ void D3D12Swapchain::recreate()
 {
     auto rhi = get_rhi();
 
+    // query framebuffer scale
+    float fb_xscale, fb_yscale;
+    Window::api()->get_framebuffer_scale(desc.window, fb_xscale, fb_yscale);
+
     // query window size
     uint width, height;
     Window::api()->get_window_size(desc.window, width, height);
-    extent.width  = width;
-    extent.height = height;
+    extent.width  = static_cast<uint>(width * fb_xscale);
+    extent.height = static_cast<uint>(height * fb_yscale);
 
     // query number of backbuffers
     uint num_backbuffers = desc.frames;

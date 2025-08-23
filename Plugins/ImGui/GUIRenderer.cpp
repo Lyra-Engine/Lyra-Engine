@@ -850,6 +850,17 @@ void GUIRenderer::destroy()
     ImGui::DestroyContext();
 }
 
+void GUIRenderer::new_frame()
+{
+    ImGui::NewFrame();
+}
+
+void GUIRenderer::end_frame()
+{
+    // ImGui::Render() will automatically call ImGui::EndFrame
+    ImGui::Render();
+}
+
 void GUIRenderer::begin_render_pass(GPUCommandBuffer cmdbuffer, GPUTextureViewHandle backbuffer) const
 {
     imgui_begin_render_pass(cmdbuffer, backbuffer);
@@ -893,13 +904,19 @@ void GUIRenderer::init_config_flags(const GUIDescriptor& descriptor)
     ImGuiIO& io = ImGui::GetIO();
 
     // configure window docking
-    if (descriptor.docking)
+    if (descriptor.docking) {
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+        io.ConfigDockingWithShift = true;
+    }
 
     // configure viewports for multi-window support
-    if (descriptor.viewports)
+    if (descriptor.viewports) {
         io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+        io.ConfigViewportsNoTaskBarIcon = true;
+        io.ConfigDpiScaleViewports      = true;
+    }
 
+    // font scale
     io.ConfigFlags |= ImGuiConfigFlags_DpiEnableScaleFonts;
 }
 
@@ -1167,10 +1184,6 @@ void GUIRenderer::update_mouse_state(ImGuiIO& io, const GUIWindowContext& ctx)
             // calculate mouse position
             float x = event.mouse_move.xpos;
             float y = event.mouse_move.ypos;
-
-            // account for DPI scaling
-            x /= io.DisplayFramebufferScale.x;
-            y /= io.DisplayFramebufferScale.y;
 
             // account for viewport window offset
             if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {

@@ -27,13 +27,12 @@ static void delete_gui(GUIHandle gui)
 
 static void new_frame(GUIHandle gui)
 {
-    ImGui::NewFrame();
+    gui.astype<GUIRenderer>()->new_frame();
 }
 
 static void end_frame(GUIHandle gui)
 {
-    // ImGui::Render() will automatically call ImGui::EndFrame
-    ImGui::Render();
+    gui.astype<GUIRenderer>()->end_frame();
 }
 
 static void update_gui(GUIHandle gui)
