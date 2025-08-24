@@ -11,7 +11,7 @@
 #include <Lyra/Window/WSIEvent.h>
 #include <Lyra/Window/WSIState.h>
 
-namespace lyra::wsi
+namespace lyra
 {
     struct Window;
     struct WindowAPI;
@@ -124,6 +124,6 @@ namespace lyra::wsi
 
     using WSI = Window;
 
-} // namespace lyra::wsi
+} // namespace lyra
 
 #endif // LYRA_LIBRARY_WINDOW_TYPES_H

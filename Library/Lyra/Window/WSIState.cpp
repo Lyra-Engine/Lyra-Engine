@@ -4,7 +4,6 @@
 #include <Lyra/Window/WSITypes.h>
 
 using namespace lyra;
-using namespace lyra::wsi;
 
 void InputState::update(const WindowHandle& handle)
 {
@@ -15,10 +14,10 @@ void InputState::update(const WindowHandle& handle)
     for (uint i = 0; i < query.num_events; i++) {
         const auto& event = query.input_events.at(i);
         switch (event.type) {
-            case InputEventType::MOUSE_BUTTON:
+            case InputEvent::Type::MOUSE_BUTTON:
                 mouse.status.at(static_cast<uint>(event.mouse_button.button)) = event.mouse_button.state;
                 break;
-            case InputEventType::KEY_BUTTON:
+            case InputEvent::Type::KEY_BUTTON:
                 keyboard.status.at(static_cast<uint>(event.key_button.button)) = event.key_button.state;
                 break;
             default:

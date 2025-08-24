@@ -11,14 +11,12 @@
 #include <Lyra/Common/Slotmap.h>
 #include <Lyra/Window/WSIAPI.h>
 #include <Lyra/Window/WSITypes.h>
-#include <Lyra/Render/RHI/RHIAPI.h>
-#include <Lyra/Render/RHI/RHIAPI.h>
-#include <Lyra/Render/SLC/SLCAPI.h>
-#include <Lyra/Render/GUI/GUIAPI.h>
+#include <Lyra/Render/RHIAPI.h>
+#include <Lyra/Render/RHIAPI.h>
+#include <Lyra/Shader/SLCAPI.h>
+#include <Lyra/GuiKit/GUIAPI.h>
 
 using namespace lyra;
-using namespace lyra::rhi;
-using namespace lyra::gui;
 
 template <typename T>
 struct GUIGarbage

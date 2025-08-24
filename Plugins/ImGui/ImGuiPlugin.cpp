@@ -1,13 +1,12 @@
 // global module headers
 #include <Lyra/Common/String.h>
 #include <Lyra/Common/Plugin.h>
-#include <Lyra/Render/GUI/GUIAPI.h>
+#include <Lyra/GuiKit/GUIAPI.h>
 
 // local plugin header(s)
 #include "GUIRenderer.h"
 
 using namespace lyra;
-using namespace lyra::gui;
 
 static auto get_api_name() -> CString { return "ImGui"; }
 

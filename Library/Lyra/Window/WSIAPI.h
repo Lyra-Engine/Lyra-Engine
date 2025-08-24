@@ -6,7 +6,7 @@
 #include <Lyra/Window/WSIDescs.h>
 #include <Lyra/Window/WSIState.h>
 
-namespace lyra::wsi
+namespace lyra
 {
     struct WindowAPI
     {
@@ -50,6 +50,6 @@ namespace lyra::wsi
         void (*run_in_loop)();
     };
 
-} // namespace lyra::wsi
+} // namespace lyra
 
 #endif // LYRA_LIBRARY_WINDOW_API_H

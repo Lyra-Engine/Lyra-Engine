@@ -1,14 +1,12 @@
 // global module headers
 #include <Lyra/Common/String.h>
 #include <Lyra/Common/Plugin.h>
-#include <Lyra/Render/RHI/RHIAPI.h>
+#include <Lyra/Render/RHIAPI.h>
 #include <Lyra/Window/WSIAPI.h>
 
 #include "VkUtils.h"
 
 using namespace lyra;
-using namespace lyra::rhi;
-using namespace lyra::wsi;
 
 auto get_api_name() -> CString { return "Vulkan"; }
 

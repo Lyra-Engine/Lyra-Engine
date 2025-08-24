@@ -3,7 +3,6 @@
 #include <Lyra/Window/WSITypes.h>
 
 using namespace lyra;
-using namespace lyra::wsi;
 
 using WindowPlugin = Plugin<WindowAPI>;
 

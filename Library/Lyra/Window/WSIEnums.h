@@ -3,7 +3,7 @@
 
 #include <Lyra/Common/Stdint.h>
 
-namespace lyra::wsi
+namespace lyra
 {
     enum struct WindowFlag : uint
     {
@@ -19,19 +19,6 @@ namespace lyra::wsi
         UPDATE, // regular update (same rate as render)
         RENDER, // render frame
         RESIZE, // window resized
-    };
-
-    enum struct InputEventType : uint
-    {
-        KEY_TYPING,
-        KEY_BUTTON,
-        MOUSE_MOVE,
-        MOUSE_WHEEL,
-        MOUSE_BUTTON,
-        WINDOW_MOVE,
-        WINDOW_FOCUS,
-        WINDOW_CLOSE,
-        WINDOW_RESIZE,
     };
 
     enum struct ButtonState : uint
@@ -76,6 +63,6 @@ namespace lyra::wsi
     };
     // clang-format on
 
-} // namespace lyra::wsi
+} // namespace lyra
 
 #endif // LYRA_LIBRARY_WINDOW_ENUMS_H

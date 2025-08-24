@@ -22,11 +22,9 @@
 #include <Lyra/Common/Plugin.h>
 #include <Lyra/Window/WSIAPI.h>
 #include <Lyra/Window/WSITypes.h>
-#include <Lyra/Render/RHI/RHITypes.h>
+#include <Lyra/Render/RHITypes.h>
 
 using namespace lyra;
-using namespace lyra::rhi;
-using namespace lyra::wsi;
 
 static Logger logger = init_stderr_logger("GLFW", LogLevel::trace);
 
@@ -58,7 +56,7 @@ struct UserState
         }
 
         auto& event           = events.input_events[events.num_events++];
-        event.type            = InputEventType::MOUSE_MOVE;
+        event.type            = InputEvent::Type::MOUSE_MOVE;
         event.mouse_move.xpos = xpos;
         event.mouse_move.ypos = ypos;
     }
@@ -71,7 +69,7 @@ struct UserState
         }
 
         auto& event         = events.input_events[events.num_events++];
-        event.type          = InputEventType::MOUSE_WHEEL;
+        event.type          = InputEvent::Type::MOUSE_WHEEL;
         event.mouse_wheel.x = x;
         event.mouse_wheel.y = y;
     }
@@ -84,7 +82,7 @@ struct UserState
         }
 
         auto& event                = events.input_events[events.num_events++];
-        event.type                 = InputEventType::WINDOW_FOCUS;
+        event.type                 = InputEvent::Type::WINDOW_FOCUS;
         event.window_focus.focused = focus;
     }
 
@@ -96,7 +94,7 @@ struct UserState
         }
 
         auto& event = events.input_events[events.num_events++];
-        event.type  = InputEventType::WINDOW_CLOSE;
+        event.type  = InputEvent::Type::WINDOW_CLOSE;
     }
 
     void add_window_move_event(int xpos, int ypos)
@@ -110,7 +108,7 @@ struct UserState
         }
 
         auto& event            = events.input_events[events.num_events++];
-        event.type             = InputEventType::WINDOW_MOVE;
+        event.type             = InputEvent::Type::WINDOW_MOVE;
         event.window_move.xpos = static_cast<uint>(std::max(0, xpos));
         event.window_move.ypos = static_cast<uint>(std::max(0, ypos));
     }
@@ -125,7 +123,7 @@ struct UserState
         }
 
         auto& event                = events.input_events[events.num_events++];
-        event.type                 = InputEventType::WINDOW_RESIZE;
+        event.type                 = InputEvent::Type::WINDOW_RESIZE;
         event.window_resize.width  = static_cast<uint>(std::max(0, width));
         event.window_resize.height = static_cast<uint>(std::max(0, height));
     }
@@ -138,7 +136,7 @@ struct UserState
         }
 
         auto& event               = events.input_events[events.num_events++];
-        event.type                = InputEventType::MOUSE_BUTTON;
+        event.type                = InputEvent::Type::MOUSE_BUTTON;
         event.mouse_button.button = key;
         event.mouse_button.state  = state;
     }
@@ -151,7 +149,7 @@ struct UserState
         }
 
         auto& event             = events.input_events[events.num_events++];
-        event.type              = InputEventType::KEY_BUTTON;
+        event.type              = InputEvent::Type::KEY_BUTTON;
         event.key_button.button = key;
         event.key_button.state  = state;
     }
@@ -164,7 +162,7 @@ struct UserState
         }
 
         auto& event           = events.input_events[events.num_events++];
-        event.type            = InputEventType::KEY_TYPING;
+        event.type            = InputEvent::Type::KEY_TYPING;
         event.key_typing.code = code;
     }
 };
@@ -528,9 +526,19 @@ static void get_window_size(WindowHandle window, uint& width, uint& height)
     height = static_cast<uint32_t>(h);
 }
 
+// NOTE: from ImGui glfw implementation:
+// - On Windows the process needs to be marked DPI-aware!! SDL2 doesn't do it by default. You can call ::SetProcessDPIAware() from Win32 backend.
+// - Apple platforms use FramebufferScale so we always return 1.0f.
+// - Some accessibility applications are declaring virtual monitors with a DPI of 0.0f, see #7902. We preserve this value for caller to handle.
 static void get_content_scale(WindowHandle window, float& xscale, float& yscale)
 {
+#if !(defined(__APPLE__) || defined(__EMSCRIPTEN__) || defined(__ANDROID__))
     glfwGetWindowContentScale((GLFWwindow*)window.window, &xscale, &yscale);
+#else
+    (void)window;
+    xscale = 1.0f;
+    yscale = 1.0f;
+#endif
 }
 
 static void get_framebuffer_scale(WindowHandle window, float& xscale, float& yscale)

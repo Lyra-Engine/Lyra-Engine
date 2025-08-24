@@ -4,7 +4,7 @@
 #include <Lyra/Common/Container.h>
 #include <Lyra/Window/WSIEnums.h>
 
-namespace lyra::wsi
+namespace lyra
 {
     // character typed event
     struct KeyTypingEvent
@@ -69,7 +69,19 @@ namespace lyra::wsi
     // unified keyboard/mouse input event
     struct InputEvent
     {
-        InputEventType type;
+        enum struct Type : uint
+        {
+            KEY_TYPING,
+            KEY_BUTTON,
+            MOUSE_MOVE,
+            MOUSE_WHEEL,
+            MOUSE_BUTTON,
+            WINDOW_MOVE,
+            WINDOW_FOCUS,
+            WINDOW_CLOSE,
+            WINDOW_RESIZE,
+        } type;
+
         union
         {
             KeyTypingEvent    key_typing;
@@ -94,6 +106,6 @@ namespace lyra::wsi
         Array<InputEvent, MAX_EVENTS> input_events;
     };
 
-} // namespace lyra::wsi
+} // namespace lyra
 
 #endif // LYRA_LIBRARY_WINDOW_EVENT_H

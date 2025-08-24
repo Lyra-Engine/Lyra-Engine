@@ -23,11 +23,10 @@
 #include <Lyra/Common/Slotmap.h>
 #include <Lyra/Common/Container.h>
 #include <Lyra/Common/Compatibility.h>
-#include <Lyra/Render/RHI/RHIDescs.h>
-#include <Lyra/Render/RHI/RHIAPI.h>
+#include <Lyra/Render/RHIDescs.h>
+#include <Lyra/Render/RHIAPI.h>
 
 using namespace lyra;
-using namespace lyra::rhi;
 
 static const char* KHR_PORTABILITY_EXTENSION_NAME = "VK_KHR_portability_subset";
 static const char* LUNARG_VALIDATION_LAYER_NAME   = "VK_LAYER_KHRONOS_validation";
