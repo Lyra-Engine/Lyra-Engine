@@ -7,6 +7,14 @@ void Application::init()
     // initialize application logger
     logger = init_stderr_logger("Editor", LogLevel::trace);
 
+    // initialize shader compiler
+    slc = lyra::execute([&]() {
+        auto desc   = CompilerDescriptor{};
+        desc.target = this->desc.slc_target;
+        desc.flags  = this->desc.slc_flags;
+        return Compiler::init(desc);
+    });
+
     // initialize GPU RHI
     rhi = lyra::execute([&]() {
         auto desc    = RHIDescriptor{};
@@ -14,14 +22,6 @@ void Application::init()
         desc.flags   = this->desc.rhi_flags;
         desc.window  = this->desc.window;
         return RHI::init(desc);
-    });
-
-    // initialize shader compiler
-    slc = lyra::execute([&]() {
-        auto desc   = CompilerDescriptor{};
-        desc.target = this->desc.slc_target;
-        desc.flags  = this->desc.slc_flags;
-        return Compiler::init(desc);
     });
 
     // initialize GPU adatper

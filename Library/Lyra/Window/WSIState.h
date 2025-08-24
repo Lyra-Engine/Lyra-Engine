@@ -10,7 +10,7 @@
 #include <Lyra/Window/WSIEnums.h>
 #include <Lyra/Window/WSIEvent.h>
 
-namespace lyra::wsi
+namespace lyra
 {
     struct MouseState
     {
@@ -68,6 +68,6 @@ namespace lyra::wsi
         TimePoint  elapsed_time;
     };
 
-} // namespace lyra::wsi
+} // namespace lyra
 
 #endif // LYRA_LIBRARY_WINDOW_STATE_H

@@ -239,9 +239,15 @@ VkExtent2D choose_swap_extent(const GPUSurfaceDescriptor& desc, const VkSurfaceC
     uint width, height;
     Window::api()->get_window_size(desc.window, width, height);
 
+    // query window scale
+    float fb_xscale, fb_yscale;
+    Window::api()->get_framebuffer_scale(desc.window, fb_xscale, fb_yscale);
+
+    get_logger()->trace("scale: {} scale: {}", fb_xscale, fb_yscale);
+
     VkExtent2D actual_extent;
-    actual_extent.width  = width;
-    actual_extent.height = height;
+    actual_extent.width  = static_cast<uint>(width * fb_xscale);
+    actual_extent.height = static_cast<uint>(height * fb_yscale);
     actual_extent.width  = std::clamp(actual_extent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
     actual_extent.height = std::clamp(actual_extent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
     return actual_extent;

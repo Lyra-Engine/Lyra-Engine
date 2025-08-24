@@ -4,14 +4,13 @@
 #include <Lyra/Common/Assert.h>
 #include <Lyra/Common/Pointer.h>
 #include <Lyra/Common/Function.h>
-#include <Lyra/Render/RHI/RHIInits.h>
-#include <Lyra/Render/RHI/RHITypes.h>
+#include <Lyra/Render/RHIInits.h>
+#include <Lyra/Render/RHITypes.h>
 
 // local headers
 #include "GUIRenderer.h"
 
 using namespace lyra;
-using namespace lyra::gui;
 
 static Logger logger = init_stderr_logger("ImGui", LogLevel::trace);
 
@@ -850,6 +849,17 @@ void GUIRenderer::destroy()
     ImGui::DestroyContext();
 }
 
+void GUIRenderer::new_frame()
+{
+    ImGui::NewFrame();
+}
+
+void GUIRenderer::end_frame()
+{
+    // ImGui::Render() will automatically call ImGui::EndFrame
+    ImGui::Render();
+}
+
 void GUIRenderer::begin_render_pass(GPUCommandBuffer cmdbuffer, GPUTextureViewHandle backbuffer) const
 {
     imgui_begin_render_pass(cmdbuffer, backbuffer);
@@ -883,9 +893,12 @@ void GUIRenderer::init_imgui_setup(const GUIDescriptor& descriptor)
     auto& io                   = ImGui::GetIO();
     io.DisplaySize             = ImVec2(width, height);
     io.DisplayFramebufferScale = ImVec2(fb_xscale, fb_yscale);
-    io.FontGlobalScale         = std::max(dpi_xscale, dpi_yscale);
     io.ConfigDpiScaleFonts     = true; // [Experimental] Automatically overwrite style.FontScaleDpi in Begin() when Monitor DPI changes. This will scale fonts but _NOT_ scale sizes/padding for now.
     io.ConfigDpiScaleViewports = true; // [Experimental] Scale Dear ImGui and Platform Windows when Monitor DPI changes.
+
+    ImGuiStyle& style  = ImGui::GetStyle();
+    style.FontScaleDpi = std::max(dpi_xscale, dpi_yscale);
+    printf("dpi scale: %.2f\n", dpi_xscale);
 }
 
 void GUIRenderer::init_config_flags(const GUIDescriptor& descriptor)
@@ -893,12 +906,20 @@ void GUIRenderer::init_config_flags(const GUIDescriptor& descriptor)
     ImGuiIO& io = ImGui::GetIO();
 
     // configure window docking
-    if (descriptor.docking)
+    if (descriptor.docking) {
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+        io.ConfigDockingWithShift = true;
+    }
 
     // configure viewports for multi-window support
-    if (descriptor.viewports)
+    if (descriptor.viewports) {
         io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+        io.ConfigViewportsNoTaskBarIcon = true;
+        io.ConfigDpiScaleViewports      = true;
+    }
+
+    // font scale
+    io.ConfigFlags |= ImGuiConfigFlags_DpiEnableScaleFonts;
 }
 
 void GUIRenderer::init_backend_flags(const GUIDescriptor& descriptor)
@@ -1143,9 +1164,9 @@ void GUIRenderer::update_key_state(ImGuiIO& io, const GUIWindowContext& ctx)
     // update key events
     for (uint i = 0; i < query.num_events; i++) {
         const auto& event = query.input_events.at(i);
-        if (event.type == InputEventType::KEY_BUTTON)
+        if (event.type == InputEvent::Type::KEY_BUTTON)
             io.AddKeyEvent(to_imgui_key_button(event.key_button.button), event.key_button.state == ButtonState::ON);
-        if (event.type == InputEventType::KEY_TYPING)
+        if (event.type == InputEvent::Type::KEY_TYPING)
             io.AddInputCharacter(event.key_typing.code);
     }
 }
@@ -1157,18 +1178,14 @@ void GUIRenderer::update_mouse_state(ImGuiIO& io, const GUIWindowContext& ctx)
     // update mouse button events
     for (uint i = 0; i < query.num_events; i++) {
         const auto& event = query.input_events.at(i);
-        if (event.type == InputEventType::MOUSE_BUTTON) {
+        if (event.type == InputEvent::Type::MOUSE_BUTTON) {
             io.AddMouseButtonEvent(to_imgui_mouse_button(event.mouse_button.button), event.mouse_button.state == ButtonState::ON);
-        } else if (event.type == InputEventType::MOUSE_WHEEL) {
+        } else if (event.type == InputEvent::Type::MOUSE_WHEEL) {
             io.AddMouseWheelEvent(event.mouse_wheel.x, event.mouse_wheel.y);
-        } else if (event.type == InputEventType::MOUSE_MOVE) {
+        } else if (event.type == InputEvent::Type::MOUSE_MOVE) {
             // calculate mouse position
             float x = event.mouse_move.xpos;
             float y = event.mouse_move.ypos;
-
-            // account for DPI scaling
-            x /= io.DisplayFramebufferScale.x;
-            y /= io.DisplayFramebufferScale.y;
 
             // account for viewport window offset
             if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
@@ -1197,16 +1214,16 @@ void GUIRenderer::update_viewport_state(ImGuiIO& io, const GUIWindowContext& ctx
     const auto& query = ctx.events;
     for (uint i = 0; i < query.num_events; i++) {
         const auto& event = query.input_events.at(i);
-        if (event.type == InputEventType::WINDOW_FOCUS) {
+        if (event.type == InputEvent::Type::WINDOW_FOCUS) {
             bool focus = WSI::api()->get_window_focus(ctx.window);
             if (focus) {
                 if (io.BackendFlags & ImGuiBackendFlags_HasMouseHoveredViewport)
                     io.AddMouseViewportEvent(viewport->ID);
             }
             io.AddFocusEvent(focus);
-        } else if (event.type == InputEventType::WINDOW_MOVE) {
+        } else if (event.type == InputEvent::Type::WINDOW_MOVE) {
             viewport->PlatformRequestMove = true;
-        } else if (event.type == InputEventType::WINDOW_RESIZE) {
+        } else if (event.type == InputEvent::Type::WINDOW_RESIZE) {
             viewport->PlatformRequestResize = true;
 
             // detect primary viewport
@@ -1214,7 +1231,7 @@ void GUIRenderer::update_viewport_state(ImGuiIO& io, const GUIWindowContext& ctx
                 io.DisplaySize.x = static_cast<float>(event.window_resize.width);
                 io.DisplaySize.y = static_cast<float>(event.window_resize.height);
             }
-        } else if (event.type == InputEventType::WINDOW_CLOSE) {
+        } else if (event.type == InputEvent::Type::WINDOW_CLOSE) {
             viewport->PlatformRequestClose = true;
         }
     }

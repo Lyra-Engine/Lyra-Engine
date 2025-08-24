@@ -3,10 +3,12 @@
 #ifndef LYRA_LIBRARY_COMMON_STRING_H
 #define LYRA_LIBRARY_COMMON_STRING_H
 
-#include <string>
 #include <vector>
 #include <locale>
+#include <string>
 #include <string_view>
+
+size_t strnlen_s(const char* s, size_t maxlen);
 
 namespace lyra
 {

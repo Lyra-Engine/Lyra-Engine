@@ -5,7 +5,7 @@
 #include <Lyra/Common/BitFlags.h>
 #include <Lyra/Window/WSIEnums.h>
 
-namespace lyra::wsi
+namespace lyra
 {
     using WindowFlags = BitFlags<WindowFlag>;
 
@@ -31,6 +31,6 @@ namespace lyra::wsi
         void* native = nullptr;
     };
 
-} // namespace lyra::wsi
+} // namespace lyra
 
 #endif // LYRA_LIBRARY_WINDOW_UTILS_H

@@ -3,7 +3,7 @@
 int main(int argc, const char* argv[])
 {
     auto win = lyra::execute([&]() {
-        auto desc   = lyra::wsi::WindowDescriptor{};
+        auto desc   = lyra::WindowDescriptor{};
         desc.title  = "Lyra Engine :: Editor";
         desc.width  = 1920;
         desc.height = 1080;

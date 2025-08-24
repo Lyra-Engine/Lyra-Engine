@@ -6,7 +6,7 @@
 #include <Lyra/Window/WSIEnums.h>
 #include <Lyra/Window/WSIUtils.h>
 
-namespace lyra::wsi
+namespace lyra
 {
     struct WindowDescriptor
     {
@@ -16,6 +16,6 @@ namespace lyra::wsi
         WindowFlags flags  = WindowFlag::DECORATED;
     };
 
-} // namespace lyra::wsi
+} // namespace lyra
 
 #endif // LYRA_LIBRARY_WINDOW_DESCS_H

@@ -4,6 +4,7 @@
 #define LYRA_LIBRARY_COMMON_CONTAINER_H
 
 #include <map>
+#include <list>
 #include <array>
 #include <deque>
 #include <stack>

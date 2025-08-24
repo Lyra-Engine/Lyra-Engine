@@ -1,13 +1,12 @@
 // global module headers
 #include <Lyra/Common/String.h>
 #include <Lyra/Common/Plugin.h>
-#include <Lyra/Render/GUI/GUIAPI.h>
+#include <Lyra/GuiKit/GUIAPI.h>
 
 // local plugin header(s)
 #include "GUIRenderer.h"
 
 using namespace lyra;
-using namespace lyra::gui;
 
 static auto get_api_name() -> CString { return "ImGui"; }
 
@@ -27,13 +26,12 @@ static void delete_gui(GUIHandle gui)
 
 static void new_frame(GUIHandle gui)
 {
-    ImGui::NewFrame();
+    gui.astype<GUIRenderer>()->new_frame();
 }
 
 static void end_frame(GUIHandle gui)
 {
-    // ImGui::Render() will automatically call ImGui::EndFrame
-    ImGui::Render();
+    gui.astype<GUIRenderer>()->end_frame();
 }
 
 static void update_gui(GUIHandle gui)

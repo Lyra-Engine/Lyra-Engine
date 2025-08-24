@@ -36,48 +36,49 @@ target_sources(lyra-engine PRIVATE
     Lyra/Window/WSITypes.h
     Lyra/Window/WSITypes.cpp
 
-    # render RHI sources
-    Lyra/Render/RHI/RHIAPI.h
-    Lyra/Render/RHI/RHIDescs.h
-    Lyra/Render/RHI/RHIEnums.h
-    Lyra/Render/RHI/RHIError.h
-    Lyra/Render/RHI/RHIHash.h
-    Lyra/Render/RHI/RHIInits.h
-    Lyra/Render/RHI/RHIInits.cpp
-    Lyra/Render/RHI/RHITypes.h
-    Lyra/Render/RHI/RHITypes.cpp
-    Lyra/Render/RHI/RHIUtils.h
-
-    # render RPI sources
-    Lyra/Render/RPI/FrameGraph.h
-    Lyra/Render/RPI/FrameGraph.cpp
-    Lyra/Render/RPI/FrameGraphAllocator.h
-    Lyra/Render/RPI/FrameGraphAllocator.cpp
-    Lyra/Render/RPI/FrameGraphBuffer.h
-    Lyra/Render/RPI/FrameGraphBuilder.h
-    Lyra/Render/RPI/FrameGraphBuilder.cpp
-    Lyra/Render/RPI/FrameGraphEnums.h
-    Lyra/Render/RPI/FrameGraphPass.h
-    Lyra/Render/RPI/FrameGraphResource.h
-    Lyra/Render/RPI/FrameGraphTexture.h
-    Lyra/Render/RPI/FrameGraphTexture.cpp
-    Lyra/Render/RPI/FrameGraphTraits.h
-
-    # render GUI sources
-    Lyra/Render/GUI/GUIAPI.h
-    Lyra/Render/GUI/GUITypes.h
-
     # shader compiler sources
-    Lyra/Render/SLC/SLCAPI.h
-    Lyra/Render/SLC/SLCDescs.h
-    Lyra/Render/SLC/SLCEnums.h
-    Lyra/Render/SLC/SLCTypes.h
-    Lyra/Render/SLC/SLCTypes.cpp
-    Lyra/Render/SLC/SLCUtils.h
+    Lyra/Shader/SLCAPI.h
+    Lyra/Shader/SLCDescs.h
+    Lyra/Shader/SLCEnums.h
+    Lyra/Shader/SLCTypes.h
+    Lyra/Shader/SLCTypes.cpp
+    Lyra/Shader/SLCUtils.h
+
+    # render sources
+    Lyra/Render/RHIAPI.h
+    Lyra/Render/RHIDescs.h
+    Lyra/Render/RHIEnums.h
+    Lyra/Render/RHIError.h
+    Lyra/Render/RHIHash.h
+    Lyra/Render/RHIInits.h
+    Lyra/Render/RHIInits.cpp
+    Lyra/Render/RHITypes.h
+    Lyra/Render/RHITypes.cpp
+    Lyra/Render/RHIUtils.h
+
+    # rgpass sources
+    Lyra/RPIKit/FrameGraph.h
+    Lyra/RPIKit/FrameGraph.cpp
+    Lyra/RPIKit/FrameGraphAllocator.h
+    Lyra/RPIKit/FrameGraphAllocator.cpp
+    Lyra/RPIKit/FrameGraphBuffer.h
+    Lyra/RPIKit/FrameGraphBuilder.h
+    Lyra/RPIKit/FrameGraphBuilder.cpp
+    Lyra/RPIKit/FrameGraphEnums.h
+    Lyra/RPIKit/FrameGraphPass.h
+    Lyra/RPIKit/FrameGraphResource.h
+    Lyra/RPIKit/FrameGraphTexture.h
+    Lyra/RPIKit/FrameGraphTexture.cpp
+    Lyra/RPIKit/FrameGraphTraits.h
+
+    # guikit sources
+    Lyra/GuiKit/GUIAPI.h
+    Lyra/GuiKit/GUITypes.h
 )
 
 # link dependencies
 find_package(glm REQUIRED)
+find_package(fmt REQUIRED)
 find_package(entt REQUIRED)
 find_package(boxer REQUIRED)
 find_package(imgui REQUIRED)
@@ -90,7 +91,8 @@ target_link_libraries(lyra-engine PUBLIC
     $<BUILD_INTERFACE:glm::glm>
     $<BUILD_INTERFACE:EnTT::EnTT>
     $<BUILD_INTERFACE:imgui::imgui>
-    $<BUILD_INTERFACE:spdlog::spdlog>
+    $<BUILD_INTERFACE:fmt::fmt-header-only>
+    $<BUILD_INTERFACE:spdlog::spdlog_header_only>
     $<BUILD_INTERFACE:libassert::assert>
     $<BUILD_INTERFACE:magic_enum::magic_enum>
 )

@@ -1,5 +1,4 @@
 #include "VkUtils.h"
-#include <vulkan/vulkan_core.h>
 
 void VulkanCommandBuffer::wait(const VulkanSemaphore& fence, GPUBarrierSyncFlags sync)
 {

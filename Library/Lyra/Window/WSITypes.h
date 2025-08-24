@@ -11,7 +11,7 @@
 #include <Lyra/Window/WSIEvent.h>
 #include <Lyra/Window/WSIState.h>
 
-namespace lyra::wsi
+namespace lyra
 {
     struct Window;
     struct WindowAPI;
@@ -59,14 +59,14 @@ namespace lyra::wsi
             static_assert(function_traits<F>::arity <= 1, "Bound function can at most take 1 argument with type const Window&");
 
             if constexpr (function_traits<F>::arity == 0) {
-                bind<E>([&user, f](const Window& window) {
+                bind<E>([user, f](const Window& window) {
                     return ((*user).*f)();
                 });
                 return;
             }
 
             if constexpr (function_traits<F>::arity == 1) {
-                bind<E>([&user, f](const Window& window) {
+                bind<E>([user, f](const Window& window) {
                     return ((*user).*f)(window);
                 });
                 return;
@@ -124,6 +124,6 @@ namespace lyra::wsi
 
     using WSI = Window;
 
-} // namespace lyra::wsi
+} // namespace lyra
 
 #endif // LYRA_LIBRARY_WINDOW_TYPES_H

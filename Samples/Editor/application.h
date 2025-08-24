@@ -3,14 +3,9 @@
 #ifndef LYRA_SAMPLES_EDITOR_H
 #define LYRA_SAMPLES_EDITOR_H
 
-#include <Lyra/Common.hpp>
-#include <Lyra/Render.hpp>
-#include <Lyra/Window.hpp>
+#include <Lyra/Lyra.hpp>
 
 using namespace lyra;
-using namespace lyra::rhi;
-using namespace lyra::wsi;
-using namespace lyra::gui;
 
 struct AppDescriptor
 {

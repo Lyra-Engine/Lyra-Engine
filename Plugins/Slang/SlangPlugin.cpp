@@ -1,12 +1,11 @@
 // global module headers
 #include <Lyra/Common/String.h>
 #include <Lyra/Common/Plugin.h>
-#include <Lyra/Render/SLC/SLCAPI.h>
+#include <Lyra/Shader/SLCAPI.h>
 
 #include "SlangUtils.h"
 
 using namespace lyra;
-using namespace lyra::rhi;
 
 auto get_api_name() -> CString { return "Slang"; }
 

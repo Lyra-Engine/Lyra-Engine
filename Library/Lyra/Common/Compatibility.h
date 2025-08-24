@@ -7,6 +7,7 @@
 // Use something universal (instead of Lyra's internal macro for OS check).
 #ifdef _WIN32
 #define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #undef min          // conflicts with std::min
 #undef max          // conflicts with std:max

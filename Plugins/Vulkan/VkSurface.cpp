@@ -50,7 +50,6 @@ void add_surface_extension(Vector<const char*>& instance_extensions)
 {
     instance_extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
     instance_extensions.push_back("VK_EXT_metal_surface");
-    instance_extensions.push_back("VK_MVK_macos_surface");
 }
 
 VkResult create_surface(VkInstance instance, const WindowHandle& window, VkSurfaceKHR& surface)
