@@ -6,6 +6,7 @@
 #include <imgui.h>
 
 #include <Lyra/Common/Plugin.h>
+#include <Lyra/Common/Macros.h>
 #include <Lyra/Common/Pointer.h>
 #include <Lyra/GuiKit/GUIAPI.h>
 

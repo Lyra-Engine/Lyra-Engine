@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef LYRA_LIBRARY_WINDOW_EVENT_H
 #define LYRA_LIBRARY_WINDOW_EVENT_H
 

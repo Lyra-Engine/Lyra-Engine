@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef LYRA_LIBRARY_WINDOW_TYPES_H
 #define LYRA_LIBRARY_WINDOW_TYPES_H
 

@@ -898,7 +898,6 @@ void GUIRenderer::init_imgui_setup(const GUIDescriptor& descriptor)
 
     ImGuiStyle& style  = ImGui::GetStyle();
     style.FontScaleDpi = std::max(dpi_xscale, dpi_yscale);
-    printf("dpi scale: %.2f\n", dpi_xscale);
 }
 
 void GUIRenderer::init_config_flags(const GUIDescriptor& descriptor)

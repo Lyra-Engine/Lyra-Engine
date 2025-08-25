@@ -1,6 +1,8 @@
 add_subdirectory(Glfw)
 add_subdirectory(Slang)
 add_subdirectory(ImGui)
+add_subdirectory(PhysFS)
+add_subdirectory(NativeFS)
 
 # build d3d12 backend on Windows
 if(WIN32)

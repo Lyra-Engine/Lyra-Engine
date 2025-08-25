@@ -5,6 +5,7 @@
 
 // reference: https://gpuweb.github.io/gpuweb/#
 
+#include <Lyra/Common/Macros.h>
 #include <Lyra/Common/Pointer.h>
 #include <Lyra/Render/RHIEnums.h>
 #include <Lyra/Render/RHIUtils.h>
