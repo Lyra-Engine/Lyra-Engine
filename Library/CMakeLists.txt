@@ -25,7 +25,13 @@ target_sources(lyra-engine PRIVATE
     Lyra/Common/String.h
     Lyra/Common/View.h
 
-    # window sources
+    # file system sources
+    Lyra/FileIO/FSAPI.h
+    Lyra/FileIO/FSEnums.h
+    Lyra/FileIO/FSTypes.h
+    Lyra/FileIO/FSUtils.h
+
+    # window system sources
     Lyra/Window/WSIAPI.h
     Lyra/Window/WSIUtils.h
     Lyra/Window/WSIDescs.h
@@ -50,10 +56,10 @@ target_sources(lyra-engine PRIVATE
     Lyra/Render/RHIEnums.h
     Lyra/Render/RHIError.h
     Lyra/Render/RHIHash.h
-    Lyra/Render/RHIInits.h
     Lyra/Render/RHIInits.cpp
-    Lyra/Render/RHITypes.h
+    Lyra/Render/RHIInits.h
     Lyra/Render/RHITypes.cpp
+    Lyra/Render/RHITypes.h
     Lyra/Render/RHIUtils.h
 
     # rgpass sources

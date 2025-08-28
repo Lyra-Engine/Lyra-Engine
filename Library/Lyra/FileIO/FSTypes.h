@@ -11,26 +11,17 @@
 
 namespace lyra
 {
-    using FilePlugin = Plugin<FileSystemAPI>;
-
-    // File Loader Descritor
-    struct FileLoaderDescriptor
-    {
-        FSBackend backend = FSBackend::OS;
-        CString   root    = "";
-    };
-
-    struct FileLoader
-    {
-    public:
-        explicit FileLoader();
-        virtual ~FileLoader();
-
-        FORCE_INLINE auto api() const -> FilePlugin* { return api_.get(); }
-
-    private:
-        Own<FilePlugin> api_;
-    };
+    // using FilePlugin = Plugin<FileSystemAPI>;
+    //
+    // struct FileLoader
+    // {
+    // public:
+    //     explicit FileLoader(FSBackend backend);
+    //     virtual ~FileLoader();
+    //
+    // private:
+    //     Own<FilePlugin> api;
+    // };
 
 } // namespace lyra
 
