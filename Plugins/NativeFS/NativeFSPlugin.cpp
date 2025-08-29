@@ -124,7 +124,7 @@ static CString get_api_name()
     return "NativeFS";
 }
 
-static size_t sizeof_file(CString path)
+static size_t sizeof_file(VFSPath path)
 {
     if (!path) {
         get_logger()->error("sizeof_file: input path is null!");
@@ -145,7 +145,7 @@ static size_t sizeof_file(CString path)
     return false;
 }
 
-static bool exists_file(CString path)
+static bool exists_file(VFSPath path)
 {
     if (!path) {
         get_logger()->error("exists_file: input path is null!");
@@ -174,9 +174,8 @@ static bool open_file(FileHandle& out_handle, FSPath path)
     // find and open the corresponding file
     auto candidates = resolve_read_paths(path);
     for (const auto& real : candidates) {
-        auto h     = std::make_unique<NativeFileHandleData>();
-        h->backend = FSBackend::NATIVE;
-        h->ifs     = std::make_unique<std::ifstream>(real, std::ios::binary);
+        auto h = std::make_unique<NativeFileHandleData>();
+        h->ifs = std::make_unique<std::ifstream>(real, std::ios::binary);
         if (h->ifs->is_open()) {
             h->path = real;
             {
@@ -233,7 +232,7 @@ static bool read_file(FileHandle handle, void* buffer, size_t size, size_t& byte
     }
 
     // read bytes
-    std::istream* in = h.ifs;
+    std::istream* in = h.ifs.get();
     in->read(static_cast<char*>(buffer), static_cast<std::streamsize>(size));
     bytes_read = static_cast<size_t>(in->gcount());
     return bytes_read > 0 || in->eof();

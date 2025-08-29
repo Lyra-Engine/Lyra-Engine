@@ -8,24 +8,32 @@
 
 namespace lyra
 {
-    enum struct FSBackend : uint
+    enum struct FSLoader : uint
     {
         NATIVE,
         PHYSFS,
+    };
+
+    enum struct FSPacker : uint
+    {
+        PAK,
+        ZIP,
     };
 
     enum struct FSObjectType : uint
     {
         FILE,
         MOUNT,
+        ARCHIVE,
     };
 
     inline constexpr CString to_string(FSObjectType type)
     {
         // clang-format off
         switch (type) {
-            case FSObjectType::FILE:  return "FSFile";
-            case FSObjectType::MOUNT: return "FSMount";
+            case FSObjectType::FILE:    return "FSFile";
+            case FSObjectType::MOUNT:   return "FSMount";
+            case FSObjectType::ARCHIVE: return "FSArchive";
         }
         // clang-format on
     }

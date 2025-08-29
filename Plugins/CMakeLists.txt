@@ -1,8 +1,23 @@
+# window plugins
+#--------------------------------
 add_subdirectory(Glfw)
+
+# shader plugins
+#--------------------------------
 add_subdirectory(Slang)
+
+# guikit plugins
+#--------------------------------
 add_subdirectory(ImGui)
+
+# fileio plugins
+#--------------------------------
 add_subdirectory(PhysFS)
 add_subdirectory(NativeFS)
+add_subdirectory(PakBuilder)
+
+# render plugins
+#--------------------------------
 
 # build d3d12 backend on Windows
 if(WIN32)

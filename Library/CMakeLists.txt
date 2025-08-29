@@ -29,6 +29,7 @@ target_sources(lyra-engine PRIVATE
     Lyra/FileIO/FSAPI.h
     Lyra/FileIO/FSEnums.h
     Lyra/FileIO/FSTypes.h
+    Lyra/FileIO/FSTypes.cpp
     Lyra/FileIO/FSUtils.h
 
     # window system sources

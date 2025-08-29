@@ -16,6 +16,8 @@ namespace lyra
 
     using MountHandle = Handle<FSObjectType, FSObjectType::MOUNT>;
 
+    using ArchiveHandle = Handle<FSObjectType, FSObjectType::ARCHIVE>;
+
 } // namespace lyra
 
 #endif // LYRA_LIBRARY_FILEIO_FS_UTILS_H

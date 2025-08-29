@@ -104,7 +104,7 @@ static String normalize_vpath(FSPath vpath)
 
 static CString get_api_name() { return "PhysFS"; }
 
-static size_t sizeof_file(FSPath path)
+static size_t sizeof_file(VFSPath path)
 {
     if (!path) {
         get_logger()->error("sizeof_file: input path is null!");
@@ -121,7 +121,7 @@ static size_t sizeof_file(FSPath path)
     return 0;
 }
 
-static bool exists_file(FSPath path)
+static bool exists_file(VFSPath path)
 {
     if (!path) {
         get_logger()->error("exists_file: input path is null!");

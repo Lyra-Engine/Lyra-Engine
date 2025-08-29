@@ -48,4 +48,9 @@
 #include <Lyra/GuiKit/GUIAPI.h>
 #include <Lyra/GuiKit/GUITypes.h>
 
+// FileIO
+#include <Lyra/FileIO/FSAPI.h>
+#include <Lyra/FileIO/FSEnums.h>
+#include <Lyra/FileIO/FSTypes.h>
+
 #endif // LYRA_LIBRARY_HPP

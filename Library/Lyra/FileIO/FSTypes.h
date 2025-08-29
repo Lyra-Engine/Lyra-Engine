@@ -5,23 +5,52 @@
 
 #include <Lyra/Common/Plugin.h>
 #include <Lyra/Common/Macros.h>
+#include <Lyra/Common/Stdint.h>
 #include <Lyra/Common/Pointer.h>
+#include <Lyra/Common/Container.h>
 #include <Lyra/FileIo/FSAPI.h>
-#include <Lyra/FileIo/FSEnums.h>
 
 namespace lyra
 {
-    // using FilePlugin = Plugin<FileSystemAPI>;
-    //
-    // struct FileLoader
-    // {
-    // public:
-    //     explicit FileLoader(FSBackend backend);
-    //     virtual ~FileLoader();
-    //
-    // private:
-    //     Own<FilePlugin> api;
-    // };
+    struct FileLoader
+    {
+    public:
+        explicit FileLoader(FSLoader loader);
+
+        bool exists(VFSPath vpath) const;
+
+        auto size(VFSPath vpath) const -> size_t;
+
+        auto open(VFSPath vpath) const -> FileHandle;
+
+        void close(FileHandle file) const;
+
+        auto read(VFSPath vpath) const -> Vector<uint8_t>;
+
+        auto read(FileHandle file, void* buffer, size_t size) const -> size_t;
+
+        void seek(FileHandle file, int64_t offset) const;
+
+        auto mount(VFSPath vpath, FSPath path, uint priority) const -> MountHandle;
+
+        void unmount(MountHandle mount) const;
+
+    private:
+        FileLoaderAPI* api = nullptr;
+    };
+
+    struct FilePacker
+    {
+    public:
+        explicit FilePacker(FSPacker packer, FSPath path);
+        virtual ~FilePacker();
+
+        void write(VFSPath vpath, void* buffer, size_t size) const;
+
+    private:
+        FilePackerAPI* api = nullptr;
+        ArchiveHandle  archive;
+    };
 
 } // namespace lyra
 
