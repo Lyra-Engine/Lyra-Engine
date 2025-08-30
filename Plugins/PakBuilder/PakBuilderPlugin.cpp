@@ -276,27 +276,24 @@ static bool write_fn(ArchiveHandle handle, VFSPath path, void* buffer, size_t si
 
 LYRA_EXPORT auto prepare() -> void
 {
-    get_logger()->info("prepare: PakBuilder plugin initialized");
+    // do nothing
 }
 
 LYRA_EXPORT auto cleanup() -> void
 {
+    if (g_archives.empty()) return;
+
     std::lock_guard<std::mutex> lk(g_archives_mutex);
 
-    if (!g_archives.empty()) {
-        get_logger()->warn("cleanup: {} archives still open, finalizing and closing them", g_archives.size());
+    get_logger()->warn("cleanup: {} archives still open, finalizing and closing them", g_archives.size());
 
-        // finalize all open archives
-        for (auto& pair : g_archives) {
-            if (!finalize_pak_archive(*pair.second)) {
-                get_logger()->error("cleanup: failed to finalize archive with handle {}", pair.first);
-            }
-        }
+    // finalize all open archives
+    for (auto& pair : g_archives)
+        if (!finalize_pak_archive(*pair.second))
+            get_logger()->error("cleanup: failed to finalize archive with handle {}", pair.first);
 
-        g_archives.clear();
-    }
-
-    get_logger()->info("cleanup: PakBuilder plugin cleaned up");
+    // clear all archives
+    g_archives.clear();
 }
 
 LYRA_EXPORT auto create() -> FilePackerAPI

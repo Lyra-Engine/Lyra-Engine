@@ -23,6 +23,6 @@ if(NOT ${physfs_FOUND})
   # mark physfs as found
   set(physfs_FOUND TRUE)
 
-  # move cxxopts under folder
+  # move physfs under folder
   set_target_properties(physfs-static PROPERTIES FOLDER "Vendors")
 endif()

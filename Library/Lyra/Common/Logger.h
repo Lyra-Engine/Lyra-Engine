@@ -32,6 +32,12 @@ namespace lyra
         return logger;
     }
 
+    inline Logger get_lyra_logger()
+    {
+        static Logger logger = init_stdout_logger("lyra", LogLevel::warn);
+        return logger;
+    }
+
 } // end of namespace lyra
 
 #endif // LYRA_LIBRARY_COMMON_LOGGER_H

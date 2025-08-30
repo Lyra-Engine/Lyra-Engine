@@ -1,5 +1,8 @@
+#include <fstream>
+
 #include <Lyra/Common/Enums.h>
 #include <Lyra/Common/Assert.h>
+#include <Lyra/Common/Logger.h>
 #include <Lyra/FileIO/FSTypes.h>
 
 using namespace lyra;
@@ -122,5 +125,42 @@ FilePacker::~FilePacker()
 void FilePacker::write(VFSPath vpath, void* buffer, size_t size) const
 {
     api->write(archive, vpath, buffer, size);
+}
+
+void FilePacker::write(VFSPath vpath, const Path& path) const
+{
+    // 1024B = 1kb
+    // x1024 = 1Mb
+    // x128  = 128Mb
+    constexpr uint chunk = 1024 * 1024 * 128;
+
+    // sanity check
+    std::ifstream ifs(path, std::ios::in | std::ios::binary);
+    if (!ifs.good()) {
+        get_lyra_logger()->error("File {} does not exist!", path.string());
+        return;
+    }
+
+    // get file size
+    ifs.seekg(0, std::ios::end);
+    std::size_t file_size = static_cast<std::size_t>(ifs.tellg());
+    ifs.seekg(0, std::ios::beg);
+
+    // small file → one-shot read
+    if (file_size < chunk) {
+        Vector<char> buffer(file_size);
+        ifs.read(buffer.data(), buffer.size());
+        write(vpath, buffer.data(), buffer.size());
+        return;
+    }
+
+    // buffered writes
+    Vector<char> buffer(chunk);
+    while (ifs) {
+        ifs.read(buffer.data(), buffer.size());
+        std::streamsize read_bytes = ifs.gcount();
+        if (read_bytes > 0)
+            write(vpath, buffer.data(), static_cast<std::size_t>(read_bytes));
+    }
 }
 #pragma endregion FilePacker

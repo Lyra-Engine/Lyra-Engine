@@ -10,52 +10,13 @@
 // local headers
 #include "GUIRenderer.h"
 
+// resources
+#include <cmrc/cmrc.hpp>
+CMRC_DECLARE(imgui);
+
 using namespace lyra;
 
 static Logger logger = init_stderr_logger("ImGui", LogLevel::trace);
-
-static const char* imgui_shader_source = R"""(
-struct VertexInput
-{
-    float2 pos   : POSITION;
-    float2 uv    : TEXCOORD0;
-    float4 color : COLOR0;
-};
-
-struct VertexOutput
-{
-    float4 pos   : SV_Position;
-    float2 uv    : TEXCOORD0;
-    float4 color : COLOR0;
-};
-
-struct TextureInput
-{
-    Texture2D<float4> tex;
-    SamplerState      smp;
-};
-
-[[vk::push_constant]]
-ConstantBuffer<float4x4> xform : PUSH_CONSTANT;
-
-ParameterBlock<TextureInput> image;
-
-[shader("vertex")]
-VertexOutput vsmain(VertexInput input)
-{
-    VertexOutput output;
-    output.pos   = mul(float4(input.pos, 0.0, 1.0), xform);
-    output.uv    = input.uv;
-    output.color = input.color;
-    return output;
-}
-
-[shader("fragment")]
-float4 fsmain(VertexOutput input) : SV_Target
-{
-    return image.tex.Sample(image.smp, input.uv) * input.color;
-}
-)""";
 
 namespace ImGui
 {
@@ -974,12 +935,17 @@ void GUIRenderer::init_pipeline_data(const GUIDescriptor& descriptor)
     pipeline_data->frame_count = surface.get_image_count();
     pipeline_data->frame_index = 0;
 
+    // shader source
+    auto fs     = cmrc::imgui::get_filesystem();
+    auto file   = fs.open("GUIShader.slang");
+    auto source = String(file.begin(), file.end());
+
     // shader module
     auto module = execute([&]() {
         auto desc   = CompileDescriptor{};
         desc.module = "imgui";
         desc.path   = "imgui.slang";
-        desc.source = imgui_shader_source;
+        desc.source = source.c_str();
         return compiler.compile(desc);
     });
 

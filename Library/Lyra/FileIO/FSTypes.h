@@ -3,6 +3,7 @@
 #ifndef LYRA_LIBRARY_FILEIO_FS_TYPES_H
 #define LYRA_LIBRARY_FILEIO_FS_TYPES_H
 
+#include <Lyra/Common/Path.h>
 #include <Lyra/Common/Plugin.h>
 #include <Lyra/Common/Macros.h>
 #include <Lyra/Common/Stdint.h>
@@ -46,6 +47,8 @@ namespace lyra
         virtual ~FilePacker();
 
         void write(VFSPath vpath, void* buffer, size_t size) const;
+
+        void write(VFSPath vpath, const Path& path) const;
 
     private:
         FilePackerAPI* api = nullptr;

@@ -7,3 +7,15 @@ target_sources(lyra-imgui PRIVATE
     GuiRenderer.h
     GuiRenderer.cpp
 )
+
+# plugin resources
+cmrc_add_resource_library(
+  imgui-resources
+  NAMESPACE imgui
+  GUIShader.slang
+)
+
+target_link_libraries(lyra-imgui PRIVATE imgui-resources)
+
+# move resources under folder
+set_target_properties(imgui-resources PROPERTIES FOLDER "Resources")
