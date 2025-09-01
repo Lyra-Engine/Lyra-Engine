@@ -45,7 +45,7 @@ namespace lyra
 
         void (*bind_window_callback)(WindowHandle window, WindowCallback&& callback);
 
-        void (*query_input_events)(WindowHandle window, InputEventQuery& query);
+        void (*query_input_events)(WindowHandle window, WindowInputQuery& query);
 
         void (*show_window)(WindowHandle window);
 

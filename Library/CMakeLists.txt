@@ -25,13 +25,6 @@ target_sources(lyra-engine PRIVATE
     Lyra/Common/String.h
     Lyra/Common/View.h
 
-    # file system sources
-    Lyra/FileIO/FSAPI.h
-    Lyra/FileIO/FSEnums.h
-    Lyra/FileIO/FSTypes.h
-    Lyra/FileIO/FSTypes.cpp
-    Lyra/FileIO/FSUtils.h
-
     # window system sources
     Lyra/Window/WSIAPI.h
     Lyra/Window/WSIUtils.h
@@ -63,7 +56,7 @@ target_sources(lyra-engine PRIVATE
     Lyra/Render/RHITypes.h
     Lyra/Render/RHIUtils.h
 
-    # rgpass sources
+    # rpikit sources
     Lyra/RPIKit/FrameGraph.h
     Lyra/RPIKit/FrameGraph.cpp
     Lyra/RPIKit/FrameGraphAllocator.h
@@ -81,6 +74,19 @@ target_sources(lyra-engine PRIVATE
     # guikit sources
     Lyra/GuiKit/GUIAPI.h
     Lyra/GuiKit/GUITypes.h
+
+    # fileio sources
+    Lyra/FileIO/FSAPI.h
+    Lyra/FileIO/FSEnums.h
+    Lyra/FileIO/FSTypes.h
+    Lyra/FileIO/FSTypes.cpp
+    Lyra/FileIO/FSUtils.h
+
+    # assets sources
+    Lyra/Assets/AMSAPI.h
+    Lyra/Assets/AMSEnums.h
+    Lyra/Assets/AMSTypes.h
+    Lyra/Assets/AMSUtils.h
 )
 
 # link dependencies
@@ -90,17 +96,32 @@ find_package(entt REQUIRED)
 find_package(boxer REQUIRED)
 find_package(imgui REQUIRED)
 find_package(spdlog REQUIRED)
+find_package(json REQUIRED)
+find_package(toml REQUIRED)
 find_package(libassert REQUIRED)
 find_package(magic_enum REQUIRED)
 
 # directly exposed to user (with include headers)
 target_link_libraries(lyra-engine PUBLIC
+    # math libraries
     $<BUILD_INTERFACE:glm::glm>
+
+    # ecs libraries
     $<BUILD_INTERFACE:EnTT::EnTT>
+
+    # gui libraries
     $<BUILD_INTERFACE:imgui::imgui>
+
+    # debugging libraries
     $<BUILD_INTERFACE:fmt::fmt-header-only>
     $<BUILD_INTERFACE:spdlog::spdlog_header_only>
     $<BUILD_INTERFACE:libassert::assert>
+
+    # config format libraries
+    $<BUILD_INTERFACE:nlohmann_json>
+    $<BUILD_INTERFACE:tomlplusplus::tomlplusplus>
+
+    # misc libraries
     $<BUILD_INTERFACE:magic_enum::magic_enum>
 )
 
@@ -108,7 +129,7 @@ target_link_libraries(lyra-engine PUBLIC
 target_link_libraries(lyra-engine PRIVATE boxer::boxer)
 
 # include directories
-# NOTE: cmake install target requires relative path.
+# cmake install target requires relative path.
 # Use generator expression could avoid resolving relative path to absolute path.
 target_include_directories(lyra-engine PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/>

@@ -13,7 +13,7 @@ static auto get_api_name() -> CString { return "ImGui"; }
 static bool create_gui(GUIHandle& gui, const GUIDescriptor& descriptor)
 {
     auto renderer = std::make_unique<GUIRenderer>(descriptor);
-    gui.handle    = renderer.release();
+    gui.pointer   = renderer.release();
     return true;
 }
 

@@ -12,11 +12,11 @@ namespace lyra
     using FSPath  = CString;
     using VFSPath = CString;
 
-    using FileHandle = Handle<FSObjectType, FSObjectType::FILE>;
+    using FileHandle = TypedEnumHandle<FSObjectType, FSObjectType::FILE>;
 
-    using MountHandle = Handle<FSObjectType, FSObjectType::MOUNT>;
+    using MountHandle = TypedEnumHandle<FSObjectType, FSObjectType::MOUNT>;
 
-    using ArchiveHandle = Handle<FSObjectType, FSObjectType::ARCHIVE>;
+    using ArchiveHandle = TypedEnumHandle<FSObjectType, FSObjectType::ARCHIVE>;
 
 } // namespace lyra
 

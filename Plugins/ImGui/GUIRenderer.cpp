@@ -1129,9 +1129,9 @@ void GUIRenderer::update_key_state(ImGuiIO& io, const GUIWindowContext& ctx)
     // update key events
     for (uint i = 0; i < query.num_events; i++) {
         const auto& event = query.input_events.at(i);
-        if (event.type == InputEvent::Type::KEY_BUTTON)
+        if (event.type == WindowInputEvent::Type::KEY_BUTTON)
             io.AddKeyEvent(to_imgui_key_button(event.key_button.button), event.key_button.state == ButtonState::ON);
-        if (event.type == InputEvent::Type::KEY_TYPING)
+        if (event.type == WindowInputEvent::Type::KEY_TYPING)
             io.AddInputCharacter(event.key_typing.code);
     }
 }
@@ -1143,11 +1143,11 @@ void GUIRenderer::update_mouse_state(ImGuiIO& io, const GUIWindowContext& ctx)
     // update mouse button events
     for (uint i = 0; i < query.num_events; i++) {
         const auto& event = query.input_events.at(i);
-        if (event.type == InputEvent::Type::MOUSE_BUTTON) {
+        if (event.type == WindowInputEvent::Type::MOUSE_BUTTON) {
             io.AddMouseButtonEvent(to_imgui_mouse_button(event.mouse_button.button), event.mouse_button.state == ButtonState::ON);
-        } else if (event.type == InputEvent::Type::MOUSE_WHEEL) {
+        } else if (event.type == WindowInputEvent::Type::MOUSE_WHEEL) {
             io.AddMouseWheelEvent(event.mouse_wheel.x, event.mouse_wheel.y);
-        } else if (event.type == InputEvent::Type::MOUSE_MOVE) {
+        } else if (event.type == WindowInputEvent::Type::MOUSE_MOVE) {
             // calculate mouse position
             float x = event.mouse_move.xpos;
             float y = event.mouse_move.ypos;
@@ -1179,16 +1179,16 @@ void GUIRenderer::update_viewport_state(ImGuiIO& io, const GUIWindowContext& ctx
     const auto& query = ctx.events;
     for (uint i = 0; i < query.num_events; i++) {
         const auto& event = query.input_events.at(i);
-        if (event.type == InputEvent::Type::WINDOW_FOCUS) {
+        if (event.type == WindowInputEvent::Type::WINDOW_FOCUS) {
             bool focus = WSI::api()->get_window_focus(ctx.window);
             if (focus) {
                 if (io.BackendFlags & ImGuiBackendFlags_HasMouseHoveredViewport)
                     io.AddMouseViewportEvent(viewport->ID);
             }
             io.AddFocusEvent(focus);
-        } else if (event.type == InputEvent::Type::WINDOW_MOVE) {
+        } else if (event.type == WindowInputEvent::Type::WINDOW_MOVE) {
             viewport->PlatformRequestMove = true;
-        } else if (event.type == InputEvent::Type::WINDOW_RESIZE) {
+        } else if (event.type == WindowInputEvent::Type::WINDOW_RESIZE) {
             viewport->PlatformRequestResize = true;
 
             // detect primary viewport
@@ -1196,7 +1196,7 @@ void GUIRenderer::update_viewport_state(ImGuiIO& io, const GUIWindowContext& ctx
                 io.DisplaySize.x = static_cast<float>(event.window_resize.width);
                 io.DisplaySize.y = static_cast<float>(event.window_resize.height);
             }
-        } else if (event.type == InputEvent::Type::WINDOW_CLOSE) {
+        } else if (event.type == WindowInputEvent::Type::WINDOW_CLOSE) {
             viewport->PlatformRequestClose = true;
         }
     }

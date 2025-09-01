@@ -4,10 +4,11 @@ if(NOT ${physfs_FOUND})
   include(FetchContent)
 
   # define external project
+  # use a newer commit version to avoid cmake deprecation warning
   FetchContent_Declare(
     physfs
     GIT_REPOSITORY https://github.com/icculus/physfs.git
-    GIT_TAG        9d18d36 # release-3.2.0 (use a more recent one for cmake compatibility)
+    GIT_TAG        9d18d36 # release-3.2.0
   )
 
   # get properties

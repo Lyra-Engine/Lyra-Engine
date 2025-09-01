@@ -343,7 +343,7 @@ bool CompilerWrapper::reflect(ShaderEntryPoints entries, ReflectResultInternal& 
     // make sure single module is added exactly once
     HashSet<slang::IComponentType*> modules;
     for (auto& entry : entries) {
-        auto module = reinterpret_cast<CompileResultInternal*>(entry.module.handle);
+        auto module = reinterpret_cast<CompileResultInternal*>(entry.module.pointer);
         modules.insert(module->module);
     }
 
@@ -351,7 +351,7 @@ bool CompilerWrapper::reflect(ShaderEntryPoints entries, ReflectResultInternal& 
     Vector<slang::IComponentType*>     component_types(modules.begin(), modules.end());
     Vector<ComPtr<slang::IEntryPoint>> entry_points;
     for (auto& entry : entries) {
-        auto module = reinterpret_cast<CompileResultInternal*>(entry.module.handle);
+        auto module = reinterpret_cast<CompileResultInternal*>(entry.module.pointer);
         auto entryp = module->get_entry_point(entry.entry);
         entry_points.push_back(entryp);
         component_types.push_back(entryp);

@@ -172,7 +172,7 @@ namespace lyra
         GPUPrimitiveState    primitive     = {};
         GPUDepthStencilState depth_stencil = {};
         GPUMultisampleState  multisample   = {};
-        GPUFragmentState     fragment      = {};
+        GPUFragmentState     fragment      =    {};
     };
 
     struct GPURayTracingPipelineDescriptor : public GPUPipelineDescriptorBase

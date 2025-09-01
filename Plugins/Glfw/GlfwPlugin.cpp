@@ -35,8 +35,8 @@ static Logger get_logger()
 
 struct UserState
 {
-    WindowCallback  callback;
-    InputEventQuery events;
+    WindowCallback   callback;
+    WindowInputQuery events;
 
     void reset_events()
     {
@@ -56,7 +56,7 @@ struct UserState
         }
 
         auto& event           = events.input_events[events.num_events++];
-        event.type            = InputEvent::Type::MOUSE_MOVE;
+        event.type            = WindowInputEvent::Type::MOUSE_MOVE;
         event.mouse_move.xpos = xpos;
         event.mouse_move.ypos = ypos;
     }
@@ -69,7 +69,7 @@ struct UserState
         }
 
         auto& event         = events.input_events[events.num_events++];
-        event.type          = InputEvent::Type::MOUSE_WHEEL;
+        event.type          = WindowInputEvent::Type::MOUSE_WHEEL;
         event.mouse_wheel.x = x;
         event.mouse_wheel.y = y;
     }
@@ -82,7 +82,7 @@ struct UserState
         }
 
         auto& event                = events.input_events[events.num_events++];
-        event.type                 = InputEvent::Type::WINDOW_FOCUS;
+        event.type                 = WindowInputEvent::Type::WINDOW_FOCUS;
         event.window_focus.focused = focus;
     }
 
@@ -94,7 +94,7 @@ struct UserState
         }
 
         auto& event = events.input_events[events.num_events++];
-        event.type  = InputEvent::Type::WINDOW_CLOSE;
+        event.type  = WindowInputEvent::Type::WINDOW_CLOSE;
     }
 
     void add_window_move_event(int xpos, int ypos)
@@ -108,7 +108,7 @@ struct UserState
         }
 
         auto& event            = events.input_events[events.num_events++];
-        event.type             = InputEvent::Type::WINDOW_MOVE;
+        event.type             = WindowInputEvent::Type::WINDOW_MOVE;
         event.window_move.xpos = static_cast<uint>(std::max(0, xpos));
         event.window_move.ypos = static_cast<uint>(std::max(0, ypos));
     }
@@ -123,7 +123,7 @@ struct UserState
         }
 
         auto& event                = events.input_events[events.num_events++];
-        event.type                 = InputEvent::Type::WINDOW_RESIZE;
+        event.type                 = WindowInputEvent::Type::WINDOW_RESIZE;
         event.window_resize.width  = static_cast<uint>(std::max(0, width));
         event.window_resize.height = static_cast<uint>(std::max(0, height));
     }
@@ -136,7 +136,7 @@ struct UserState
         }
 
         auto& event               = events.input_events[events.num_events++];
-        event.type                = InputEvent::Type::MOUSE_BUTTON;
+        event.type                = WindowInputEvent::Type::MOUSE_BUTTON;
         event.mouse_button.button = key;
         event.mouse_button.state  = state;
     }
@@ -149,7 +149,7 @@ struct UserState
         }
 
         auto& event             = events.input_events[events.num_events++];
-        event.type              = InputEvent::Type::KEY_BUTTON;
+        event.type              = WindowInputEvent::Type::KEY_BUTTON;
         event.key_button.button = key;
         event.key_button.state  = state;
     }
@@ -162,7 +162,7 @@ struct UserState
         }
 
         auto& event           = events.input_events[events.num_events++];
-        event.type            = InputEvent::Type::KEY_TYPING;
+        event.type            = WindowInputEvent::Type::KEY_TYPING;
         event.key_typing.code = code;
     }
 };
@@ -605,7 +605,7 @@ static bool get_window_minimized(WindowHandle window)
     return glfwGetWindowAttrib((GLFWwindow*)window.window, GLFW_ICONIFIED);
 }
 
-static void query_input_events(WindowHandle window, InputEventQuery& query)
+static void query_input_events(WindowHandle window, WindowInputQuery& query)
 {
     auto  handle = reinterpret_cast<GLFWwindow*>(window.window);
     auto& user   = *static_cast<UserState*>(glfwGetWindowUserPointer(handle));

@@ -303,7 +303,7 @@ bool api::present_curr_frame(GPUSurfaceHandle surface)
     // check if nothing has been down, insert dummy workloads if needed
     if (frame.allocated_command_buffers.empty()) {
         auto  command_buffer_handle = frame.allocate(GPUQueueType::COMPUTE, true);
-        auto& command_buffer        = frame.command(command_buffer_handle.value);
+        auto& command_buffer        = frame.command(command_buffer_handle);
         command_buffer.begin();
         default_swapchain_image_barrier(swp, command_buffer.command_buffer);
         command_buffer.end();

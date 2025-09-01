@@ -56,6 +56,16 @@ FileLoader::FileLoader(FSLoader loader)
     api = create_file_loader_api(loader);
 }
 
+FileLoader::FileLoader(FileLoaderAPI* api)
+{
+    this->api = api;
+}
+
+FileLoader::~FileLoader()
+{
+    this->api = nullptr;
+}
+
 bool FileLoader::exists(VFSPath vpath) const
 {
     return api->exists_file(vpath);

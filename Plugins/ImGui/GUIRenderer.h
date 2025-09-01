@@ -38,9 +38,9 @@ struct GUITexture
 
 struct GUIWindowContext
 {
-    WindowHandle    window;
-    ImGuiContext*   context = nullptr;
-    InputEventQuery events;
+    WindowHandle     window;
+    ImGuiContext*    context = nullptr;
+    WindowInputQuery events;
 };
 
 struct GUIPipelineData;

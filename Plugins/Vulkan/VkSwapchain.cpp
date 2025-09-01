@@ -177,7 +177,7 @@ void VulkanSwapchain::Frame::init(VkImage image, VkFormat format, VkExtent2D ext
     texture.format  = format;
     texture.aspects = VK_IMAGE_ASPECT_COLOR_BIT;
     texture.area    = extent;
-    this->texture   = rhi->textures.add(texture);
+    this->texture   = GPUTextureHandle(rhi->textures.add(texture));
 
     // re-create new texture view
     auto view = VulkanTextureView();
@@ -200,7 +200,7 @@ void VulkanSwapchain::Frame::init(VkImage image, VkFormat format, VkExtent2D ext
         create_info.subresourceRange.layerCount     = 1;
     }
     vk_check(rhi->vtable.vkCreateImageView(rhi->device, &create_info, nullptr, &view.view));
-    this->view = rhi->views.add(view);
+    this->view = GPUTextureViewHandle(rhi->views.add(view));
 }
 
 void VulkanSwapchain::Frame::destroy()

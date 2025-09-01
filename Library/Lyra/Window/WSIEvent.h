@@ -69,7 +69,7 @@ namespace lyra
     };
 
     // unified keyboard/mouse input event
-    struct InputEvent
+    struct WindowInputEvent
     {
         enum struct Type : uint
         {
@@ -100,12 +100,12 @@ namespace lyra
 
     // a buffer of inputs within a frame,
     // used to query current frame's input
-    struct InputEventQuery
+    struct WindowInputQuery
     {
         static constexpr uint MAX_EVENTS = 16;
 
-        uint                          num_events = 0;
-        Array<InputEvent, MAX_EVENTS> input_events;
+        uint                                num_events = 0;
+        Array<WindowInputEvent, MAX_EVENTS> input_events;
     };
 
 } // namespace lyra

@@ -59,7 +59,7 @@ namespace lyra
     using GPUTextureAspectFlags    = BitFlags<GPUTextureAspect>;
 
     template <GPUObjectType E>
-    using GPUHandle = Handle<GPUObjectType, E>;
+    using GPUHandle = TypedEnumHandle<GPUObjectType, E>;
 
     // typed GPU handle
     using GPUSurfaceHandle            = GPUHandle<GPUObjectType::SURFACE>;

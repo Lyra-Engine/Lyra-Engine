@@ -4,10 +4,11 @@ if(NOT ${miniz_FOUND})
   include(FetchContent)
 
   # define external project
+  # use a newer commit version to avoid cmake deprecation warning
   FetchContent_Declare(
     miniz
     GIT_REPOSITORY https://github.com/richgel999/miniz.git
-    GIT_TAG        3.0.2
+    GIT_TAG        c883286 # 3.0.2
   )
 
   # get properties

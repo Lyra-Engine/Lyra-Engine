@@ -53,4 +53,9 @@
 #include <Lyra/FileIO/FSEnums.h>
 #include <Lyra/FileIO/FSTypes.h>
 
+// AMS (Asset Management System)
+#include <Lyra/Assets/AMSAPI.h>
+#include <Lyra/Assets/AMSEnums.h>
+#include <Lyra/Assets/AMSTypes.h>
+
 #endif // LYRA_LIBRARY_HPP

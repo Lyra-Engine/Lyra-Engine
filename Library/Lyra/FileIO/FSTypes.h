@@ -17,6 +17,8 @@ namespace lyra
     {
     public:
         explicit FileLoader(FSLoader loader);
+        explicit FileLoader(FileLoaderAPI* api);
+        virtual ~FileLoader();
 
         bool exists(VFSPath vpath) const;
 
@@ -35,6 +37,10 @@ namespace lyra
         auto mount(VFSPath vpath, FSPath path, uint priority) const -> MountHandle;
 
         void unmount(MountHandle mount) const;
+
+        FileLoaderAPI* operator()() { return api; }
+
+        FileLoaderAPI* operator()() const { return api; }
 
     private:
         FileLoaderAPI* api = nullptr;
