@@ -8,6 +8,7 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 
 // library headers
+#include <Lyra/Common/Macros.h>
 #include <Lyra/Common/String.h>
 #include <Lyra/Common/Pointer.h>
 
@@ -32,12 +33,15 @@ namespace lyra
         return logger;
     }
 
-    inline Logger get_lyra_logger()
+} // end of namespace lyra
+
+namespace lyra::engine
+{
+    FORCE_INLINE Logger logger()
     {
-        static Logger logger = init_stdout_logger("lyra", LogLevel::warn);
+        static Logger logger = init_stdout_logger("engine", LogLevel::warn);
         return logger;
     }
-
-} // end of namespace lyra
+} // namespace lyra::engine
 
 #endif // LYRA_LIBRARY_COMMON_LOGGER_H

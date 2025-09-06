@@ -12,6 +12,8 @@ namespace lyra
 {
     struct TextAsset
     {
+        static constexpr CString name = "TextAsset";
+
         // uuid: to let asset server know how to reference this type of asset
         static constexpr UUID uuid = make_uuid("394a204e-8622-11f0-8de9-0242ac120002");
 
@@ -19,7 +21,10 @@ namespace lyra
         static constexpr InitList<CString> extensions = {".txt"};
 
         // loader: to let asset server know how to load this type of asset
-        static auto loader() -> AssetLoaderAPI*;
+        static auto loader() -> AssetLoaderAPI;
+
+        // loader: to let asset server know how to load this type of asset
+        static auto importer() -> AssetImportAPI;
 
         // text content
         String content;

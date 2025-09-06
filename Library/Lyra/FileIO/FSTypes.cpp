@@ -147,7 +147,7 @@ void FilePacker::write(VFSPath vpath, const Path& path) const
     // sanity check
     std::ifstream ifs(path, std::ios::in | std::ios::binary);
     if (!ifs.good()) {
-        get_lyra_logger()->error("File {} does not exist!", path.string());
+        engine::logger()->error("File {} does not exist!", path.string());
         return;
     }
 
