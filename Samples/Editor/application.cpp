@@ -1,6 +1,4 @@
 #include "application.h"
-#include "Lyra/Common/Function.h"
-#include "imgui.h"
 
 void Application::init()
 {
@@ -57,11 +55,25 @@ void Application::init()
         return GUI::init(desc);
     });
 
+    // common paths (TODO: need to think about what the project structure should look like)
+    auto root       = git_root();
+    auto asset_root = root; // / "Assets";
+    auto cache_root = root; // / "Cache";
+
+    // initialize asset loaders (metadata sidecars with assets for development)
+    files = std::make_unique<FileLoader>(FSLoader::NATIVE);
+    files->mount("/", asset_root, 0);
+
     // initialize asset manager
-    ams = lyra::execute([&]() {
-        auto desc = AMSDescriptor{};
-        // TODO: add asset manager paths
-        return AssetManager::init(desc);
+    assets = lyra::execute([&]() {
+        auto desc                = AMSDescriptor{};
+        desc.importer.asset_path = asset_root;
+        desc.importer.cache_path = cache_root;
+        desc.loader.assets       = files->api();
+        desc.loader.metadata     = files->api();
+        desc.watch               = true;
+        desc.workers             = 4;
+        return std::make_unique<AssetManager>(desc);
     });
 }
 
@@ -69,6 +81,8 @@ void Application::destroy()
 {
     rhi->wait();
     gui.reset();
+    files.reset();
+    assets.reset();
 }
 
 void Application::update(const Window& window)
@@ -94,7 +108,7 @@ void Application::update(const Window& window)
         ImGui::PopStyleVar(3);
 
         // create the docking space
-        ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
+        ImGuiID dockspace_id = ImGui::GetID("DockSpace");
         ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
 
         ImGui::End();

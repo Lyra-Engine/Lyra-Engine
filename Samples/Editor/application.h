@@ -47,7 +47,8 @@ private:
     OwnedResource<GUI> gui;
 
     // asset manager system
-    Own<AssetManager> ams;
+    Own<AssetManager> assets;
+    Own<FileLoader>   files;
 };
 
 #endif // LYRA_SAMPLES_EDITOR_H

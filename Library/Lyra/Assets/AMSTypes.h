@@ -20,11 +20,6 @@ namespace lyra
     struct AssetManager
     {
     public:
-        static auto init(const AMSDescriptor& descriptor) -> Own<AssetManager>
-        {
-            return std::make_unique<AssetManager>(descriptor);
-        }
-
         explicit AssetManager(const AMSDescriptor& descriptor);
 
         virtual ~AssetManager();

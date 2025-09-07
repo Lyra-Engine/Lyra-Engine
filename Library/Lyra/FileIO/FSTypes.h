@@ -32,7 +32,7 @@ namespace lyra
         auto read(FSPath vpath) const -> Vector<T>
         {
             Vector<T> data(size(vpath) / sizeof(T), 0);
-            assert(api->read_whole_file(vpath, reinterpret_cast<void*>(data.data())));
+            assert(api_->read_whole_file(vpath, reinterpret_cast<void*>(data.data())));
             return data;
         }
 
@@ -40,16 +40,22 @@ namespace lyra
 
         void seek(FileHandle file, int64_t offset) const;
 
+        auto mount(FSPath vpath, const Path& path, uint priority) const -> MountHandle;
+
         auto mount(FSPath vpath, OSPath path, uint priority) const -> MountHandle;
 
         void unmount(MountHandle mount) const;
 
-        FileLoaderAPI* operator()() { return api; }
+        FORCE_INLINE FileLoaderAPI* api() { return api_; }
 
-        FileLoaderAPI* operator()() const { return api; }
+        FORCE_INLINE FileLoaderAPI* api() const { return api_; }
+
+        FORCE_INLINE FileLoaderAPI* operator()() { return api_; }
+
+        FORCE_INLINE FileLoaderAPI* operator()() const { return api_; }
 
     private:
-        FileLoaderAPI* api = nullptr;
+        FileLoaderAPI* api_ = nullptr;
     };
 
     struct FilePacker
@@ -62,8 +68,16 @@ namespace lyra
 
         void write(FSPath vpath, const Path& path) const;
 
+        FORCE_INLINE FilePackerAPI* api() { return api_; }
+
+        FORCE_INLINE FilePackerAPI* api() const { return api_; }
+
+        FORCE_INLINE FilePackerAPI* operator()() { return api_; }
+
+        FORCE_INLINE FilePackerAPI* operator()() const { return api_; }
+
     private:
-        FilePackerAPI* api = nullptr;
+        FilePackerAPI* api_ = nullptr;
         ArchiveHandle  archive;
     };
 
