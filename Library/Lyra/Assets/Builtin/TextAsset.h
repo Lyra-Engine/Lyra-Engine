@@ -6,7 +6,6 @@
 #include <Lyra/Common/UUID.h>
 #include <Lyra/Common/String.h>
 #include <Lyra/Assets/AMSAPI.h>
-#include <Lyra/FileIO/FSTypes.h>
 
 namespace lyra
 {
@@ -20,38 +19,12 @@ namespace lyra
         // extensions: to let assert server what extensions to look for
         static constexpr InitList<CString> extensions = {".txt"};
 
-        // loader: to let asset server know how to load this type of asset
-        static auto loader() -> AssetLoaderAPI;
-
-        // loader: to let asset server know how to load this type of asset
-        static auto importer() -> AssetImportAPI;
+        // handler: to let asset server know how to load this type of asset
+        static auto handler() -> AssetHandlerAPI;
 
         // text content
         String content;
     };
-
-    // struct TextLoader
-    // {
-    //     static constexpr auto get_api_name() -> CString
-    //     {
-    //         return "TextLoader";
-    //     }
-    //
-    //     static auto load(FileLoaderAPI* api, VFSPath path) -> void*
-    //     {
-    //         auto loader  = FileLoader(api);
-    //         auto content = loader.read(path);
-    //         return new TextAsset{String(content.begin(), content.end())};
-    //     }
-    //
-    //     static auto api() -> AssetLoaderAPI
-    //     {
-    //         AssetLoaderAPI api;
-    //         api.get_api_name = TextLoader::get_api_name;
-    //         api.load         = TextLoader::load;
-    //         return api;
-    //     }
-    // };
 
 } // namespace lyra
 

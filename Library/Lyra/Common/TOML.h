@@ -7,6 +7,6 @@
 
 #include <toml++/toml.hpp>
 
-using TOML = toml::parse_result;
+using TOML = toml::table;
 
 #endif // LYRA_LIBRARY_COMMON_TOML_H

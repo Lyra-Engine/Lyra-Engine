@@ -56,6 +56,13 @@ void Application::init()
         desc.viewports = true;
         return GUI::init(desc);
     });
+
+    // initialize asset manager
+    ams = lyra::execute([&]() {
+        auto desc = AMSDescriptor{};
+        // TODO: add asset manager paths
+        return AssetManager::init(desc);
+    });
 }
 
 void Application::destroy()

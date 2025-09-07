@@ -86,7 +86,19 @@ target_sources(lyra-engine PRIVATE
     Lyra/Assets/AMSAPI.h
     Lyra/Assets/AMSEnums.h
     Lyra/Assets/AMSTypes.h
+    Lyra/Assets/AMSTypes.cpp
     Lyra/Assets/AMSUtils.h
+
+    # builtin assets sources
+    Lyra/Assets/Builtin/TextAsset.h
+    Lyra/Assets/Builtin/TextAsset.cpp
+    Lyra/Assets/Builtin/JsonAsset.h
+    Lyra/Assets/Builtin/JsonAsset.cpp
+    Lyra/Assets/Builtin/TomlAsset.h
+    Lyra/Assets/Builtin/TomlAsset.cpp
+    Lyra/Assets/Builtin/TextureAsset.h
+    Lyra/Assets/Builtin/TextureAsset.cpp
+    Lyra/Assets/Builtin/GenericAsset.h
 )
 
 # link dependencies

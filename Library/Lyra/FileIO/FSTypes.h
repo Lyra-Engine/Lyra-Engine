@@ -28,7 +28,13 @@ namespace lyra
 
         void close(FileHandle file) const;
 
-        auto read(VFSPath vpath) const -> Vector<uint8_t>;
+        template <typename T>
+        auto read(VFSPath vpath) const -> Vector<T>
+        {
+            Vector<T> data(size(vpath) / sizeof(T), 0);
+            assert(api->read_whole_file(vpath, reinterpret_cast<void*>(data.data())));
+            return data;
+        }
 
         auto read(FileHandle file, void* buffer, size_t size) const -> size_t;
 

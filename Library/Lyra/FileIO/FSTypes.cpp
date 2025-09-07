@@ -88,13 +88,6 @@ void FileLoader::close(FileHandle file) const
     api->close_file(file);
 }
 
-Vector<uint8_t> FileLoader::read(VFSPath vpath) const
-{
-    Vector<uint8_t> data(size(vpath), 0);
-    assert(api->read_whole_file(vpath, data.data()));
-    return data;
-}
-
 size_t FileLoader::read(FileHandle file, void* buffer, size_t size) const
 {
     size_t read;

@@ -4,7 +4,9 @@
 #define LYRA_LIBRARY_AMS_UTILS_H
 
 #include <Lyra/Common/UUID.h>
+#include <Lyra/Common/GUID.h>
 #include <Lyra/Common/Path.h>
+#include <Lyra/Common/Macros.h>
 #include <Lyra/FileIO/FSTypes.h>
 #include <Lyra/Assets/AMSEnums.h>
 
@@ -13,7 +15,9 @@ namespace lyra
 
     struct RawAssetHandle
     {
-        UUID uuid;
+        GUID guid;
+
+        FORCE_INLINE bool valid() const { return guid != 0ull; }
     };
 
     template <typename AssetType>
@@ -47,6 +51,9 @@ namespace lyra
 
         // both development + runtime
         AMSLoaderDescriptor loader;
+
+        // watch asset directory changes
+        bool watch;
 
         // number of threads for asset processing/loading
         uint workers;
