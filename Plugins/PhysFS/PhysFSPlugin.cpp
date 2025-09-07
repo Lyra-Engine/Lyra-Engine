@@ -104,7 +104,7 @@ static String normalize_vpath(FSPath vpath)
 
 static CString get_api_name() { return "PhysFS"; }
 
-static size_t sizeof_file(VFSPath path)
+static size_t sizeof_file(FSPath path)
 {
     if (!path) {
         get_logger()->error("sizeof_file: input path is null!");
@@ -121,7 +121,7 @@ static size_t sizeof_file(VFSPath path)
     return 0;
 }
 
-static bool exists_file(VFSPath path)
+static bool exists_file(FSPath path)
 {
     if (!path) {
         get_logger()->error("exists_file: input path is null!");
@@ -230,7 +230,7 @@ static bool seek_file(FileHandle handle, int64_t offset)
     return PHYSFS_seek(h.pfile.get(), static_cast<PHYSFS_uint64>(offset)) != 0;
 }
 
-static bool read_whole_file(CString path, void* data)
+static bool read_whole_file(FSPath path, void* data)
 {
     if (!path || !data) {
         get_logger()->error("read_whole_file: input path or data is invalid!");
@@ -250,7 +250,7 @@ static bool read_whole_file(CString path, void* data)
     return true;
 }
 
-static bool mount(MountHandle& out_handle, VFSPath vpath, FSPath path, uint priority)
+static bool mount(MountHandle& out_handle, FSPath vpath, OSPath path, uint priority)
 {
     if (!path) {
         get_logger()->error("mount: input path is invalid!");
@@ -259,11 +259,11 @@ static bool mount(MountHandle& out_handle, VFSPath vpath, FSPath path, uint prio
 
     std::error_code ec;
 
-    String   vp = normalize_vpath(vpath);
-    fs::path root(path);
+    auto vp = normalize_vpath(vpath);
+    Path root(path);
     root = fs::absolute(root, ec);
     if (ec) {
-        get_logger()->error("mount {} -> {}: {}", vp, path, ec.message());
+        get_logger()->error("mount {} -> {}: {}", vp, fmt::ptr(path), ec.message());
         return false;
     }
 

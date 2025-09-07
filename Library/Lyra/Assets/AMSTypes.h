@@ -80,7 +80,7 @@ namespace lyra
         // load the asset via asset path in virtual file system,
         // returns a typed asset handle (with uuid)
         template <typename AssetType>
-        auto load_asset(VFSPath path) -> AssetHandle<AssetType>
+        auto load_asset(FSPath path) -> AssetHandle<AssetType>
         {
             auto handle = load_asset(AssetType::uuid, path);
             return AssetHandle<AssetType>{handle.guid};
@@ -100,7 +100,7 @@ namespace lyra
 
     private:
         auto get_asset(UUID type_uuid, RawAssetHandle handle) -> void*;
-        auto load_asset(UUID type_uuid, VFSPath path) -> RawAssetHandle;
+        auto load_asset(UUID type_uuid, FSPath path) -> RawAssetHandle;
         void unload_asset(UUID type_uuid, RawAssetHandle handle);
 
     private:

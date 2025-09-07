@@ -26,7 +26,7 @@ static std::mutex                               g_archives_mutex;
 static FORCEINLINE Logger get_logger() { return logger; }
 
 // normalize virtual path: ensure no leading '/', strip trailing '/'
-static String normalize_zip_path(VFSPath vpath)
+static String normalize_zip_path(FSPath vpath)
 {
     if (!vpath) return String("");
 
@@ -111,7 +111,7 @@ static bool finalize_zip_archive(ZipArchiveHandleData& archive_data)
 
 static CString get_api_name() { return "ZipBuilder"; }
 
-static bool open(ArchiveHandle& out_handle, FSPath path)
+static bool open(ArchiveHandle& out_handle, OSPath path)
 {
     if (!path) {
         get_logger()->error("open: input path is null!");
@@ -125,7 +125,7 @@ static bool open(ArchiveHandle& out_handle, FSPath path)
     std::filesystem::path parent = archive_path.parent_path();
     if (!parent.empty() && !std::filesystem::exists(parent, ec)) {
         if (!std::filesystem::create_directories(parent, ec)) {
-            get_logger()->error("open: failed to create parent directories for {}: {}", path, ec.message());
+            get_logger()->error("open: failed to create parent directories for {}: {}", fmt::ptr(path), ec.message());
             return false;
         }
     }
@@ -141,7 +141,7 @@ static bool open(ArchiveHandle& out_handle, FSPath path)
     }
 
     out_handle.value = archive_index;
-    get_logger()->info("open: opened zip archive {} with handle {}", path, archive_index);
+    get_logger()->info("open: opened zip archive {} with handle {}", fmt::ptr(path), archive_index);
     return true;
 }
 
@@ -169,7 +169,7 @@ static void close(ArchiveHandle handle)
     }
 }
 
-static bool write(ArchiveHandle handle, VFSPath path, void* buffer, size_t size)
+static bool write(ArchiveHandle handle, FSPath path, void* buffer, size_t size)
 {
     if (!handle.valid() || !path || !buffer) {
         get_logger()->error("write: invalid parameters - handle valid: {}, path: {}, buffer: {}",

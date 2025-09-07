@@ -124,7 +124,7 @@ static CString get_api_name()
     return "NativeFS";
 }
 
-static size_t sizeof_file(VFSPath path)
+static size_t sizeof_file(FSPath path)
 {
     if (!path) {
         get_logger()->error("sizeof_file: input path is null!");
@@ -145,7 +145,7 @@ static size_t sizeof_file(VFSPath path)
     return false;
 }
 
-static bool exists_file(VFSPath path)
+static bool exists_file(FSPath path)
 {
     if (!path) {
         get_logger()->error("exists_file: input path is null!");
@@ -287,7 +287,7 @@ static bool read_whole_file(FSPath path, void* data)
     return false;
 }
 
-static bool mount(MountHandle& handle, VFSPath vpath, FSPath path, uint priority)
+static bool mount(MountHandle& handle, FSPath vpath, OSPath path, uint priority)
 {
     if (!path) {
         get_logger()->error("mount: input path is invalid!");
@@ -296,11 +296,11 @@ static bool mount(MountHandle& handle, VFSPath vpath, FSPath path, uint priority
 
     std::error_code ec;
 
-    String   vp = normalize_vpath(vpath);
-    fs::path root(path);
+    auto vp = normalize_vpath(vpath);
+    Path root(path);
     root = fs::absolute(root, ec);
     if (ec) {
-        get_logger()->error("mount {} -> {}: {}", vp, path, ec.message());
+        get_logger()->error("mount {} -> {}: {}", vp, fmt::ptr(path), ec.message());
         return false;
     }
 

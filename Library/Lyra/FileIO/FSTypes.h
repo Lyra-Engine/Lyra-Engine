@@ -20,16 +20,16 @@ namespace lyra
         explicit FileLoader(FileLoaderAPI* api);
         virtual ~FileLoader();
 
-        bool exists(VFSPath vpath) const;
+        bool exists(FSPath vpath) const;
 
-        auto size(VFSPath vpath) const -> size_t;
+        auto size(FSPath vpath) const -> size_t;
 
-        auto open(VFSPath vpath) const -> FileHandle;
+        auto open(FSPath vpath) const -> FileHandle;
 
         void close(FileHandle file) const;
 
         template <typename T>
-        auto read(VFSPath vpath) const -> Vector<T>
+        auto read(FSPath vpath) const -> Vector<T>
         {
             Vector<T> data(size(vpath) / sizeof(T), 0);
             assert(api->read_whole_file(vpath, reinterpret_cast<void*>(data.data())));
@@ -40,7 +40,7 @@ namespace lyra
 
         void seek(FileHandle file, int64_t offset) const;
 
-        auto mount(VFSPath vpath, FSPath path, uint priority) const -> MountHandle;
+        auto mount(FSPath vpath, OSPath path, uint priority) const -> MountHandle;
 
         void unmount(MountHandle mount) const;
 
@@ -55,12 +55,12 @@ namespace lyra
     struct FilePacker
     {
     public:
-        explicit FilePacker(FSPacker packer, FSPath path);
+        explicit FilePacker(FSPacker packer, OSPath path);
         virtual ~FilePacker();
 
-        void write(VFSPath vpath, void* buffer, size_t size) const;
+        void write(FSPath vpath, void* buffer, size_t size) const;
 
-        void write(VFSPath vpath, const Path& path) const;
+        void write(FSPath vpath, const Path& path) const;
 
     private:
         FilePackerAPI* api = nullptr;

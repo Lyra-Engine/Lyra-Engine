@@ -76,7 +76,7 @@ void* AssetManager::get_asset(UUID type_uuid, RawAssetHandle handle)
     return it2->second;
 }
 
-RawAssetHandle AssetManager::load_asset(UUID type_uuid, VFSPath path)
+RawAssetHandle AssetManager::load_asset(UUID type_uuid, FSPath path)
 {
     // sanity check if given asset has been registered
     auto it = processors.find(type_uuid);
@@ -173,7 +173,7 @@ bool AssetManager::import_asset(const Path& path, GUID& guid)
     metadata["guid"]    = guid;
     metadata["time"]    = get_timestamp();
     metadata["type"]    = proc.type;
-    metadata["data"]    = proc.handler->process(this, source_path.string().c_str(), target_path.string().c_str());
+    metadata["data"]    = proc.handler->process(this, source_path.c_str(), target_path.c_str());
 
     // write metadata side by side with the imported asset
     save_json(import_file, metadata);

@@ -66,17 +66,17 @@ FileLoader::~FileLoader()
     this->api = nullptr;
 }
 
-bool FileLoader::exists(VFSPath vpath) const
+bool FileLoader::exists(FSPath vpath) const
 {
     return api->exists_file(vpath);
 }
 
-size_t FileLoader::size(VFSPath vpath) const
+size_t FileLoader::size(FSPath vpath) const
 {
     return api->sizeof_file(vpath);
 }
 
-FileHandle FileLoader::open(VFSPath vpath) const
+FileHandle FileLoader::open(FSPath vpath) const
 {
     FileHandle file;
     assert(api->open_file(file, vpath));
@@ -100,7 +100,7 @@ void FileLoader::seek(FileHandle file, int64_t offset) const
     assert(api->seek_file(file, offset));
 }
 
-MountHandle FileLoader::mount(VFSPath vpath, FSPath path, uint priority) const
+MountHandle FileLoader::mount(FSPath vpath, OSPath path, uint priority) const
 {
     MountHandle mount;
     assert(api->mount(mount, vpath, path, priority));
@@ -114,7 +114,7 @@ void FileLoader::unmount(MountHandle mount) const
 #pragma endregion FileLoader
 
 #pragma region FilePacker
-FilePacker::FilePacker(FSPacker packer, FSPath path)
+FilePacker::FilePacker(FSPacker packer, OSPath path)
 {
     api = create_file_packer_api(packer);
     assert(api->open(archive, path));
@@ -125,12 +125,12 @@ FilePacker::~FilePacker()
     api->close(archive);
 }
 
-void FilePacker::write(VFSPath vpath, void* buffer, size_t size) const
+void FilePacker::write(FSPath vpath, void* buffer, size_t size) const
 {
     api->write(archive, vpath, buffer, size);
 }
 
-void FilePacker::write(VFSPath vpath, const Path& path) const
+void FilePacker::write(FSPath vpath, const Path& path) const
 {
     // 1024B = 1kb
     // x1024 = 1Mb

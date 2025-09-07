@@ -17,8 +17,8 @@ namespace lyra
         CString (*get_api_name)();
 
         // file query operations
-        auto (*sizeof_file)(VFSPath path) -> size_t;
-        bool (*exists_file)(VFSPath path);
+        auto (*sizeof_file)(FSPath path) -> size_t;
+        bool (*exists_file)(FSPath path);
 
         // file open/close operations
         bool (*open_file)(FileHandle& handle, FSPath path);
@@ -30,7 +30,7 @@ namespace lyra
         bool (*read_whole_file)(FSPath path, void* data);
 
         // mount operations
-        bool (*mount)(MountHandle& handle, VFSPath vpath, FSPath path, uint priority);
+        bool (*mount)(MountHandle& handle, FSPath vpath, OSPath path, uint priority);
         bool (*unmount)(MountHandle handle);
     };
 
@@ -40,11 +40,11 @@ namespace lyra
         CString (*get_api_name)();
 
         // initialize with target archive path
-        bool (*open)(ArchiveHandle& handle, FSPath path);
+        bool (*open)(ArchiveHandle& handle, OSPath path);
         void (*close)(ArchiveHandle handle);
 
         // write binary to virtual file system within the archive
-        bool (*write)(ArchiveHandle handle, VFSPath path, void* buffer, size_t size);
+        bool (*write)(ArchiveHandle handle, FSPath path, void* buffer, size_t size);
     };
 
 } // namespace lyra
