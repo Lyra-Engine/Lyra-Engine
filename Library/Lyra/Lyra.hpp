@@ -56,6 +56,13 @@
 // AMS (Asset Management System)
 #include <Lyra/Assets/AMSAPI.h>
 #include <Lyra/Assets/AMSEnums.h>
+#include <Lyra/Assets/AMSUtils.h>
 #include <Lyra/Assets/AMSTypes.h>
+
+// Builtin Asset Types
+#include <Lyra/Assets/Builtin/TextAsset.h>
+#include <Lyra/Assets/Builtin/JsonAsset.h>
+#include <Lyra/Assets/Builtin/TomlAsset.h>
+#include <Lyra/Assets/Builtin/TextureAsset.h>
 
 #endif // LYRA_LIBRARY_HPP

@@ -8,6 +8,7 @@
 #include <Lyra/Common/Plugin.h>
 #include <Lyra/Common/Macros.h>
 #include <Lyra/Common/Pointer.h>
+#include <Lyra/AppKit/AppTypes.h>
 #include <Lyra/GuiKit/GUIAPI.h>
 
 namespace lyra
@@ -82,6 +83,44 @@ namespace lyra
 
     private:
         GUIHandle handle;
+    };
+
+    struct ImGuiManager
+    {
+    public:
+        explicit ImGuiManager(const GUIDescriptor& descriptor)
+        {
+            gui = GUI::init(descriptor);
+        }
+
+        void bind(Application& app)
+        {
+            // save imgui manager into blackboard
+            app.get_blackboard().add<ImGuiManager*>(this);
+
+            // bind imgui manager events
+            app.bind<AppEvent::UPDATE_PRE>(&ImGuiManager::pre_update, this);
+            app.bind<AppEvent::UPDATE_POST>(&ImGuiManager::post_update, this);
+            app.bind<AppEvent::RENDER_POST>(&ImGuiManager::post_render, this);
+        }
+
+        void pre_update()
+        {
+            gui->new_frame();
+        }
+
+        void post_update()
+        {
+            gui->end_frame();
+        }
+
+        void post_render()
+        {
+            gui->render_side_viewports();
+        }
+
+    private:
+        OwnedResource<GUI> gui;
     };
 
 } // namespace lyra

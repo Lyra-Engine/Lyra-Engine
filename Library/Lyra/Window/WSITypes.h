@@ -61,16 +61,12 @@ namespace lyra
             static_assert(function_traits<F>::arity <= 1, "Bound function can at most take 1 argument with type const Window&");
 
             if constexpr (function_traits<F>::arity == 0) {
-                bind<E>([user, f](const Window& window) {
-                    return ((*user).*f)();
-                });
+                bind<E>([user, f](const Window& window) { return ((*user).*f)(); });
                 return;
             }
 
             if constexpr (function_traits<F>::arity == 1) {
-                bind<E>([user, f](const Window& window) {
-                    return ((*user).*f)(window);
-                });
+                bind<E>([user, f](const Window& window) { return ((*user).*f)(window); });
                 return;
             }
         }

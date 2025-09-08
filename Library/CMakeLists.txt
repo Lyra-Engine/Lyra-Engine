@@ -71,6 +71,10 @@ target_sources(lyra-engine PRIVATE
     Lyra/RPIKit/FrameGraphTexture.cpp
     Lyra/RPIKit/FrameGraphTraits.h
 
+    # appkit sources
+    Lyra/AppKit/AppTypes.h
+    Lyra/AppKit/AppTypes.cpp
+
     # guikit sources
     Lyra/GuiKit/GUIAPI.h
     Lyra/GuiKit/GUITypes.h
@@ -105,11 +109,11 @@ target_sources(lyra-engine PRIVATE
 find_package(glm REQUIRED)
 find_package(fmt REQUIRED)
 find_package(entt REQUIRED)
+find_package(json REQUIRED)
+find_package(toml REQUIRED)
 find_package(boxer REQUIRED)
 find_package(imgui REQUIRED)
 find_package(spdlog REQUIRED)
-find_package(json REQUIRED)
-find_package(toml REQUIRED)
 find_package(libassert REQUIRED)
 find_package(magic_enum REQUIRED)
 

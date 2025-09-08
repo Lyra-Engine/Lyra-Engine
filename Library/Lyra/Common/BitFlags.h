@@ -27,76 +27,102 @@ struct BitFlags
 
     U value;
 
-    BitFlags() : value(U(0)) {}
+    constexpr BitFlags() : value(U(0)) {}
 
-    BitFlags(U value) : value(value) {}
+    constexpr BitFlags(U value) : value(value) {}
 
-    BitFlags(E value) : value(static_cast<U>(value)) {}
+    constexpr BitFlags(E value) : value(static_cast<U>(value)) {}
 
-    bool contains(E flag) const
+    constexpr bool contains(E flag) const
     {
         return value & static_cast<U>(flag);
     }
 
-    void set(E flag)
+    constexpr void set(E flag, bool enabled)
+    {
+        if (enabled)
+            set(flag);
+        else
+            unset(flag);
+    }
+
+    constexpr void set(E flag)
     {
         *this = *this | flag;
     }
 
-    void unset(E flag)
+    constexpr void unset(E flag)
     {
         *this = *this & ~BitFlags(flag);
     }
 
-    friend bool operator==(T lhs, T rhs)
+    constexpr T& operator|=(T rhs)
+    {
+        *this = *this | rhs;
+        return *this;
+    }
+
+    constexpr T& operator&=(T rhs)
+    {
+        *this = *this & rhs;
+        return *this;
+    }
+
+    constexpr T& operator^=(T rhs)
+    {
+        *this = *this ^ rhs;
+        return *this;
+    }
+
+    constexpr friend bool operator==(T lhs, T rhs)
     {
         return lhs.value == rhs.value;
     }
 
-    friend T operator~(T lhs)
+    constexpr friend T operator~(T lhs)
     {
         return T(~lhs.value);
     }
 
-    friend T operator|(T lhs, T rhs)
+    constexpr friend T operator|(T lhs, T rhs)
     {
         return T(lhs.value | rhs.value);
     }
 
-    friend T operator&(T lhs, T rhs)
+    constexpr friend T operator&(T lhs, T rhs)
     {
         return T(lhs.value & rhs.value);
     }
 
-    friend T operator^(T lhs, T rhs)
+    constexpr friend T operator^(T lhs, T rhs)
     {
         return T(lhs.value ^ rhs.value);
     }
 };
 
 template <typename E, typename = std::enable_if_t<std::is_enum_v<E> && enable_bitflags_v<E>>>
-BitFlags<E> operator~(E lhs)
+constexpr BitFlags<E> operator~(E lhs)
 {
     using U = std::underlying_type_t<E>;
     return BitFlags<E>(~static_cast<U>(lhs));
 }
 
 template <typename E, typename = std::enable_if_t<std::is_enum_v<E> && enable_bitflags_v<E>>>
-BitFlags<E> operator|(E lhs, E rhs)
+constexpr BitFlags<E> operator|(E lhs, E rhs)
 {
     using U = std::underlying_type_t<E>;
     return BitFlags<E>(static_cast<U>(lhs) | static_cast<U>(rhs));
 }
 
 template <typename E, typename = std::enable_if_t<std::is_enum_v<E> && enable_bitflags_v<E>>>
-BitFlags<E> operator&(E lhs, E rhs)
+constexpr BitFlags<E> operator&(E lhs, E rhs)
 {
     using U = std::underlying_type_t<E>;
     return BitFlags<E>(static_cast<U>(lhs) & static_cast<U>(rhs));
 }
 
 template <typename E, typename = std::enable_if_t<std::is_enum_v<E> && enable_bitflags_v<E>>>
-BitFlags<E> operator^(E lhs, E rhs)
+constexpr BitFlags<E> operator^(E lhs, E rhs)
 {
     using U = std::underlying_type_t<E>;
     return BitFlags<E>(static_cast<U>(lhs) ^ static_cast<U>(rhs));
