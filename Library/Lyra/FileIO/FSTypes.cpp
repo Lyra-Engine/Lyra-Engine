@@ -90,7 +90,7 @@ void FileLoader::close(FileHandle file) const
 
 size_t FileLoader::read(FileHandle file, void* buffer, size_t size) const
 {
-    size_t read;
+    size_t read = 0;
     assert(api_->read_file(file, buffer, size, read));
     return read;
 }

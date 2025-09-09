@@ -700,6 +700,7 @@ void GUIRenderer::init(const GUIDescriptor& descriptor)
     init_platform_data(descriptor);
     init_viewport_data(descriptor);
     init_dummy_texture();
+    init_imgui_font("Fonts/Font.ttf", 18.0f);
 }
 
 void GUIRenderer::reset()
@@ -937,7 +938,7 @@ void GUIRenderer::init_pipeline_data(const GUIDescriptor& descriptor)
 
     // shader source
     auto fs     = cmrc::imgui::get_filesystem();
-    auto file   = fs.open("GUIShader.slang");
+    auto file   = fs.open("Shaders/GUIShader.slang");
     auto source = String(file.begin(), file.end());
 
     // shader module
@@ -1120,6 +1121,45 @@ void GUIRenderer::init_dummy_texture()
     texinfo.texture.handle.reset();
     texinfo.view.handle.reset();
     pipeline_data->textures.add(texinfo);
+}
+
+void GUIRenderer::init_imgui_font(CString filename, float font_size)
+{
+    ImGuiIO& io = ImGui::GetIO();
+
+    // adjust range for Nerd Font
+    static const ImWchar icon_ranges[] = {0xe000, 0xf8ff, 0};
+
+    // configure font properties
+    ImFontConfig font_cfg;
+    font_cfg.FontDataOwnedByAtlas = false;       // set to false if you manage memory yourself
+    font_cfg.GlyphExcludeRanges   = icon_ranges; // exclude icon ranges (avoid font merge issues)
+
+    ImFontConfig icon_cfg;
+    icon_cfg.FontDataOwnedByAtlas = false;       // set to false if you manage memory yourself
+    icon_cfg.MergeMode            = true;        // merge icons with regular font
+    icon_cfg.PixelSnapH           = true;        // optional, can help with pixel alignment
+    icon_cfg.GlyphRanges          = icon_ranges; // icons only
+    icon_cfg.GlyphMinAdvanceX     = font_size;   // make icons at least as wide as font_size
+
+    // font source
+    auto file = cmrc::imgui::get_filesystem().open(filename);
+
+    // load the main font from memory
+    io.Fonts->AddFontFromMemoryTTF(
+        (void*)file.begin(),
+        file.size(),
+        font_size,
+        &font_cfg);
+
+    // load the icon font from memory
+    io.Fonts->AddFontFromMemoryTTF(
+        (void*)file.begin(),
+        file.size(),
+        font_size * 1.5f,
+        &icon_cfg);
+
+    io.Fonts->Build();
 }
 
 void GUIRenderer::update_key_state(ImGuiIO& io, const GUIWindowContext& ctx)

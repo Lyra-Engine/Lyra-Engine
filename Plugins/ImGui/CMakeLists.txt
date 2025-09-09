@@ -12,7 +12,8 @@ target_sources(lyra-imgui PRIVATE
 cmrc_add_resource_library(
   imgui-resources
   NAMESPACE imgui
-  GUIShader.slang
+  Fonts/Font.ttf
+  Shaders/GUIShader.slang
 )
 
 target_link_libraries(lyra-imgui PRIVATE imgui-resources)

@@ -29,6 +29,12 @@ void imgui_update(Blackboard& blackboard)
 
     ImGui::ShowDemoWindow();
     ImGui::ShowDebugLogWindow();
+
+    ImGui::Begin("Icon Testing");
+    ImGui::SetWindowFontScale(2.0f);
+    ImGui::Text("\uea84 \uf09b \ue65b Hello World \ue8a9 \ue200 \ue201 \ue202 \ue404");
+    ImGui::SetWindowFontScale(1.0f);
+    ImGui::End();
 }
 
 void imgui_render(Blackboard& blackboard)
