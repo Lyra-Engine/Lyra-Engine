@@ -17,7 +17,7 @@ TestApp::TestApp(const TestAppDescriptor& app_desc) : desc(app_desc)
         desc.backend = app_desc.backend;
         desc.flags   = app_desc.rhi_flags;
         if (app_desc.window)
-            desc.window = win->handle;
+            desc.window = *win;
         rhi = RHI::init(desc);
     }
 
@@ -38,7 +38,7 @@ TestApp::TestApp(const TestAppDescriptor& app_desc) : desc(app_desc)
     if (desc.window) {
         auto desc         = GPUSurfaceDescriptor{};
         desc.label        = "main_surface";
-        desc.window       = win->handle;
+        desc.window       = *win;
         desc.present_mode = GPUPresentMode::Fifo;
         swp               = rhi->request_surface(desc);
     }

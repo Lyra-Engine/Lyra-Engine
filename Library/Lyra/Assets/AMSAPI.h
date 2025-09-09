@@ -13,7 +13,7 @@
 
 namespace lyra
 {
-    struct AssetManager;
+    struct AssetServer;
 
     struct AssetHandlerAPI
     {
@@ -22,7 +22,7 @@ namespace lyra
 
         // process assets and save to specified path (if needed),
         // return the metadata object for this imported asset
-        JSON (*process)(AssetManager* manager, OSPath source_path, OSPath target_path);
+        JSON (*process)(AssetServer* manager, OSPath source_path, OSPath target_path);
 
         // load the asset and returns an int-based handle.
         // note this is untyped, we will need to attach type later.

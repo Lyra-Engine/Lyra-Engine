@@ -7,13 +7,16 @@
 
 namespace lyra
 {
+    struct AssetServer;
+
     // Dummy asset process implementation,
     // which does absolutely nothing except for saving the asset path in metadata.
     // This is suitable for simple assets that do not need an importing process.
     template <typename AssetType>
-    JSON process_asset(AssetManager* manager, OSPath source_path, OSPath target_path)
+    JSON process_asset(AssetServer* manager, OSPath source_path, OSPath target_path)
     {
-        (void)target_path;
+        MAYBE_UNUSED(manager);
+        MAYBE_UNUSED(target_path);
 
         JSON metadata    = {};
         metadata["path"] = source_path;

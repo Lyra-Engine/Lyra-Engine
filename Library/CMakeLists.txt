@@ -71,10 +71,6 @@ target_sources(lyra-engine PRIVATE
     Lyra/RPIKit/FrameGraphTexture.cpp
     Lyra/RPIKit/FrameGraphTraits.h
 
-    # appkit sources
-    Lyra/AppKit/AppTypes.h
-    Lyra/AppKit/AppTypes.cpp
-
     # guikit sources
     Lyra/GuiKit/GUIAPI.h
     Lyra/GuiKit/GUITypes.h
@@ -103,6 +99,14 @@ target_sources(lyra-engine PRIVATE
     Lyra/Assets/Builtin/TextureAsset.h
     Lyra/Assets/Builtin/TextureAsset.cpp
     Lyra/Assets/Builtin/GenericAsset.h
+
+    # appkit sources
+    Lyra/AppKit/AppTypes.h
+    Lyra/AppKit/AppTypes.cpp
+
+    # builtin app managers
+    Lyra/AppKit/Builtin/AssetManager.h
+    Lyra/AppKit/Builtin/ImGuiManager.h
 )
 
 # link dependencies

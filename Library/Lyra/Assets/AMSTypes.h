@@ -11,34 +11,18 @@
 #include <Lyra/Common/Handle.h>
 #include <Lyra/Common/Logger.h>
 #include <Lyra/Common/Container.h>
-#include <Lyra/AppKit/AppTypes.h>
 #include <Lyra/FileIO/FSEnums.h>
 #include <Lyra/FileIO/FSUtils.h>
 #include <Lyra/Assets/AMSAPI.h>
 
 namespace lyra
 {
-    struct AssetManager
+    struct AssetServer
     {
     public:
-        explicit AssetManager(const AMSDescriptor& descriptor);
+        explicit AssetServer(const AMSDescriptor& descriptor);
 
-        virtual ~AssetManager();
-
-        void bind(Application& app)
-        {
-            // save asset manager into blackboard
-            app.get_blackboard().add<AssetManager*>(this);
-
-            // bind asset manager events
-            app.bind<AppEvent::UPDATE>(&AssetManager::update, this);
-        }
-
-        void update()
-        {
-            // do nothing for now,
-            // we will do some asset event polling later
-        }
+        virtual ~AssetServer();
 
         // AssetType needs to define the following:
         // 1. static constexpr CString name

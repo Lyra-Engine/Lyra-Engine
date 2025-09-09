@@ -30,10 +30,16 @@
 #endif
 #endif // #ifndef DEBUG_BREAK
 
+#ifndef MAYBE_UNUSED
+#define MAYBE_UNUSED(V) (void)(V)
+#endif
+
+#ifndef UNIMPLEMENTED
 #define UNIMPLEMENTED(MESSAGE)                                         \
     {                                                                  \
         lyra::engine::logger()->error("NOT IMPLEMENTED: {}", MESSAGE); \
         DEBUG_BREAK();                                                 \
     }
+#endif
 
 #endif // LYRA_LIBRARY_COMMON_MACROS_H

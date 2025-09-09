@@ -59,10 +59,18 @@
 #include <Lyra/Assets/AMSUtils.h>
 #include <Lyra/Assets/AMSTypes.h>
 
+// APP (Application)
+#include <Lyra/AppKit/AppEnums.h>
+#include <Lyra/AppKit/AppTypes.h>
+
 // Builtin Asset Types
 #include <Lyra/Assets/Builtin/TextAsset.h>
 #include <Lyra/Assets/Builtin/JsonAsset.h>
 #include <Lyra/Assets/Builtin/TomlAsset.h>
 #include <Lyra/Assets/Builtin/TextureAsset.h>
+
+// Builtin App Manager Types
+#include <Lyra/AppKit/Builtin/AssetManager.h>
+#include <Lyra/AppKit/Builtin/ImGuiManager.h>
 
 #endif // LYRA_LIBRARY_HPP

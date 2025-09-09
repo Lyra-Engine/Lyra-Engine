@@ -39,6 +39,10 @@ namespace lyra
 
         static auto api() -> WindowAPI*;
 
+        // implicit conversion
+        operator WindowHandle() { return handle; }
+        operator WindowHandle() const { return handle; }
+
         // NOTE: only a convenience method for launching window and run.
         // use EventLoop::bind(...) and EventLoop::run() for multiple windows
         void loop();
@@ -105,12 +109,10 @@ namespace lyra
             }
         }
 
-    public:
-        WindowHandle handle;
-
     private:
         WindowCallbacks callbacks;
         WindowInput     inputs;
+        WindowHandle    handle;
     };
 
     struct EventLoop

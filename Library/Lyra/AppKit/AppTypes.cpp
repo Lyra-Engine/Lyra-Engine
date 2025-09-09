@@ -58,9 +58,11 @@ Application::Application(const AppDescriptor& descriptor)
 
     // adding commonly used components into blackboard
     blackboard.add<Application*>(this);
-    blackboard.add<WindowHandle>(wsi->handle);
-    blackboard.add<CompilerHandle>(slc->handle);
-    blackboard.add<GPUSurfaceHandle>(surface.handle);
+    blackboard.add<Window>(*wsi);
+    blackboard.add<Compiler>(*slc);
+    blackboard.add<GPUAdapter>(adapter);
+    blackboard.add<GPUDevice>(device);
+    blackboard.add<GPUSurface>(surface.handle);
 }
 
 Application::~Application()
@@ -87,7 +89,7 @@ void Application::init_graphics()
         auto desc    = RHIDescriptor{};
         desc.backend = descriptor.rhi.backend;
         desc.flags   = descriptor.rhi.flags;
-        desc.window  = wsi->handle;
+        desc.window  = *wsi;
         return RHI::init(desc);
     });
 
@@ -108,7 +110,7 @@ void Application::init_graphics()
     surface = lyra::execute([&]() {
         auto desc         = GPUSurfaceDescriptor{};
         desc.label        = "main_surface";
-        desc.window       = wsi->handle;
+        desc.window       = *wsi;
         desc.present_mode = GPUPresentMode::Fifo;
         return rhi->request_surface(desc);
     });

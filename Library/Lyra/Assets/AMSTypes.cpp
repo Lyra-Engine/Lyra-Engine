@@ -40,12 +40,12 @@ static void save_json(const Path& path, const JSON& data, int indent = 2)
     f.close();
 }
 
-AssetManager::AssetManager(const AMSDescriptor& descriptor) : descriptor(descriptor)
+AssetServer::AssetServer(const AMSDescriptor& descriptor) : descriptor(descriptor)
 {
     // do nothing
 }
 
-AssetManager::~AssetManager()
+AssetServer::~AssetServer()
 {
     // unload all existing assets
     for (auto& kv_processor : processors) {
@@ -58,7 +58,7 @@ AssetManager::~AssetManager()
     processors.clear();
 }
 
-void* AssetManager::get_asset(UUID type_uuid, RawAssetHandle handle)
+void* AssetServer::get_asset(UUID type_uuid, RawAssetHandle handle)
 {
     // find asset processor
     auto it = processors.find(type_uuid);
@@ -76,7 +76,7 @@ void* AssetManager::get_asset(UUID type_uuid, RawAssetHandle handle)
     return it2->second;
 }
 
-RawAssetHandle AssetManager::load_asset(UUID type_uuid, FSPath path)
+RawAssetHandle AssetServer::load_asset(UUID type_uuid, FSPath path)
 {
     // sanity check if given asset has been registered
     auto it = processors.find(type_uuid);
@@ -113,7 +113,7 @@ RawAssetHandle AssetManager::load_asset(UUID type_uuid, FSPath path)
     return RawAssetHandle{guid};
 }
 
-void AssetManager::unload_asset(UUID type_uuid, RawAssetHandle handle)
+void AssetServer::unload_asset(UUID type_uuid, RawAssetHandle handle)
 {
     // sanity check if given asset has been registered
     auto it = processors.find(type_uuid);
@@ -131,13 +131,13 @@ void AssetManager::unload_asset(UUID type_uuid, RawAssetHandle handle)
     }
 }
 
-bool AssetManager::import_asset(const Path& path, GUID& guid)
+bool AssetServer::import_asset(const Path& path, GUID& guid)
 {
     // sanity check if extensions has been registered
     auto ext = path.extension().string();
     auto it  = extensions.find(ext);
     if (it == extensions.end()) {
-        engine::logger()->error("AssetManager cannot handle files with extension: {}", ext);
+        engine::logger()->error("AssetServer cannot handle files with extension: {}", ext);
         return false;
     }
 
