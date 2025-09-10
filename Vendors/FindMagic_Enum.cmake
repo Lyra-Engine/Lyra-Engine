@@ -1,5 +1,3 @@
-# NOTE: Don't use vcpkg here, because MagicEnum needs to be included in installation.
-
 include(FetchContent)
 
 # define external project

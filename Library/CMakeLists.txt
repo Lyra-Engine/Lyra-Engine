@@ -133,13 +133,13 @@ target_link_libraries(lyra-engine PUBLIC
     $<BUILD_INTERFACE:imgui::imgui>
 
     # debugging libraries
-    $<BUILD_INTERFACE:fmt::fmt-header-only>
-    $<BUILD_INTERFACE:spdlog::spdlog_header_only>
+    $<BUILD_INTERFACE:fmt::fmt>
+    $<BUILD_INTERFACE:spdlog::spdlog>
     $<BUILD_INTERFACE:libassert::assert>
 
     # config format libraries
-    $<BUILD_INTERFACE:nlohmann_json>
-    $<BUILD_INTERFACE:tomlplusplus::tomlplusplus>
+    $<BUILD_INTERFACE:json::json>
+    $<BUILD_INTERFACE:toml::toml>
 
     # misc libraries
     $<BUILD_INTERFACE:magic_enum::magic_enum>

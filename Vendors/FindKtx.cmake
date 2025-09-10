@@ -3,28 +3,25 @@ include(FetchContent)
 # define external project
 # use a newer commit version to avoid cmake deprecation warning
 FetchContent_Declare(
-  miniz
-  GIT_REPOSITORY https://github.com/richgel999/miniz.git
+  ktx
+  GIT_REPOSITORY https://github.com/richgel999/ktx.git
   GIT_TAG        c883286 # 3.0.2
 )
 
 # get properties
-FetchContent_GetProperties(miniz)
+FetchContent_GetProperties(ktx)
 
-# build miniz when needed
+# build ktx when needed
 set(INSTALL_PROJECT    OFF CACHE BOOL "" FORCE)
 set(BUILD_TESTS        OFF CACHE BOOL "" FORCE)
 set(BUILD_EXAMPLES     OFF CACHE BOOL "" FORCE)
 set(BUILD_FUZZERS      OFF CACHE BOOL "" FORCE)
 set(AMALGAMATE_SOURCES OFF CACHE BOOL "" FORCE)
 set(BUILD_HEADER_ONLY  OFF CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(miniz)
+FetchContent_MakeAvailable(ktx)
 
-# mark miniz as found
-set(miniz_FOUND TRUE)
+# mark ktx as found
+set(ktx_FOUND TRUE)
 
-# re-export target with namespace
-add_library(miniz::miniz ALIAS miniz)
-
-# move miniz under folder
-set_target_properties(miniz PROPERTIES FOLDER "Vendors")
+# move ktx under folder
+set_target_properties(ktx PROPERTIES FOLDER "Vendors")

@@ -8,4 +8,4 @@ target_sources(lyra-zip PRIVATE
 )
 
 find_package(miniz REQUIRED)
-target_link_libraries(lyra-zip PRIVATE miniz)
+target_link_libraries(lyra-zip PRIVATE miniz::miniz)

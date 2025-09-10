@@ -22,5 +22,8 @@ FetchContent_MakeAvailable(json)
 # mark json as found
 set(json_FOUND TRUE)
 
+# re-export target with namespace
+add_library(json::json ALIAS nlohmann_json)
+
 # move json under folder
 set_target_properties(nlohmann_json PROPERTIES FOLDER "Vendors")

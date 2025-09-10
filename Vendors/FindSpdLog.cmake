@@ -1,5 +1,3 @@
-# NOTE: Don't use vcpkg here, because spdlog needs to be included in installation.
-
 include(FetchContent)
 
 # define external project
@@ -23,5 +21,8 @@ FetchContent_MakeAvailable(spdlog)
 
 # mark spdlog as found
 set(spdlog_FOUND TRUE)
+
+# re-export target with namespace
+add_library(spdlog::spdlog ALIAS spdlog_header_only)
 
 set_target_properties(spdlog PROPERTIES FOLDER "Vendors")

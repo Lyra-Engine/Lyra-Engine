@@ -1,5 +1,3 @@
-# NOTE: Don't use vcpkg here, because fmt needs to be included in installation.
-
 include(FetchContent)
 
 # define external project
@@ -17,5 +15,8 @@ FetchContent_MakeAvailable(fmt)
 
 # mark fmt as found
 set(fmt_FOUND TRUE)
+
+# re-export target with namespace
+add_library(fmt::fmt ALIAS fmt-header-only)
 
 set_target_properties(fmt PROPERTIES FOLDER "Vendors")

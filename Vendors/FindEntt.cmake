@@ -1,5 +1,3 @@
-# NOTE: Don't use vcpkg here, because entt needs to be included in installation.
-
 # enable natvis support
 set(ENTT_INCLUDE_NATVIS ON)
 

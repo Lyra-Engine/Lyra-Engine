@@ -19,5 +19,8 @@ FetchContent_MakeAvailable(tomlplusplus)
 # mark tomlplusplus as found
 set(tomlplusplus_FOUND TRUE)
 
+# re-export target with namespace
+add_library(toml::toml ALIAS tomlplusplus_tomlplusplus)
+
 # move tomlplusplus under folder
 set_target_properties(tomlplusplus_tomlplusplus PROPERTIES FOLDER "Vendors")
