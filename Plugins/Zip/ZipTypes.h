@@ -1,5 +1,5 @@
-#ifndef LYRA_PLUGIN_ZIP_BUILDER_TYPES_H
-#define LYRA_PLUGIN_ZIP_BUILDER_TYPES_H
+#ifndef LYRA_PLUGIN_ZIP_TYPES_H
+#define LYRA_PLUGIN_ZIP_TYPES_H
 
 #include <Lyra/Common/Path.h>
 #include <Lyra/Common/Stdint.h>
@@ -23,4 +23,4 @@ struct ZipArchiveHandleData
     ZipArchiveHandleData() : is_finalized(false) {}
 };
 
-#endif // LYRA_PLUGIN_ZIP_BUILDER_TYPES_H
+#endif // LYRA_PLUGIN_ZIP_TYPES_H

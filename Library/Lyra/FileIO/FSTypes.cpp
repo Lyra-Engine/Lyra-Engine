@@ -41,10 +41,10 @@ static FilePackerAPI* create_file_packer_api(FSPacker packer)
 
     switch (packer) {
         case FSPacker::PAK:
-            packer_plugins[index] = std::make_unique<FilePackerPlugin>("lyra-pakbuilder");
+            packer_plugins[index] = std::make_unique<FilePackerPlugin>("lyra-pak");
             break;
         case FSPacker::ZIP:
-            packer_plugins[index] = std::make_unique<FilePackerPlugin>("lyra-zipbuilder");
+            packer_plugins[index] = std::make_unique<FilePackerPlugin>("lyra-zip");
             break;
     }
     return packer_plugins[index]->get_api();

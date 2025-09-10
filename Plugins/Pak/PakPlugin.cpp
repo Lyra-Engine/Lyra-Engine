@@ -11,9 +11,9 @@
 #include <Lyra/FileIO/FSAPI.h>
 
 // plugin headers
-#include "PakBuilderTypes.h"
+#include "PakTypes.h"
 
-static Logger logger = init_stderr_logger("PakBuilder", LogLevel::trace);
+static Logger logger = init_stderr_logger("Pak", LogLevel::trace);
 
 static HashMap<uint, Own<PakArchiveHandleData>> g_archives;
 static std::atomic<uint>                        g_archive_index = 0;
@@ -158,7 +158,7 @@ static bool finalize_pak_archive(PakArchiveHandleData& archive_data)
 // API functions
 // -----------------------------------------------------------------------------
 
-static CString get_api_name() { return "PakBuilder"; }
+static CString get_api_name() { return "Pak"; }
 
 static bool open_fn(ArchiveHandle& out_handle, OSPath path)
 {

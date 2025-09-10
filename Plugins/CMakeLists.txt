@@ -14,8 +14,8 @@ add_subdirectory(ImGui)
 #--------------------------------
 add_subdirectory(PhysFS)
 add_subdirectory(NativeFS)
-add_subdirectory(PakBuilder)
-add_subdirectory(ZipBuilder)
+add_subdirectory(Pak)
+add_subdirectory(Zip)
 
 # render plugins
 #--------------------------------

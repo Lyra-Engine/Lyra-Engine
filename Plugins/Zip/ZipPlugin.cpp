@@ -15,9 +15,9 @@
 #include <miniz.h>
 
 // plugin headers
-#include "ZipBuilderTypes.h"
+#include "ZipTypes.h"
 
-static Logger logger = init_stderr_logger("ZipBuilder", LogLevel::trace);
+static Logger logger = init_stderr_logger("Zip", LogLevel::trace);
 
 static HashMap<uint, Own<ZipArchiveHandleData>> g_archives;
 static std::atomic<uint>                        g_archive_index = 0;
@@ -109,7 +109,7 @@ static bool finalize_zip_archive(ZipArchiveHandleData& archive_data)
 // API functions
 // -----------------------------------------------------------------------------
 
-static CString get_api_name() { return "ZipBuilder"; }
+static CString get_api_name() { return "Zip"; }
 
 static bool open(ArchiveHandle& out_handle, OSPath path)
 {

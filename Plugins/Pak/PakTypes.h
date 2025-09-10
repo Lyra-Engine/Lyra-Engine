@@ -1,5 +1,5 @@
-#ifndef LYRA_PLUGIN_PAK_BUILDER_TYPES_H
-#define LYRA_PLUGIN_PAK_BUILDER_TYPES_H
+#ifndef LYRA_PLUGIN_PAK_TYPES_H
+#define LYRA_PLUGIN_PAK_TYPES_H
 
 #include <Lyra/Common/Path.h>
 #include <Lyra/Common/Stdint.h>
@@ -40,4 +40,4 @@ struct PakArchiveHandleData
     PakArchiveHandleData() : is_finalized(false) {}
 };
 
-#endif // LYRA_PLUGIN_PAK_BUILDER_TYPES_H
+#endif // LYRA_PLUGIN_PAK_TYPES_H
