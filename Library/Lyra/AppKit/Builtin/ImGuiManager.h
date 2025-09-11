@@ -4,7 +4,7 @@
 #define LYRA_LIBRARY_APPKIT_IMGUI_MANAGER_H
 
 #include <Lyra/GuiKit/GUITypes.h>
-#include <Lyra/Appkit/AppTypes.h>
+#include <Lyra/AppKit/AppTypes.h>
 
 namespace lyra
 {

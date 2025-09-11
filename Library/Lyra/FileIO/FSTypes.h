@@ -9,7 +9,7 @@
 #include <Lyra/Common/Stdint.h>
 #include <Lyra/Common/Pointer.h>
 #include <Lyra/Common/Container.h>
-#include <Lyra/FileIo/FSAPI.h>
+#include <Lyra/FileIO/FSAPI.h>
 
 namespace lyra
 {

@@ -17,6 +17,10 @@ add_subdirectory(NativeFS)
 add_subdirectory(Pak)
 add_subdirectory(Zip)
 
+# # assets plugins
+# #--------------------------------
+# add_subdirectory(Ktx)
+
 # render plugins
 #--------------------------------
 

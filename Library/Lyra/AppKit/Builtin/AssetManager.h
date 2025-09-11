@@ -4,7 +4,7 @@
 #define LYRA_LIBRARY_APPKIT_ASSET_MANAGER_H
 
 #include <Lyra/Assets/AMSTypes.h>
-#include <Lyra/Appkit/AppTypes.h>
+#include <Lyra/AppKit/AppTypes.h>
 
 namespace lyra
 {
