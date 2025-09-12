@@ -560,7 +560,7 @@ namespace lyra
         GPUStencilValue     stencil_read_mask      = 0xFFFFFFFF;
         GPUStencilValue     stencil_write_mask     = 0xFFFFFFFF;
         GPUDepthBias        depth_bias             = 0;
-        int                 depth_bias_constant    = 0;
+        float               depth_bias_constant    = 0;
         float               depth_bias_slope_scale = 0;
         float               depth_bias_clamp       = 0;
     };

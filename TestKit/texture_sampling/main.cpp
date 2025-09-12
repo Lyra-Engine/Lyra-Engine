@@ -66,7 +66,7 @@ struct TextureSamplingApp : public TestApp
     {
         uint  width  = desc.width;
         uint  height = desc.height;
-        float fovy   = 1.05;
+        float fovy   = 1.05f;
         float aspect = float(width) / float(height);
 
         geometry = Geometry::create_triangle();
@@ -82,14 +82,14 @@ struct TextureSamplingApp : public TestApp
             desc.address_mode_u = GPUAddressMode::CLAMP_TO_EDGE;
             desc.address_mode_v = GPUAddressMode::CLAMP_TO_EDGE;
             desc.address_mode_w = GPUAddressMode::CLAMP_TO_EDGE;
-            desc.lod_max_clamp  = 1.0;
-            desc.lod_min_clamp  = 0.0;
+            desc.lod_max_clamp  = 1.0f;
+            desc.lod_min_clamp  = 0.0f;
             desc.compare_enable = false;
             desc.compare        = GPUCompareFunction::ALWAYS;
             desc.min_filter     = GPUFilterMode::NEAREST;
             desc.mag_filter     = GPUFilterMode::NEAREST;
             desc.mipmap_filter  = GPUMipmapFilterMode::NEAREST;
-            desc.max_anisotropy = 0.0;
+            desc.max_anisotropy = 1;
             desc.label          = "sampler";
             return device.create_sampler(desc);
         });
@@ -200,7 +200,7 @@ struct TextureSamplingApp : public TestApp
         // commands
         command.resource_barrier(state_transition(backbuffer.texture, undefined_state(), color_attachment_state()));
         command.begin_render_pass(render_pass);
-        command.set_viewport(0, 0, desc.width, desc.height);
+        command.set_viewport(0, 0, static_cast<float>(desc.width), static_cast<float>(desc.height));
         command.set_scissor_rect(0, 0, desc.width, desc.height);
         command.set_pipeline(pipeline.pipeline);
         command.set_vertex_buffer(0, geometry.vbuffer);

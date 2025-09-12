@@ -60,8 +60,8 @@ endif()
 
 # Copy the shared libraries to the target executable directory after build
 add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${SHADER_SLANG_DLLS} ${SHADER_SLANG_GFX_DLL} "$<TARGET_FILE_DIR:${TARGET_NAME}>"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    ${SHADER_SLANG_DLLS} ${SHADER_SLANG_GFX_DLL} "$<TARGET_FILE_DIR:${TARGET_NAME}>"
 )
 
 # Link dependencies

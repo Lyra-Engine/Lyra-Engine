@@ -176,15 +176,15 @@ static void imgui_update_texture(GPUCommandBuffer cmdbuffer, GUIPipelineData* pi
     auto staging = imgui_create_buffer(buf_size, GPUBufferUsage::COPY_SRC | GPUBufferUsage::MAP_WRITE);
     staging.map(GPUMapMode::WRITE);
     auto mapped = staging.get_mapped_range();
-    for (uint i = 0; i < tex->Height; i++) {
+    for (int i = 0; i < tex->Height; i++) {
         uint8_t* dst = mapped.data + row_pitch * i;
         uint8_t* src = (uint8_t*)tex->GetPixels() + tex->GetPitch() * i;
         std::memcpy(dst, src, tex->GetPitch());
     }
     staging.unmap();
 
-    uint  texid   = tex->GetTexID();
-    auto& texture = pipeline_data->textures.at(texid);
+    auto  texid   = tex->GetTexID();
+    auto& texture = pipeline_data->textures.at(static_cast<uint>(texid));
 
     GPUTexelCopyBufferInfo source{};
     source.buffer         = staging;
@@ -217,12 +217,12 @@ static void imgui_update_texture(GPUCommandBuffer cmdbuffer, GUIPipelineData* pi
 
 static void imgui_delete_texture(GUIPipelineData* pipeline_data, ImTextureData* tex)
 {
-    uint texid = tex->GetTexID();
+    auto texid = tex->GetTexID();
 
     // deferred deletion of texture, because the current texture/view might still be used in some frames in flight
-    auto& texinfo = pipeline_data->textures.at(texid);
+    auto& texinfo = pipeline_data->textures.at(static_cast<uint>(texid));
     if (texinfo.valid()) {
-        pipeline_data->textures.remove(texid);
+        pipeline_data->textures.remove(static_cast<uint>(texid));
         pipeline_data->garbage_textures.push_back(GUIGarbageTexture{texinfo, (uint)tex->UnusedFrames});
     }
 
@@ -347,7 +347,11 @@ static void imgui_render(GPUCommandBuffer cmdbuffer, GPUTextureViewHandle backbu
                 continue;
 
             // apply scissor/clipping rectangle
-            cmdbuffer.set_scissor_rect(clip_min.x, clip_min.y, clip_max.x - clip_min.x, clip_max.y - clip_min.y);
+            cmdbuffer.set_scissor_rect(
+                static_cast<GPUIntegerCoordinate>(clip_min.x),
+                static_cast<GPUIntegerCoordinate>(clip_min.y),
+                static_cast<GPUIntegerCoordinate>(clip_max.x - clip_min.x),
+                static_cast<GPUIntegerCoordinate>(clip_max.y - clip_min.y));
 
             // bind texture
             uint texid   = static_cast<uint>(draw_cmd.GetTexID());
@@ -515,7 +519,7 @@ static ImVec2 platform_get_window_pos(ImGuiViewport* viewport)
 {
     int xpos, ypos;
     WSI::api()->get_window_pos(platform_get_window_handle(viewport), xpos, ypos);
-    ImVec2 pos(xpos, ypos);
+    ImVec2 pos(static_cast<float>(xpos), static_cast<float>(ypos));
     return pos;
 }
 
@@ -530,7 +534,7 @@ static ImVec2 platform_get_window_size(ImGuiViewport* viewport)
 {
     uint xsiz, ysiz;
     WSI::api()->get_window_size(platform_get_window_handle(viewport), xsiz, ysiz);
-    return ImVec2(xsiz, ysiz);
+    return ImVec2(static_cast<float>(xsiz), static_cast<float>(ysiz));
 }
 
 static ImVec2 platform_get_framebuffer_scale(ImGuiViewport* viewport)
@@ -853,7 +857,7 @@ void GUIRenderer::init_imgui_setup(const GUIDescriptor& descriptor)
     WSI::api()->get_content_scale(descriptor.window, dpi_xscale, dpi_yscale);
 
     auto& io                   = ImGui::GetIO();
-    io.DisplaySize             = ImVec2(width, height);
+    io.DisplaySize             = ImVec2(static_cast<float>(width), static_cast<float>(height));
     io.DisplayFramebufferScale = ImVec2(fb_xscale, fb_yscale);
     io.ConfigDpiScaleFonts     = true; // [Experimental] Automatically overwrite style.FontScaleDpi in Begin() when Monitor DPI changes. This will scale fonts but _NOT_ scale sizes/padding for now.
     io.ConfigDpiScaleViewports = true; // [Experimental] Scale Dear ImGui and Platform Windows when Monitor DPI changes.
@@ -1049,7 +1053,7 @@ void GUIRenderer::init_pipeline_data(const GUIDescriptor& descriptor)
         desc.min_filter     = GPUFilterMode::LINEAR;
         desc.mag_filter     = GPUFilterMode::LINEAR;
         desc.mipmap_filter  = GPUMipmapFilterMode::LINEAR;
-        desc.max_anisotropy = 1.0f;
+        desc.max_anisotropy = 1u;
         return device.create_sampler(desc);
     });
 
@@ -1148,14 +1152,14 @@ void GUIRenderer::init_imgui_font(CString filename, float font_size)
     // load the main font from memory
     io.Fonts->AddFontFromMemoryTTF(
         (void*)file.begin(),
-        file.size(),
+        static_cast<int>(file.size()),
         font_size,
         &font_cfg);
 
     // load the icon font from memory
     io.Fonts->AddFontFromMemoryTTF(
         (void*)file.begin(),
-        file.size(),
+        static_cast<int>(file.size()),
         font_size * 1.5f,
         &icon_cfg);
 

@@ -286,9 +286,9 @@ struct D3D12BindGroup
 
     bool valid() const
     {
-        bool default_valid = default_index != -1u;
-        bool sampler_valid = sampler_index != -1u;
-        bool dynamic_valid = dynamic_index != -1u;
+        bool default_valid = default_index != static_cast<uint>(-1);
+        bool sampler_valid = sampler_index != static_cast<uint>(-1);
+        bool dynamic_valid = dynamic_index != static_cast<uint>(-1);
         return default_valid || sampler_valid || dynamic_valid;
     }
 };

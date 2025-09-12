@@ -102,8 +102,7 @@ struct UserState
         if (is_event_queue_full()) {
             // input query loop will freeze when window moves,
             // therefore we just keep overwriting the last event.
-            events.num_events = events.input_events.size() - 1;
-            return;
+            events.num_events = static_cast<uint>(events.input_events.size() - 1);
             return;
         }
 
@@ -118,7 +117,7 @@ struct UserState
         if (is_event_queue_full()) {
             // input query loop will freeze when window resizes,
             // therefore we just keep overwriting the last event.
-            events.num_events = events.input_events.size() - 1;
+            events.num_events = static_cast<uint>(events.input_events.size() - 1);
             return;
         }
 
@@ -416,13 +415,13 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
 static void mouse_position_callback(GLFWwindow* window, double xpos, double ypos)
 {
     auto& user = *static_cast<UserState*>(glfwGetWindowUserPointer(window));
-    user.add_mouse_move_event(xpos, ypos);
+    user.add_mouse_move_event(static_cast<float>(xpos), static_cast<float>(ypos));
 }
 
 static void mouse_scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     auto& user = *static_cast<UserState*>(glfwGetWindowUserPointer(window));
-    user.add_mouse_wheel_event(xoffset, yoffset);
+    user.add_mouse_wheel_event(static_cast<float>(xoffset), static_cast<float>(yoffset));
 }
 
 static void window_close_callback(GLFWwindow* window)

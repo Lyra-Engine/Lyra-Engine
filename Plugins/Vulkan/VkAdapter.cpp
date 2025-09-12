@@ -36,8 +36,8 @@ void populate_device_properties(GPUSupportedLimits& limits)
     // buffer sizes and alignment
     limits.max_uniform_buffer_binding_size     = vk_limits.maxUniformBufferRange;
     limits.max_storage_buffer_binding_size     = vk_limits.maxStorageBufferRange;
-    limits.min_uniform_buffer_offset_alignment = vk_limits.minUniformBufferOffsetAlignment;
-    limits.min_storage_buffer_offset_alignment = vk_limits.minStorageBufferOffsetAlignment;
+    limits.min_uniform_buffer_offset_alignment = static_cast<uint>(vk_limits.minUniformBufferOffsetAlignment);
+    limits.min_storage_buffer_offset_alignment = static_cast<uint>(vk_limits.minStorageBufferOffsetAlignment);
 
     // vertex attributes
     limits.max_vertex_buffers           = vk_limits.maxVertexInputBindings;

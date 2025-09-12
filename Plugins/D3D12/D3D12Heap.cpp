@@ -111,7 +111,7 @@ uint D3D12HeapCPU::find_pool_index()
     for (size_t i = heap_index; i < heaps.size(); i++) {
         auto& heap = heaps.at(i);
         if (heap.count < capacity || !heap.freed.empty())
-            return i;
+            return static_cast<uint>(i);
     }
 
     heaps.emplace_back();

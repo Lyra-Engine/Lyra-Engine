@@ -8,5 +8,5 @@ target_sources(lyra-physfs PRIVATE
 )
 
 # packages
-find_package(PhysFS)
+find_package(PhysFS REQUIRED)
 target_link_libraries(lyra-physfs PRIVATE PhysFS::PhysFS)

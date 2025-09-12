@@ -76,7 +76,7 @@ struct DepthTestApp : public TestApp
     {
         uint  width  = desc.width;
         uint  height = desc.height;
-        float fovy   = 1.05;
+        float fovy   = 1.05f;
         float aspect = float(width) / float(height);
 
         geometry = Geometry::create_overlapping_triangles();
@@ -168,7 +168,7 @@ struct DepthTestApp : public TestApp
         command.resource_barrier(state_transition(backbuffer.texture, undefined_state(), color_attachment_state()));
         command.resource_barrier(state_transition(dbuffer, undefined_state(), depth_stencil_attachment_state()));
         command.begin_render_pass(render_pass);
-        command.set_viewport(0, 0, desc.width, desc.height);
+        command.set_viewport(0, 0, static_cast<float>(desc.width), static_cast<float>(desc.height));
         command.set_scissor_rect(0, 0, desc.width, desc.height);
         command.set_pipeline(pipeline.pipeline);
         command.set_vertex_buffer(0, geometry.vbuffer);

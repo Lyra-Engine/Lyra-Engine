@@ -1,0 +1,27 @@
+{
+  "name": "lyra-engine",
+  "version": "0.0.1",
+  "dependencies": [
+    "cxxopts",
+    "d3d12-memory-allocator",
+    "doctest",
+    "entt",
+    "fmt",
+    "glfw3",
+    "glm",
+    "ktx",
+    "libassert",
+    "magic-enum",
+    "miniz",
+    "nlohmann-json",
+    "physfs",
+    "shader-slang",
+    "spdlog",
+    "stb",
+    "tomlplusplus",
+    "volk",
+    "vulkan-headers",
+    "vulkan-memory-allocator",
+    "tinygltf"
+  ]
+}

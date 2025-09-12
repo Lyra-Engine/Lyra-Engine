@@ -381,8 +381,8 @@ D3D12BindGroup D3D12BindGroupLayout::create(D3D12Frame& frame, const GPUBindGrou
 
     // allocate descriptors
     D3D12BindGroup bind_group;
-    bind_group.default_index = -1u;
-    bind_group.sampler_index = -1u;
+    bind_group.default_index = static_cast<uint>(-1);
+    bind_group.sampler_index = static_cast<uint>(-1);
 
     // allocate descriptors for default ranges
     if (num_defaults)
@@ -471,7 +471,7 @@ void D3D12BindGroupLayout::create_buffer_cbv_descriptor(D3D12Frame& frame, const
     } else {
         D3D12_CONSTANT_BUFFER_VIEW_DESC cbv_desc{};
         cbv_desc.BufferLocation = buf.buffer->GetGPUVirtualAddress() + entry.buffer.offset;
-        cbv_desc.SizeInBytes    = entry.buffer.size == 0 ? buf.size() : entry.buffer.size;
+        cbv_desc.SizeInBytes    = static_cast<uint>(entry.buffer.size == 0 ? buf.size() : entry.buffer.size);
         cbv_desc.SizeInBytes    = (cbv_desc.SizeInBytes + 255) & ~255; // CBV alignment
 
         D3D12_CPU_DESCRIPTOR_HANDLE descriptor = frame.default_heap.cpu(bind_group.default_index + bind_info.start);
@@ -495,7 +495,7 @@ void D3D12BindGroupLayout::create_buffer_uav_descriptor(D3D12Frame& frame, const
         uav_desc.Format                      = DXGI_FORMAT_R8_UINT;
         uav_desc.ViewDimension               = D3D12_UAV_DIMENSION_BUFFER;
         uav_desc.Buffer.FirstElement         = entry.buffer.offset;
-        uav_desc.Buffer.NumElements          = entry.buffer.size == 0 ? buf.size() : entry.buffer.size;
+        uav_desc.Buffer.NumElements          = static_cast<uint>(entry.buffer.size == 0 ? buf.size() : entry.buffer.size);
         uav_desc.Buffer.StructureByteStride  = 1;
         uav_desc.Buffer.CounterOffsetInBytes = 0;
         uav_desc.Buffer.Flags                = D3D12_BUFFER_UAV_FLAG_NONE;

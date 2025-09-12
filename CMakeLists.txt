@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.5..3.27)
 # project name and version
 project(Lyra-Engine VERSION 0.1 LANGUAGES C CXX)
 
-# use only in-house cmake modules
+# cmake config and modules
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/Configs")
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/Vendors")
 

@@ -78,7 +78,7 @@ struct StencilTestApp : public TestApp
     {
         uint  width  = desc.width;
         uint  height = desc.height;
-        float fovy   = 1.05;
+        float fovy   = 1.05f;
         float aspect = float(width) / float(height);
 
         mask     = Geometry::create_triangle();
@@ -151,7 +151,7 @@ struct StencilTestApp : public TestApp
         render_pass.depth_stencil_attachment = stencil_attachment;
 
         command.begin_render_pass(render_pass);
-        command.set_viewport(0, 0, desc.width, desc.height);
+        command.set_viewport(0, 0, static_cast<float>(desc.width), static_cast<float>(desc.height));
         command.set_scissor_rect(0, 0, desc.width, desc.height);
         command.set_pipeline(pipeline_mask.pipeline);
         command.set_vertex_buffer(0, mask.vbuffer);
@@ -189,7 +189,7 @@ struct StencilTestApp : public TestApp
         render_pass.depth_stencil_attachment = depth_attachment;
 
         command.begin_render_pass(render_pass);
-        command.set_viewport(0, 0, desc.width, desc.height);
+        command.set_viewport(0, 0, static_cast<float>(desc.width), static_cast<float>(desc.height));
         command.set_scissor_rect(0, 0, desc.width, desc.height);
         command.set_pipeline(pipeline_draw.pipeline);
         command.set_vertex_buffer(0, geometry.vbuffer);

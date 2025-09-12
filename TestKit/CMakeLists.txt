@@ -11,7 +11,8 @@ target_sources(lyra-testkit PRIVATE
     ./common/pipeline.cpp
     ./common/app.cpp
 )
-target_link_libraries(lyra-testkit PRIVATE stb doctest::doctest)
+target_link_libraries(lyra-testkit INTERFACE stb::stb)
+target_link_libraries(lyra-testkit PRIVATE doctest::doctest)
 target_include_directories(lyra-testkit PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/common)
 
 # test cases

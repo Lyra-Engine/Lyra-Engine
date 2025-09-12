@@ -16,6 +16,7 @@ VulkanSampler::VulkanSampler(const GPUSamplerDescriptor& desc)
     auto create_info                    = VkSamplerCreateInfo{};
     create_info.sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     create_info.anisotropyEnable        = desc.max_anisotropy > 1;
+    create_info.maxAnisotropy           = static_cast<float>(desc.max_anisotropy);
     create_info.unnormalizedCoordinates = false;
     create_info.minLod                  = desc.lod_min_clamp;
     create_info.maxLod                  = desc.lod_max_clamp;

@@ -223,18 +223,18 @@ void api::delete_tlas(GPUTlasHandle tlas)
 bool api::get_blas_sizes(GPUBlasHandle blas, GPUBVHSizes& sizes)
 {
     auto& size_info   = fetch_resource(get_rhi()->blases, blas).sizes;
-    sizes.bvh_size    = size_info.accelerationStructureSize;
-    sizes.build_size  = size_info.buildScratchSize;
-    sizes.update_size = size_info.updateScratchSize;
+    sizes.bvh_size    = static_cast<uint>(size_info.accelerationStructureSize);
+    sizes.build_size  = static_cast<uint>(size_info.buildScratchSize);
+    sizes.update_size = static_cast<uint>(size_info.updateScratchSize);
     return true;
 }
 
 bool api::get_tlas_sizes(GPUTlasHandle tlas, GPUBVHSizes& sizes)
 {
     auto& size_info   = fetch_resource(get_rhi()->tlases, tlas).sizes;
-    sizes.bvh_size    = size_info.accelerationStructureSize;
-    sizes.build_size  = size_info.buildScratchSize;
-    sizes.update_size = size_info.updateScratchSize;
+    sizes.bvh_size    = static_cast<uint>(size_info.accelerationStructureSize);
+    sizes.build_size  = static_cast<uint>(size_info.buildScratchSize);
+    sizes.update_size = static_cast<uint>(size_info.updateScratchSize);
     return true;
 }
 

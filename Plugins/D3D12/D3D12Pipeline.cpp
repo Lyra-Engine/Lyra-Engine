@@ -71,7 +71,7 @@ D3D12Pipeline::D3D12Pipeline(const GPURenderPipelineDescriptor& desc)
         }
 
         // record vertex buffer strides
-        vertex_buffer_strides.push_back(layout.array_stride);
+        vertex_buffer_strides.push_back(static_cast<uint>(layout.array_stride));
 
         // increment buffer layout index
         buffer_index++;

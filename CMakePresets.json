@@ -6,6 +6,7 @@
       "hidden": true,
       "generator": "Unix Makefiles",
       "cacheVariables": {
+        "VCPKG_INSTALLED_DIR": "${sourceDir}/Scratch/packages",
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
       },
       "binaryDir": "${sourceDir}/Scratch/${presetName}"
