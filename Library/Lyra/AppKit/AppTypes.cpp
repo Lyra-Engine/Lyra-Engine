@@ -15,6 +15,12 @@ AppDescriptor& AppDescriptor::with_fullscreen(bool enable)
     return *this;
 }
 
+AppDescriptor& AppDescriptor::with_window_maximized()
+{
+    wsi.flags |= WindowFlag::MAXIMIZED;
+    return *this;
+}
+
 AppDescriptor& AppDescriptor::with_window_extent(uint width, uint height)
 {
     wsi.width  = width;

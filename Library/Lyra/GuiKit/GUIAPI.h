@@ -31,6 +31,7 @@ namespace lyra
         bool (*create_gui)(GUIHandle& gui, const GUIDescriptor& descriptor);
         void (*delete_gui)(GUIHandle gui);
         void (*update_gui)(GUIHandle gui);
+        void (*resize_gui)(GUIHandle gui);
 
         void (*new_frame)(GUIHandle gui);
         void (*end_frame)(GUIHandle gui);

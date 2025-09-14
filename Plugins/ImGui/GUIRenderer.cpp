@@ -689,7 +689,7 @@ static ImGuiMouseButton to_imgui_mouse_button(MouseButton button)
 }
 
 #pragma region GUIRenderer
-GUIRenderer::GUIRenderer(const GUIDescriptor& descriptor)
+GUIRenderer::GUIRenderer(const GUIDescriptor& descriptor) : descriptor(descriptor)
 {
     init(descriptor);
 }
@@ -788,6 +788,27 @@ void GUIRenderer::update()
     }
 }
 
+void GUIRenderer::resize()
+{
+    uint width, height;
+    WSI::api()->get_window_size(descriptor.window, width, height);
+
+    float fb_xscale, fb_yscale;
+    WSI::api()->get_framebuffer_scale(descriptor.window, fb_xscale, fb_yscale);
+
+    float dpi_xscale, dpi_yscale;
+    WSI::api()->get_content_scale(descriptor.window, dpi_xscale, dpi_yscale);
+
+    auto& io                   = ImGui::GetIO();
+    io.DisplaySize             = ImVec2(static_cast<float>(width), static_cast<float>(height));
+    io.DisplayFramebufferScale = ImVec2(fb_xscale, fb_yscale);
+    io.ConfigDpiScaleFonts     = true; // [Experimental] Automatically overwrite style.FontScaleDpi in Begin() when Monitor DPI changes. This will scale fonts but _NOT_ scale sizes/padding for now.
+    io.ConfigDpiScaleViewports = true; // [Experimental] Scale Dear ImGui and Platform Windows when Monitor DPI changes.
+
+    ImGuiStyle& style  = ImGui::GetStyle();
+    style.FontScaleDpi = std::max(dpi_xscale, dpi_yscale);
+}
+
 void GUIRenderer::destroy()
 {
     RHI::api()->wait_idle();
@@ -847,23 +868,8 @@ void GUIRenderer::init_imgui_setup(const GUIDescriptor& descriptor)
     IMGUI_CHECKVERSION();
     imgui_context = ImGui::CreateContext();
 
-    uint width, height;
-    WSI::api()->get_window_size(descriptor.window, width, height);
-
-    float fb_xscale, fb_yscale;
-    WSI::api()->get_framebuffer_scale(descriptor.window, fb_xscale, fb_yscale);
-
-    float dpi_xscale, dpi_yscale;
-    WSI::api()->get_content_scale(descriptor.window, dpi_xscale, dpi_yscale);
-
-    auto& io                   = ImGui::GetIO();
-    io.DisplaySize             = ImVec2(static_cast<float>(width), static_cast<float>(height));
-    io.DisplayFramebufferScale = ImVec2(fb_xscale, fb_yscale);
-    io.ConfigDpiScaleFonts     = true; // [Experimental] Automatically overwrite style.FontScaleDpi in Begin() when Monitor DPI changes. This will scale fonts but _NOT_ scale sizes/padding for now.
-    io.ConfigDpiScaleViewports = true; // [Experimental] Scale Dear ImGui and Platform Windows when Monitor DPI changes.
-
-    ImGuiStyle& style  = ImGui::GetStyle();
-    style.FontScaleDpi = std::max(dpi_xscale, dpi_yscale);
+    // setup display size, framebuffer scale, font scale, etc
+    resize();
 }
 
 void GUIRenderer::init_config_flags(const GUIDescriptor& descriptor)

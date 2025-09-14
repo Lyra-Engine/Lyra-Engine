@@ -481,14 +481,31 @@ static void bind_window_events(WindowHandle window)
 
 static bool create_window(const WindowDescriptor& desc, WindowHandle& window)
 {
+    // set window extent
+    uint width  = desc.width;
+    uint height = desc.height;
+
+    // set window monitor
+    GLFWmonitor* monitor = nullptr;
+
+    // check full screen requirement
+    if (desc.flags.contains(WindowFlag::FULLSCREEN)) {
+        monitor                 = glfwGetPrimaryMonitor();
+        const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+        width                   = mode->width;
+        height                  = mode->height;
+    }
+
     // no OpenGL context
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
     // set the window hint for no decorations
-    if (!desc.flags.contains(WindowFlag::DECORATED))
-        glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+    glfwWindowHint(GLFW_DECORATED, desc.flags.contains(WindowFlag::DECORATED) ? GLFW_TRUE : GLFW_FALSE);
 
-    GLFWwindow* win = glfwCreateWindow(desc.width, desc.height, desc.title, NULL, NULL);
+    // set the window hint for maximized
+    glfwWindowHint(GLFW_MAXIMIZED, desc.flags.contains(WindowFlag::MAXIMIZED) ? GLFW_TRUE : GLFW_FALSE);
+
+    GLFWwindow* win = glfwCreateWindow(width, height, desc.title, monitor, NULL);
     if (win != nullptr) {
         create_window_handle(win, window);
         bind_window_events(window);

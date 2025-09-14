@@ -72,5 +72,6 @@
 // Builtin App Manager Types
 #include <Lyra/AppKit/Builtin/AssetManager.h>
 #include <Lyra/AppKit/Builtin/ImGuiManager.h>
+#include <Lyra/AppKit/Builtin/LayoutManager.h>
 
 #endif // LYRA_LIBRARY_HPP

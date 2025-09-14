@@ -110,6 +110,7 @@ public:
     void prepare(GPUCommandBuffer cmdbuffer);
     void render(GPUCommandBuffer cmdbuffer, GPUTextureViewHandle backbuffer);
     void update();
+    void resize();
     void destroy();
     void new_frame();
     void end_frame();
@@ -139,6 +140,7 @@ private:
     void update_viewport_state(ImGuiIO& io, const GUIWindowContext& ctx);
     void update_monitor_state();
 
+    GUIDescriptor        descriptor    = {};
     ImGuiContext*        imgui_context = nullptr;
     Own<GUIPlatformData> platform_data = nullptr;
     Own<GUIPipelineData> pipeline_data = nullptr;

@@ -22,6 +22,7 @@ namespace lyra
             app.get_blackboard().add<GUIRenderer*>(gui.get());
 
             // bind imgui manager events
+            app.bind<AppEvent::RESIZE>(&ImGuiManager::resize, this);
             app.bind<AppEvent::UPDATE>(&ImGuiManager::update, this);
             app.bind<AppEvent::UPDATE_PRE>(&ImGuiManager::pre_update, this);
             app.bind<AppEvent::UPDATE_POST>(&ImGuiManager::post_update, this);
@@ -47,6 +48,11 @@ namespace lyra
         {
             if (descriptor.viewports)
                 gui->render_side_viewports();
+        }
+
+        void resize()
+        {
+            gui->resize();
         }
 
     private:

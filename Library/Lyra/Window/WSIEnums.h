@@ -10,7 +10,8 @@ namespace lyra
     enum struct WindowFlag : uint
     {
         DECORATED  = 0x1,
-        FULLSCREEN = 0x2,
+        MAXIMIZED  = 0x2,
+        FULLSCREEN = 0x4,
     };
 
     enum struct WindowEvent : uint

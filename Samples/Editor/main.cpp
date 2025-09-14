@@ -4,36 +4,36 @@ using namespace lyra;
 
 void imgui_update(Blackboard& blackboard)
 {
-    // create a fullscreen window for docking
-    ImGuiViewport* viewport = ImGui::GetMainViewport();
-    ImGui::SetNextWindowPos(viewport->Pos);
-    ImGui::SetNextWindowSize(viewport->Size);
-    ImGui::SetNextWindowViewport(viewport->ID);
+    auto& layout = blackboard.get<LayoutInfo>();
 
-    ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
-    window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse;
-    window_flags |= ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
-    window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+    ImGuiIO& io  = ImGui::GetIO();
+    float    fps = io.Framerate;
 
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-
-    ImGui::Begin("DockSpace", nullptr, window_flags);
-    ImGui::PopStyleVar(3);
-
-    // create the docking space
-    ImGuiID dockspace_id = ImGui::GetID("DockSpace");
-    ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
-    ImGui::End();
-
+    ImGui::DockBuilderDockWindow("Dear ImGui Demo", layout.main);
     ImGui::ShowDemoWindow();
+
+    ImGui::DockBuilderDockWindow("Dear ImGui Debug Log", layout.bottom);
     ImGui::ShowDebugLogWindow();
 
-    ImGui::Begin("Icon Testing");
+    ImGui::DockBuilderDockWindow("Scene", layout.main);
+    ImGui::Begin("Scene");
+    ImGui::End();
+
+    ImGui::DockBuilderDockWindow("Hierarchy", layout.left);
+    ImGui::Begin("Hierarchy");
+    ImGui::Text("Hi, World!");
+    ImGui::End();
+
+    ImGui::DockBuilderDockWindow("Inspector", layout.right);
+    ImGui::Begin("Inspector");
+    ImGui::End();
+
+    ImGui::DockBuilderDockWindow("Console", layout.bottom);
+    ImGui::Begin("Console");
     ImGui::SetWindowFontScale(2.0f);
     ImGui::Text("\uea84 \uf09b \ue65b Hello World \ue8a9 \ue200 \ue201 \ue202 \ue404");
     ImGui::SetWindowFontScale(1.0f);
+    ImGui::Text("FPS: %.3f", fps);
     ImGui::End();
 }
 
@@ -81,6 +81,7 @@ int main(int argc, const char* argv[])
         auto desc = AppDescriptor();
         desc.with_title("Lyra Engine :: Editor");
         desc.with_window_extent(1920, 1080);
+        desc.with_window_maximized();
         desc.with_graphics_backend(RHIBackend::VULKAN);
         desc.with_graphics_validation(true, true);
         return std::make_unique<Application>(desc);
@@ -117,9 +118,21 @@ int main(int argc, const char* argv[])
         return std::make_unique<ImGuiManager>(desc);
     });
 
+    // layout manager
+    auto layout_manager = lyra::execute([&]() {
+        auto desc   = LayoutDescriptor{};
+        desc.mode   = LayoutMode::EDITOR;
+        desc.left   = 0.2f;
+        desc.right  = 0.3f;
+        desc.top    = 0.2f;
+        desc.bottom = 0.2f;
+        return std::make_unique<LayoutManager>(desc);
+    });
+
     // bind app bundles
-    app->bind<ImGuiManager>(*imgui_manager);
     app->bind<AssetManager>(*asset_manager);
+    app->bind<ImGuiManager>(*imgui_manager);
+    app->bind<LayoutManager>(*layout_manager);
 
     // bind additional systems
     app->bind<AppEvent::UPDATE>(imgui_update);

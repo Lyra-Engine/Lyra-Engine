@@ -35,6 +35,7 @@ namespace lyra
     public:
         AppDescriptor& with_title(CString title);
         AppDescriptor& with_fullscreen(bool enable = true);
+        AppDescriptor& with_window_maximized();
         AppDescriptor& with_window_extent(uint width, uint height);
         AppDescriptor& with_graphics_backend(RHIBackend backend);
         AppDescriptor& with_graphics_validation(bool debug = true, bool validation = true);
@@ -54,6 +55,8 @@ namespace lyra
         using Callbacks = Vector<Callback>;
 
         explicit Application(const AppDescriptor& descriptor);
+        explicit Application(const Application&) = delete;
+        explicit Application(Application*&)      = delete;
         virtual ~Application();
 
         void run();

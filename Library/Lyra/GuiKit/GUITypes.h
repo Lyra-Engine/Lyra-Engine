@@ -4,6 +4,7 @@
 #define LYRA_LIBRARY_GUI_TYPES_H
 
 #include <imgui.h>
+#include <imgui_internal.h>
 
 #include <Lyra/Common/Plugin.h>
 #include <Lyra/Common/Macros.h>
@@ -42,6 +43,8 @@ namespace lyra
         FORCE_INLINE void destroy() const { GUIRenderer::api()->delete_gui(handle); }
 
         FORCE_INLINE void update() const { GUIRenderer::api()->update_gui(handle); }
+
+        FORCE_INLINE void resize() const { GUIRenderer::api()->resize_gui(handle); }
 
         FORCE_INLINE void new_frame() const { GUIRenderer::api()->new_frame(handle); }
 
