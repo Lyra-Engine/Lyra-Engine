@@ -8,26 +8,17 @@
 
 namespace lyra
 {
+    // AssetManager is only a wrapper around AssetServer.
+    // It is created to used with AppKit's style of data
+    // handling and event binding.
     struct AssetManager
     {
     public:
-        explicit AssetManager(const AMSDescriptor& descriptor) : ams(descriptor) {}
-        virtual ~AssetManager() = default;
+        explicit AssetManager(const AMSDescriptor& descriptor);
 
-        void bind(Application& app)
-        {
-            // save asset manager into blackboard
-            app.get_blackboard().add<AssetServer*>(&ams);
+        void bind(Application& app);
 
-            // bind asset manager events
-            app.bind<AppEvent::UPDATE>(&AssetManager::update, this);
-        }
-
-        void update()
-        {
-            // do nothing for now,
-            // we will do some asset event polling later
-        }
+        void update();
 
     private:
         AssetServer ams;

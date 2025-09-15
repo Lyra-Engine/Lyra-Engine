@@ -18,69 +18,50 @@ namespace lyra
     struct GUIRenderer
     {
         // implicit conversion
-        FORCE_INLINE GUIRenderer() : handle() {}
-        FORCE_INLINE GUIRenderer(GUIHandle handle) : handle(handle) {}
+        GUIRenderer() : handle() {}
+        GUIRenderer(GUIHandle handle) : handle(handle) {}
 
         // implicit conversion
-        FORCE_INLINE operator GUIHandle() { return handle; }
-        FORCE_INLINE operator GUIHandle() const { return handle; }
+        operator GUIHandle() { return handle; }
+        operator GUIHandle() const { return handle; }
 
-        FORCE_INLINE static auto api() -> GUIRenderAPI*
-        {
-            return get_plugin()->get_api();
-        }
+        static auto api() -> GUIRenderAPI*;
 
-        FORCE_INLINE static auto init(const GUIDescriptor& descriptor) -> OwnedResource<GUIRenderer>
-        {
-            init_plugin();
-            OwnedResource<GUIRenderer> gui(new GUIRenderer());
-            GUIRenderer::api()->create_gui(gui->handle, descriptor);
-            auto context = GUIRenderer::api()->get_context(gui->handle);
-            ImGui::SetCurrentContext(reinterpret_cast<ImGuiContext*>(context));
-            return gui;
-        }
+        static auto init(const GUIDescriptor& descriptor) -> OwnedResource<GUIRenderer>;
 
-        FORCE_INLINE void destroy() const { GUIRenderer::api()->delete_gui(handle); }
+        void destroy() const { GUIRenderer::api()->delete_gui(handle); }
 
-        FORCE_INLINE void update() const { GUIRenderer::api()->update_gui(handle); }
+        void update() const { GUIRenderer::api()->update_gui(handle); }
 
-        FORCE_INLINE void resize() const { GUIRenderer::api()->resize_gui(handle); }
+        void resize() const { GUIRenderer::api()->resize_gui(handle); }
 
-        FORCE_INLINE void new_frame() const { GUIRenderer::api()->new_frame(handle); }
+        void new_frame() const { GUIRenderer::api()->new_frame(handle); }
 
-        FORCE_INLINE void end_frame() const { GUIRenderer::api()->end_frame(handle); }
+        void end_frame() const { GUIRenderer::api()->end_frame(handle); }
 
-        FORCE_INLINE void render_main_viewport(GPUCommandBuffer cmdbuffer, GPUTextureViewHandle backbuffer) const
+        void render_main_viewport(GPUCommandBuffer cmdbuffer, GPUTextureViewHandle backbuffer) const
         {
             GUIRenderer::api()->render_main_viewport(handle, cmdbuffer, backbuffer);
         }
 
-        FORCE_INLINE void render_side_viewports() const
+        void render_side_viewports() const
         {
             GUIRenderer::api()->render_side_viewports(handle);
         }
 
-        template <typename F>
-        FORCE_INLINE void ui(F&& f) const
+        // retrieve the created ImGuiContext*
+        ImGuiContext* context() const
         {
-            new_frame();
-            f();
-            end_frame();
+            return reinterpret_cast<ImGuiContext*>(GUIRenderer::api()->get_context(handle));
         }
 
-    private:
-        static auto get_plugin() -> Own<GUIRenderPlugin>&
+        // apply_context() is required to be called from user application
+        // because currently we created ImGuiContext* in Lyra-Engine.dll.
+        // User application will need ImGuiContext* if it intends to call
+        // any ImGui functions.
+        FORCE_INLINE void apply_context()
         {
-            static Own<GUIRenderPlugin> PLUGIN;
-            return PLUGIN;
-        }
-
-        static void init_plugin()
-        {
-            auto& plugin = get_plugin();
-            if (!plugin) {
-                plugin = std::make_unique<GUIRenderPlugin>("lyra-imgui");
-            }
+            ImGui::SetCurrentContext(context());
         }
 
     private:

@@ -24,7 +24,6 @@ namespace lyra
     {
         FILE,
         MOUNT,
-        ARCHIVE,
     };
 
     inline constexpr CString to_string(FSObjectType type)
@@ -33,7 +32,7 @@ namespace lyra
         switch (type) {
             case FSObjectType::FILE:    return "FSFile";
             case FSObjectType::MOUNT:   return "FSMount";
-            case FSObjectType::ARCHIVE: return "FSArchive";
+            default:                    return "unknown";
         }
         // clang-format on
     }

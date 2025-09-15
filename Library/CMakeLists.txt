@@ -74,6 +74,7 @@ target_sources(lyra-engine PRIVATE
     # guikit sources
     Lyra/GuiKit/GUIAPI.h
     Lyra/GuiKit/GUITypes.h
+    Lyra/GuiKit/GUITypes.cpp
 
     # fileio sources
     Lyra/FileIO/FSAPI.h
@@ -105,8 +106,12 @@ target_sources(lyra-engine PRIVATE
     Lyra/AppKit/AppTypes.cpp
 
     # builtin app managers
+    Lyra/AppKit/Builtin/GUIManager.h
+    Lyra/AppKit/Builtin/GUIManager.cpp
     Lyra/AppKit/Builtin/AssetManager.h
-    Lyra/AppKit/Builtin/ImGuiManager.h
+    Lyra/AppKit/Builtin/AssetManager.cpp
+    Lyra/AppKit/Builtin/LayoutManager.h
+    Lyra/AppKit/Builtin/LayoutManager.cpp
 )
 
 # link dependencies

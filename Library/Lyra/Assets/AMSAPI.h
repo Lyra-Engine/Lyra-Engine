@@ -26,7 +26,7 @@ namespace lyra
 
         // load the asset and returns an int-based handle.
         // note this is untyped, we will need to attach type later.
-        void* (*load)(FileLoaderAPI* loader, const JSON& metadata);
+        void* (*load)(const FileLoader& loader, const JSON& metadata);
 
         // properly unload the asset
         void (*unload)(void* data);

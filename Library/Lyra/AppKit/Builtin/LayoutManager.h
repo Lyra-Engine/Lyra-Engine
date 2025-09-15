@@ -25,6 +25,7 @@ namespace lyra
         ImGuiID bottom = 0;
     };
 
+    // LayoutDescriptor is used for configuring docking splits.
     struct LayoutDescriptor
     {
         LayoutMode mode   = LayoutMode::EDITOR;
@@ -34,71 +35,25 @@ namespace lyra
         float      bottom = 0.25f;
     };
 
-    // player mode does not need any docking layout
-    inline LayoutInfo create_player_layout()
-    {
-        LayoutInfo layout = {};
-        layout.main       = ImGui::GetMainViewport()->ID;
-        return layout;
-    }
-
-    // editor mode has support for docking on every direction
-    inline LayoutInfo create_editor_layout(const LayoutDescriptor& desc)
-    {
-        ImGuiID dockspace_id = ImGui::GetMainViewport()->ID;
-
-        // clear old layout
-        ImGui::DockBuilderRemoveNode(dockspace_id);
-        ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
-        ImGui::DockBuilderSetNodeSize(dockspace_id, ImGui::GetMainViewport()->Size);
-
-        // split the dockspace into regions
-        LayoutInfo layout = {};
-        layout.main       = dockspace_id;
-        layout.left       = ImGui::DockBuilderSplitNode(layout.main, ImGuiDir_Left, desc.left, nullptr, &layout.main);
-        layout.right      = ImGui::DockBuilderSplitNode(layout.main, ImGuiDir_Right, desc.right, nullptr, &layout.main);
-        layout.top        = ImGui::DockBuilderSplitNode(layout.main, ImGuiDir_Up, desc.top, nullptr, &layout.main);
-        layout.bottom     = ImGui::DockBuilderSplitNode(layout.main, ImGuiDir_Down, desc.bottom, nullptr, &layout.main);
-
-        // finish
-        ImGui::DockBuilderFinish(dockspace_id);
-        return layout;
-    }
-
+    // LayoutManager is only a wrapper for ImGui's docking builder.
+    // It is created to fit AppKit's style of data and event hanlding.
     struct LayoutManager
     {
     public:
-        explicit LayoutManager(const LayoutDescriptor& descriptor) : descriptor(descriptor) {}
+        explicit LayoutManager(const LayoutDescriptor& descriptor);
 
-        void bind(Application& app)
-        {
-            // bind layout manager events
-            app.bind<AppEvent::UPDATE>(&LayoutManager::update, this);
-        }
+        void bind(Application& app);
 
-        void update(Blackboard& blackboard)
-        {
-            ImGuiID dockspace_id = ImGui::GetMainViewport()->ID;
-            ImGui::DockSpaceOverViewport(dockspace_id, ImGui::GetMainViewport());
-
-            // running dock builder exactly once
-            static bool first_launch = true;
-            if (first_launch) {
-                first_launch = false;
-                blackboard.add<LayoutInfo>(init());
-            }
-        }
+        void update(Blackboard& blackboard);
 
     private:
-        auto init() const -> LayoutInfo
-        {
-            switch (descriptor.mode) {
-                case LayoutMode::EDITOR:
-                    return create_editor_layout(descriptor);
-                default:
-                    return create_player_layout();
-            }
-        }
+        LayoutInfo init() const;
+
+        // player mode does not need any docking layout
+        LayoutInfo create_player_layout() const;
+
+        // editor mode has support for docking on every direction
+        LayoutInfo create_editor_layout(const LayoutDescriptor& desc) const;
 
     private:
         LayoutDescriptor descriptor = {};

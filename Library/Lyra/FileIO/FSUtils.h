@@ -10,11 +10,16 @@
 
 namespace lyra
 {
+    struct FileLoader;
+    struct FilePacker;
+
     using FileHandle = TypedEnumHandle<FSObjectType, FSObjectType::FILE>;
 
     using MountHandle = TypedEnumHandle<FSObjectType, FSObjectType::MOUNT>;
 
-    using ArchiveHandle = TypedEnumHandle<FSObjectType, FSObjectType::ARCHIVE>;
+    using FileLoaderHandle = TypedPointerHandle<FileLoader>;
+
+    using FilePackerHandle = TypedPointerHandle<FilePacker>;
 
 } // namespace lyra
 

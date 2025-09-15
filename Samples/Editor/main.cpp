@@ -115,7 +115,7 @@ int main(int argc, const char* argv[])
         desc.compiler  = app->get_blackboard().get<Compiler>();
         desc.docking   = true;
         desc.viewports = true;
-        return std::make_unique<ImGuiManager>(desc);
+        return std::make_unique<GUIManager>(desc);
     });
 
     // layout manager
@@ -129,9 +129,12 @@ int main(int argc, const char* argv[])
         return std::make_unique<LayoutManager>(desc);
     });
 
+    // imgui context in user application
+    imgui_manager->apply_context();
+
     // bind app bundles
+    app->bind<GUIManager>(*imgui_manager);
     app->bind<AssetManager>(*asset_manager);
-    app->bind<ImGuiManager>(*imgui_manager);
     app->bind<LayoutManager>(*layout_manager);
 
     // bind additional systems

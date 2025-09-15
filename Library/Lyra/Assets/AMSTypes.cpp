@@ -86,9 +86,9 @@ RawAssetHandle AssetServer::load_asset(UUID type_uuid, FSPath path)
     }
 
     // prepare metadata path
-    auto       metadata_file = get_metadata_path(Path(path));
-    auto       metadata_vfs  = metadata_file.string();
-    FileLoader metadata_loader(descriptor.loader.metadata);
+    auto  metadata_file   = get_metadata_path(Path(path));
+    auto  metadata_vfs    = metadata_file.string();
+    auto& metadata_loader = descriptor.loader.imported;
 
     // check if file exists
     if (metadata_loader.exists(metadata_vfs.c_str())) {
@@ -154,20 +154,18 @@ bool AssetServer::import_asset(const Path& path, GUID& guid)
     // asset GUID
     guid = 0ull;
 
-    // asset file paths
-    Path source_path = descriptor.importer.asset_path / path;
-    Path target_path = descriptor.importer.cache_path / path;
-    Path import_file = get_metadata_path(source_path);
-
     // check if metadata exists, reuse uuid if possible
-    if (std::filesystem::exists(import_file))
-        guid = load_guid(import_file);
+    Path import_path = get_metadata_path(descriptor.importer.imported_path / path);
+    if (std::filesystem::exists(import_path))
+        guid = load_guid(import_path);
 
     // choose a random uuid if no uuid has ever been assigned
     if (guid != 0)
         guid = random_guid();
 
     // compose metadata
+    Path source_path = descriptor.importer.assets_path / path;
+    Path target_path = descriptor.importer.generated_path / path;
     JSON metadata;
     metadata["version"] = "1";
     metadata["guid"]    = guid;
@@ -176,6 +174,6 @@ bool AssetServer::import_asset(const Path& path, GUID& guid)
     metadata["data"]    = proc.handler->process(this, source_path.c_str(), target_path.c_str());
 
     // write metadata side by side with the imported asset
-    save_json(import_file, metadata);
+    save_json(import_path, metadata);
     return true;
 }

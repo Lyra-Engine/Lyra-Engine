@@ -17,7 +17,7 @@ namespace lyra
     {
     public:
         explicit FileLoader(FSLoader loader);
-        explicit FileLoader(FileLoaderAPI* api);
+        explicit FileLoader(FileLoaderAPI* api, FileLoaderHandle loader);
         virtual ~FileLoader();
 
         bool exists(FSPath vpath) const;
@@ -32,7 +32,7 @@ namespace lyra
         auto read(FSPath vpath) const -> Vector<T>
         {
             Vector<T> data(size(vpath) / sizeof(T), 0);
-            assert(api_->read_whole_file(vpath, reinterpret_cast<void*>(data.data())));
+            assert(api_->read_whole_file(loader, vpath, reinterpret_cast<void*>(data.data())));
             return data;
         }
 
@@ -50,18 +50,20 @@ namespace lyra
 
         FORCE_INLINE FileLoaderAPI* api() const { return api_; }
 
-        FORCE_INLINE FileLoaderAPI* operator()() { return api_; }
+        FORCE_INLINE FileLoaderHandle handle() { return loader; }
 
-        FORCE_INLINE FileLoaderAPI* operator()() const { return api_; }
+        FORCE_INLINE FileLoaderHandle handle() const { return loader; }
 
     private:
-        FileLoaderAPI* api_ = nullptr;
+        FileLoaderAPI*   api_ = nullptr;
+        FileLoaderHandle loader;
     };
 
     struct FilePacker
     {
     public:
         explicit FilePacker(FSPacker packer, OSPath path);
+        explicit FilePacker(FilePackerAPI* api, FilePackerHandle packer);
         virtual ~FilePacker();
 
         void write(FSPath vpath, void* buffer, size_t size) const;
@@ -72,13 +74,13 @@ namespace lyra
 
         FORCE_INLINE FilePackerAPI* api() const { return api_; }
 
-        FORCE_INLINE FilePackerAPI* operator()() { return api_; }
+        FORCE_INLINE FilePackerHandle handle() { return packer; }
 
-        FORCE_INLINE FilePackerAPI* operator()() const { return api_; }
+        FORCE_INLINE FilePackerHandle handle() const { return packer; }
 
     private:
-        FilePackerAPI* api_ = nullptr;
-        ArchiveHandle  archive;
+        FilePackerAPI*   api_ = nullptr;
+        FilePackerHandle packer;
     };
 
 } // namespace lyra

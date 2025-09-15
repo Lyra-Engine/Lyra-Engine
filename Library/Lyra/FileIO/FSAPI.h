@@ -16,22 +16,26 @@ namespace lyra
         // api name
         CString (*get_api_name)();
 
+        // create a loader and return handle
+        bool (*create_loader)(FileLoaderHandle& loader);
+        bool (*delete_loader)(FileLoaderHandle loader);
+
         // file query operations
-        auto (*sizeof_file)(FSPath path) -> size_t;
-        bool (*exists_file)(FSPath path);
+        auto (*sizeof_file)(FileLoaderHandle loader, FSPath path) -> size_t;
+        bool (*exists_file)(FileLoaderHandle loader, FSPath path);
 
         // file open/close operations
-        bool (*open_file)(FileHandle& handle, FSPath path);
-        void (*close_file)(FileHandle handle);
+        bool (*open_file)(FileLoaderHandle loader, FileHandle& handle, FSPath path);
+        void (*close_file)(FileLoaderHandle, FileHandle handle);
 
         // file read operations
-        bool (*read_file)(FileHandle handle, void* buffer, size_t size, size_t& bytes_read);
-        bool (*seek_file)(FileHandle handle, int64_t offset);
-        bool (*read_whole_file)(FSPath path, void* data);
+        bool (*read_file)(FileLoaderHandle loader, FileHandle handle, void* buffer, size_t size, size_t& bytes_read);
+        bool (*seek_file)(FileLoaderHandle loader, FileHandle handle, int64_t offset);
+        bool (*read_whole_file)(FileLoaderHandle loader, FSPath path, void* data);
 
         // mount operations
-        bool (*mount)(MountHandle& handle, FSPath vpath, OSPath path, uint priority);
-        bool (*unmount)(MountHandle handle);
+        bool (*mount)(FileLoaderHandle loader, MountHandle& handle, FSPath vpath, OSPath path, uint priority);
+        bool (*unmount)(FileLoaderHandle loader, MountHandle handle);
     };
 
     struct FilePackerAPI
@@ -40,11 +44,11 @@ namespace lyra
         CString (*get_api_name)();
 
         // initialize with target archive path
-        bool (*open)(ArchiveHandle& handle, OSPath path);
-        void (*close)(ArchiveHandle handle);
+        bool (*create_packer)(FilePackerHandle& packer, OSPath path);
+        void (*delete_packer)(FilePackerHandle packer);
 
         // write binary to virtual file system within the archive
-        bool (*write)(ArchiveHandle handle, FSPath path, void* buffer, size_t size);
+        bool (*write)(FilePackerHandle packer, FSPath path, void* buffer, size_t size);
     };
 
 } // namespace lyra

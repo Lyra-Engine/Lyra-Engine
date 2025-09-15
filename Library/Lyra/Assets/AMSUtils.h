@@ -29,19 +29,26 @@ namespace lyra
     struct AMSImportDescriptor
     {
         // directory where user places assets
-        Path asset_path;
+        OSPath assets_path;
+
+        // directory where import metadata are generated
+        OSPath imported_path;
 
         // directory where asset caches are generated
-        Path cache_path;
+        OSPath generated_path;
     };
 
     struct AMSLoaderDescriptor
     {
-        // file loader for loading metadata
-        FileLoaderAPI* metadata;
+        // file loader for loading actual assets,
+        // include both editor source files and generated caches,
+        // generated caches should have higher priority while loading.
+        FileLoader assets;
 
-        // file loader for loading actual asset
-        FileLoaderAPI* assets;
+        // file loader for loading metadata,
+        // user could use the same loader as assets,
+        // if a separate imported directory is mount on the asset loader.
+        FileLoader imported;
     };
 
     struct AMSDescriptor
@@ -53,10 +60,10 @@ namespace lyra
         AMSLoaderDescriptor loader;
 
         // watch asset directory changes
-        bool watch;
+        bool watch = false;
 
         // number of threads for asset processing/loading
-        uint workers;
+        uint workers = 1;
     };
 
 } // namespace lyra

@@ -10,8 +10,8 @@ using namespace lyra;
 using FileLoaderPlugin = Plugin<FileLoaderAPI>;
 using FilePackerPlugin = Plugin<FilePackerAPI>;
 
-static constexpr uint NUM_LOADER_BACKENDS = magic_enum::enum_count<FSLoader>();
-static constexpr uint NUM_PACKER_BACKENDS = magic_enum::enum_count<FSPacker>();
+static constexpr uint NUM_LOADER_BACKENDS = static_cast<uint>(magic_enum::enum_count<FSLoader>());
+static constexpr uint NUM_PACKER_BACKENDS = static_cast<uint>(magic_enum::enum_count<FSPacker>());
 
 static Own<FileLoaderPlugin> loader_plugins[NUM_LOADER_BACKENDS];
 static Own<FilePackerPlugin> packer_plugins[NUM_PACKER_BACKENDS];
@@ -54,69 +54,72 @@ static FilePackerAPI* create_file_packer_api(FSPacker packer)
 FileLoader::FileLoader(FSLoader loader)
 {
     api_ = create_file_loader_api(loader);
+    assert(api_->create_loader(this->loader));
 }
 
-FileLoader::FileLoader(FileLoaderAPI* api)
+FileLoader::FileLoader(FileLoaderAPI* api, FileLoaderHandle loader)
+    : api_(api), loader(loader)
 {
-    this->api_ = api;
+    // do nothing
 }
 
 FileLoader::~FileLoader()
 {
-    this->api_ = nullptr;
+    api_->delete_loader(loader);
+    api_ = nullptr;
 }
 
 bool FileLoader::exists(FSPath vpath) const
 {
-    return api_->exists_file(vpath);
+    return api_->exists_file(loader, vpath);
 }
 
 size_t FileLoader::size(FSPath vpath) const
 {
-    return api_->sizeof_file(vpath);
+    return api_->sizeof_file(loader, vpath);
 }
 
 FileHandle FileLoader::open(FSPath vpath) const
 {
     FileHandle file;
-    assert(api_->open_file(file, vpath));
+    assert(api_->open_file(loader, file, vpath));
     return file;
 }
 
 void FileLoader::close(FileHandle file) const
 {
-    api_->close_file(file);
+    api_->close_file(loader, file);
 }
 
 size_t FileLoader::read(FileHandle file, void* buffer, size_t size) const
 {
     size_t read = 0;
-    assert(api_->read_file(file, buffer, size, read));
+    assert(api_->read_file(loader, file, buffer, size, read));
     return read;
 }
 
 void FileLoader::seek(FileHandle file, int64_t offset) const
 {
-    assert(api_->seek_file(file, offset));
+    assert(api_->seek_file(loader, file, offset));
 }
 
 MountHandle FileLoader::mount(FSPath vpath, const Path& path, uint priority) const
 {
     MountHandle mount;
-    assert(api_->mount(mount, vpath, path.c_str(), priority));
+    assert(api_->mount(loader, mount, vpath, path.c_str(), priority));
     return mount;
 }
 
 MountHandle FileLoader::mount(FSPath vpath, OSPath path, uint priority) const
 {
     MountHandle mount;
-    assert(api_->mount(mount, vpath, path, priority));
+    assert(api_->mount(loader, mount, vpath, path, priority));
     return mount;
 }
 
 void FileLoader::unmount(MountHandle mount) const
 {
-    api_->unmount(mount);
+    api_->unmount(loader, mount);
 }
 #pragma endregion FileLoader
 
@@ -124,17 +127,24 @@ void FileLoader::unmount(MountHandle mount) const
 FilePacker::FilePacker(FSPacker packer, OSPath path)
 {
     api_ = create_file_packer_api(packer);
-    assert(api_->open(archive, path));
+    assert(api_->create_packer(this->packer, path));
+}
+
+FilePacker::FilePacker(FilePackerAPI* api, FilePackerHandle packer)
+    : api_(api), packer(packer)
+{
+    // do nothing
 }
 
 FilePacker::~FilePacker()
 {
-    api_->close(archive);
+    api_->delete_packer(packer);
+    api_ = nullptr;
 }
 
 void FilePacker::write(FSPath vpath, void* buffer, size_t size) const
 {
-    api_->write(archive, vpath, buffer, size);
+    api_->write(packer, vpath, buffer, size);
 }
 
 void FilePacker::write(FSPath vpath, const Path& path) const
