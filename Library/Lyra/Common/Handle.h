@@ -92,13 +92,13 @@ namespace lyra
     template <typename T>
     FORCE_INLINE bool operator==(const TypedPointerHandle<T>& lhs, const TypedPointerHandle<T>& rhs)
     {
-        return lhs.handle == rhs.handle;
+        return lhs.pointer == rhs.pointer;
     }
 
     template <typename T>
     FORCE_INLINE bool operator!=(const TypedPointerHandle<T>& lhs, const TypedPointerHandle<T>& rhs)
     {
-        return lhs.handle != rhs.handle;
+        return lhs.pointer != rhs.pointer;
     }
 
 } // namespace lyra

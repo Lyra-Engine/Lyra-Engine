@@ -63,7 +63,7 @@ FileLoader::FileLoader(FileLoaderAPI* api, FileLoaderHandle loader)
     // do nothing
 }
 
-FileLoader::~FileLoader()
+void FileLoader::destroy()
 {
     api_->delete_loader(loader);
     api_ = nullptr;
@@ -136,7 +136,7 @@ FilePacker::FilePacker(FilePackerAPI* api, FilePackerHandle packer)
     // do nothing
 }
 
-FilePacker::~FilePacker()
+void FilePacker::destroy()
 {
     api_->delete_packer(packer);
     api_ = nullptr;

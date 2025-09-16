@@ -18,7 +18,8 @@ namespace lyra
     public:
         explicit FileLoader(FSLoader loader);
         explicit FileLoader(FileLoaderAPI* api, FileLoaderHandle loader);
-        virtual ~FileLoader();
+
+        void destroy();
 
         bool exists(FSPath vpath) const;
 
@@ -64,7 +65,8 @@ namespace lyra
     public:
         explicit FilePacker(FSPacker packer, OSPath path);
         explicit FilePacker(FilePackerAPI* api, FilePackerHandle packer);
-        virtual ~FilePacker();
+
+        void destroy();
 
         void write(FSPath vpath, void* buffer, size_t size) const;
 

@@ -3,6 +3,7 @@ lyra_plugin(nativefs)
 
 # plugin sources
 target_sources(lyra-nativefs PRIVATE
-    NativeFS.h
+    NativeFSUtils.h
+    NativeFSUtils.cpp
     NativeFSPlugin.cpp
 )

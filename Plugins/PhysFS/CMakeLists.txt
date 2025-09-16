@@ -3,7 +3,8 @@ lyra_plugin(physfs)
 
 # plugin sources
 target_sources(lyra-physfs PRIVATE
-    PhysFS.h
+    PhysFSUtils.h
+    PhysFSUtils.cpp
     PhysFSPlugin.cpp
 )
 

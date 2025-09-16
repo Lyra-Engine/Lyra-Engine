@@ -3,10 +3,10 @@
 
 using namespace lyra;
 
-static void* load_json_asset(const FileLoader& loader, const JSON& metadata)
+static void* load_json_asset(FileLoader* loader, const JSON& metadata)
 {
     auto path    = metadata["path"].template get<String>();
-    auto content = loader.read<char>(path.c_str());
+    auto content = loader->read<char>(path.c_str());
     return new JsonAsset{JSON::parse(content.begin(), content.end())};
 }
 

@@ -10,12 +10,12 @@ add_subdirectory(Slang)
 #--------------------------------
 add_subdirectory(ImGui)
 
-# # fileio plugins
-# #--------------------------------
+# fileio plugins
+#--------------------------------
+add_subdirectory(NativeFS)
 # add_subdirectory(PhysFS)
-# add_subdirectory(NativeFS)
-# add_subdirectory(Pak)
-# add_subdirectory(Zip)
+add_subdirectory(PakFS)
+add_subdirectory(ZipFS)
 
 # # assets plugins
 # #--------------------------------

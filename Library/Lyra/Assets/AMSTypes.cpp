@@ -91,13 +91,13 @@ RawAssetHandle AssetServer::load_asset(UUID type_uuid, FSPath path)
     auto& metadata_loader = descriptor.loader.imported;
 
     // check if file exists
-    if (metadata_loader.exists(metadata_vfs.c_str())) {
+    if (metadata_loader->exists(metadata_vfs.c_str())) {
         engine::logger()->error("Failed to find metadata for {}", path);
         throw std::runtime_error("Failed to find asset metadata!");
     }
 
     // load asset guid
-    auto data = metadata_loader.read<char>(metadata_vfs.c_str());
+    auto data = metadata_loader->read<char>(metadata_vfs.c_str());
     auto json = JSON::parse(data.begin(), data.end());
     auto guid = json["guid"].template get<GUID>();
 

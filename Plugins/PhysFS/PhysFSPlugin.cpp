@@ -19,17 +19,17 @@ static Logger logger = init_stderr_logger("PhysFS", LogLevel::trace);
 
 static inline Logger get_logger() { return logger; }
 
-static Vector<PhysMountPoint>                 g_mounts;
-static HashMap<uint, Own<PhysFileHandleData>> g_files;
-static std::atomic<uint>                      g_file_index  = 0;
-static std::atomic<uint>                      g_mount_index = 0;
-static std::mutex                             g_mounts_mutex;
-static std::mutex                             g_files_mutex;
+static Vector<PhysMountPoint>       g_mounts;
+static HashMap<uint, Own<PhysFile>> g_files;
+static std::atomic<uint>            g_file_index  = 0;
+static std::atomic<uint>            g_mount_index = 0;
+static std::mutex                   g_mounts_mutex;
+static std::mutex                   g_files_mutex;
 
 // rebuild the PhysicsFS search path based on current mounts
 static void rebuild_mounts()
 {
-    // Remove all existing entries from the search path
+    // remove all existing entries from the search path
     char** search_path = PHYSFS_getSearchPath();
     if (search_path) {
         for (char** i = search_path; *i; ++i)
@@ -141,7 +141,7 @@ static bool open_file(FileHandle& out_handle, FSPath path)
         return false;
     }
 
-    auto h = std::make_unique<PhysFileHandleData>();
+    auto h = std::make_unique<PhysFile>();
     auto v = normalize_vpath(path);
 
     PHYSFS_File* pf = PHYSFS_openRead(v.c_str());

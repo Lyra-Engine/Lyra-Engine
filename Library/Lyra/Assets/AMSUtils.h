@@ -43,12 +43,12 @@ namespace lyra
         // file loader for loading actual assets,
         // include both editor source files and generated caches,
         // generated caches should have higher priority while loading.
-        FileLoader assets;
+        FileLoader* assets;
 
         // file loader for loading metadata,
         // user could use the same loader as assets,
         // if a separate imported directory is mount on the asset loader.
-        FileLoader imported;
+        FileLoader* imported;
     };
 
     struct AMSDescriptor

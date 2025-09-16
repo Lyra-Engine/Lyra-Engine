@@ -3,7 +3,8 @@ lyra_plugin(zip)
 
 # plugin sources
 target_sources(lyra-zip PRIVATE
-    ZipTypes.h
+    ZipUtils.h
+    ZipUtils.cpp
     ZipPlugin.cpp
 )
 
