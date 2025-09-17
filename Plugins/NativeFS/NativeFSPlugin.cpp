@@ -1,4 +1,6 @@
 // system headers
+#include <cstdint>
+#include <fstream>
 #include <algorithm>
 
 // library headers
@@ -8,6 +10,8 @@
 
 // plugin headers
 #include "NativeFSUtils.h"
+
+namespace fs = std::filesystem;
 
 static Logger logger = init_stderr_logger("NativeFS", LogLevel::trace);
 
@@ -60,14 +64,14 @@ static String normalize_vpath(FSPath vpath)
     return s;
 }
 
-static bool sort_mount_points(const NativeMount& a, const NativeMount& b)
+static bool sort_mount_points(NativeMount* a, NativeMount* b)
 {
     // sort based on priority
-    if (a.priority != b.priority)
-        return a.priority > b.priority;
+    if (a->priority != b->priority)
+        return a->priority > b->priority;
 
     // longer vpath first as tiebreaker
-    return a.vpath.size() > b.vpath.size();
+    return a->vpath.size() > b->vpath.size();
 }
 
 // resolve a VFS path to a list of real OS paths in search order (read side).
@@ -90,26 +94,18 @@ static Vector<fs::path> resolve_read_paths(NativeFSLoader* loader, FSPath cpath)
         return out;
     }
 
-    // collect candidate real paths from mounts that match the longest prefix, by priority.
-    std::lock_guard<std::mutex> lock(loader->mounts_mutex);
-
     // sort mounts by priority (desc) every time only if needed; cheap for small N
-    Vector<NativeMount> mounts = loader->mounts;
-    std::sort(mounts.begin(), mounts.end(),
-        [](const NativeMount& a, const NativeMount& b) {
-        if (a.priority != b.priority)
-            return a.priority > b.priority;
-        return a.vpath.size() > b.vpath.size(); // longer vpath first as tiebreaker
-    });
+    Vector<NativeMount*> mounts = loader->mounts;
+    std::sort(mounts.begin(), mounts.end(), sort_mount_points);
 
     // check file path validity
     for (const auto& m : mounts) {
         String sub = path;
-        if (!m.vpath.empty() && m.vpath != "/")
-            if (!strip_prefix(sub, m.vpath))
+        if (!m->vpath.empty() && m->vpath != "/")
+            if (!strip_prefix(sub, m->vpath))
                 continue; // not under this mount
 
-        fs::path real = m.root;
+        fs::path real = m->root;
         if (!sub.empty())
             real /= fs::path(sub);
         out.push_back(real);
@@ -198,21 +194,12 @@ static bool open_file(FileLoaderHandle loader, FileHandle& out_handle, FSPath pa
 
     auto pointer = loader.astype<NativeFSLoader>();
 
-    // assign a new file index
-    uint file_index = pointer->file_index++;
-
     // find and open the corresponding file
     auto candidates = resolve_read_paths(pointer, path);
     for (const auto& real : candidates) {
-        auto h = std::make_unique<NativeFile>();
-        h->ifs = std::make_unique<std::ifstream>(real, std::ios::binary);
-        if (h->ifs->is_open()) {
-            h->path = real;
-            {
-                std::lock_guard<std::mutex> lk(pointer->files_mutex);
-                pointer->files[file_index] = std::move(h);
-            }
-            out_handle.value = file_index;
+        auto h = new std::ifstream(real, std::ios::binary);
+        if (h->is_open()) {
+            out_handle.pointer = h;
             get_logger()->trace("open_file: {}", real.string());
             return true;
         }
@@ -228,16 +215,9 @@ static void close_file(FileLoaderHandle loader, FileHandle handle)
         return;
     }
 
-    auto pointer = loader.astype<NativeFSLoader>();
-
-    std::lock_guard<std::mutex> lk(pointer->files_mutex);
-
-    auto it = pointer->files.find(handle.value);
-    if (it != pointer->files.end()) {
-        pointer->files.erase(it); // RAII closes the streams
-    } else {
-        get_logger()->error("close_file: invalid file handle {}", handle.value);
-    }
+    auto h = handle.astype<std::ifstream>();
+    h->close();
+    delete h;
 }
 
 static bool read_file(FileLoaderHandle loader, FileHandle handle, void* buffer, size_t size, size_t& bytes_read)
@@ -249,27 +229,16 @@ static bool read_file(FileLoaderHandle loader, FileHandle handle, void* buffer, 
         return false;
     }
 
-    auto pointer = loader.astype<NativeFSLoader>();
-
-    std::lock_guard<std::mutex> lk(pointer->files_mutex);
-
-    auto it = pointer->files.find(handle.value);
-    if (it == pointer->files.end()) {
-        get_logger()->error("read_file: failed to find file by handle {}", handle.value);
-        return false;
-    }
-
-    auto& h = *it->second;
-    if (!h.ifs || !h.ifs->is_open()) {
-        get_logger()->error("read_file: file handle {} is not opened for read", handle.value);
+    auto h = handle.astype<std::ifstream>();
+    if (!h->is_open()) {
+        get_logger()->error("read_file: file handle is not opened for read");
         return false;
     }
 
     // read bytes
-    std::istream* in = h.ifs.get();
-    in->read(static_cast<char*>(buffer), static_cast<std::streamsize>(size));
-    bytes_read = static_cast<size_t>(in->gcount());
-    return bytes_read > 0 || in->eof();
+    h->read(static_cast<char*>(buffer), static_cast<std::streamsize>(size));
+    bytes_read = static_cast<size_t>(h->gcount());
+    return bytes_read > 0 || h->eof();
 }
 
 static bool seek_file(FileLoaderHandle loader, FileHandle handle, int64_t offset)
@@ -279,24 +248,15 @@ static bool seek_file(FileLoaderHandle loader, FileHandle handle, int64_t offset
         return false;
     }
 
-    auto pointer = loader.astype<NativeFSLoader>();
-
-    auto it = pointer->files.find(handle.value);
-    if (it == pointer->files.end()) {
-        get_logger()->error("seek_file: failed to find file by handle {}", handle.value);
-        return false;
-    }
-
-    auto& h = *it->second;
-    if (!h.ifs || !h.ifs->is_open()) {
-        get_logger()->error("read_file: file handle {} is not opened for read", handle.value);
+    auto h = handle.astype<std::ifstream>();
+    if (!h->is_open()) {
+        get_logger()->error("read_file: file handle is not opened for read");
         return false;
     }
 
     // seek position
-    std::ifstream* io = h.ifs.get();
-    io->seekg(offset, std::ios::beg);
-    if (io->fail()) return false;
+    h->seekg(offset, std::ios::beg);
+    if (h->fail()) return false;
     return true;
 }
 
@@ -346,21 +306,19 @@ static bool mount(FileLoaderHandle loader, MountHandle& handle, FSPath vpath, OS
 
     auto pointer = loader.astype<NativeFSLoader>();
 
-    // assign mount index
-    handle.value = pointer->mount_index++;
-
     // prepare mount point
-    NativeMount m;
-    m.vpath    = vp;
-    m.root     = root;
-    m.priority = priority;
-    m.mount_id = handle.value;
+    auto m      = new NativeMount{};
+    m->vpath    = vp;
+    m->root     = root;
+    m->priority = priority;
 
     // save this mount point, and sort according to priority
     std::lock_guard<std::mutex> lk(pointer->mounts_mutex);
-    pointer->mounts.push_back(std::move(m));
+    pointer->mounts.push_back(m);
     std::sort(pointer->mounts.begin(), pointer->mounts.end(), sort_mount_points);
 
+    // assign pointer to handle
+    handle.pointer = m;
     get_logger()->info("mount: {} -> {} (prio {})", vp, root.string(), priority);
     return true;
 }
@@ -368,6 +326,8 @@ static bool mount(FileLoaderHandle loader, MountHandle& handle, FSPath vpath, OS
 static bool unmount(FileLoaderHandle loader, MountHandle handle)
 {
     auto pointer = loader.astype<NativeFSLoader>();
+    auto pmount  = handle.astype<NativeMount>();
+    get_logger()->info("unmount path={} from vpath={} (removed {} mounts)", pmount->root.string(), pmount->vpath);
 
     // lock while unmount
     std::lock_guard<std::mutex> lk(pointer->mounts_mutex);
@@ -376,11 +336,9 @@ static bool unmount(FileLoaderHandle loader, MountHandle handle)
     auto before = pointer->mounts.size();
     pointer->mounts.erase(
         std::remove_if(pointer->mounts.begin(), pointer->mounts.end(),
-            [&](const NativeMount& m) { return m.mount_id == handle.value; }),
+            [&](NativeMount* m) { return m == handle.pointer; }),
         pointer->mounts.end());
     auto after = pointer->mounts.size();
-
-    get_logger()->info("unmount: id={} (removed {} mounts)", handle.value, (before - after));
     return before != after;
 }
 

@@ -22,11 +22,6 @@ struct PhysFSFileDeleter
 
 using PhysFSFilePtr = Own<PHYSFS_File, PhysFSFileDeleter>;
 
-struct PhysFile
-{
-    PhysFSFilePtr pfile;
-};
-
 struct PhysMountPoint
 {
     String vpath;
@@ -37,10 +32,6 @@ struct PhysMountPoint
 
 struct PhysFSLoader
 {
-    Vector<PhysMountPoint>       mounts;
-    HashMap<uint, Own<PhysFile>> files;
-    std::atomic<uint>            file_index  = 0;
-    std::atomic<uint>            mount_index = 0;
-    std::mutex                   mounts_mutex;
-    std::mutex                   files_mutex;
+    Vector<PhysMountPoint*> mounts;
+    std::mutex              mounts_mutex;
 };

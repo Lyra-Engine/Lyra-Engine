@@ -20,23 +20,6 @@ namespace lyra
         ZIP,
     };
 
-    enum struct FSObjectType : uint
-    {
-        FILE,
-        MOUNT,
-    };
-
-    inline constexpr CString to_string(FSObjectType type)
-    {
-        // clang-format off
-        switch (type) {
-            case FSObjectType::FILE:    return "FSFile";
-            case FSObjectType::MOUNT:   return "FSMount";
-            default:                    return "unknown";
-        }
-        // clang-format on
-    }
-
 } // namespace lyra
 
 #endif // LYRA_LIBRARY_FILEIO_FS_ENUMS_H
