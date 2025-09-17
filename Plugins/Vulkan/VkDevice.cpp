@@ -372,6 +372,7 @@ bool api::create_device(const GPUDeviceDescriptor& desc)
     if (is_supported(device_extensions, VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME)) {
         VK_LOAD(rhi, vkBuildAccelerationStructuresKHR);
         VK_LOAD(rhi, vkGetAccelerationStructureBuildSizesKHR);
+        VK_LOAD(rhi, vkGetAccelerationStructureDeviceAddressKHR);
         VK_LOAD(rhi, vkCreateAccelerationStructureKHR);
         VK_LOAD(rhi, vkDestroyAccelerationStructureKHR);
         VK_LOAD(rhi, vkCmdCopyAccelerationStructureKHR);

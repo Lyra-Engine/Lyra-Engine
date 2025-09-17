@@ -11,74 +11,27 @@
 #include <Lyra/Common/Logger.h>
 #include <Lyra/Common/Plugin.h>
 #include <Lyra/FileIO/FSAPI.h>
+#include <Lyra/Common/Stdint.h>
+#include <Lyra/FileIO/FSTypes.h>
 
 // plugin headers
-#include "PhysFS.h"
+#include "PhysFSUtils.h"
+
+namespace fs = std::filesystem;
 
 static Logger logger = init_stderr_logger("PhysFS", LogLevel::trace);
 
 static inline Logger get_logger() { return logger; }
 
-static Vector<PhysMountPoint>       g_mounts;
-static HashMap<uint, Own<PhysFile>> g_files;
-static std::atomic<uint>            g_file_index  = 0;
-static std::atomic<uint>            g_mount_index = 0;
-static std::mutex                   g_mounts_mutex;
-static std::mutex                   g_files_mutex;
+static Vector<FileLoaderHandle> g_loaders;
 
-// rebuild the PhysicsFS search path based on current mounts
-static void rebuild_mounts()
+static bool sort_mount_points(const PhysMountPoint& a, const PhysMountPoint& b)
 {
-    // remove all existing entries from the search path
-    char** search_path = PHYSFS_getSearchPath();
-    if (search_path) {
-        for (char** i = search_path; *i; ++i)
-            PHYSFS_removeFromSearchPath(*i);
-        PHYSFS_freeList(search_path);
-    }
-
-    std::lock_guard<std::mutex> lock(g_mounts_mutex);
-
-    // sort mounts by priority descending (higher priority first)
-    Vector<PhysMountPoint> sorted = g_mounts;
-    std::sort(sorted.begin(), sorted.end(), sort_mount_points);
-
-    // mount each in order, appending to the end (higher prio earlier in search order)
-    for (const auto& m : sorted) {
-        if (!PHYSFS_mount(m.root.string().c_str(), m.vpath.empty() ? nullptr : m.vpath.c_str(), 1)) {
-            get_logger()->error("rebuild_mounts: failed to mount {} -> {}: {}", m.vpath, m.root.string(), PHYSFS_getLastError());
-        } else {
-            get_logger()->trace("rebuild_mounts: mounted {} -> {}", m.vpath, m.root.string());
-        }
-    }
+    if (a.priority != b.priority)
+        return a.priority > b.priority;
+    return a.vpath.size() > b.vpath.size(); // longer vpath first as tiebreaker
 }
 
-// strip a prefix from path if present. Returns true if stripped.
-static bool strip_prefix(String& path, const String& prefix)
-{
-    // path and prefix are normalized with '/'
-    if (path.size() < prefix.size())
-        return false;
-
-    if (path.compare(0, prefix.size(), prefix) != 0)
-        return false;
-
-    // either exact match or next char is '/'
-    if (path.size() > prefix.size() && path[prefix.size()] != '/')
-        return false;
-
-    // strip prefix and optional '/'
-    if (path.size() == prefix.size()) {
-        path = ""; // requesting the mount root
-    } else {
-        path.erase(0, prefix.size());
-        if (!path.empty() && path.front() == '/')
-            path.erase(0, 1);
-    }
-    return true;
-}
-
-// normalize virtual path: ensure leading '/', strip trailing '/'
 static String normalize_vpath(FSPath vpath)
 {
     if (!vpath) return String("/");
@@ -98,13 +51,66 @@ static String normalize_vpath(FSPath vpath)
     return s;
 }
 
+// rebuild the PhysicsFS search path based on current mounts
+static void rebuild_mounts(PhysFSLoader* loader)
+{
+    // remove all existing entries from the search path
+    char** search_path = PHYSFS_getSearchPath();
+    if (search_path) {
+        for (char** i = search_path; *i; ++i)
+            PHYSFS_removeFromSearchPath(*i);
+        PHYSFS_freeList(search_path);
+    }
+
+    std::lock_guard<std::mutex> lock(loader->mounts_mutex);
+
+    // sort mounts by priority descending (higher priority first)
+    Vector<PhysMountPoint> sorted = loader->mounts;
+    std::sort(sorted.begin(), sorted.end(), sort_mount_points);
+
+    // mount each in order, appending to the end (higher prio earlier in search order)
+    for (const auto& m : sorted) {
+        if (!PHYSFS_mount(m.root.string().c_str(), m.vpath.empty() ? nullptr : m.vpath.c_str(), 1)) {
+            get_logger()->error("rebuild_mounts: failed to mount {} -> {}: {}", m.vpath, m.root.string(), PHYSFS_getLastError());
+        } else {
+            get_logger()->trace("rebuild_mounts: mounted {} -> {}", m.vpath, m.root.string());
+        }
+    }
+}
+
 // -----------------------------------------------------------------------------
 // API functions
 // -----------------------------------------------------------------------------
 
 static CString get_api_name() { return "PhysFS"; }
 
-static size_t sizeof_file(FSPath path)
+static bool create_loader(FileLoaderHandle& loader)
+{
+    auto ptr       = new PhysFSLoader();
+    loader.pointer = ptr;
+    if (loader.valid()) {
+        g_loaders.push_back(loader);
+    }
+    return loader.valid();
+}
+
+static bool delete_loader(FileLoaderHandle loader)
+{
+    if (!loader.valid())
+        return false;
+
+    // remove from loaders
+    g_loaders.erase(
+        std::remove(g_loaders.begin(), g_loaders.end(), loader),
+        g_loaders.end());
+
+    // delete pointer
+    auto pointer = loader.astype<PhysFSLoader>();
+    delete pointer;
+    return true;
+}
+
+static size_t sizeof_file(FileLoaderHandle loader, FSPath path)
 {
     if (!path) {
         get_logger()->error("sizeof_file: input path is null!");
@@ -121,7 +127,7 @@ static size_t sizeof_file(FSPath path)
     return 0;
 }
 
-static bool exists_file(FSPath path)
+static bool exists_file(FileLoaderHandle loader, FSPath path)
 {
     if (!path) {
         get_logger()->error("exists_file: input path is null!");
@@ -134,12 +140,14 @@ static bool exists_file(FSPath path)
     return PHYSFS_stat(v.c_str(), &stat) && stat.filetype == PHYSFS_FILETYPE_REGULAR;
 }
 
-static bool open_file(FileHandle& out_handle, FSPath path)
+static bool open_file(FileLoaderHandle loader, FileHandle& out_handle, FSPath path)
 {
     if (!path) {
         get_logger()->error("open_file: input path is null!");
         return false;
     }
+
+    auto pointer = loader.astype<PhysFSLoader>();
 
     auto h = std::make_unique<PhysFile>();
     auto v = normalize_vpath(path);
@@ -152,10 +160,10 @@ static bool open_file(FileHandle& out_handle, FSPath path)
     h->pfile = PhysFSFilePtr(pf);
 
     // assign a new file index
-    uint file_index = g_file_index++;
+    uint file_index = pointer->file_index++;
     {
-        std::lock_guard<std::mutex> lk(g_files_mutex);
-        g_files[file_index] = std::move(h);
+        std::lock_guard<std::mutex> lk(pointer->files_mutex);
+        pointer->files[file_index] = std::move(h);
     }
 
     out_handle.value = file_index;
@@ -163,24 +171,26 @@ static bool open_file(FileHandle& out_handle, FSPath path)
     return true;
 }
 
-static void close_file(FileHandle handle)
+static void close_file(FileLoaderHandle loader, FileHandle handle)
 {
     if (!handle.valid()) {
         get_logger()->error("close_file: input file handle is not valid!");
         return;
     }
 
-    std::lock_guard<std::mutex> lk(g_files_mutex);
+    auto pointer = loader.astype<PhysFSLoader>();
 
-    auto it = g_files.find(handle.value);
-    if (it != g_files.end()) {
-        g_files.erase(it); // RAII closes the streams/files
+    std::lock_guard<std::mutex> lk(pointer->files_mutex);
+
+    auto it = pointer->files.find(handle.value);
+    if (it != pointer->files.end()) {
+        pointer->files.erase(it); // RAII closes the streams/files
     } else {
         get_logger()->error("close_file: invalid file handle {}", handle.value);
     }
 }
 
-static bool read_file(FileHandle handle, void* buffer, size_t size, size_t& bytes_read)
+static bool read_file(FileLoaderHandle loader, FileHandle handle, void* buffer, size_t size, size_t& bytes_read)
 {
     bytes_read = 0;
 
@@ -189,10 +199,12 @@ static bool read_file(FileHandle handle, void* buffer, size_t size, size_t& byte
         return false;
     }
 
-    std::lock_guard<std::mutex> lk(g_files_mutex);
+    auto pointer = loader.astype<PhysFSLoader>();
 
-    auto it = g_files.find(handle.value);
-    if (it == g_files.end()) {
+    std::lock_guard<std::mutex> lk(pointer->files_mutex);
+
+    auto it = pointer->files.find(handle.value);
+    if (it == pointer->files.end()) {
         get_logger()->error("read_file: failed to find file by handle {}", handle.value);
         return false;
     }
@@ -209,17 +221,19 @@ static bool read_file(FileHandle handle, void* buffer, size_t size, size_t& byte
     return true;
 }
 
-static bool seek_file(FileHandle handle, int64_t offset)
+static bool seek_file(FileLoaderHandle loader, FileHandle handle, int64_t offset)
 {
     if (!handle.valid()) {
         get_logger()->error("seek_file: input file handle is invalid!");
         return false;
     }
 
-    std::lock_guard<std::mutex> lk(g_files_mutex);
+    auto pointer = loader.astype<PhysFSLoader>();
 
-    auto it = g_files.find(handle.value);
-    if (it == g_files.end()) {
+    std::lock_guard<std::mutex> lk(pointer->files_mutex);
+
+    auto it = pointer->files.find(handle.value);
+    if (it == pointer->files.end()) {
         get_logger()->error("seek_file: failed to find file by handle {}", handle.value);
         return false;
     }
@@ -230,14 +244,14 @@ static bool seek_file(FileHandle handle, int64_t offset)
     return PHYSFS_seek(h.pfile.get(), static_cast<PHYSFS_uint64>(offset)) != 0;
 }
 
-static bool read_whole_file(FSPath path, void* data)
+static bool read_whole_file(FileLoaderHandle loader, FSPath path, void* data)
 {
     if (!path || !data) {
         get_logger()->error("read_whole_file: input path or data is invalid!");
         return false;
     }
 
-    size_t sz = sizeof_file(path);
+    size_t sz = sizeof_file(loader, path);
     if (sz == 0) return false; // not found or empty
 
     String       v  = normalize_vpath(path);
@@ -250,20 +264,22 @@ static bool read_whole_file(FSPath path, void* data)
     return true;
 }
 
-static bool mount(MountHandle& out_handle, FSPath vpath, OSPath path, uint priority)
+static bool mount(FileLoaderHandle loader, MountHandle& out_handle, FSPath vpath, OSPath path, uint priority)
 {
     if (!path) {
         get_logger()->error("mount: input path is invalid!");
         return false;
     }
 
+    auto pointer = loader.astype<PhysFSLoader>();
+
     std::error_code ec;
 
-    auto vp = normalize_vpath(vpath);
-    Path root(path);
+    auto     vp = normalize_vpath(vpath);
+    fs::path root(path);
     root = fs::absolute(root, ec);
     if (ec) {
-        get_logger()->error("mount {} -> {}: {}", vp, fmt::ptr(path), ec.message());
+        get_logger()->error("mount {} -> {}: {}", vp, root.string(), ec.message());
         return false;
     }
 
@@ -273,7 +289,7 @@ static bool mount(MountHandle& out_handle, FSPath vpath, OSPath path, uint prior
     }
 
     // assign new mount index
-    uint mount_id = g_mount_index++;
+    uint mount_id = pointer->mount_index++;
 
     PhysMountPoint m;
     m.vpath    = vp;
@@ -283,26 +299,28 @@ static bool mount(MountHandle& out_handle, FSPath vpath, OSPath path, uint prior
 
     // save to global mount points
     {
-        std::lock_guard<std::mutex> lk(g_mounts_mutex);
-        g_mounts.push_back(std::move(m));
+        std::lock_guard<std::mutex> lk(pointer->mounts_mutex);
+        pointer->mounts.push_back(std::move(m));
     }
-    rebuild_mounts();
+    rebuild_mounts(pointer);
 
     out_handle.value = mount_id;
     get_logger()->info("mount: {} -> {} (prio {})", vp, root.string(), priority);
     return true;
 }
 
-static bool unmount(MountHandle handle)
+static bool unmount(FileLoaderHandle loader, MountHandle handle)
 {
-    std::lock_guard<std::mutex> lk(g_mounts_mutex);
+    auto pointer = loader.astype<PhysFSLoader>();
 
-    auto before = g_mounts.size();
+    std::lock_guard<std::mutex> lk(pointer->mounts_mutex);
+
+    auto before = pointer->mounts.size();
     auto cb     = [&](const PhysMountPoint& m) { return m.mount_id == handle.value; };
-    g_mounts.erase(std::remove_if(g_mounts.begin(), g_mounts.end(), cb), g_mounts.end());
-    auto after = g_mounts.size();
+    pointer->mounts.erase(std::remove_if(pointer->mounts.begin(), pointer->mounts.end(), cb), pointer->mounts.end());
+    auto after = pointer->mounts.size();
 
-    rebuild_mounts();
+    rebuild_mounts(pointer);
     get_logger()->info("unmount: id={} (removed {} mounts)", handle.value, (before - after));
     return before != after;
 }
@@ -320,6 +338,11 @@ LYRA_EXPORT auto prepare() -> void
 
 LYRA_EXPORT auto cleanup() -> void
 {
+    for (auto& loader : g_loaders)
+        delete_loader(loader);
+
+    g_loaders.clear();
+
     PHYSFS_deinit();
 }
 
@@ -327,6 +350,8 @@ LYRA_EXPORT auto create() -> FileLoaderAPI
 {
     auto api            = FileLoaderAPI{};
     api.get_api_name    = get_api_name;
+    api.create_loader   = create_loader;
+    api.delete_loader   = delete_loader;
     api.sizeof_file     = sizeof_file;
     api.exists_file     = exists_file;
     api.open_file       = open_file;

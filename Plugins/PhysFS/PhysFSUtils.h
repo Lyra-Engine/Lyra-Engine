@@ -1,14 +1,13 @@
 #pragma once
 
-#ifndef LYRA_PLUGIN_PHYS_FS_H
-#define LYRA_PLUGIN_PHYS_FS_H
-
-#include <physfs.h>
-
 #include <Lyra/Common/Path.h>
 #include <Lyra/Common/String.h>
-#include <Lyra/Common/Pointer.h>
-#include <Lyra/FileIO/FSAPI.h>
+#include <Lyra/Common/Logger.h>
+#include <Lyra/Common/Container.h>
+#include <Lyra/FileIO/FSTypes.h>
+#include <Lyra/Common/Stdint.h>
+
+#include <physfs.h>
 
 using namespace lyra;
 
@@ -21,21 +20,27 @@ struct PhysFSFileDeleter
     }
 };
 
-using PhysFSFilePtr = std::unique_ptr<PHYSFS_File, PhysFSFileDeleter>;
-
-struct PhysMountPoint
-{
-    String vpath;    // virtual mount prefix, e.g. "/textures" (no trailing slash)
-    Path   root;     // real OS directory root
-    uint   priority; // higher value = searched earlier
-    uint   mount_id;
-};
+using PhysFSFilePtr = Own<PHYSFS_File, PhysFSFileDeleter>;
 
 struct PhysFile
 {
-    PhysFSFilePtr pfile; // used when opened via PhysicsFS (read-only)
+    PhysFSFilePtr pfile;
 };
 
-bool sort_mount_points(const PhysMountPoint& a, const PhysMountPoint& b);
+struct PhysMountPoint
+{
+    String vpath;
+    Path   root;
+    uint   priority = 0;
+    uint   mount_id = 0;
+};
 
-#endif // LYRA_PLUGIN_PHYS_FS_H
+struct PhysFSLoader
+{
+    Vector<PhysMountPoint>       mounts;
+    HashMap<uint, Own<PhysFile>> files;
+    std::atomic<uint>            file_index  = 0;
+    std::atomic<uint>            mount_index = 0;
+    std::mutex                   mounts_mutex;
+    std::mutex                   files_mutex;
+};
