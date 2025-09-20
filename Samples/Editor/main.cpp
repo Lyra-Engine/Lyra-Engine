@@ -1,3 +1,4 @@
+#include <cxxopts.hpp>
 #include <Lyra/Lyra.hpp>
 
 using namespace lyra;
@@ -8,6 +9,21 @@ void imgui_update(Blackboard& blackboard)
 
     ImGuiIO& io  = ImGui::GetIO();
     float    fps = io.Framerate;
+
+    if (ImGui::BeginMainMenuBar()) {
+        if (ImGui::BeginMenu("File")) {
+            if (ImGui::MenuItem("Create")) {
+            }
+            if (ImGui::MenuItem("Open", "Ctrl+O")) {
+            }
+            if (ImGui::MenuItem("Save", "Ctrl+S")) {
+            }
+            if (ImGui::MenuItem("Save as..")) {
+            }
+            ImGui::EndMenu();
+        }
+        ImGui::EndMainMenuBar();
+    }
 
     ImGui::DockBuilderDockWindow("Dear ImGui Demo", layout.main);
     ImGui::ShowDemoWindow();
@@ -72,9 +88,10 @@ void imgui_render(Blackboard& blackboard)
 int main(int argc, const char* argv[])
 {
     // common paths (TODO: need to think about what the project structure should look like)
-    auto root       = git_root();
-    auto asset_root = root; // / "Assets";
-    auto cache_root = root; // / "Cache";
+    auto root           = git_root();
+    auto assets_root    = root; // / "Assets";
+    auto metadata_root  = root; // / "Metadata";
+    auto generated_root = root; // / "Generated";
 
     // application
     auto app = lyra::execute([&]() {
@@ -90,20 +107,22 @@ int main(int argc, const char* argv[])
     // file loader
     auto file_loader = lyra::execute([&]() {
         auto loader = std::make_unique<FileLoader>(FSLoader::NATIVE);
-        loader->mount("/", cache_root, 0);
-        loader->mount("/", asset_root, 1);
+        loader->mount("/", generated_root, 1);
+        loader->mount("/", metadata_root, 0);
+        loader->mount("/", assets_root, 0);
         return loader;
     });
 
     // asset manager
     auto asset_manager = lyra::execute([&]() {
-        auto desc                = AMSDescriptor{};
-        desc.importer.asset_path = asset_root;
-        desc.importer.cache_path = cache_root;
-        desc.loader.assets       = file_loader->api();
-        desc.loader.metadata     = file_loader->api();
-        desc.watch               = true;
-        desc.workers             = 4;
+        auto desc                    = AMSDescriptor{};
+        desc.importer.assets_path    = assets_root.c_str();
+        desc.importer.metadata_path  = metadata_root.c_str();
+        desc.importer.generated_path = generated_root.c_str();
+        desc.loader.assets           = file_loader.get();
+        desc.loader.metadata         = file_loader.get();
+        desc.watch                   = true;
+        desc.workers                 = 4;
         return std::make_unique<AssetManager>(desc);
     });
 

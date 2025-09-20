@@ -88,7 +88,7 @@ RawAssetHandle AssetServer::load_asset(UUID type_uuid, FSPath path)
     // prepare metadata path
     auto  metadata_file   = get_metadata_path(Path(path));
     auto  metadata_vfs    = metadata_file.string();
-    auto& metadata_loader = descriptor.loader.imported;
+    auto& metadata_loader = descriptor.loader.metadata;
 
     // check if file exists
     if (metadata_loader->exists(metadata_vfs.c_str())) {
@@ -155,7 +155,7 @@ bool AssetServer::import_asset(const Path& path, GUID& guid)
     guid = 0ull;
 
     // check if metadata exists, reuse uuid if possible
-    Path import_path = get_metadata_path(descriptor.importer.imported_path / path);
+    Path import_path = get_metadata_path(descriptor.importer.metadata_path / path);
     if (std::filesystem::exists(import_path))
         guid = load_guid(import_path);
 

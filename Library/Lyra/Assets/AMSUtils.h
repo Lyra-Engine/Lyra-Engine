@@ -32,7 +32,7 @@ namespace lyra
         OSPath assets_path;
 
         // directory where import metadata are generated
-        OSPath imported_path;
+        OSPath metadata_path;
 
         // directory where asset caches are generated
         OSPath generated_path;
@@ -48,7 +48,7 @@ namespace lyra
         // file loader for loading metadata,
         // user could use the same loader as assets,
         // if a separate imported directory is mount on the asset loader.
-        FileLoader* imported;
+        FileLoader* metadata;
     };
 
     struct AMSDescriptor

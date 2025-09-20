@@ -7,4 +7,4 @@ target_sources(lyra-ktx PRIVATE
 )
 
 find_package(ktx REQUIRED)
-target_link_libraries(lyra-ktx PRIVATE ktx::ktx)
+target_link_libraries(lyra-ktx PRIVATE KTX::ktx)

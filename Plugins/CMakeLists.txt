@@ -17,9 +17,9 @@ add_subdirectory(PhysFS)
 add_subdirectory(PakFS)
 add_subdirectory(ZipFS)
 
-# # assets plugins
-# #--------------------------------
-# add_subdirectory(Ktx)
+# assets plugins
+#--------------------------------
+add_subdirectory(Ktx)
 
 # render plugins
 #--------------------------------
