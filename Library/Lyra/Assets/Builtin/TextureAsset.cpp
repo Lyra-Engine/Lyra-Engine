@@ -1,15 +1,17 @@
+#include <Lyra/Common/Plugin.h>
 #include <Lyra/Common/Macros.h>
 #include <Lyra/Assets/Builtin/TextureAsset.h>
 
 using namespace lyra;
 
+using TexturePlugin = Plugin<AssetHandlerAPI>;
+
+static Own<TexturePlugin> TEXTURE_PLUGIN;
+
 AssetHandlerAPI TextureAsset::handler()
 {
-    UNIMPLEMENTED("TextureAsset::handler");
+    if (!TEXTURE_PLUGIN)
+        TEXTURE_PLUGIN = std::make_unique<TexturePlugin>("lyra-ktx");
 
-    auto api    = AssetHandlerAPI{};
-    api.load    = nullptr;
-    api.unload  = nullptr;
-    api.process = nullptr;
-    return api;
+    return *TEXTURE_PLUGIN->get_api();
 }

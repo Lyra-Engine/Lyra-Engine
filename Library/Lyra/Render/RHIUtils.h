@@ -377,7 +377,7 @@ namespace lyra
         GPUBlasType type = GPUBlasType::TRIANGLE;
         union
         {
-            GPUBlasTriangleGeometrySizeDescriptor triangles;
+            GPUBlasTriangleGeometrySizeDescriptor triangles = {};
         };
 
         // default trivial constructor / destructor
@@ -400,10 +400,10 @@ namespace lyra
 
     struct GPUBlasGeometries
     {
-        GPUBlasType type;
+        GPUBlasType type = GPUBlasType::TRIANGLE;
         union
         {
-            GPUBlasTriangleGeometries triangles;
+            GPUBlasTriangleGeometries triangles = {};
         };
 
         // default trivial constructor / destructor
@@ -494,12 +494,12 @@ namespace lyra
 
     struct GPUBindGroupEntry
     {
-        GPUIndex32             binding;
-        GPUIndex32             index = 0; // NOTE: Non-WebGPU standard API
-        GPUBindingResourceType type;
+        GPUIndex32             binding = 0;
+        GPUIndex32             index   = 0; // NOTE: Non-WebGPU standard API
+        GPUBindingResourceType type    = GPUBindingResourceType::BUFFER;
         union
         {
-            GPUBufferBinding     buffer;
+            GPUBufferBinding     buffer = {};
             GPUSamplerHandle     sampler;
             GPUTextureViewHandle texture;
         };
@@ -511,13 +511,13 @@ namespace lyra
 
     struct GPUBindGroupLayoutEntry
     {
-        GPUBindingResourceType type;
-        GPUBindingIndex        binding;
-        GPUShaderStageFlags    visibility;
-        GPUIndex32             count = 1; // NOTE: Non-WebGPU standard API
+        GPUBindingResourceType type       = GPUBindingResourceType::BUFFER;
+        GPUBindingIndex        binding    = {};
+        GPUShaderStageFlags    visibility = GPUShaderStage(0);
+        GPUIndex32             count      = 1; // NOTE: Non-WebGPU standard API
         union
         {
-            GPUBufferBindingLayout         buffer;
+            GPUBufferBindingLayout         buffer = {};
             GPUSamplerBindingLayout        sampler;
             GPUTextureBindingLayout        texture;
             GPUStorageTextureBindingLayout storage_texture;

@@ -4,6 +4,7 @@
 #define LYRA_LIBRARY_AMS_GENERIC_ASSET_H
 
 #include <Lyra/Common/JSON.h>
+#include <Lyra/Common/Path.h>
 
 namespace lyra
 {

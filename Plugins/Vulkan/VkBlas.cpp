@@ -82,11 +82,6 @@ VulkanBlas::VulkanBlas(const GPUBlasDescriptor& desc, GPUBlasGeometrySizeDescrip
     if (result != VK_SUCCESS) destroy();
     vk_check(result);
 
-    auto address_info                  = VkAccelerationStructureDeviceAddressInfoKHR{};
-    address_info.sType                 = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
-    address_info.accelerationStructure = blas;
-    vk_check(rhi->vtable.vkGetAccelerationStructureDeviceAddressKHR(rhi->device, &address_info));
-
     if (desc.label)
         rhi->set_debug_label(VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR, (uint64_t)blas, desc.label);
 }

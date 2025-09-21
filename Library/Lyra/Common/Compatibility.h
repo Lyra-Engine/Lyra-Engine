@@ -15,6 +15,7 @@
 #undef far          // commonly used words
 #undef GENERIC_READ // conflicts with RHI enum
 #undef OPAUE
+#undef DEBUG
 #endif
 
 #endif // LYRA_LIBRARY_COMMON_COMPATIBILITY_H
