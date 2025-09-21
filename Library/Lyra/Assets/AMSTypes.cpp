@@ -63,7 +63,7 @@ void* AssetServer::get_asset(UUID type_uuid, RawAssetHandle handle)
     // find asset processor
     auto it = processors.find(type_uuid);
     if (it == processors.end()) {
-        engine::logger()->error("AssetType ({}) has not been registered!", to_string(type_uuid));
+        spdlog::error("AssetType ({}) has not been registered!", to_string(type_uuid));
         return nullptr;
     }
 
@@ -81,7 +81,7 @@ RawAssetHandle AssetServer::load_asset(UUID type_uuid, FSPath path)
     // sanity check if given asset has been registered
     auto it = processors.find(type_uuid);
     if (it == processors.end()) {
-        engine::logger()->error("AssetType ({}) has not been registered!", to_string(type_uuid));
+        spdlog::error("AssetType ({}) has not been registered!", to_string(type_uuid));
         return RawAssetHandle();
     }
 
@@ -92,7 +92,7 @@ RawAssetHandle AssetServer::load_asset(UUID type_uuid, FSPath path)
 
     // check if file exists
     if (metadata_loader->exists(metadata_vfs.c_str())) {
-        engine::logger()->error("Failed to find metadata for {}", path);
+        spdlog::error("Failed to find metadata for {}", path);
         throw std::runtime_error("Failed to find asset metadata!");
     }
 
@@ -118,7 +118,7 @@ void AssetServer::unload_asset(UUID type_uuid, RawAssetHandle handle)
     // sanity check if given asset has been registered
     auto it = processors.find(type_uuid);
     if (it == processors.end()) {
-        engine::logger()->error("AssetType ({}) has not been registered!", to_string(type_uuid));
+        spdlog::error("AssetType ({}) has not been registered!", to_string(type_uuid));
         return;
     }
 
@@ -137,14 +137,14 @@ bool AssetServer::import_asset(const Path& path, GUID& guid)
     auto ext = path.extension().string();
     auto it  = extensions.find(ext);
     if (it == extensions.end()) {
-        engine::logger()->error("AssetServer cannot handle files with extension: {}", ext);
+        spdlog::error("AssetServer cannot handle files with extension: {}", ext);
         return false;
     }
 
     // sanity check if given asset has been registered
     auto it2 = processors.find(it->second);
     if (it2 == processors.end()) {
-        engine::logger()->error("AssetType ({}) has not been registered!", to_string(it->second));
+        spdlog::error("AssetType ({}) has not been registered!", to_string(it->second));
         return false;
     }
 

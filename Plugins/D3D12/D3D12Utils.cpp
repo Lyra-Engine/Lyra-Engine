@@ -2,7 +2,7 @@
 #include "d3d12.h"
 #include "dxgiformat.h"
 
-static Logger logger = init_stderr_logger("D3D12", LogLevel::trace);
+static Logger logger = create_logger("D3D12", LogLevel::trace);
 
 static D3D12RHI* D3D12_RHI = nullptr;
 

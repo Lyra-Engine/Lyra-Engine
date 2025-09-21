@@ -56,7 +56,7 @@ namespace lyra
 
         explicit Application(const AppDescriptor& descriptor);
         explicit Application(const Application&) = delete;
-        explicit Application(Application*&)      = delete;
+        explicit Application(Application&&)      = delete;
         virtual ~Application();
 
         void run();
@@ -103,6 +103,7 @@ namespace lyra
         void destroy();
 
     private:
+        void init_logger();
         void init_window();
         void init_graphics();
         void init_compiler();

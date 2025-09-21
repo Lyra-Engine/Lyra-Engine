@@ -73,5 +73,6 @@
 #include <Lyra/AppKit/Builtin/GUIManager.h>
 #include <Lyra/AppKit/Builtin/AssetManager.h>
 #include <Lyra/AppKit/Builtin/LayoutManager.h>
+#include <Lyra/AppKit/Builtin/ConsoleManager.h>
 
 #endif // LYRA_LIBRARY_HPP

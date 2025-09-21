@@ -26,7 +26,7 @@
 
 using namespace lyra;
 
-static Logger logger = init_stderr_logger("GLFW", LogLevel::trace);
+static Logger logger = create_logger("GLFW", LogLevel::trace);
 
 static Logger get_logger()
 {

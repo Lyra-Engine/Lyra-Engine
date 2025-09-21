@@ -5,7 +5,7 @@
 #define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
 
-static Logger logger = init_stderr_logger("Vulkan", LogLevel::trace);
+static Logger logger = create_logger("Vulkan", LogLevel::trace);
 
 static VulkanRHI* VK_RHI = nullptr;
 

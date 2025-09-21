@@ -57,6 +57,7 @@ AppDescriptor& AppDescriptor::with_graphics_validation(bool debug, bool validati
 Application::Application(const AppDescriptor& descriptor)
     : descriptor(descriptor)
 {
+    init_logger();
     init_window();
     init_graphics();
     init_compiler();
@@ -80,6 +81,11 @@ Application::~Application()
     slc.reset();
     rhi.reset();
     wsi.reset();
+}
+
+void Application::init_logger()
+{
+    create_default_logger();
 }
 
 void Application::init_window()

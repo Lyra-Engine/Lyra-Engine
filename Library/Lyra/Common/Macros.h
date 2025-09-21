@@ -35,10 +35,10 @@
 #endif
 
 #ifndef UNIMPLEMENTED
-#define UNIMPLEMENTED(MESSAGE)                                         \
-    {                                                                  \
-        lyra::engine::logger()->error("NOT IMPLEMENTED: {}", MESSAGE); \
-        DEBUG_BREAK();                                                 \
+#define UNIMPLEMENTED(MESSAGE)                         \
+    {                                                  \
+        spdlog::error("NOT IMPLEMENTED: {}", MESSAGE); \
+        DEBUG_BREAK();                                 \
     }
 #endif
 

@@ -18,6 +18,8 @@
 
 using namespace lyra;
 
+Logger get_logger();
+
 template <typename T>
 struct GUIGarbage
 {

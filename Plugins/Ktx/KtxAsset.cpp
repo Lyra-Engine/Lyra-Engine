@@ -10,11 +10,9 @@
 
 #include "KtxAsset.h"
 
-using namespace lyra;
+static Logger logger = create_logger("Ktx", LogLevel::trace);
 
-static Logger logger = lyra::init_stdout_logger("ktx", LogLevel::trace);
-
-static Logger get_logger()
+Logger get_logger()
 {
     return logger;
 }

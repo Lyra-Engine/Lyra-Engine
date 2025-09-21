@@ -72,10 +72,12 @@ static void render_side_viewports(GUIHandle gui)
 
 LYRA_EXPORT auto prepare() -> void
 {
+    // do nothing
 }
 
 LYRA_EXPORT auto cleanup() -> void
 {
+    // do nothing
 }
 
 LYRA_EXPORT auto create() -> GUIRenderAPI

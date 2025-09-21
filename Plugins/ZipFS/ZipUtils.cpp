@@ -5,7 +5,7 @@
 
 using namespace lyra;
 
-static Logger logger = init_stderr_logger("ZipFS", LogLevel::trace);
+static Logger logger = create_logger("ZipFS", LogLevel::trace);
 
 auto get_logger() -> Logger
 {

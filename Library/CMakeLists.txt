@@ -15,6 +15,7 @@ target_sources(lyra-engine PRIVATE
     Lyra/Common/GLM.h
     Lyra/Common/Hash.h
     Lyra/Common/Logger.h
+    Lyra/Common/Logger.cpp
     Lyra/Common/Msgbox.h
     Lyra/Common/Msgbox.cpp
     Lyra/Common/Path.h
@@ -112,6 +113,8 @@ target_sources(lyra-engine PRIVATE
     Lyra/AppKit/Builtin/AssetManager.cpp
     Lyra/AppKit/Builtin/LayoutManager.h
     Lyra/AppKit/Builtin/LayoutManager.cpp
+    Lyra/AppKit/Builtin/ConsoleManager.h
+    Lyra/AppKit/Builtin/ConsoleManager.cpp
 )
 
 # link dependencies

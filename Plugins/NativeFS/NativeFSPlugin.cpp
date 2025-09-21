@@ -13,7 +13,7 @@
 
 namespace fs = std::filesystem;
 
-static Logger logger = init_stderr_logger("NativeFS", LogLevel::trace);
+static Logger logger = create_logger("NativeFS", LogLevel::trace);
 
 static inline Logger get_logger() { return logger; }
 

@@ -3,7 +3,7 @@
 
 static ComPtr<slang::IGlobalSession> GLOBAL_SESSION;
 
-static Logger logger = init_stderr_logger("Slang", LogLevel::trace);
+static Logger logger = create_logger("Slang", LogLevel::trace);
 
 static CString builtin_module_source = R"""(
 module lyra;

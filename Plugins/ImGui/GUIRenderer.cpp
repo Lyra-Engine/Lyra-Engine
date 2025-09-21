@@ -16,16 +16,16 @@ CMRC_DECLARE(imgui);
 
 using namespace lyra;
 
-static Logger logger = init_stderr_logger("ImGui", LogLevel::trace);
+static Logger logger = create_logger("ImGui", LogLevel::trace);
+
+Logger get_logger()
+{
+    return logger;
+}
 
 namespace ImGui
 {
     extern ImGuiIO& GetIO(ImGuiContext*);
-}
-
-static Logger get_logger()
-{
-    return logger;
 }
 
 static GUIRendererData* imgui_make_renderer(uint frame_count)

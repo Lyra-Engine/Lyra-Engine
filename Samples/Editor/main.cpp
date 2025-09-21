@@ -7,9 +7,6 @@ void imgui_update(Blackboard& blackboard)
 {
     auto& layout = blackboard.get<LayoutInfo>();
 
-    ImGuiIO& io  = ImGui::GetIO();
-    float    fps = io.Framerate;
-
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("File")) {
             if (ImGui::MenuItem("Create")) {
@@ -28,9 +25,6 @@ void imgui_update(Blackboard& blackboard)
     ImGui::DockBuilderDockWindow("Dear ImGui Demo", layout.main);
     ImGui::ShowDemoWindow();
 
-    ImGui::DockBuilderDockWindow("Dear ImGui Debug Log", layout.bottom);
-    ImGui::ShowDebugLogWindow();
-
     ImGui::DockBuilderDockWindow("Scene", layout.main);
     ImGui::Begin("Scene");
     ImGui::End();
@@ -42,14 +36,6 @@ void imgui_update(Blackboard& blackboard)
 
     ImGui::DockBuilderDockWindow("Inspector", layout.right);
     ImGui::Begin("Inspector");
-    ImGui::End();
-
-    ImGui::DockBuilderDockWindow("Console", layout.bottom);
-    ImGui::Begin("Console");
-    ImGui::SetWindowFontScale(2.0f);
-    ImGui::Text("\uea84 \uf09b \ue65b Hello World \ue8a9 \ue200 \ue201 \ue202 \ue404");
-    ImGui::SetWindowFontScale(1.0f);
-    ImGui::Text("FPS: %.3f", fps);
     ImGui::End();
 }
 
@@ -93,6 +79,15 @@ int main(int argc, const char* argv[])
     auto metadata_root  = root; // / "Metadata";
     auto generated_root = root; // / "Generated";
 
+    // file loader
+    auto file_loader = lyra::execute([&]() {
+        auto loader = std::make_unique<FileLoader>(FSLoader::NATIVE);
+        loader->mount("/", generated_root, 2);
+        loader->mount("/", metadata_root, 1);
+        loader->mount("/", assets_root, 0);
+        return loader;
+    });
+
     // application
     auto app = lyra::execute([&]() {
         auto desc = AppDescriptor();
@@ -104,14 +99,8 @@ int main(int argc, const char* argv[])
         return std::make_unique<Application>(desc);
     });
 
-    // file loader
-    auto file_loader = lyra::execute([&]() {
-        auto loader = std::make_unique<FileLoader>(FSLoader::NATIVE);
-        loader->mount("/", generated_root, 1);
-        loader->mount("/", metadata_root, 0);
-        loader->mount("/", assets_root, 0);
-        return loader;
-    });
+    // console manager
+    auto console_manager = std::make_unique<ConsoleManager>(4096);
 
     // asset manager
     auto asset_manager = lyra::execute([&]() {
@@ -134,7 +123,10 @@ int main(int argc, const char* argv[])
         desc.compiler  = app->get_blackboard().get<Compiler>();
         desc.docking   = true;
         desc.viewports = true;
-        return std::make_unique<GUIManager>(desc);
+
+        auto imgui = std::make_unique<GUIManager>(desc);
+        imgui->apply_context(); // imgui context in user application
+        return std::move(imgui);
     });
 
     // layout manager
@@ -148,13 +140,11 @@ int main(int argc, const char* argv[])
         return std::make_unique<LayoutManager>(desc);
     });
 
-    // imgui context in user application
-    imgui_manager->apply_context();
-
     // bind app bundles
     app->bind<GUIManager>(*imgui_manager);
     app->bind<AssetManager>(*asset_manager);
     app->bind<LayoutManager>(*layout_manager);
+    app->bind<ConsoleManager>(*console_manager);
 
     // bind additional systems
     app->bind<AppEvent::UPDATE>(imgui_update);
