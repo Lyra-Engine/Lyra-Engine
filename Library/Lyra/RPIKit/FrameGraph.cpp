@@ -72,11 +72,11 @@ void FrameGraph::compile()
 
     // pass.refcnt++ for every resource write
     for (auto& pass : passes)
-        pass.refcnt = pass.writes.size();
+        pass.refcnt = static_cast<uint>(pass.writes.size());
 
     // resource.refcnt++ for every resource read
     for (auto& resource : resources)
-        resource.refcnt = resource.consumers.size();
+        resource.refcnt = static_cast<uint>(resource.consumers.size());
 
     // identify resources with refcnt == 0 and push them on a stack
     Stack<uint> unused_resources;

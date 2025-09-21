@@ -726,7 +726,7 @@ void cmd::build_tlases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratc
 
         // prepare build range
         tlas.range.firstVertex     = 0;
-        tlas.range.primitiveCount  = entry.instances.size();
+        tlas.range.primitiveCount  = static_cast<uint>(entry.instances.size());
         tlas.range.primitiveOffset = 0;
         tlas.range.transformOffset = 0;
 
@@ -777,7 +777,7 @@ void cmd::build_blases(GPUCommandEncoderHandle cmdbuffer, GPUBufferHandle scratc
         }
 
         // update geometries and ranges
-        uint geometry_count = std::min(entry.geometries.triangles.size(), blas.geometries.size());
+        uint geometry_count = static_cast<uint>(std::min(entry.geometries.triangles.size(), blas.geometries.size()));
         for (uint k = 0; k < geometry_count; k++) {
             auto& src_geometry = entry.geometries.triangles.at(k);
             auto& dst_geometry = blas.geometries.at(k);

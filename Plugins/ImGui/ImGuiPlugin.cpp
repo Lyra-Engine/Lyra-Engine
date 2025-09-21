@@ -13,7 +13,7 @@ static auto get_api_name() -> CString { return "ImGui"; }
 static bool create_gui(GUIHandle& gui, const GUIDescriptor& descriptor)
 {
     auto renderer = std::make_unique<GUIRenderer>(descriptor);
-    gui.handle    = renderer.release();
+    gui.pointer   = renderer.release();
     return true;
 }
 
@@ -37,6 +37,11 @@ static void end_frame(GUIHandle gui)
 static void update_gui(GUIHandle gui)
 {
     gui.astype<GUIRenderer>()->update();
+}
+
+static void resize_gui(GUIHandle gui)
+{
+    gui.astype<GUIRenderer>()->resize();
 }
 
 static void* get_context(GUIHandle gui)
@@ -80,6 +85,7 @@ LYRA_EXPORT auto create() -> GUIRenderAPI
     api.create_gui            = create_gui;
     api.delete_gui            = delete_gui;
     api.update_gui            = update_gui;
+    api.resize_gui            = resize_gui;
     api.new_frame             = new_frame;
     api.end_frame             = end_frame;
     api.get_context           = get_context;

@@ -8,7 +8,10 @@
 #include <string>
 #include <string_view>
 
+#if APPLE
+// to allow compilation on MacOS
 size_t strnlen_s(const char* s, size_t maxlen);
+#endif
 
 namespace lyra
 {

@@ -31,12 +31,12 @@ target_sources(lyra-vulkan PRIVATE
 
 # link dependencies
 find_package(volk REQUIRED)
-find_package(Vulkan REQUIRED)
+find_package(VulkanHeaders REQUIRED)
 find_package(VulkanMemoryAllocator REQUIRED)
 target_link_libraries(lyra-vulkan PRIVATE Vulkan::Headers volk::volk volk::volk_headers GPUOpen::VulkanMemoryAllocator)
 
 # message(STATUS "CXX COMPILER: ${CMAKE_CXX_COMPILER_ID}")
 if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-    # added for VulkanMemoryAllocator
-    target_compile_options(lyra-vulkan PRIVATE -Wno-nullability-completeness)
+   # added for VulkanMemoryAllocator
+  target_compile_options(lyra-vulkan PRIVATE -Wno-nullability-completeness)
 endif()

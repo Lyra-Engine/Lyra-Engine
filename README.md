@@ -6,48 +6,67 @@ NOTE: This project is still a work in progress, some of the features might be de
 This is a project develop and maintained by single person. Feedbacks and contributons are welcome, but I
 have limited time for this project after work, so please do expect slower response time and development speed.
 
-## Dependencies
-
-**Lyra Engine** is a CMake-based project. While CMake provides a comprehensive build system,
-it does not provide a mature package repository. Therefore, I resort to **vcpkg** for help.
-For well-known dependencies used in this projects, e.g. glfw, the build system will first
-search for existing installation from **vcpkg**. However, as a fallback, **Lyra Engine**
-will use CMake's FetchContent mechanism to build external packages as project dependency.
-
-Majority of the dependencies are built in the way described above. However, there are a
-number of dependencies would soly rely on **vcpkg**. This includes **usd**, **shader-slang**,
-etc. These dependencies are large and slow to build (and would often fail to build on various
-development environment). Users would need to manually install them using **vcpkg**.
-
 ## Build
+
+**Lyra-Engine** uses [CMake](https://cmake.org/) with [vckpkg](https://vcpkg.io/en/) to
+manage the build system and the 3rd party dependencies. To simplify the command line,
+we adopt [just](https://just.systems/) as the primary command invoker for a lot of
+the commonly used commands.
 
 Prior to build, user must specify environment variable **VCPKG_ROOT**.
 User can specify one of the presets from **CMakePresets.json**.
-User can also overwrite the default generator (for example, switching to **Ninja**).
+User can also create **CMakeUserPresets.json** to overwrite the default configuration.
 
 ```bash
-cmake -S . -B Scratch --preset Debug             # -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug
-cmake -S . -B Scratch --preset Release           # -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
-cmake -S . -B Scratch --preset RelWithDebInfo    # -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo
-cmake -S . -B Scratch -A x64 --preset MSVC       # -G "Visual Studio 17"
+just configure msvc     # use MSVC, recommended on Windows
+just configure xcode    # use Xcode, recommended on MacOS
+just configure ninja    # use Ninja multi-config
 ```
 
-After the project solution is created, users can build the project using:
+Once the configure command is invoked, vcpkg will automatically install the required
+dependencies defined by **vcpkg.json**. Some of the dependencies might take a while
+to compile.
+
+To build the project, users can use the following command:
 
 ```bash
-cmake --build Scratch -- -j 8          # enable multi-thread compiling for Unix Makefiles
-cmake --build Scratch --config Release # select one of the configs if using MSVC
+just build msvc-debug     # MSVC Debug build
+just build msvc-release   # MSVC Release build
+just build xcode-debug
+just build xcode-release
+just build ninja-debug
+just build ninja-release
 ```
 
 ## Test
 
 To keep the development process robust, users can build the `testkit` target.
 This target is a custom target to launch the test script using Python3. This
-script will call the test kit binary in order and compose an HTML page for result.
-Currently there is no automatic checking, so manual check is still required.
+script will call the testkit binary in order and compose an HTML page for result.
+Currently there is no automatic checking for graphics result, so manual check is
+still required.
 
 ```bash
-cmake --build Scratch --target testkit # run tests and show HTML report
+just test msvc-debug
+just test msvc-release
+just test xcode-debug
+just test xcode-release
+just test ninja-debug
+just test ninja-release
+```
+
+## Samples
+
+**Lyra-Engine** plans to include both editor and player samples in this repository.
+To run the editor/player, user can run the following command:
+
+```bash
+just run msvc-debug    editor
+just run msvc-release  editor
+just run xcode-debug   editor
+just run xcode-release editor
+just run ninja-debug   editor
+just run ninja-release editor
 ```
 
 ## Install
@@ -66,7 +85,7 @@ cmake --install Scratch  # copy the built libraries and headers into system dire
 
 * Library: The core shared library for the rendering engine (to be linked by user application).
 * Plugins: Shared libraries loaded at runtime by library (not directly linked).
-* Samples: Basic example as guide on how to use this engine (Permanently moved to [Lyra-Samples](https://github.com/Lyra-Engine/Lyra-Samples)).
+* Samples: Primary editor/player applications for this engine.
 
 **Lyra Engine**'s design is largely inspired by **The Machinery** (currently removed from internet).
 We adopt a plugin-based design philosophy so that the underlying implementation could be swapped
@@ -77,11 +96,15 @@ APIs like D3D12 and swap out Vulkan with a single line of change.
 However, **Lyra Engine**'s plugin APIs do not strictly follow C ABI, meaning that plugins for
 non-compliant APIs must be compiled using the same C++ compiler, otherwise we run at the risk
 of mis-interpreting C++ structure. The reason for not directly using C ABI is due to the
-complexity of the API. Some graphics APIs would require multi-level descriptor objects, and
-the descriptor would store a vector of objects at some level. Since the user-level descriptor
-follows C++ interface, it would require extra work to transform the descriptor into C ABI form.
-Given that **Lyra Engine** is a small project that users would often compile the project as a whole,
-this wouldn't be a big issue.
+complexity of the API. For example, some graphics APIs would require multi-level descriptor
+objects, and the descriptor would store a vector of objects at some level. Since the user-level
+descriptor follows C++ interface, it would require extra work to transform the descriptor into
+C ABI form. Given that **Lyra Engine** is a small project that users would often compile the
+project as a whole, this wouldn't be a prominent issue.
+
+While **Lyra Engine** is not explicitly requiring C ABI compliant. The only exception being
+the modding system. If user mods should be supported, the modding API must strictly follow
+C ABI for maximum DLL portability.
 
 ## Author(s)
 

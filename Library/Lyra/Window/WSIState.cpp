@@ -7,17 +7,17 @@ using namespace lyra;
 
 void InputState::update(const WindowHandle& handle)
 {
-    InputEventQuery query{};
+    WindowInputQuery query{};
     Window::api()->query_input_events(handle, query);
 
     // loop over events and update input state
     for (uint i = 0; i < query.num_events; i++) {
         const auto& event = query.input_events.at(i);
         switch (event.type) {
-            case InputEvent::Type::MOUSE_BUTTON:
+            case WindowInputEvent::Type::MOUSE_BUTTON:
                 mouse.status.at(static_cast<uint>(event.mouse_button.button)) = event.mouse_button.state;
                 break;
-            case InputEvent::Type::KEY_BUTTON:
+            case WindowInputEvent::Type::KEY_BUTTON:
                 keyboard.status.at(static_cast<uint>(event.key_button.button)) = event.key_button.state;
                 break;
             default:

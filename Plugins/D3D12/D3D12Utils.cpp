@@ -362,7 +362,8 @@ D3D12_SHADER_VISIBILITY d3d12enum(GPUShaderStageFlags stages)
 D3D12_COMPARISON_FUNC d3d12enum(GPUCompareFunction compare, bool enable)
 {
     if (!enable)
-        return D3D12_COMPARISON_FUNC_NONE;
+        // (a windows update removed this enum), need to check if it will ever be back
+        return D3D12_COMPARISON_FUNC(0); // D3D12_COMPARISON_FUNC_NONE;
 
     switch (compare) {
         case GPUCompareFunction::NEVER:

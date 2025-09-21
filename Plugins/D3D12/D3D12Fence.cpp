@@ -26,7 +26,7 @@ void D3D12Fence::wait(uint64_t timeout)
 {
     if (fence->GetCompletedValue() < target) {
         fence->SetEventOnCompletion(target, event);
-        WaitForSingleObject(event, timeout);
+        WaitForSingleObject(event, static_cast<DWORD>(timeout));
     }
 }
 

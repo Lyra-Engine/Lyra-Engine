@@ -25,7 +25,7 @@ target_sources(lyra-engine PRIVATE
     Lyra/Common/String.h
     Lyra/Common/View.h
 
-    # window sources
+    # window system sources
     Lyra/Window/WSIAPI.h
     Lyra/Window/WSIUtils.h
     Lyra/Window/WSIDescs.h
@@ -50,13 +50,13 @@ target_sources(lyra-engine PRIVATE
     Lyra/Render/RHIEnums.h
     Lyra/Render/RHIError.h
     Lyra/Render/RHIHash.h
-    Lyra/Render/RHIInits.h
     Lyra/Render/RHIInits.cpp
-    Lyra/Render/RHITypes.h
+    Lyra/Render/RHIInits.h
     Lyra/Render/RHITypes.cpp
+    Lyra/Render/RHITypes.h
     Lyra/Render/RHIUtils.h
 
-    # rgpass sources
+    # rpikit sources
     Lyra/RPIKit/FrameGraph.h
     Lyra/RPIKit/FrameGraph.cpp
     Lyra/RPIKit/FrameGraphAllocator.h
@@ -74,12 +74,52 @@ target_sources(lyra-engine PRIVATE
     # guikit sources
     Lyra/GuiKit/GUIAPI.h
     Lyra/GuiKit/GUITypes.h
+    Lyra/GuiKit/GUITypes.cpp
+
+    # fileio sources
+    Lyra/FileIO/FSAPI.h
+    Lyra/FileIO/FSEnums.h
+    Lyra/FileIO/FSTypes.h
+    Lyra/FileIO/FSTypes.cpp
+    Lyra/FileIO/FSUtils.h
+
+    # assets sources
+    Lyra/Assets/AMSAPI.h
+    Lyra/Assets/AMSEnums.h
+    Lyra/Assets/AMSTypes.h
+    Lyra/Assets/AMSTypes.cpp
+    Lyra/Assets/AMSUtils.h
+
+    # builtin assets sources
+    Lyra/Assets/Builtin/TextAsset.h
+    Lyra/Assets/Builtin/TextAsset.cpp
+    Lyra/Assets/Builtin/JsonAsset.h
+    Lyra/Assets/Builtin/JsonAsset.cpp
+    Lyra/Assets/Builtin/TomlAsset.h
+    Lyra/Assets/Builtin/TomlAsset.cpp
+    Lyra/Assets/Builtin/TextureAsset.h
+    Lyra/Assets/Builtin/TextureAsset.cpp
+    Lyra/Assets/Builtin/GenericAsset.h
+
+    # appkit sources
+    Lyra/AppKit/AppTypes.h
+    Lyra/AppKit/AppTypes.cpp
+
+    # builtin app managers
+    Lyra/AppKit/Builtin/GUIManager.h
+    Lyra/AppKit/Builtin/GUIManager.cpp
+    Lyra/AppKit/Builtin/AssetManager.h
+    Lyra/AppKit/Builtin/AssetManager.cpp
+    Lyra/AppKit/Builtin/LayoutManager.h
+    Lyra/AppKit/Builtin/LayoutManager.cpp
 )
 
 # link dependencies
 find_package(glm REQUIRED)
 find_package(fmt REQUIRED)
 find_package(entt REQUIRED)
+find_package(json REQUIRED)
+find_package(toml REQUIRED)
 find_package(boxer REQUIRED)
 find_package(imgui REQUIRED)
 find_package(spdlog REQUIRED)
@@ -88,12 +128,25 @@ find_package(magic_enum REQUIRED)
 
 # directly exposed to user (with include headers)
 target_link_libraries(lyra-engine PUBLIC
+    # math libraries
     $<BUILD_INTERFACE:glm::glm>
+
+    # ecs libraries
     $<BUILD_INTERFACE:EnTT::EnTT>
+
+    # gui libraries
     $<BUILD_INTERFACE:imgui::imgui>
-    $<BUILD_INTERFACE:fmt::fmt-header-only>
-    $<BUILD_INTERFACE:spdlog::spdlog_header_only>
+
+    # debugging libraries
+    $<BUILD_INTERFACE:fmt::fmt>
+    $<BUILD_INTERFACE:spdlog::spdlog>
     $<BUILD_INTERFACE:libassert::assert>
+
+    # config format libraries
+    $<BUILD_INTERFACE:json::json>
+    $<BUILD_INTERFACE:toml::toml>
+
+    # misc libraries
     $<BUILD_INTERFACE:magic_enum::magic_enum>
 )
 
@@ -101,7 +154,7 @@ target_link_libraries(lyra-engine PUBLIC
 target_link_libraries(lyra-engine PRIVATE boxer::boxer)
 
 # include directories
-# NOTE: cmake install target requires relative path.
+# cmake install target requires relative path.
 # Use generator expression could avoid resolving relative path to absolute path.
 target_include_directories(lyra-engine PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/>

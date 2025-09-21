@@ -10,52 +10,13 @@
 // local headers
 #include "GUIRenderer.h"
 
+// resources
+#include <cmrc/cmrc.hpp>
+CMRC_DECLARE(imgui);
+
 using namespace lyra;
 
 static Logger logger = init_stderr_logger("ImGui", LogLevel::trace);
-
-static const char* imgui_shader_source = R"""(
-struct VertexInput
-{
-    float2 pos   : POSITION;
-    float2 uv    : TEXCOORD0;
-    float4 color : COLOR0;
-};
-
-struct VertexOutput
-{
-    float4 pos   : SV_Position;
-    float2 uv    : TEXCOORD0;
-    float4 color : COLOR0;
-};
-
-struct TextureInput
-{
-    Texture2D<float4> tex;
-    SamplerState      smp;
-};
-
-[[vk::push_constant]]
-ConstantBuffer<float4x4> xform : PUSH_CONSTANT;
-
-ParameterBlock<TextureInput> image;
-
-[shader("vertex")]
-VertexOutput vsmain(VertexInput input)
-{
-    VertexOutput output;
-    output.pos   = mul(float4(input.pos, 0.0, 1.0), xform);
-    output.uv    = input.uv;
-    output.color = input.color;
-    return output;
-}
-
-[shader("fragment")]
-float4 fsmain(VertexOutput input) : SV_Target
-{
-    return image.tex.Sample(image.smp, input.uv) * input.color;
-}
-)""";
 
 namespace ImGui
 {
@@ -215,15 +176,15 @@ static void imgui_update_texture(GPUCommandBuffer cmdbuffer, GUIPipelineData* pi
     auto staging = imgui_create_buffer(buf_size, GPUBufferUsage::COPY_SRC | GPUBufferUsage::MAP_WRITE);
     staging.map(GPUMapMode::WRITE);
     auto mapped = staging.get_mapped_range();
-    for (uint i = 0; i < tex->Height; i++) {
+    for (int i = 0; i < tex->Height; i++) {
         uint8_t* dst = mapped.data + row_pitch * i;
         uint8_t* src = (uint8_t*)tex->GetPixels() + tex->GetPitch() * i;
         std::memcpy(dst, src, tex->GetPitch());
     }
     staging.unmap();
 
-    uint  texid   = tex->GetTexID();
-    auto& texture = pipeline_data->textures.at(texid);
+    auto  texid   = tex->GetTexID();
+    auto& texture = pipeline_data->textures.at(static_cast<uint>(texid));
 
     GPUTexelCopyBufferInfo source{};
     source.buffer         = staging;
@@ -256,12 +217,12 @@ static void imgui_update_texture(GPUCommandBuffer cmdbuffer, GUIPipelineData* pi
 
 static void imgui_delete_texture(GUIPipelineData* pipeline_data, ImTextureData* tex)
 {
-    uint texid = tex->GetTexID();
+    auto texid = tex->GetTexID();
 
     // deferred deletion of texture, because the current texture/view might still be used in some frames in flight
-    auto& texinfo = pipeline_data->textures.at(texid);
+    auto& texinfo = pipeline_data->textures.at(static_cast<uint>(texid));
     if (texinfo.valid()) {
-        pipeline_data->textures.remove(texid);
+        pipeline_data->textures.remove(static_cast<uint>(texid));
         pipeline_data->garbage_textures.push_back(GUIGarbageTexture{texinfo, (uint)tex->UnusedFrames});
     }
 
@@ -386,7 +347,11 @@ static void imgui_render(GPUCommandBuffer cmdbuffer, GPUTextureViewHandle backbu
                 continue;
 
             // apply scissor/clipping rectangle
-            cmdbuffer.set_scissor_rect(clip_min.x, clip_min.y, clip_max.x - clip_min.x, clip_max.y - clip_min.y);
+            cmdbuffer.set_scissor_rect(
+                static_cast<GPUIntegerCoordinate>(clip_min.x),
+                static_cast<GPUIntegerCoordinate>(clip_min.y),
+                static_cast<GPUIntegerCoordinate>(clip_max.x - clip_min.x),
+                static_cast<GPUIntegerCoordinate>(clip_max.y - clip_min.y));
 
             // bind texture
             uint texid   = static_cast<uint>(draw_cmd.GetTexID());
@@ -554,7 +519,7 @@ static ImVec2 platform_get_window_pos(ImGuiViewport* viewport)
 {
     int xpos, ypos;
     WSI::api()->get_window_pos(platform_get_window_handle(viewport), xpos, ypos);
-    ImVec2 pos(xpos, ypos);
+    ImVec2 pos(static_cast<float>(xpos), static_cast<float>(ypos));
     return pos;
 }
 
@@ -569,7 +534,7 @@ static ImVec2 platform_get_window_size(ImGuiViewport* viewport)
 {
     uint xsiz, ysiz;
     WSI::api()->get_window_size(platform_get_window_handle(viewport), xsiz, ysiz);
-    return ImVec2(xsiz, ysiz);
+    return ImVec2(static_cast<float>(xsiz), static_cast<float>(ysiz));
 }
 
 static ImVec2 platform_get_framebuffer_scale(ImGuiViewport* viewport)
@@ -724,7 +689,7 @@ static ImGuiMouseButton to_imgui_mouse_button(MouseButton button)
 }
 
 #pragma region GUIRenderer
-GUIRenderer::GUIRenderer(const GUIDescriptor& descriptor)
+GUIRenderer::GUIRenderer(const GUIDescriptor& descriptor) : descriptor(descriptor)
 {
     init(descriptor);
 }
@@ -739,6 +704,7 @@ void GUIRenderer::init(const GUIDescriptor& descriptor)
     init_platform_data(descriptor);
     init_viewport_data(descriptor);
     init_dummy_texture();
+    init_imgui_font("Fonts/Font.ttf", 18.0f);
 }
 
 void GUIRenderer::reset()
@@ -822,6 +788,27 @@ void GUIRenderer::update()
     }
 }
 
+void GUIRenderer::resize()
+{
+    uint width, height;
+    WSI::api()->get_window_size(descriptor.window, width, height);
+
+    float fb_xscale, fb_yscale;
+    WSI::api()->get_framebuffer_scale(descriptor.window, fb_xscale, fb_yscale);
+
+    float dpi_xscale, dpi_yscale;
+    WSI::api()->get_content_scale(descriptor.window, dpi_xscale, dpi_yscale);
+
+    auto& io                   = ImGui::GetIO();
+    io.DisplaySize             = ImVec2(static_cast<float>(width), static_cast<float>(height));
+    io.DisplayFramebufferScale = ImVec2(fb_xscale, fb_yscale);
+    io.ConfigDpiScaleFonts     = true; // [Experimental] Automatically overwrite style.FontScaleDpi in Begin() when Monitor DPI changes. This will scale fonts but _NOT_ scale sizes/padding for now.
+    io.ConfigDpiScaleViewports = true; // [Experimental] Scale Dear ImGui and Platform Windows when Monitor DPI changes.
+
+    ImGuiStyle& style  = ImGui::GetStyle();
+    style.FontScaleDpi = std::max(dpi_xscale, dpi_yscale);
+}
+
 void GUIRenderer::destroy()
 {
     RHI::api()->wait_idle();
@@ -881,24 +868,8 @@ void GUIRenderer::init_imgui_setup(const GUIDescriptor& descriptor)
     IMGUI_CHECKVERSION();
     imgui_context = ImGui::CreateContext();
 
-    uint width, height;
-    WSI::api()->get_window_size(descriptor.window, width, height);
-
-    float fb_xscale, fb_yscale;
-    WSI::api()->get_framebuffer_scale(descriptor.window, fb_xscale, fb_yscale);
-
-    float dpi_xscale, dpi_yscale;
-    WSI::api()->get_content_scale(descriptor.window, dpi_xscale, dpi_yscale);
-
-    auto& io                   = ImGui::GetIO();
-    io.DisplaySize             = ImVec2(width, height);
-    io.DisplayFramebufferScale = ImVec2(fb_xscale, fb_yscale);
-    io.ConfigDpiScaleFonts     = true; // [Experimental] Automatically overwrite style.FontScaleDpi in Begin() when Monitor DPI changes. This will scale fonts but _NOT_ scale sizes/padding for now.
-    io.ConfigDpiScaleViewports = true; // [Experimental] Scale Dear ImGui and Platform Windows when Monitor DPI changes.
-
-    ImGuiStyle& style  = ImGui::GetStyle();
-    style.FontScaleDpi = std::max(dpi_xscale, dpi_yscale);
-    printf("dpi scale: %.2f\n", dpi_xscale);
+    // setup display size, framebuffer scale, font scale, etc
+    resize();
 }
 
 void GUIRenderer::init_config_flags(const GUIDescriptor& descriptor)
@@ -975,12 +946,17 @@ void GUIRenderer::init_pipeline_data(const GUIDescriptor& descriptor)
     pipeline_data->frame_count = surface.get_image_count();
     pipeline_data->frame_index = 0;
 
+    // shader source
+    auto fs     = cmrc::imgui::get_filesystem();
+    auto file   = fs.open("Shaders/GUIShader.slang");
+    auto source = String(file.begin(), file.end());
+
     // shader module
     auto module = execute([&]() {
         auto desc   = CompileDescriptor{};
         desc.module = "imgui";
         desc.path   = "imgui.slang";
-        desc.source = imgui_shader_source;
+        desc.source = source.c_str();
         return compiler.compile(desc);
     });
 
@@ -1083,7 +1059,7 @@ void GUIRenderer::init_pipeline_data(const GUIDescriptor& descriptor)
         desc.min_filter     = GPUFilterMode::LINEAR;
         desc.mag_filter     = GPUFilterMode::LINEAR;
         desc.mipmap_filter  = GPUMipmapFilterMode::LINEAR;
-        desc.max_anisotropy = 1.0f;
+        desc.max_anisotropy = 1u;
         return device.create_sampler(desc);
     });
 
@@ -1157,6 +1133,45 @@ void GUIRenderer::init_dummy_texture()
     pipeline_data->textures.add(texinfo);
 }
 
+void GUIRenderer::init_imgui_font(CString filename, float font_size)
+{
+    ImGuiIO& io = ImGui::GetIO();
+
+    // adjust range for Nerd Font
+    static const ImWchar icon_ranges[] = {0xe000, 0xf8ff, 0};
+
+    // configure font properties
+    ImFontConfig font_cfg;
+    font_cfg.FontDataOwnedByAtlas = false;       // set to false if you manage memory yourself
+    font_cfg.GlyphExcludeRanges   = icon_ranges; // exclude icon ranges (avoid font merge issues)
+
+    ImFontConfig icon_cfg;
+    icon_cfg.FontDataOwnedByAtlas = false;       // set to false if you manage memory yourself
+    icon_cfg.MergeMode            = true;        // merge icons with regular font
+    icon_cfg.PixelSnapH           = true;        // optional, can help with pixel alignment
+    icon_cfg.GlyphRanges          = icon_ranges; // icons only
+    icon_cfg.GlyphMinAdvanceX     = font_size;   // make icons at least as wide as font_size
+
+    // font source
+    auto file = cmrc::imgui::get_filesystem().open(filename);
+
+    // load the main font from memory
+    io.Fonts->AddFontFromMemoryTTF(
+        (void*)file.begin(),
+        static_cast<int>(file.size()),
+        font_size,
+        &font_cfg);
+
+    // load the icon font from memory
+    io.Fonts->AddFontFromMemoryTTF(
+        (void*)file.begin(),
+        static_cast<int>(file.size()),
+        font_size * 1.5f,
+        &icon_cfg);
+
+    io.Fonts->Build();
+}
+
 void GUIRenderer::update_key_state(ImGuiIO& io, const GUIWindowContext& ctx)
 {
     const auto& query = ctx.events;
@@ -1164,9 +1179,9 @@ void GUIRenderer::update_key_state(ImGuiIO& io, const GUIWindowContext& ctx)
     // update key events
     for (uint i = 0; i < query.num_events; i++) {
         const auto& event = query.input_events.at(i);
-        if (event.type == InputEvent::Type::KEY_BUTTON)
+        if (event.type == WindowInputEvent::Type::KEY_BUTTON)
             io.AddKeyEvent(to_imgui_key_button(event.key_button.button), event.key_button.state == ButtonState::ON);
-        if (event.type == InputEvent::Type::KEY_TYPING)
+        if (event.type == WindowInputEvent::Type::KEY_TYPING)
             io.AddInputCharacter(event.key_typing.code);
     }
 }
@@ -1178,11 +1193,11 @@ void GUIRenderer::update_mouse_state(ImGuiIO& io, const GUIWindowContext& ctx)
     // update mouse button events
     for (uint i = 0; i < query.num_events; i++) {
         const auto& event = query.input_events.at(i);
-        if (event.type == InputEvent::Type::MOUSE_BUTTON) {
+        if (event.type == WindowInputEvent::Type::MOUSE_BUTTON) {
             io.AddMouseButtonEvent(to_imgui_mouse_button(event.mouse_button.button), event.mouse_button.state == ButtonState::ON);
-        } else if (event.type == InputEvent::Type::MOUSE_WHEEL) {
+        } else if (event.type == WindowInputEvent::Type::MOUSE_WHEEL) {
             io.AddMouseWheelEvent(event.mouse_wheel.x, event.mouse_wheel.y);
-        } else if (event.type == InputEvent::Type::MOUSE_MOVE) {
+        } else if (event.type == WindowInputEvent::Type::MOUSE_MOVE) {
             // calculate mouse position
             float x = event.mouse_move.xpos;
             float y = event.mouse_move.ypos;
@@ -1214,16 +1229,16 @@ void GUIRenderer::update_viewport_state(ImGuiIO& io, const GUIWindowContext& ctx
     const auto& query = ctx.events;
     for (uint i = 0; i < query.num_events; i++) {
         const auto& event = query.input_events.at(i);
-        if (event.type == InputEvent::Type::WINDOW_FOCUS) {
+        if (event.type == WindowInputEvent::Type::WINDOW_FOCUS) {
             bool focus = WSI::api()->get_window_focus(ctx.window);
             if (focus) {
                 if (io.BackendFlags & ImGuiBackendFlags_HasMouseHoveredViewport)
                     io.AddMouseViewportEvent(viewport->ID);
             }
             io.AddFocusEvent(focus);
-        } else if (event.type == InputEvent::Type::WINDOW_MOVE) {
+        } else if (event.type == WindowInputEvent::Type::WINDOW_MOVE) {
             viewport->PlatformRequestMove = true;
-        } else if (event.type == InputEvent::Type::WINDOW_RESIZE) {
+        } else if (event.type == WindowInputEvent::Type::WINDOW_RESIZE) {
             viewport->PlatformRequestResize = true;
 
             // detect primary viewport
@@ -1231,7 +1246,7 @@ void GUIRenderer::update_viewport_state(ImGuiIO& io, const GUIWindowContext& ctx
                 io.DisplaySize.x = static_cast<float>(event.window_resize.width);
                 io.DisplaySize.y = static_cast<float>(event.window_resize.height);
             }
-        } else if (event.type == InputEvent::Type::WINDOW_CLOSE) {
+        } else if (event.type == WindowInputEvent::Type::WINDOW_CLOSE) {
             viewport->PlatformRequestClose = true;
         }
     }

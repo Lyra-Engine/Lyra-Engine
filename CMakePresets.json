@@ -1,43 +1,74 @@
 {
-  "version": 2,
+  "version": 6,
   "configurePresets": [
     {
-      "name": "Base",
+      "name": "base",
+      "hidden": true,
       "generator": "Unix Makefiles",
-      "binaryDir": "${sourceDir}/Scratch",
       "cacheVariables": {
+        "VCPKG_INSTALLED_DIR": "${sourceDir}/Scratch/packages",
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
-      }
+      },
+      "binaryDir": "${sourceDir}/Scratch/${presetName}"
     },
     {
-      "name": "Debug",
-      "inherits": "Base",
-      "binaryDir": "${sourceDir}/Scratch",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
-      }
+      "name": "ninja",
+      "inherits": "base",
+      "displayName": "Ninja",
+      "generator": "Ninja Multi-Config"
     },
     {
-      "name": "Release",
-      "inherits": "Base",
-      "binaryDir": "${sourceDir}/Scratch",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
-      }
-    },
-    {
-      "name": "RelWithDebInfo",
-      "inherits": "Base",
-      "binaryDir": "${sourceDir}/Scratch",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
-      }
-    },
-    {
-      "name": "MSVC",
-      "inherits": "Base",
+      "name": "msvc",
+      "inherits": "base",
+      "displayName": "Visual Studio",
       "generator": "Visual Studio 17",
-      "cacheVariables": {}
+      "architecture": {
+        "value": "x64"
+      }
+    },
+    {
+      "name": "xcode",
+      "inherits": "base",
+      "displayName": "Xcode",
+      "generator": "Xcode"
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "msvc-debug",
+      "displayName": "Visual Studio Debug Build",
+      "configurePreset": "msvc",
+      "configuration": "Debug"
+    },
+    {
+      "name": "msvc-release",
+      "displayName": "Visual Studio Release Build",
+      "configurePreset": "msvc",
+      "configuration": "Release"
+    },
+    {
+      "name": "xcode-debug",
+      "displayName": "Visual Studio Debug Build",
+      "configurePreset": "xcode",
+      "configuration": "Debug"
+    },
+    {
+      "name": "xcode-release",
+      "displayName": "Visual Studio Release Build",
+      "configurePreset": "xcode",
+      "configuration": "Release"
+    },
+    {
+      "name": "ninja-debug",
+      "displayName": "Visual Studio Debug Build",
+      "configurePreset": "ninja",
+      "configuration": "Debug"
+    },
+    {
+      "name": "ninja-release",
+      "displayName": "Visual Studio Release Build",
+      "configurePreset": "ninja",
+      "configuration": "Release"
     }
   ]
 }

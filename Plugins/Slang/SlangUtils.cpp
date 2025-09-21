@@ -176,10 +176,10 @@ CumulativeOffset AccessPathNode::calculate_cumulative_offset(slang::ParameterCat
     auto unit = static_cast<SlangParameterCategory>(category);
     for (auto node = this; node != nullptr; node = node->outer) {
         if (node->layout->getTypeLayout()->getParameterCategory() == slang::ParameterCategory::SubElementRegisterSpace) {
-            result.space += node->layout->getOffset(SLANG_PARAMETER_CATEGORY_SUB_ELEMENT_REGISTER_SPACE);
+            result.space += static_cast<int>(node->layout->getOffset(SLANG_PARAMETER_CATEGORY_SUB_ELEMENT_REGISTER_SPACE));
         } else {
-            result.value += node->layout->getOffset(unit);
-            result.space += node->layout->getBindingSpace(unit);
+            result.value += static_cast<int>(node->layout->getOffset(unit));
+            result.space += static_cast<int>(node->layout->getBindingSpace(unit));
         }
     }
     return result;
@@ -343,7 +343,7 @@ bool CompilerWrapper::reflect(ShaderEntryPoints entries, ReflectResultInternal& 
     // make sure single module is added exactly once
     HashSet<slang::IComponentType*> modules;
     for (auto& entry : entries) {
-        auto module = reinterpret_cast<CompileResultInternal*>(entry.module.handle);
+        auto module = reinterpret_cast<CompileResultInternal*>(entry.module.pointer);
         modules.insert(module->module);
     }
 
@@ -351,7 +351,7 @@ bool CompilerWrapper::reflect(ShaderEntryPoints entries, ReflectResultInternal& 
     Vector<slang::IComponentType*>     component_types(modules.begin(), modules.end());
     Vector<ComPtr<slang::IEntryPoint>> entry_points;
     for (auto& entry : entries) {
-        auto module = reinterpret_cast<CompileResultInternal*>(entry.module.handle);
+        auto module = reinterpret_cast<CompileResultInternal*>(entry.module.pointer);
         auto entryp = module->get_entry_point(entry.entry);
         entry_points.push_back(entryp);
         component_types.push_back(entryp);
@@ -652,7 +652,7 @@ void ReflectResultInternal::init_bindings(slang::ProgramLayout* program_layout)
     walk(global_params, {}, callback);
 
     // iterate through entry points
-    uint entry_point_count = program_layout->getEntryPointCount();
+    auto entry_point_count = program_layout->getEntryPointCount();
     for (uint i = 0; i < entry_point_count; i++) {
         auto entry_point_reflect = program_layout->getEntryPointByIndex(i);
         walk(entry_point_reflect, {}, callback);
@@ -669,8 +669,8 @@ void ReflectResultInternal::init_vertices(slang::ProgramLayout* program_layout)
             if (typ_layout->getKind() != slang::TypeReflection::Kind::Struct) {
                 auto name           = node.layout->getName();
                 auto semantic_name  = node.layout->getSemanticName();
-                uint semantic_index = node.layout->getSemanticIndex();
-                uint binding_index  = node.layout->getBindingIndex();
+                uint semantic_index = static_cast<uint>(node.layout->getSemanticIndex());
+                uint binding_index  = static_cast<uint>(node.layout->getBindingIndex());
                 get_logger()->info("[VTX INPUT] NAME: {}\t LOCATION: {} SEMANTICS: {}{}", name, binding_index, semantic_name, semantic_index);
 
                 semantic_names.push_front(semantic_name);
@@ -689,7 +689,7 @@ void ReflectResultInternal::init_vertices(slang::ProgramLayout* program_layout)
     };
 
     // iterate through entry points (only process vertex shader entry)
-    uint entry_point_count = program_layout->getEntryPointCount();
+    uint entry_point_count = static_cast<uint>(program_layout->getEntryPointCount());
     for (uint i = 0; i < entry_point_count; i++) {
         auto entry_point_reflect = program_layout->getEntryPointByIndex(i);
         if (entry_point_reflect->getStage() == SLANG_STAGE_VERTEX)
@@ -839,7 +839,7 @@ void ReflectResultInternal::fill_binding_count(GPUBindGroupLayoutEntry& entry, s
     // if (count == ~size_t(0))
     //     entry.bindless = true;
 
-    entry.count = count;
+    entry.count = static_cast<uint>(count);
 }
 
 void ReflectResultInternal::fill_binding_stages(GPUBindGroupLayoutEntry& entry, AccessPathNode path) const

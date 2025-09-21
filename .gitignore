@@ -35,3 +35,4 @@ Scratch/
 Build/
 build/
 .DS_Store
+.clangd

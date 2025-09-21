@@ -85,4 +85,15 @@ macro(lyra_sample NAME)
     set_target_properties(${TARGET_NAME} PROPERTIES PREFIX "")
     set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "Samples")
     target_link_libraries(${TARGET_NAME} PUBLIC ${PROJECT_COMMON_LIB})
+
+    # add custom target to run sample executable
+    add_custom_target(
+        ${NAME}
+        COMMAND $<TARGET_FILE:${TARGET_NAME}>
+        COMMENT "Run ${NAME}"
+        DEPENDS ${TARGET_NAME}
+        VERBATIM)
+
+    # move to Targets folder
+    set_target_properties(${NAME} PROPERTIES FOLDER "Targets")
 endmacro()

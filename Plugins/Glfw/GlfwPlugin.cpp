@@ -35,8 +35,8 @@ static Logger get_logger()
 
 struct UserState
 {
-    WindowCallback  callback;
-    InputEventQuery events;
+    WindowCallback   callback;
+    WindowInputQuery events;
 
     void reset_events()
     {
@@ -56,7 +56,7 @@ struct UserState
         }
 
         auto& event           = events.input_events[events.num_events++];
-        event.type            = InputEvent::Type::MOUSE_MOVE;
+        event.type            = WindowInputEvent::Type::MOUSE_MOVE;
         event.mouse_move.xpos = xpos;
         event.mouse_move.ypos = ypos;
     }
@@ -69,7 +69,7 @@ struct UserState
         }
 
         auto& event         = events.input_events[events.num_events++];
-        event.type          = InputEvent::Type::MOUSE_WHEEL;
+        event.type          = WindowInputEvent::Type::MOUSE_WHEEL;
         event.mouse_wheel.x = x;
         event.mouse_wheel.y = y;
     }
@@ -82,7 +82,7 @@ struct UserState
         }
 
         auto& event                = events.input_events[events.num_events++];
-        event.type                 = InputEvent::Type::WINDOW_FOCUS;
+        event.type                 = WindowInputEvent::Type::WINDOW_FOCUS;
         event.window_focus.focused = focus;
     }
 
@@ -94,7 +94,7 @@ struct UserState
         }
 
         auto& event = events.input_events[events.num_events++];
-        event.type  = InputEvent::Type::WINDOW_CLOSE;
+        event.type  = WindowInputEvent::Type::WINDOW_CLOSE;
     }
 
     void add_window_move_event(int xpos, int ypos)
@@ -102,13 +102,12 @@ struct UserState
         if (is_event_queue_full()) {
             // input query loop will freeze when window moves,
             // therefore we just keep overwriting the last event.
-            events.num_events = events.input_events.size() - 1;
-            return;
+            events.num_events = static_cast<uint>(events.input_events.size() - 1);
             return;
         }
 
         auto& event            = events.input_events[events.num_events++];
-        event.type             = InputEvent::Type::WINDOW_MOVE;
+        event.type             = WindowInputEvent::Type::WINDOW_MOVE;
         event.window_move.xpos = static_cast<uint>(std::max(0, xpos));
         event.window_move.ypos = static_cast<uint>(std::max(0, ypos));
     }
@@ -118,12 +117,12 @@ struct UserState
         if (is_event_queue_full()) {
             // input query loop will freeze when window resizes,
             // therefore we just keep overwriting the last event.
-            events.num_events = events.input_events.size() - 1;
+            events.num_events = static_cast<uint>(events.input_events.size() - 1);
             return;
         }
 
         auto& event                = events.input_events[events.num_events++];
-        event.type                 = InputEvent::Type::WINDOW_RESIZE;
+        event.type                 = WindowInputEvent::Type::WINDOW_RESIZE;
         event.window_resize.width  = static_cast<uint>(std::max(0, width));
         event.window_resize.height = static_cast<uint>(std::max(0, height));
     }
@@ -136,7 +135,7 @@ struct UserState
         }
 
         auto& event               = events.input_events[events.num_events++];
-        event.type                = InputEvent::Type::MOUSE_BUTTON;
+        event.type                = WindowInputEvent::Type::MOUSE_BUTTON;
         event.mouse_button.button = key;
         event.mouse_button.state  = state;
     }
@@ -149,7 +148,7 @@ struct UserState
         }
 
         auto& event             = events.input_events[events.num_events++];
-        event.type              = InputEvent::Type::KEY_BUTTON;
+        event.type              = WindowInputEvent::Type::KEY_BUTTON;
         event.key_button.button = key;
         event.key_button.state  = state;
     }
@@ -162,7 +161,7 @@ struct UserState
         }
 
         auto& event           = events.input_events[events.num_events++];
-        event.type            = InputEvent::Type::KEY_TYPING;
+        event.type            = WindowInputEvent::Type::KEY_TYPING;
         event.key_typing.code = code;
     }
 };
@@ -416,13 +415,13 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
 static void mouse_position_callback(GLFWwindow* window, double xpos, double ypos)
 {
     auto& user = *static_cast<UserState*>(glfwGetWindowUserPointer(window));
-    user.add_mouse_move_event(xpos, ypos);
+    user.add_mouse_move_event(static_cast<float>(xpos), static_cast<float>(ypos));
 }
 
 static void mouse_scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     auto& user = *static_cast<UserState*>(glfwGetWindowUserPointer(window));
-    user.add_mouse_wheel_event(xoffset, yoffset);
+    user.add_mouse_wheel_event(static_cast<float>(xoffset), static_cast<float>(yoffset));
 }
 
 static void window_close_callback(GLFWwindow* window)
@@ -482,14 +481,31 @@ static void bind_window_events(WindowHandle window)
 
 static bool create_window(const WindowDescriptor& desc, WindowHandle& window)
 {
+    // set window extent
+    uint width  = desc.width;
+    uint height = desc.height;
+
+    // set window monitor
+    GLFWmonitor* monitor = nullptr;
+
+    // check full screen requirement
+    if (desc.flags.contains(WindowFlag::FULLSCREEN)) {
+        monitor                 = glfwGetPrimaryMonitor();
+        const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+        width                   = mode->width;
+        height                  = mode->height;
+    }
+
     // no OpenGL context
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
     // set the window hint for no decorations
-    if (!desc.flags.contains(WindowFlag::DECORATED))
-        glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+    glfwWindowHint(GLFW_DECORATED, desc.flags.contains(WindowFlag::DECORATED) ? GLFW_TRUE : GLFW_FALSE);
 
-    GLFWwindow* win = glfwCreateWindow(desc.width, desc.height, desc.title, NULL, NULL);
+    // set the window hint for maximized
+    glfwWindowHint(GLFW_MAXIMIZED, desc.flags.contains(WindowFlag::MAXIMIZED) ? GLFW_TRUE : GLFW_FALSE);
+
+    GLFWwindow* win = glfwCreateWindow(width, height, desc.title, monitor, NULL);
     if (win != nullptr) {
         create_window_handle(win, window);
         bind_window_events(window);
@@ -605,7 +621,7 @@ static bool get_window_minimized(WindowHandle window)
     return glfwGetWindowAttrib((GLFWwindow*)window.window, GLFW_ICONIFIED);
 }
 
-static void query_input_events(WindowHandle window, InputEventQuery& query)
+static void query_input_events(WindowHandle window, WindowInputQuery& query)
 {
     auto  handle = reinterpret_cast<GLFWwindow*>(window.window);
     auto& user   = *static_cast<UserState*>(glfwGetWindowUserPointer(handle));

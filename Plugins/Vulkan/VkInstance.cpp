@@ -58,7 +58,6 @@ bool api::create_instance(const RHIDescriptor& desc)
     uint unsatisfied_extension_count = 0;
     for (auto& extension : instance_extensions) {
         auto ext = String(extension);
-        auto it  = supported_extensions.find(ext);
         if (supported_extensions.find(ext) == supported_extensions.end()) {
             logger->error("VkInstance Extension <{}> is not supported!", ext);
             unsatisfied_extension_count++;

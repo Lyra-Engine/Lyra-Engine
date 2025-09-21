@@ -14,15 +14,15 @@ bool create_compiler(CompilerHandle& compiler, const CompilerDescriptor& descrip
     // control log level from CompilerDescriptor
     get_logger()->set_level(descriptor.log_level);
 
-    compiler.handle = new CompilerWrapper(descriptor);
+    compiler.pointer = new CompilerWrapper(descriptor);
     return true;
 }
 
 void delete_compiler(CompilerHandle compiler)
 {
-    if (compiler.handle) {
+    if (compiler.pointer) {
         delete compiler.astype<CompilerWrapper>();
-        compiler.handle = nullptr;
+        compiler.pointer = nullptr;
     }
 }
 
@@ -39,9 +39,9 @@ bool create_module(CompilerHandle compiler, const CompileDescriptor& desc, Shade
 
 void delete_module(ShaderModuleHandle module)
 {
-    if (module.handle) {
-        delete reinterpret_cast<CompileResultInternal*>(module.handle);
-        module.handle = nullptr;
+    if (module.pointer) {
+        delete reinterpret_cast<CompileResultInternal*>(module.pointer);
+        module.pointer = nullptr;
     }
 }
 
@@ -57,39 +57,39 @@ bool create_reflection(CompilerHandle compiler, ShaderEntryPoints entries, Shade
 
 void delete_reflection(ShaderReflectionHandle reflection)
 {
-    if (reflection.handle) {
-        delete reinterpret_cast<ReflectResultInternal*>(reflection.handle);
-        reflection.handle = nullptr;
+    if (reflection.pointer) {
+        delete reinterpret_cast<ReflectResultInternal*>(reflection.pointer);
+        reflection.pointer = nullptr;
     }
 }
 
 bool get_shader_blob(ShaderEntryPoint entry, ShaderBlob& blob)
 {
-    auto res = reinterpret_cast<CompileResultInternal*>(entry.module.handle);
+    auto res = reinterpret_cast<CompileResultInternal*>(entry.module.pointer);
     return res->get_shader_blob(entry.entry, blob);
 }
 
 bool get_vertex_attributes(ShaderReflectionHandle reflection, ShaderAttributes attrs, GPUVertexAttribute* attributes)
 {
-    auto res = reinterpret_cast<ReflectResultInternal*>(reflection.handle);
+    auto res = reinterpret_cast<ReflectResultInternal*>(reflection.pointer);
     return res->get_vertex_attributes(attrs, attributes);
 }
 
 bool get_push_constant_ranges(ShaderReflectionHandle reflection, uint& count, GPUPushConstantRange* ranges)
 {
-    auto res = reinterpret_cast<ReflectResultInternal*>(reflection.handle);
+    auto res = reinterpret_cast<ReflectResultInternal*>(reflection.pointer);
     return res->get_push_constant_ranges(count, ranges);
 }
 
 bool get_bind_group_layouts(ShaderReflectionHandle reflection, uint& count, GPUBindGroupLayoutDescriptor* layouts)
 {
-    auto res = reinterpret_cast<ReflectResultInternal*>(reflection.handle);
+    auto res = reinterpret_cast<ReflectResultInternal*>(reflection.pointer);
     return res->get_bind_group_layouts(count, layouts);
 }
 
 bool get_bind_group_location(ShaderReflectionHandle handle, CString name, uint& group)
 {
-    auto res = reinterpret_cast<ReflectResultInternal*>(handle.handle);
+    auto res = reinterpret_cast<ReflectResultInternal*>(handle.pointer);
     return res->get_bind_group_location(name, group);
 }
 

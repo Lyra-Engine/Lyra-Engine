@@ -69,10 +69,10 @@ namespace lyra
         GPUFilterMode       mag_filter     = GPUFilterMode::NEAREST;
         GPUFilterMode       min_filter     = GPUFilterMode::NEAREST;
         GPUMipmapFilterMode mipmap_filter  = GPUMipmapFilterMode::NEAREST;
-        float               lod_min_clamp  = 0;
-        float               lod_max_clamp  = 32;
+        float               lod_min_clamp  = 0.0f;
+        float               lod_max_clamp  = 32.0f;
         GPUCompareFunction  compare        = GPUCompareFunction::GREATER;
-        unsigned short      max_anisotropy = 1;
+        uint                max_anisotropy = 1u;
         bool                compare_enable = false;
     };
 

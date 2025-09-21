@@ -59,7 +59,7 @@ namespace lyra
     using GPUTextureAspectFlags    = BitFlags<GPUTextureAspect>;
 
     template <GPUObjectType E>
-    using GPUHandle = Handle<GPUObjectType, E>;
+    using GPUHandle = TypedEnumHandle<GPUObjectType, E>;
 
     // typed GPU handle
     using GPUSurfaceHandle            = GPUHandle<GPUObjectType::SURFACE>;
@@ -377,7 +377,7 @@ namespace lyra
         GPUBlasType type = GPUBlasType::TRIANGLE;
         union
         {
-            GPUBlasTriangleGeometrySizeDescriptor triangles;
+            GPUBlasTriangleGeometrySizeDescriptor triangles = {};
         };
 
         // default trivial constructor / destructor
@@ -400,10 +400,10 @@ namespace lyra
 
     struct GPUBlasGeometries
     {
-        GPUBlasType type;
+        GPUBlasType type = GPUBlasType::TRIANGLE;
         union
         {
-            GPUBlasTriangleGeometries triangles;
+            GPUBlasTriangleGeometries triangles = {};
         };
 
         // default trivial constructor / destructor
@@ -494,12 +494,12 @@ namespace lyra
 
     struct GPUBindGroupEntry
     {
-        GPUIndex32             binding;
-        GPUIndex32             index = 0; // NOTE: Non-WebGPU standard API
-        GPUBindingResourceType type;
+        GPUIndex32             binding = 0;
+        GPUIndex32             index   = 0; // NOTE: Non-WebGPU standard API
+        GPUBindingResourceType type    = GPUBindingResourceType::BUFFER;
         union
         {
-            GPUBufferBinding     buffer;
+            GPUBufferBinding     buffer = {};
             GPUSamplerHandle     sampler;
             GPUTextureViewHandle texture;
         };
@@ -511,13 +511,13 @@ namespace lyra
 
     struct GPUBindGroupLayoutEntry
     {
-        GPUBindingResourceType type;
-        GPUBindingIndex        binding;
-        GPUShaderStageFlags    visibility;
-        GPUIndex32             count = 1; // NOTE: Non-WebGPU standard API
+        GPUBindingResourceType type       = GPUBindingResourceType::BUFFER;
+        GPUBindingIndex        binding    = {};
+        GPUShaderStageFlags    visibility = GPUShaderStage(0);
+        GPUIndex32             count      = 1; // NOTE: Non-WebGPU standard API
         union
         {
-            GPUBufferBindingLayout         buffer;
+            GPUBufferBindingLayout         buffer = {};
             GPUSamplerBindingLayout        sampler;
             GPUTextureBindingLayout        texture;
             GPUStorageTextureBindingLayout storage_texture;
@@ -560,7 +560,7 @@ namespace lyra
         GPUStencilValue     stencil_read_mask      = 0xFFFFFFFF;
         GPUStencilValue     stencil_write_mask     = 0xFFFFFFFF;
         GPUDepthBias        depth_bias             = 0;
-        int                 depth_bias_constant    = 0;
+        float               depth_bias_constant    = 0;
         float               depth_bias_slope_scale = 0;
         float               depth_bias_clamp       = 0;
     };

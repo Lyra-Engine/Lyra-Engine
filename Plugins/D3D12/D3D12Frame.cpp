@@ -114,7 +114,7 @@ GPUCommandEncoderHandle D3D12Frame::allocate(GPUQueueType type, bool primary)
     }
 
     // new command buffer allocation
-    uint handle = allocated_command_buffers.size();
+    uint handle = static_cast<uint>(allocated_command_buffers.size());
     allocated_command_buffers.push_back(CommandBuffer{});
     CommandBuffer& cmd = allocated_command_buffers.back();
     switch (type) {

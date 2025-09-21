@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef LYRA_LIBRARY_WINDOW_TYPES_H
 #define LYRA_LIBRARY_WINDOW_TYPES_H
 
@@ -37,6 +39,10 @@ namespace lyra
 
         static auto api() -> WindowAPI*;
 
+        // implicit conversion
+        operator WindowHandle() { return handle; }
+        operator WindowHandle() const { return handle; }
+
         // NOTE: only a convenience method for launching window and run.
         // use EventLoop::bind(...) and EventLoop::run() for multiple windows
         void loop();
@@ -59,16 +65,12 @@ namespace lyra
             static_assert(function_traits<F>::arity <= 1, "Bound function can at most take 1 argument with type const Window&");
 
             if constexpr (function_traits<F>::arity == 0) {
-                bind<E>([user, f](const Window& window) {
-                    return ((*user).*f)();
-                });
+                bind<E>([user, f](const Window& window) { return ((*user).*f)(); });
                 return;
             }
 
             if constexpr (function_traits<F>::arity == 1) {
-                bind<E>([user, f](const Window& window) {
-                    return ((*user).*f)(window);
-                });
+                bind<E>([user, f](const Window& window) { return ((*user).*f)(window); });
                 return;
             }
         }
@@ -107,12 +109,10 @@ namespace lyra
             }
         }
 
-    public:
-        WindowHandle handle;
-
     private:
         WindowCallbacks callbacks;
         WindowInput     inputs;
+        WindowHandle    handle;
     };
 
     struct EventLoop
