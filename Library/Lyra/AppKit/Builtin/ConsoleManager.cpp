@@ -24,13 +24,15 @@ void ConsoleManager::update(Blackboard& blackboard)
     ImGui::DockBuilderDockWindow("Console", layout.bottom);
 
     ImGui::Begin("Console");
-
-    ImGuiIO& io  = ImGui::GetIO();
-    float    fps = io.Framerate;
-    ImGui::Text("FPS: %.3f", fps);
-
-    get_console_sink()->get_console().for_each([&](const ConsoleLog& log) {
-        ImGui::Text("%s", log.message.c_str());
+    ImGui::BeginChild("Console Log", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
+    auto& sink = get_console_sink()->get_console();
+    sink.for_each([&](const ConsoleLog& log) {
+        ImGui::Text("%s", log.payload.c_str());
     });
+    if (sink.modified()) {
+        sink.reset();
+        ImGui::SetScrollHereY(1.0f);
+    }
+    ImGui::EndChild();
     ImGui::End();
 }

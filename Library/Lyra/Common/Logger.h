@@ -18,12 +18,14 @@
 namespace lyra
 {
     using Logger   = Ref<spdlog::logger>;
+    using LogView  = fmt::string_view;
     using LogLevel = spdlog::level::level_enum;
 
     struct ConsoleLog
     {
-        LogLevel level   = LogLevel::info;
-        String   message = "";
+        LogLevel verbosity = LogLevel::info;
+        LogView  component = "";
+        String   payload   = "";
     };
 
     struct Console
@@ -33,7 +35,10 @@ namespace lyra
 
         void clear();
         void resize(size_t new_capacity);
-        void append(LogLevel level, const String& message);
+        void append(LogLevel level, LogView component, String&& payload);
+
+        void reset() { changed = false; }
+        bool modified() const { return changed; }
 
         template <typename F>
         void for_each(F&& f) const
@@ -47,6 +52,7 @@ namespace lyra
         size_t             capacity = 0;
         size_t             start    = 0;
         size_t             count    = 0;
+        bool               changed  = false;
     };
 
     template <typename Mutex>
@@ -70,8 +76,8 @@ namespace lyra
             this->formatter_->format(msg, formatted);
 
             // forward to your editor’s console system
-            std::string text = fmt::to_string(formatted);
-            console.append(msg.level, text);
+            auto text = fmt::to_string(formatted);
+            console.append(msg.level, msg.logger_name, std::move(text));
         }
 
         void flush_() override

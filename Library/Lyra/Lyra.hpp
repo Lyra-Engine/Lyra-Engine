@@ -72,6 +72,7 @@
 // Builtin App Manager Types
 #include <Lyra/AppKit/Builtin/GUIManager.h>
 #include <Lyra/AppKit/Builtin/AssetManager.h>
+#include <Lyra/AppKit/Builtin/ThemeManager.h>
 #include <Lyra/AppKit/Builtin/LayoutManager.h>
 #include <Lyra/AppKit/Builtin/ConsoleManager.h>
 

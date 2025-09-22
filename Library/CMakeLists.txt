@@ -111,6 +111,8 @@ target_sources(lyra-engine PRIVATE
     Lyra/AppKit/Builtin/GUIManager.cpp
     Lyra/AppKit/Builtin/AssetManager.h
     Lyra/AppKit/Builtin/AssetManager.cpp
+    Lyra/AppKit/Builtin/ThemeManager.h
+    Lyra/AppKit/Builtin/ThemeManager.cpp
     Lyra/AppKit/Builtin/LayoutManager.h
     Lyra/AppKit/Builtin/LayoutManager.cpp
     Lyra/AppKit/Builtin/ConsoleManager.h

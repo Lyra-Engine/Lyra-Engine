@@ -12,6 +12,8 @@ void Console::clear()
 {
     start = 0;
     count = 0;
+
+    changed = true;
 }
 
 void Console::resize(size_t new_capacity)
@@ -20,19 +22,25 @@ void Console::resize(size_t new_capacity)
     capacity = new_capacity;
     start    = start % capacity;
     count    = std::min(count, capacity);
+
+    changed = true;
 }
 
-void Console::append(LogLevel level, const String& message)
+void Console::append(LogLevel level, LogView component, String&& payload)
 {
     size_t current = (start + count) % capacity;
 
-    logs.at(current).level   = level;
-    logs.at(current).message = message;
+    auto& log     = logs.at(current);
+    log.verbosity = level;
+    log.component = component;
+    log.payload   = std::move(payload);
 
     if (++count > capacity) {
         count = capacity;
         start = (start + 1) % capacity;
     }
+
+    changed = true;
 }
 
 auto lyra::get_stdout_sink() -> Ref<spdlog::sinks::stdout_color_sink_mt>
@@ -60,6 +68,15 @@ auto lyra::create_logger(const String& name, LogLevel level) -> Logger
             get_stdout_sink(),
             get_console_sink(),
         });
+
+    // pattern includes:
+    // - timestamp (HH:MM:SS.mmm)
+    // - thread ID
+    // - log level (colored)
+    // - logger name
+    // - source file and line number
+    // - the actual log message
+    logger->set_pattern("[%H:%M:%S] [thread %t] [%^%l%$] [%n] %v");
 
     logger->set_level(level);
     spdlog::register_logger(logger);

@@ -100,6 +100,7 @@ int main(int argc, const char* argv[])
     });
 
     // console manager
+    auto theme_manager   = std::make_unique<ThemeManager>();
     auto console_manager = std::make_unique<ConsoleManager>(4096);
 
     // asset manager
@@ -136,13 +137,14 @@ int main(int argc, const char* argv[])
         desc.left   = 0.2f;
         desc.right  = 0.3f;
         desc.top    = 0.2f;
-        desc.bottom = 0.2f;
+        desc.bottom = 0.3f;
         return std::make_unique<LayoutManager>(desc);
     });
 
     // bind app bundles
     app->bind<GUIManager>(*imgui_manager);
     app->bind<AssetManager>(*asset_manager);
+    app->bind<ThemeManager>(*theme_manager);
     app->bind<LayoutManager>(*layout_manager);
     app->bind<ConsoleManager>(*console_manager);
 
