@@ -16,7 +16,13 @@ void ThemeManager::config()
     ImGuiStyle& style  = ImGui::GetStyle();
     ImVec4*     colors = style.Colors;
 
-    // Corners
+    // ui config
+    style.FramePadding.x       = 15.0f;
+    style.FramePadding.y       = 10.0f;
+    style.GrabMinSize          = 15.0f;
+    style.DockingSeparatorSize = 6.0f;
+
+    // corners
     style.WindowRounding    = 8.0f;
     style.ChildRounding     = 8.0f;
     style.FrameRounding     = 6.0f;
@@ -25,7 +31,7 @@ void ThemeManager::config()
     style.GrabRounding      = 6.0f;
     style.TabRounding       = 6.0f;
 
-    // Colors
+    // colors
     colors[ImGuiCol_Text]                  = ImVec4(0.95f, 0.96f, 0.98f, 1.00f);
     colors[ImGuiCol_TextDisabled]          = ImVec4(0.36f, 0.42f, 0.47f, 1.00f);
     colors[ImGuiCol_WindowBg]              = ImVec4(0.11f, 0.15f, 0.17f, 1.00f);

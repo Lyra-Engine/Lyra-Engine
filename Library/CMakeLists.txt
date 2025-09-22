@@ -103,12 +103,15 @@ target_sources(lyra-engine PRIVATE
     Lyra/Assets/Builtin/GenericAsset.h
 
     # appkit sources
+    Lyra/AppKit/AppIcons.h
     Lyra/AppKit/AppTypes.h
     Lyra/AppKit/AppTypes.cpp
 
     # builtin app managers
     Lyra/AppKit/Builtin/GUIManager.h
     Lyra/AppKit/Builtin/GUIManager.cpp
+    Lyra/AppKit/Builtin/FileManager.h
+    Lyra/AppKit/Builtin/FileManager.cpp
     Lyra/AppKit/Builtin/AssetManager.h
     Lyra/AppKit/Builtin/AssetManager.cpp
     Lyra/AppKit/Builtin/ThemeManager.h

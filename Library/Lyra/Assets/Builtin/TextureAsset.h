@@ -20,7 +20,7 @@ namespace lyra
         static constexpr UUID uuid = make_uuid("30cdfac2-ad77-4297-91fb-832241bc4f3f");
 
         // extensions: to let assert server what extensions to look for
-        static constexpr InitList<CString> extensions = {".png", ".jpg"};
+        static constexpr InitList<CString> extensions = {".png", ".jpg", ".exr"};
 
         // handler: to let asset server know how to load this type of asset
         static auto handler() -> AssetHandlerAPI;

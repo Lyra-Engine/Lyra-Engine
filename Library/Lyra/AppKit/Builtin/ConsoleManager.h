@@ -15,6 +15,14 @@ namespace lyra
         void bind(Application& app);
 
         void update(Blackboard& blackboard);
+
+    private:
+        void show_bar();
+        void show_logs() const;
+
+    private:
+        int  log_level = 0;
+        char filter[1024];
     };
 } // namespace lyra
 

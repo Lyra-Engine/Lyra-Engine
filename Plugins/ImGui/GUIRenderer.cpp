@@ -1150,7 +1150,7 @@ void GUIRenderer::init_imgui_font(CString filename, float font_size)
     icon_cfg.MergeMode            = true;        // merge icons with regular font
     icon_cfg.PixelSnapH           = true;        // optional, can help with pixel alignment
     icon_cfg.GlyphRanges          = icon_ranges; // icons only
-    icon_cfg.GlyphMinAdvanceX     = font_size;   // make icons at least as wide as font_size
+    icon_cfg.GlyphOffset.y        = 3.0f;        // make icons align with text
 
     // font source
     auto file = cmrc::imgui::get_filesystem().open(filename);
@@ -1166,7 +1166,7 @@ void GUIRenderer::init_imgui_font(CString filename, float font_size)
     io.Fonts->AddFontFromMemoryTTF(
         (void*)file.begin(),
         static_cast<int>(file.size()),
-        font_size * 1.5f,
+        font_size * 2.0f,
         &icon_cfg);
 
     io.Fonts->Build();

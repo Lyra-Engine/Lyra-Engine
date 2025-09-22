@@ -19,11 +19,9 @@ void LayoutManager::update(Blackboard& blackboard)
     ImGui::DockSpaceOverViewport(dockspace_id, ImGui::GetMainViewport());
 
     // running dock builder exactly once
-    static bool first_launch = true;
-    if (first_launch) {
-        first_launch = false;
+    lyra::execute_once([&]() {
         blackboard.add<LayoutInfo>(init());
-    }
+    });
 }
 
 LayoutInfo LayoutManager::init() const
@@ -55,10 +53,10 @@ LayoutInfo LayoutManager::create_editor_layout(const LayoutDescriptor& desc) con
     // split the dockspace into regions
     LayoutInfo layout = {};
     layout.main       = dockspace_id;
-    layout.left       = ImGui::DockBuilderSplitNode(layout.main, ImGuiDir_Left, desc.left, nullptr, &layout.main);
-    layout.right      = ImGui::DockBuilderSplitNode(layout.main, ImGuiDir_Right, desc.right, nullptr, &layout.main);
     layout.top        = ImGui::DockBuilderSplitNode(layout.main, ImGuiDir_Up, desc.top, nullptr, &layout.main);
+    layout.left       = ImGui::DockBuilderSplitNode(layout.main, ImGuiDir_Left, desc.left, nullptr, &layout.main);
     layout.bottom     = ImGui::DockBuilderSplitNode(layout.main, ImGuiDir_Down, desc.bottom, nullptr, &layout.main);
+    layout.right      = ImGui::DockBuilderSplitNode(layout.main, ImGuiDir_Right, desc.right, nullptr, &layout.main);
 
     // finish
     ImGui::DockBuilderFinish(dockspace_id);

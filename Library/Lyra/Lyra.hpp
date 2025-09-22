@@ -61,6 +61,7 @@
 
 // APP (Application)
 #include <Lyra/AppKit/AppEnums.h>
+#include <Lyra/AppKit/AppIcons.h>
 #include <Lyra/AppKit/AppTypes.h>
 
 // Builtin Asset Types
@@ -71,6 +72,7 @@
 
 // Builtin App Manager Types
 #include <Lyra/AppKit/Builtin/GUIManager.h>
+#include <Lyra/AppKit/Builtin/FileManager.h>
 #include <Lyra/AppKit/Builtin/AssetManager.h>
 #include <Lyra/AppKit/Builtin/ThemeManager.h>
 #include <Lyra/AppKit/Builtin/LayoutManager.h>
