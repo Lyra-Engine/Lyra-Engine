@@ -3,6 +3,7 @@
 #include <Lyra/Assets/Builtin/GenericAsset.h>
 #include <Lyra/Assets/Builtin/TextureAsset.h>
 
+#include <cmath>
 #include <ktx.h>
 #include <vulkan/vulkan.h>
 #define STB_IMAGE_IMPLEMENTATION
@@ -82,6 +83,24 @@ static JSON process_ktx_asset(AssetServer* manager, OSPath source_path, OSPath t
     if (!pixels) {
         get_logger()->error("Failed to load image file: {}", reinterpret_cast<const char*>(source_path));
         return {};
+    }
+
+    // convert all textures to linear colorspace to avoid runtime de-gamma
+    if (!is_hdr) {
+        auto* srgb_pixels = static_cast<stbi_uc*>(pixels);
+        for (int i = 0; i < width * height * 4; i += 4) {
+            float r = srgb_pixels[i] / 255.0f;
+            float g = srgb_pixels[i + 1] / 255.0f;
+            float b = srgb_pixels[i + 2] / 255.0f;
+
+            r = (r <= 0.04045f) ? r / 12.92f : powf((r + 0.055f) / 1.055f, 2.4f);
+            g = (g <= 0.04045f) ? g / 12.92f : powf((g + 0.055f) / 1.055f, 2.4f);
+            b = (b <= 0.04045f) ? b / 12.92f : powf((b + 0.055f) / 1.055f, 2.4f);
+
+            srgb_pixels[i]     = static_cast<stbi_uc>(r * 255.0f);
+            srgb_pixels[i + 1] = static_cast<stbi_uc>(g * 255.0f);
+            srgb_pixels[i + 2] = static_cast<stbi_uc>(b * 255.0f);
+        }
     }
 
     ktxTexture2*         texture;

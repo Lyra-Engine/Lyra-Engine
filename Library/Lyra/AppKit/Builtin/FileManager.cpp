@@ -29,7 +29,8 @@ void FileManager::update(Blackboard& blackboard)
 {
     lyra::execute_once([&]() {
         auto& layout = blackboard.get<LayoutInfo>();
-        ImGui::DockBuilderDockWindow(LYRA_FILES_WINDOW_NAME, layout.bottom);
+        // ImGui::DockBuilderDockWindow(LYRA_FILES_WINDOW_NAME, layout.bottom);
+        ImGui::DockBuilderDockWindow(LYRA_FILES_WINDOW_NAME, layout.main);
     });
 
     ImGui::Begin(LYRA_FILES_WINDOW_NAME);
@@ -38,6 +39,9 @@ void FileManager::update(Blackboard& blackboard)
     ImGui::BeginChild("##FileBrowser");
     {
         show_dir_files();
+        show_context_menu();
+        show_new_file_dialog();
+        show_new_folder_dialog();
     }
     ImGui::EndChild();
     ImGui::End();
@@ -85,6 +89,7 @@ void FileManager::show_dir_files()
     float start_x   = ImGui::GetCursorPosX();
     float row_width = ImGui::GetWindowPos().x + ImGui::GetWindowContentRegionMax().x;
 
+    // TODO: don't call listdir on every frame, only re-calculate when path is changed (dirty).
     for (const auto& entry : std::filesystem::directory_iterator(curr)) {
         const auto& path = entry.path();
         const auto  rela = to_string(std::filesystem::relative(path, curr));
@@ -136,4 +141,70 @@ void FileManager::show_dir_files()
         ImGui::PopID();
     }
     ImGui::NewLine();
+}
+
+void FileManager::show_context_menu()
+{
+    // capture the whole file browser region for right click
+    auto region = ImGui::GetContentRegionAvail();
+    ImGui::InvisibleButton("##FileBrowserContext", region);
+
+    // detect context menu (right click)
+    if (ImGui::BeginPopupContextItem("File Manager Context Menu")) {
+        if (ImGui::MenuItem(LYRA_ICON_REFRESH " Refresh")) {
+            // TODO: refresh
+        }
+        ImGui::Separator();
+        if (ImGui::MenuItem(LYRA_ICON_NEW_FILE " New File")) {
+            show_new_file_modal = true;
+        }
+        if (ImGui::MenuItem(LYRA_ICON_NEW_FOLDER " New Folder")) {
+            show_new_folder_modal = true;
+        }
+        ImGui::Separator();
+        if (ImGui::MenuItem(LYRA_ICON_IMPORT " Import")) {
+            spdlog::info("Import Asset!");
+        }
+        ImGui::EndPopup();
+    }
+
+    // must be called outside of context menu
+    if (show_new_file_modal) {
+        ImGui::OpenPopup("New File");
+    }
+
+    // must be called outside of context menu
+    if (show_new_folder_modal) {
+        ImGui::OpenPopup("New Folder");
+    }
+}
+
+void FileManager::show_new_file_dialog()
+{
+    if (ImGui::BeginPopupModal("New File", &show_new_file_modal, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text("This is a modal dialog (file)!");
+        ImGui::Separator();
+
+        if (ImGui::Button("Close")) {
+            show_new_file_modal = false;
+            ImGui::CloseCurrentPopup(); // Close the current popup
+        }
+
+        ImGui::EndPopup();
+    }
+}
+
+void FileManager::show_new_folder_dialog()
+{
+    if (ImGui::BeginPopupModal("New Folder", &show_new_folder_modal, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text("This is a modal dialog (folder)!");
+        ImGui::Separator();
+
+        if (ImGui::Button("Close")) {
+            show_new_folder_modal = false;
+            ImGui::CloseCurrentPopup(); // Close the current popup
+        }
+
+        ImGui::EndPopup();
+    }
 }

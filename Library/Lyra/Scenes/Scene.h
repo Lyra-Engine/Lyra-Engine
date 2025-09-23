@@ -6,7 +6,7 @@
 #include <Lyra/Common/ECS.h>
 #include <Lyra/Scenes/Transform.h>
 
-namespace lyra::scn
+namespace lyra
 {
 
     struct SceneNode
@@ -97,6 +97,6 @@ namespace lyra::scn
         }
     };
 
-} // namespace lyra::scn
+} // namespace lyra
 
 #endif // LYRA_LIBRARY_SCENES_SCENE_H

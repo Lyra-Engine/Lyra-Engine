@@ -3,7 +3,7 @@
 
 using namespace lyra;
 
-void imgui_update(Blackboard& blackboard)
+static void imgui_update(Blackboard& blackboard)
 {
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("File")) {
@@ -41,7 +41,7 @@ void imgui_update(Blackboard& blackboard)
     ImGui::End();
 }
 
-void imgui_render(Blackboard& blackboard)
+static void imgui_render(Blackboard& blackboard)
 {
     auto device  = blackboard.get<GPUDevice>();
     auto surface = blackboard.get<GPUSurface>();
@@ -75,11 +75,37 @@ void imgui_render(Blackboard& blackboard)
 
 int main(int argc, const char* argv[])
 {
-    // common paths (TODO: need to think about what the project structure should look like)
-    auto root           = git_root();
-    auto assets_root    = root; // / "Assets";
-    auto metadata_root  = root; // / "Metadata";
-    auto generated_root = root; // / "Generated";
+    // clang-format off
+    cxxopts::Options options("Lyra::Editor", "Lyra engine editor program.");
+    options.add_options()
+        ("p,project", "project root directory", cxxopts::value<std::filesystem::path>()->default_value("./"))
+        ("h,help", "print usage")
+    ;
+    // clang-format on
+
+    // parse arguments
+    auto args = options.parse(argc, argv);
+    if (args.count("help")) {
+        spdlog::error("{}", options.help());
+        exit(0);
+    }
+
+    // common paths
+    auto root = args["project"].as<std::filesystem::path>();
+    if (!std::filesystem::exists(root))
+        std::filesystem::create_directory(root);
+
+    auto assets_root = root / "Assets";
+    if (!std::filesystem::exists(assets_root))
+        std::filesystem::create_directory(assets_root);
+
+    auto metadata_root = root / "Metadata";
+    if (!std::filesystem::exists(metadata_root))
+        std::filesystem::create_directory(metadata_root);
+
+    auto generated_root = root / "Generated";
+    if (!std::filesystem::exists(generated_root))
+        std::filesystem::create_directory(generated_root);
 
     // application
     auto app = lyra::execute([&]() {

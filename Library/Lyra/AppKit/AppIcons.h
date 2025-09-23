@@ -11,4 +11,11 @@
 #define LYRA_ICON_FILE_IMAGE "\uf03e"
 #define LYRA_ICON_CONSOLE    "\ue795"
 
+#define LYRA_ICON_NEW_FOLDER "\uea80"
+#define LYRA_ICON_NEW_FILE   "\uea7f"
+#define LYRA_ICON_IMPORT     "\uee38"
+#define LYRA_ICON_REFRESH    "\uf021"
+#define LYRA_ICON_FILE_SAVE  "\uf0c7"
+#define LYRA_ICON_FILE_OPEN  "\uf07c"
+
 #endif // LYRA_LIBRARY_APPKIT_ICONS_H

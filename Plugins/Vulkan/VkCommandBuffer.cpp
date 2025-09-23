@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "VkUtils.h"
 
 void VulkanCommandBuffer::wait(const VulkanSemaphore& fence, GPUBarrierSyncFlags sync)
@@ -467,8 +468,8 @@ void cmd::set_scissor_rect(GPUCommandEncoderHandle cmdbuffer, GPUIntegerCoordina
     auto& cmd = rhi->current_frame().command(cmdbuffer);
 
     auto scissor          = VkRect2D{};
-    scissor.offset.x      = x;
-    scissor.offset.y      = y;
+    scissor.offset.x      = std::max(x, GPUIntegerCoordinate(0));
+    scissor.offset.y      = std::max(y, GPUIntegerCoordinate(0));
     scissor.extent.width  = w;
     scissor.extent.height = h;
 
