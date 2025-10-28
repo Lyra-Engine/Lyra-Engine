@@ -1,7 +1,5 @@
+#include <Lyra/Common/IMGUI.h>
 #include <Lyra/AppKit/Builtin/ThemeManager.h>
-
-#include <imgui.h>
-#include <imgui_internal.h>
 
 using namespace lyra;
 

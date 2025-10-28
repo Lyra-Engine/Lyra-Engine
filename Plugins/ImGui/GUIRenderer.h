@@ -6,7 +6,7 @@
 // imgui header(s)
 #include <imgui.h>
 
-#include <Lyra/Common/GLM.h>
+#include <Lyra/Vendor/GLM.h>
 #include <Lyra/Common/Stdint.h>
 #include <Lyra/Common/Slotmap.h>
 #include <Lyra/Window/WSIAPI.h>

@@ -38,9 +38,14 @@ struct UserState
     WindowCallback   callback;
     WindowInputQuery events;
 
+    // temporary storage for file paths (file drop event)
+    Vector<CString> file_paths = {};
+
     void reset_events()
     {
         events.num_events = 0;
+
+        file_paths.clear();
     }
 
     bool is_event_queue_full() const
@@ -163,6 +168,24 @@ struct UserState
         auto& event           = events.input_events[events.num_events++];
         event.type            = WindowInputEvent::Type::KEY_TYPING;
         event.key_typing.code = code;
+    }
+
+    void add_file_drop_event(uint count, CString* paths)
+    {
+        if (is_event_queue_full()) {
+            get_logger()->warn("Ignore character event beacause event queue is full!");
+            return;
+        }
+
+        // update file path storage
+        file_paths.resize(count);
+        for (uint i = 0; i < count; i++)
+            file_paths[i] = paths[i];
+
+        auto& event           = events.input_events[events.num_events++];
+        event.type            = WindowInputEvent::Type::FILE_DROP;
+        event.file_drop.count = count;
+        event.file_drop.files = file_paths.data();
     }
 };
 
@@ -392,6 +415,12 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
     // clang-format off
 }
 
+static void file_drop_callback(GLFWwindow *window, int path_count, CString paths[])
+{
+    auto& user  = *static_cast<UserState*>(glfwGetWindowUserPointer(window));
+    user.add_file_drop_event(path_count, paths);
+}
+
 static void key_character_callback(GLFWwindow* window, uint code)
 {
     auto& user  = *static_cast<UserState*>(glfwGetWindowUserPointer(window));
@@ -468,7 +497,7 @@ static void bind_window_events(WindowHandle window)
     // callback
     auto handle = reinterpret_cast<GLFWwindow*>(window.window);
     glfwSetWindowUserPointer(handle, user);
-    glfwSetWindowCloseCallback(handle, window_close_callback);
+    glfwSetDropCallback(handle, file_drop_callback);
     glfwSetKeyCallback(handle, key_callback);
     glfwSetCharCallback(handle, key_character_callback);
     glfwSetCursorPosCallback(handle, mouse_position_callback);
@@ -477,6 +506,7 @@ static void bind_window_events(WindowHandle window)
     glfwSetWindowPosCallback(handle, window_position_callback);
     glfwSetWindowFocusCallback(handle, window_focus_callback);
     glfwSetWindowSizeCallback(handle, window_resize_callback);
+    glfwSetWindowCloseCallback(handle, window_close_callback);
 }
 
 static bool create_window(const WindowDescriptor& desc, WindowHandle& window)

@@ -45,7 +45,9 @@ void ConsoleManager::show_bar()
 
     // just to apply some padding
     ImGui::BeginDisabled();
+    ImGui::PushStyleColor(ImGuiCol_TextDisabled, ImVec4(0.95f, 0.96f, 0.98f, 1.00f));
     ImGui::Button(LYRA_ICON_FILTER);
+    ImGui::PopStyleColor();
     ImGui::EndDisabled();
 
     ImGui::SameLine();
@@ -74,13 +76,35 @@ void ConsoleManager::show_logs() const
 {
     String filter_text(filter);
 
+    // record the original text color
+    ImGuiStyle& style      = ImGui::GetStyle();
+    ImVec4*     colors     = style.Colors;
+    ImVec4      text_color = colors[ImGuiCol_Text];
+
+    // change log color
+    auto set_text_color = [&](LogLevel level) {
+        // clang-format off
+        switch (level) {
+            case LogLevel::trace:    colors[ImGuiCol_Text] = ImVec4(0.6f, 0.6f, 0.6f, 1.0f);     break; // light gray
+            case LogLevel::debug:    colors[ImGuiCol_Text] = ImVec4(0.3f, 0.7f, 1.0f, 1.0f);     break; // cyan-ish
+            case LogLevel::info:     colors[ImGuiCol_Text] = ImVec4(0.2f, 0.9f, 0.2f, 1.0f);     break; // green
+            case LogLevel::warn:     colors[ImGuiCol_Text] = ImVec4(1.0f, 0.8f, 0.2f, 1.0f);     break; // yellow-orange
+            case LogLevel::err:      colors[ImGuiCol_Text] = ImVec4(1.0f, 0.25f, 0.25f, 1.0f);   break; // red
+            case LogLevel::critical: colors[ImGuiCol_Text] = ImVec4(1.0f, 0.0f, 0.8f, 1.0f);     break; // magenta
+            default:                 colors[ImGuiCol_Text] = ImVec4(0.95f, 0.96f, 0.00f, 1.00f); break; // default
+        }
+        // clang-format on
+    };
+
     ImGui::BeginChild("Console Log", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
     {
         auto& sink = get_console_sink()->get_console();
         sink.for_each([&](const ConsoleLog& log) {
             if (log_level <= static_cast<int>(log.verbosity))
-                if (filter_text.empty() || log.payload.find(filter_text) != String::npos)
+                if (filter_text.empty() || log.payload.find(filter_text) != String::npos) {
+                    set_text_color(log.verbosity);
                     ImGui::Text("%s", log.payload.c_str());
+                }
         });
         if (sink.modified()) {
             sink.reset();
@@ -88,4 +112,7 @@ void ConsoleManager::show_logs() const
         }
     }
     ImGui::EndChild();
+
+    // restore the original text color
+    colors[ImGuiCol_Text] = text_color;
 }

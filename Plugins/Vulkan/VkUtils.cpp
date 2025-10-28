@@ -5,7 +5,7 @@
 #define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
 
-static Logger logger = create_logger("Vulkan", LogLevel::trace);
+static Logger logger = create_logger("Vulkan", LogLevel::info);
 
 static VulkanRHI* VK_RHI = nullptr;
 
@@ -242,8 +242,6 @@ VkExtent2D choose_swap_extent(const GPUSurfaceDescriptor& desc, const VkSurfaceC
     // query window scale
     float fb_xscale, fb_yscale;
     Window::api()->get_framebuffer_scale(desc.window, fb_xscale, fb_yscale);
-
-    get_logger()->trace("scale: {} scale: {}", fb_xscale, fb_yscale);
 
     VkExtent2D actual_extent;
     actual_extent.width  = static_cast<uint>(width * fb_xscale);

@@ -3,7 +3,7 @@
 #ifndef LYRA_LIBRARY_SCENES_LIGHT_H
 #define LYRA_LIBRARY_SCENES_LIGHT_H
 
-#include <Lyra/Common/GLM.h>
+#include <Lyra/Vendor/GLM.h>
 #include <Lyra/Common/Stdint.h>
 
 // reference: `https://google.github.io/filament/Filament.md.html

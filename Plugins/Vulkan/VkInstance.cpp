@@ -38,19 +38,19 @@ bool api::create_instance(const RHIDescriptor& desc)
 
     // logger
     if (!instance_extensions.empty()) {
-        logger->info("Create VkInstance with extensions:");
+        logger->debug("Create VkInstance with extensions:");
         for (const auto& extension : instance_extensions)
-            logger->info("- {}", extension);
+            logger->debug("- {}", extension);
     }
     if (!debugger_extensions.empty()) {
-        logger->info("Create VkInstance with debug extensions:");
+        logger->debug("Create VkInstance with debug extensions:");
         for (const auto& extension : debugger_extensions)
-            logger->info("- {}", extension);
+            logger->debug("- {}", extension);
     }
     if (!validation_layers.empty()) {
-        logger->info("Create VkInstance with validation layers:");
+        logger->debug("Create VkInstance with validation layers:");
         for (const auto& layer : validation_layers)
-            logger->info("- {}", layer);
+            logger->debug("- {}", layer);
     }
 
     // check availability of extensions

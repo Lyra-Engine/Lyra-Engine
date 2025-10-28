@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef LYRA_LIBRARY_COMMON_GLM_H
-#define LYRA_LIBRARY_COMMON_GLM_H
+#ifndef LYRA_LIBRARY_VENDOR_GLM_H
+#define LYRA_LIBRARY_VENDOR_GLM_H
 
 // THIS IS PURELY A HEADER WRAPPER FOR GLM, with specific macros defined.
 
@@ -41,4 +41,4 @@ static_assert(alignof(Vector2) == sizeof(float));
 static_assert(alignof(Vector3) == sizeof(float));
 static_assert(alignof(Vector4) == sizeof(float));
 
-#endif // LYRA_LIBRARY_COMMON_GLM_H
+#endif // LYRA_LIBRARY_VENDOR_GLM_H

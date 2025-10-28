@@ -85,7 +85,7 @@ auto lyra::create_logger(const String& name, LogLevel level) -> Logger
 
 auto lyra::create_default_logger() -> Logger
 {
-    auto logger = create_logger("Core", LogLevel::info);
+    auto logger = create_logger("Core", LogLevel::trace);
     spdlog::set_default_logger(logger);
     return logger;
 }

@@ -3,7 +3,7 @@
 #ifndef LYRA_LIBRARY_SCENES_TRANSFORM_H
 #define LYRA_LIBRARY_SCENES_TRANSFORM_H
 
-#include <Lyra/Common/GLM.h>
+#include <Lyra/Vendor/GLM.h>
 
 namespace lyra
 {

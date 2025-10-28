@@ -9,6 +9,8 @@
 
 namespace lyra
 {
+    namespace fs = std::filesystem;
+
     // C++ path type
     using Path = std::filesystem::path;
 

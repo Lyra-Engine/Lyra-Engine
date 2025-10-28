@@ -1,11 +1,9 @@
 #include <Lyra/Common/Path.h>
 #include <Lyra/Common/Logger.h>
+#include <Lyra/Common/IMGUI.h>
 #include <Lyra/AppKit/AppIcons.h>
 #include <Lyra/AppKit/Builtin/FileManager.h>
 #include <Lyra/AppKit/Builtin/LayoutManager.h>
-
-#include <imgui.h>
-#include <imgui_internal.h>
 
 #define LYRA_FILES_WINDOW_NAME (LYRA_ICON_FOLDER " Files")
 
@@ -29,8 +27,7 @@ void FileManager::update(Blackboard& blackboard)
 {
     lyra::execute_once([&]() {
         auto& layout = blackboard.get<LayoutInfo>();
-        // ImGui::DockBuilderDockWindow(LYRA_FILES_WINDOW_NAME, layout.bottom);
-        ImGui::DockBuilderDockWindow(LYRA_FILES_WINDOW_NAME, layout.main);
+        ImGui::DockBuilderDockWindow(LYRA_FILES_WINDOW_NAME, layout.bottom);
     });
 
     ImGui::Begin(LYRA_FILES_WINDOW_NAME);

@@ -3,8 +3,8 @@
 #ifndef LYRA_LIBRARY_AMS_TOML_ASSET_H
 #define LYRA_LIBRARY_AMS_TOML_ASSET_H
 
+#include <Lyra/Vendor/TOML.h>
 #include <Lyra/Common/UUID.h>
-#include <Lyra/Common/TOML.h>
 #include <Lyra/Common/String.h>
 #include <Lyra/Assets/AMSAPI.h>
 

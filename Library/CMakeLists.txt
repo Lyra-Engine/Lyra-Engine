@@ -9,7 +9,6 @@ target_sources(lyra-engine PRIVATE
     Lyra/Common/Blackboard.h
     Lyra/Common/Compatibility.h
     Lyra/Common/Container.h
-    Lyra/Common/ECS.h
     Lyra/Common/Enums.h
     Lyra/Common/Function.h
     Lyra/Common/GLM.h

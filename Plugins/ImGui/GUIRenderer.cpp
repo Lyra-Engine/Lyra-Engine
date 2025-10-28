@@ -1,5 +1,4 @@
 // library headers
-#include <Lyra/Common/GLM.h>
 #include <Lyra/Common/Plugin.h>
 #include <Lyra/Common/Assert.h>
 #include <Lyra/Common/Pointer.h>

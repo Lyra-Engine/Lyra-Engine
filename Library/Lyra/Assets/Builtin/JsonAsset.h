@@ -3,8 +3,8 @@
 #ifndef LYRA_LIBRARY_AMS_JSON_ASSET_H
 #define LYRA_LIBRARY_AMS_JSON_ASSET_H
 
+#include <Lyra/Vendor/JSON.h>
 #include <Lyra/Common/UUID.h>
-#include <Lyra/Common/JSON.h>
 #include <Lyra/Common/String.h>
 #include <Lyra/Assets/AMSAPI.h>
 

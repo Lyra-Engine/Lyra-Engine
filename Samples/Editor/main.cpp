@@ -91,21 +91,21 @@ int main(int argc, const char* argv[])
     }
 
     // common paths
-    auto root = args["project"].as<std::filesystem::path>();
-    if (!std::filesystem::exists(root))
+    auto root = args["project"].as<Path>();
+    if (!fs::exists(root))
         std::filesystem::create_directory(root);
 
     auto assets_root = root / "Assets";
-    if (!std::filesystem::exists(assets_root))
-        std::filesystem::create_directory(assets_root);
+    if (!fs::exists(assets_root))
+        fs::create_directory(assets_root);
 
     auto metadata_root = root / "Metadata";
-    if (!std::filesystem::exists(metadata_root))
-        std::filesystem::create_directory(metadata_root);
+    if (!fs::exists(metadata_root))
+        fs::create_directory(metadata_root);
 
     auto generated_root = root / "Generated";
-    if (!std::filesystem::exists(generated_root))
-        std::filesystem::create_directory(generated_root);
+    if (!fs::exists(generated_root))
+        fs::create_directory(generated_root);
 
     // application
     auto app = lyra::execute([&]() {
@@ -181,6 +181,13 @@ int main(int argc, const char* argv[])
     // bind additional systems
     app->bind<AppEvent::UPDATE>(imgui_update);
     app->bind<AppEvent::RENDER>(imgui_render);
+
+    spdlog::trace("This is a trace log!");
+    spdlog::debug("This is a debug log!");
+    spdlog::info("This is an info log!");
+    spdlog::warn("This is a warning log!");
+    spdlog::error("This is an error log!");
+    spdlog::critical("This is a critical log!");
 
     // event loop
     app->run();

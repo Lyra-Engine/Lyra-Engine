@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef LYRA_LIBRARY_COMMON_ECS_H
-#define LYRA_LIBRARY_COMMON_ECS_H
+#ifndef LYRA_LIBRARY_VENDOR_ECS_H
+#define LYRA_LIBRARY_VENDOR_ECS_H
 
 // THIS IS PURELY A HEADER WRAPPER FOR EnTT.
 
@@ -11,4 +11,4 @@
 using Entity   = entt::entity;
 using Registry = entt::registry;
 
-#endif // LYRA_LIBRARY_COMMON_ECS_H
+#endif // LYRA_LIBRARY_VENDOR_ECS_H
