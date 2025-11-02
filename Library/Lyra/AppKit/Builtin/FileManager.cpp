@@ -1,7 +1,8 @@
+#include <Lyra/Vendor/IMGUI.h>
 #include <Lyra/Common/Path.h>
 #include <Lyra/Common/Logger.h>
-#include <Lyra/Common/IMGUI.h>
 #include <Lyra/AppKit/AppIcons.h>
+#include <Lyra/AppKit/AppColors.h>
 #include <Lyra/AppKit/Builtin/FileManager.h>
 #include <Lyra/AppKit/Builtin/LayoutManager.h>
 
@@ -111,7 +112,11 @@ void FileManager::show_dir_files()
                 ImGui::SetWindowFontScale(1.0f);
             }
 
+            const int width = ImGui::CalcTextSize(rela.c_str()).x;
+            const int start = icon_size > width ? (icon_size - width) / 2 : 0;
+
             // filename text under icon
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + start);
             ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + icon_size);
             ImGui::TextWrapped("%s", rela.c_str());
             ImGui::PopTextWrapPos();

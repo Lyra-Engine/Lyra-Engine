@@ -6,6 +6,15 @@ using namespace lyra;
 static void imgui_update(Blackboard& blackboard)
 {
     if (ImGui::BeginMainMenuBar()) {
+        if (ImGui::BeginMenu("Project")) {
+            if (ImGui::MenuItem("Create")) {
+            }
+            if (ImGui::MenuItem("Open", "Ctrl+O")) {
+            }
+            if (ImGui::MenuItem("Save", "Ctrl+S")) {
+            }
+            ImGui::EndMenu();
+        }
         if (ImGui::BeginMenu("File")) {
             if (ImGui::MenuItem("Create")) {
             }

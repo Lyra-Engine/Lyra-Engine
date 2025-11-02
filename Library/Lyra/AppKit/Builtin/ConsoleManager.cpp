@@ -1,5 +1,6 @@
 #include <Lyra/Common/Logger.h>
 #include <Lyra/AppKit/AppIcons.h>
+#include <Lyra/AppKit/AppColors.h>
 #include <Lyra/AppKit/Builtin/LayoutManager.h>
 #include <Lyra/AppKit/Builtin/ConsoleManager.h>
 
@@ -45,7 +46,7 @@ void ConsoleManager::show_bar()
 
     // just to apply some padding
     ImGui::BeginDisabled();
-    ImGui::PushStyleColor(ImGuiCol_TextDisabled, ImVec4(0.95f, 0.96f, 0.98f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_TextDisabled, LYRA_COLOR_DISABLED);
     ImGui::Button(LYRA_ICON_FILTER);
     ImGui::PopStyleColor();
     ImGui::EndDisabled();
@@ -85,13 +86,13 @@ void ConsoleManager::show_logs() const
     auto set_text_color = [&](LogLevel level) {
         // clang-format off
         switch (level) {
-            case LogLevel::trace:    colors[ImGuiCol_Text] = ImVec4(0.6f, 0.6f, 0.6f, 1.0f);     break; // light gray
-            case LogLevel::debug:    colors[ImGuiCol_Text] = ImVec4(0.3f, 0.7f, 1.0f, 1.0f);     break; // cyan-ish
-            case LogLevel::info:     colors[ImGuiCol_Text] = ImVec4(0.2f, 0.9f, 0.2f, 1.0f);     break; // green
-            case LogLevel::warn:     colors[ImGuiCol_Text] = ImVec4(1.0f, 0.8f, 0.2f, 1.0f);     break; // yellow-orange
-            case LogLevel::err:      colors[ImGuiCol_Text] = ImVec4(1.0f, 0.25f, 0.25f, 1.0f);   break; // red
-            case LogLevel::critical: colors[ImGuiCol_Text] = ImVec4(1.0f, 0.0f, 0.8f, 1.0f);     break; // magenta
-            default:                 colors[ImGuiCol_Text] = ImVec4(0.95f, 0.96f, 0.00f, 1.00f); break; // default
+            case LogLevel::trace:    colors[ImGuiCol_Text] = LYRA_COLOR_TRACE;    break;
+            case LogLevel::debug:    colors[ImGuiCol_Text] = LYRA_COLOR_DEBUG;    break;
+            case LogLevel::info:     colors[ImGuiCol_Text] = LYRA_COLOR_INFO;     break;
+            case LogLevel::warn:     colors[ImGuiCol_Text] = LYRA_COLOR_WARN;     break;
+            case LogLevel::err:      colors[ImGuiCol_Text] = LYRA_COLOR_ERROR;    break;
+            case LogLevel::critical: colors[ImGuiCol_Text] = LYRA_COLOR_CRITICAL; break;
+            default:                 colors[ImGuiCol_Text] = LYRA_COLOR_DISABLED; break;
         }
         // clang-format on
     };
