@@ -22,6 +22,9 @@ void FileManager::bind(Application& app)
 {
     // bind layout manager events
     app.bind<AppEvent::UPDATE>(&FileManager::update, this);
+
+    // initial data
+    update_directory(root, true);
 }
 
 void FileManager::update(Blackboard& blackboard)
@@ -48,9 +51,9 @@ void FileManager::update(Blackboard& blackboard)
 void FileManager::show_breadcrumb()
 {
     // root / home
-    if (ImGui::Button(LYRA_ICON_HOME " Home")) {
-        curr = root;
-    }
+    if (ImGui::Button(LYRA_ICON_HOME " Home"))
+        update_directory(root);
+
     ImGui::SameLine();
     ImGui::TextUnformatted("/");
     ImGui::SameLine();
@@ -63,14 +66,16 @@ void FileManager::show_breadcrumb()
 
     // show directory path segments
     auto relative = std::filesystem::relative(curr, root);
-    for (auto& part : relative) {
+    for (const auto& part : relative) {
         auto parts = to_string(part);
         if (ImGui::Button(parts.c_str())) {
-            curr = root;
+            Path path = root;
             for (auto p : relative) {
-                curr /= p;
-                if (p == part)
+                path /= p;
+                if (p == part) {
+                    update_directory(path);
                     break;
+                }
             }
         }
         ImGui::SameLine();
@@ -87,61 +92,36 @@ void FileManager::show_dir_files()
     float start_x   = ImGui::GetCursorPosX();
     float row_width = ImGui::GetWindowPos().x + ImGui::GetWindowContentRegionMax().x;
 
-    // TODO: don't call listdir on every frame, only re-calculate when path is changed (dirty).
-    for (const auto& entry : std::filesystem::directory_iterator(curr)) {
-        const auto& path = entry.path();
-        const auto  rela = to_string(std::filesystem::relative(path, curr));
+    // folders
+    for (const auto& folder : folders) {
 
-        // not showing the hidden files
-        if (rela.at(0) == '.') continue;
-
-        // draw the file icon
         ImGui::PushID(grid_id++);
-
-        ImGui::BeginGroup(); // group icon + text together
         {
-            // icon
-            if (entry.is_directory()) {
-                // update path when clicking on the icon
-                ImGui::SetWindowFontScale(3.0f);
-                ImGui::Button(LYRA_ICON_FOLDER, ImVec2(icon_size, icon_size));
-                ImGui::SetWindowFontScale(1.0f);
-            } else {
-                ImGui::SetWindowFontScale(2.0f);
-                ImGui::Button(LYRA_ICON_FILE, ImVec2(icon_size, icon_size));
-                ImGui::SetWindowFontScale(1.0f);
-            }
+            // folder icon
+            draw_icon_grid(LYRA_ICON_FOLDER, folder.c_str(), 3.0f);
+            next_icon_grid(row_width, start_x);
 
-            const int width = ImGui::CalcTextSize(rela.c_str()).x;
-            const int start = icon_size > width ? (icon_size - width) / 2 : 0;
-
-            // filename text under icon
-            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + start);
-            ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + icon_size);
-            ImGui::TextWrapped("%s", rela.c_str());
-            ImGui::PopTextWrapPos();
+            // handle clicks
+            if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+                update_directory(curr / folder);
         }
-        ImGui::EndGroup();
-
-        // handle clicks
-        if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-            if (entry.is_directory()) {
-                curr = path;
-            }
-        }
-
-        // calculate next position
-        float last_x = ImGui::GetItemRectMax().x;
-        float next_x = last_x + padding + icon_size;
-        if (next_x < row_width) {
-            ImGui::SameLine();
-        } else {
-            ImGui::NewLine();
-            ImGui::SetCursorPosX(start_x); // align new row
-        }
-
         ImGui::PopID();
     }
+
+    // files
+    for (const auto& file : files) {
+
+        ImGui::PushID(grid_id++);
+        {
+            // file icon
+            draw_icon_grid(LYRA_ICON_FILE, file.c_str(), 3.0f);
+            next_icon_grid(row_width, start_x);
+
+            // TODO: handle clicks
+        }
+        ImGui::PopID();
+    }
+
     ImGui::NewLine();
 }
 
@@ -154,7 +134,7 @@ void FileManager::show_context_menu()
     // detect context menu (right click)
     if (ImGui::BeginPopupContextItem("File Manager Context Menu")) {
         if (ImGui::MenuItem(LYRA_ICON_REFRESH " Refresh")) {
-            // TODO: refresh
+            update_directory(curr, true);
         }
         ImGui::Separator();
         if (ImGui::MenuItem(LYRA_ICON_NEW_FILE " New File")) {
@@ -208,5 +188,65 @@ void FileManager::show_new_folder_dialog()
         }
 
         ImGui::EndPopup();
+    }
+}
+
+void FileManager::next_icon_grid(float row_width, float start_x)
+{
+    // calculate next position
+    float last_x = ImGui::GetItemRectMax().x;
+    float next_x = last_x + padding + icon_size;
+    if (next_x < row_width) {
+        ImGui::SameLine();
+    } else {
+        ImGui::NewLine();
+        ImGui::SetCursorPosX(start_x); // align new row
+    }
+}
+
+void FileManager::draw_icon_grid(CString icon, CString text, float icon_scale) const
+{
+    ImGui::BeginGroup(); // group icon + text together
+    {
+        // icon
+        ImGui::SetWindowFontScale(icon_scale);
+        ImGui::Button(icon, ImVec2(icon_size, icon_size));
+        ImGui::SetWindowFontScale(1.0f);
+
+        const int width = ImGui::CalcTextSize(text).x;
+        const int start = icon_size > width ? (icon_size - width) / 2 : 0;
+
+        // filename text under icon
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + start);
+        ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + icon_size);
+        ImGui::TextWrapped("%s", text);
+        ImGui::PopTextWrapPos();
+    }
+    ImGui::EndGroup();
+}
+
+void FileManager::update_directory(const Path& path, bool force)
+{
+    // stop if no changes
+    if (!force && curr == path) return;
+
+    // update current path
+    curr = path;
+
+    // invalid directory cache
+    files.clear();
+    folders.clear();
+
+    // re-evaluate immediate files and folders
+    for (const auto& entry : std::filesystem::directory_iterator(curr)) {
+        const auto& abs_path = entry.path();
+        const auto  rel_path = to_string(std::filesystem::relative(abs_path, curr));
+
+        // fallback: regular files
+        if (entry.is_directory()) {
+            folders.push_back(rel_path);
+        } else {
+            files.push_back(rel_path);
+        }
     }
 }

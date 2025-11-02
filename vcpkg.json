@@ -3,7 +3,10 @@
   "version": "0.0.1",
   "dependencies": [
     "cxxopts",
-    "d3d12-memory-allocator",
+    {
+        "name": "d3d12-memory-allocator",
+        "platform": "windows"
+    },
     "doctest",
     "entt",
     "fmt",

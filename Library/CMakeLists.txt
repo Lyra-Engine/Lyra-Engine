@@ -3,6 +3,13 @@ lyra_shared(engine)
 
 # library sources
 target_sources(lyra-engine PRIVATE
+    # vendor sources
+    Lyra/Vendor/GLM.h
+    Lyra/Vendor/ECS.h
+    Lyra/Vendor/JSON.h
+    Lyra/Vendor/TOML.h
+    Lyra/Vendor/IMGUI.h
+
     # common sources
     Lyra/Common/Assert.h
     Lyra/Common/BitFlags.h
@@ -11,7 +18,6 @@ target_sources(lyra-engine PRIVATE
     Lyra/Common/Container.h
     Lyra/Common/Enums.h
     Lyra/Common/Function.h
-    Lyra/Common/GLM.h
     Lyra/Common/Hash.h
     Lyra/Common/Logger.h
     Lyra/Common/Logger.cpp
@@ -158,7 +164,7 @@ target_link_libraries(lyra-engine PUBLIC
 )
 
 # not directly exposed to user
-target_link_libraries(lyra-engine PRIVATE boxer::boxer)
+target_link_libraries(lyra-engine PRIVATE boxer::boxer fmt::fmt-header-only)
 
 # include directories
 # cmake install target requires relative path.

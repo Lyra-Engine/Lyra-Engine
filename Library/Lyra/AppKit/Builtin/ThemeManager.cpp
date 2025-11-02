@@ -1,4 +1,4 @@
-#include <Lyra/Common/IMGUI.h>
+#include <Lyra/Vendor/IMGUI.h>
 #include <Lyra/AppKit/Builtin/ThemeManager.h>
 
 using namespace lyra;
