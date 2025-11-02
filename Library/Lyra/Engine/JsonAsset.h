@@ -1,31 +1,31 @@
 #pragma once
 
-#ifndef LYRA_LIBRARY_AMS_TEXT_ASSET_H
-#define LYRA_LIBRARY_AMS_TEXT_ASSET_H
+#ifndef LYRA_LIBRARY_ENGINE_JSON_ASSET_H
+#define LYRA_LIBRARY_ENGINE_JSON_ASSET_H
 
+#include <Lyra/Vendor/JSON.h>
 #include <Lyra/Common/UUID.h>
 #include <Lyra/Common/String.h>
 #include <Lyra/Assets/AMSAPI.h>
 
 namespace lyra
 {
-    struct TextAsset
+    struct JsonAsset
     {
-        static constexpr CString name = "TextAsset";
+        static constexpr CString name = "JsonAsset";
 
         // uuid: to let asset server know how to reference this type of asset
-        static constexpr UUID uuid = make_uuid("394a204e-8622-11f0-8de9-0242ac120002");
+        static constexpr UUID uuid = make_uuid("0d9c0641-6042-45a5-abea-467c8f2dc325");
 
         // extensions: to let assert server what extensions to look for
-        static constexpr InitList<CString> extensions = {".txt"};
+        static constexpr InitList<CString> extensions = {".json"};
 
         // handler: to let asset server know how to load this type of asset
         static auto handler() -> AssetHandlerAPI;
 
-        // text content
-        String content;
+        JSON content;
     };
 
 } // namespace lyra
 
-#endif // LYRA_LIBRARY_AMS_TEXT_ASSET_H
+#endif // LYRA_LIBRARY_ENGINE_JSON_ASSET_H

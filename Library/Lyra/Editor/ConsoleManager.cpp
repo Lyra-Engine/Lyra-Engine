@@ -1,8 +1,8 @@
 #include <Lyra/Common/Logger.h>
-#include <Lyra/AppKit/AppIcons.h>
-#include <Lyra/AppKit/AppColors.h>
-#include <Lyra/AppKit/Builtin/LayoutManager.h>
-#include <Lyra/AppKit/Builtin/ConsoleManager.h>
+#include <Lyra/Editor/AppIcons.h>
+#include <Lyra/Editor/AppColors.h>
+#include <Lyra/Editor/LayoutManager.h>
+#include <Lyra/Editor/ConsoleManager.h>
 
 #include <imgui.h>
 #include <imgui_internal.h>

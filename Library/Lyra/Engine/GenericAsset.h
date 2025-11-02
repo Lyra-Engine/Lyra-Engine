@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef LYRA_LIBRARY_AMS_GENERIC_ASSET_H
-#define LYRA_LIBRARY_AMS_GENERIC_ASSET_H
+#ifndef LYRA_LIBRARY_ENGINE_GENERIC_ASSET_H
+#define LYRA_LIBRARY_ENGINE_GENERIC_ASSET_H
 
 #include <Lyra/Vendor/JSON.h>
 #include <Lyra/Common/Path.h>
@@ -33,4 +33,4 @@ namespace lyra
     }
 } // namespace lyra
 
-#endif // LYRA_LIBRARY_AMS_GENERIC_ASSET_H
+#endif // LYRA_LIBRARY_ENGINE_GENERIC_ASSET_H

@@ -1,31 +1,31 @@
 #pragma once
 
-#ifndef LYRA_LIBRARY_AMS_JSON_ASSET_H
-#define LYRA_LIBRARY_AMS_JSON_ASSET_H
+#ifndef LYRA_LIBRARY_ENGINE_TOML_ASSET_H
+#define LYRA_LIBRARY_ENGINE_TOML_ASSET_H
 
-#include <Lyra/Vendor/JSON.h>
+#include <Lyra/Vendor/TOML.h>
 #include <Lyra/Common/UUID.h>
 #include <Lyra/Common/String.h>
 #include <Lyra/Assets/AMSAPI.h>
 
 namespace lyra
 {
-    struct JsonAsset
+    struct TomlAsset
     {
-        static constexpr CString name = "JsonAsset";
+        static constexpr CString name = "TomlAsset";
 
         // uuid: to let asset server know how to reference this type of asset
-        static constexpr UUID uuid = make_uuid("0d9c0641-6042-45a5-abea-467c8f2dc325");
+        static constexpr UUID uuid = make_uuid("a5a478e0-e725-4ad6-95bf-36d58cc10101");
 
         // extensions: to let assert server what extensions to look for
-        static constexpr InitList<CString> extensions = {".json"};
+        static constexpr InitList<CString> extensions = {".toml"};
 
         // handler: to let asset server know how to load this type of asset
         static auto handler() -> AssetHandlerAPI;
 
-        JSON content;
+        TOML content;
     };
 
 } // namespace lyra
 
-#endif // LYRA_LIBRARY_AMS_JSON_ASSET_H
+#endif // LYRA_LIBRARY_ENGINE_TOML_ASSET_H

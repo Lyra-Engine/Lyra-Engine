@@ -61,21 +61,22 @@
 
 // APP (Application)
 #include <Lyra/AppKit/AppEnums.h>
-#include <Lyra/AppKit/AppIcons.h>
 #include <Lyra/AppKit/AppTypes.h>
 
-// Builtin Asset Types
-#include <Lyra/Assets/Builtin/TextAsset.h>
-#include <Lyra/Assets/Builtin/JsonAsset.h>
-#include <Lyra/Assets/Builtin/TomlAsset.h>
-#include <Lyra/Assets/Builtin/TextureAsset.h>
+// Engine files
+#include <Lyra/Engine/TextAsset.h>
+#include <Lyra/Engine/JsonAsset.h>
+#include <Lyra/Engine/TomlAsset.h>
+#include <Lyra/Engine/TextureAsset.h>
 
-// Builtin App Manager Types
-#include <Lyra/AppKit/Builtin/GUIManager.h>
-#include <Lyra/AppKit/Builtin/FileManager.h>
-#include <Lyra/AppKit/Builtin/AssetManager.h>
-#include <Lyra/AppKit/Builtin/ThemeManager.h>
-#include <Lyra/AppKit/Builtin/LayoutManager.h>
-#include <Lyra/AppKit/Builtin/ConsoleManager.h>
+// Editor files
+#include <Lyra/Editor/AppIcons.h>
+#include <Lyra/Editor/AppColors.h>
+#include <Lyra/Editor/GUIManager.h>
+#include <Lyra/Editor/FileManager.h>
+#include <Lyra/Editor/AssetManager.h>
+#include <Lyra/Editor/ThemeManager.h>
+#include <Lyra/Editor/LayoutManager.h>
+#include <Lyra/Editor/ConsoleManager.h>
 
 #endif // LYRA_LIBRARY_HPP

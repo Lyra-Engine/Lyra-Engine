@@ -1,5 +1,5 @@
-#include <Lyra/Assets/Builtin/TextAsset.h>
-#include <Lyra/Assets/Builtin/GenericAsset.h>
+#include <Lyra/Engine/TextAsset.h>
+#include <Lyra/Engine/GenericAsset.h>
 
 using namespace lyra;
 

@@ -1,4 +1,4 @@
-#include <Lyra/AppKit/Builtin/GUIManager.h>
+#include <Lyra/Editor/GUIManager.h>
 
 using namespace lyra;
 

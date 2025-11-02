@@ -1,5 +1,5 @@
 #include <Lyra/Vendor/IMGUI.h>
-#include <Lyra/AppKit/Builtin/ThemeManager.h>
+#include <Lyra/Editor/ThemeManager.h>
 
 using namespace lyra;
 

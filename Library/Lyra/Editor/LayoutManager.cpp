@@ -1,4 +1,4 @@
-#include <Lyra/AppKit/Builtin/LayoutManager.h>
+#include <Lyra/Editor/LayoutManager.h>
 
 using namespace lyra;
 

@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef LYRA_LIBRARY_APPKIT_LAYOUT_MANAGER_H
-#define LYRA_LIBRARY_APPKIT_LAYOUT_MANAGER_H
+#ifndef LYRA_LIBRARY_EDITOR_LAYOUT_MANAGER_H
+#define LYRA_LIBRARY_EDITOR_LAYOUT_MANAGER_H
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -61,4 +61,4 @@ namespace lyra
 
 } // namespace lyra
 
-#endif // LYRA_LIBRARY_APPKIT_LAYOUT_MANAGER_H
+#endif // LYRA_LIBRARY_EDITOR_LAYOUT_MANAGER_H

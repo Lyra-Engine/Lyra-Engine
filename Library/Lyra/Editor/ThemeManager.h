@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef LYRA_LIBRARY_APPKIT_THEME_MANAGER_H
-#define LYRA_LIBRARY_APPKIT_THEME_MANAGER_H
+#ifndef LYRA_LIBRARY_EDITOR_THEME_MANAGER_H
+#define LYRA_LIBRARY_EDITOR_THEME_MANAGER_H
 
 #include <Lyra/AppKit/AppTypes.h>
 
@@ -18,4 +18,4 @@ namespace lyra
     };
 } // namespace lyra
 
-#endif // LYRA_LIBRARY_APPKIT_THEME_MANAGER_H
+#endif // LYRA_LIBRARY_EDITOR_THEME_MANAGER_H

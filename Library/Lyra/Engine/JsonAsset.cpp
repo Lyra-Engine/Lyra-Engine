@@ -1,5 +1,5 @@
-#include <Lyra/Assets/Builtin/JsonAsset.h>
-#include <Lyra/Assets/Builtin/GenericAsset.h>
+#include <Lyra/Engine/JsonAsset.h>
+#include <Lyra/Engine/GenericAsset.h>
 
 using namespace lyra;
 

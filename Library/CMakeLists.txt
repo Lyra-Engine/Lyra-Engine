@@ -96,35 +96,36 @@ target_sources(lyra-engine PRIVATE
     Lyra/Assets/AMSTypes.cpp
     Lyra/Assets/AMSUtils.h
 
-    # builtin assets sources
-    Lyra/Assets/Builtin/TextAsset.h
-    Lyra/Assets/Builtin/TextAsset.cpp
-    Lyra/Assets/Builtin/JsonAsset.h
-    Lyra/Assets/Builtin/JsonAsset.cpp
-    Lyra/Assets/Builtin/TomlAsset.h
-    Lyra/Assets/Builtin/TomlAsset.cpp
-    Lyra/Assets/Builtin/TextureAsset.h
-    Lyra/Assets/Builtin/TextureAsset.cpp
-    Lyra/Assets/Builtin/GenericAsset.h
-
     # appkit sources
-    Lyra/AppKit/AppIcons.h
     Lyra/AppKit/AppTypes.h
     Lyra/AppKit/AppTypes.cpp
 
-    # builtin app managers
-    Lyra/AppKit/Builtin/GUIManager.h
-    Lyra/AppKit/Builtin/GUIManager.cpp
-    Lyra/AppKit/Builtin/FileManager.h
-    Lyra/AppKit/Builtin/FileManager.cpp
-    Lyra/AppKit/Builtin/AssetManager.h
-    Lyra/AppKit/Builtin/AssetManager.cpp
-    Lyra/AppKit/Builtin/ThemeManager.h
-    Lyra/AppKit/Builtin/ThemeManager.cpp
-    Lyra/AppKit/Builtin/LayoutManager.h
-    Lyra/AppKit/Builtin/LayoutManager.cpp
-    Lyra/AppKit/Builtin/ConsoleManager.h
-    Lyra/AppKit/Builtin/ConsoleManager.cpp
+    # engine sources
+    Lyra/Engine/TextAsset.h
+    Lyra/Engine/TextAsset.cpp
+    Lyra/Engine/JsonAsset.h
+    Lyra/Engine/JsonAsset.cpp
+    Lyra/Engine/TomlAsset.h
+    Lyra/Engine/TomlAsset.cpp
+    Lyra/Engine/TextureAsset.h
+    Lyra/Engine/TextureAsset.cpp
+    Lyra/Engine/GenericAsset.h
+
+    # editor sources
+    Lyra/Editor/AppIcons.h
+    Lyra/Editor/AppColors.h
+    Lyra/Editor/GUIManager.h
+    Lyra/Editor/GUIManager.cpp
+    Lyra/Editor/FileManager.h
+    Lyra/Editor/FileManager.cpp
+    Lyra/Editor/AssetManager.h
+    Lyra/Editor/AssetManager.cpp
+    Lyra/Editor/ThemeManager.h
+    Lyra/Editor/ThemeManager.cpp
+    Lyra/Editor/LayoutManager.h
+    Lyra/Editor/LayoutManager.cpp
+    Lyra/Editor/ConsoleManager.h
+    Lyra/Editor/ConsoleManager.cpp
 )
 
 # link dependencies
