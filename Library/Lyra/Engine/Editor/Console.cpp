@@ -1,9 +1,9 @@
 #include <Lyra/Vendor/IMGUI.h>
 #include <Lyra/Common/Logger.h>
-#include <Lyra/Editor/AppIcons.h>
-#include <Lyra/Editor/AppColors.h>
-#include <Lyra/Editor/Console.h>
-#include <Lyra/Editor/LayoutManager.h>
+#include <Lyra/Engine/Editor/AppIcons.h>
+#include <Lyra/Engine/Editor/AppColors.h>
+#include <Lyra/Engine/Editor/Console.h>
+#include <Lyra/Engine/System/LayoutManager.h>
 
 #define LYRA_CONSOLE_WINDOW_NAME (LYRA_ICON_CONSOLE " Console")
 

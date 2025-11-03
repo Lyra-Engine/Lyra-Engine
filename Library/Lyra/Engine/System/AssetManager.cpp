@@ -1,4 +1,4 @@
-#include <Lyra/Editor/AssetManager.h>
+#include <Lyra/Engine/System/AssetManager.h>
 
 using namespace lyra;
 

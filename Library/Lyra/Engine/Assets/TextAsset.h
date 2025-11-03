@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef LYRA_LIBRARY_ENGINE_TEXT_ASSET_H
-#define LYRA_LIBRARY_ENGINE_TEXT_ASSET_H
+#ifndef LYRA_LIBRARY_ENGINE_ASSETS_TEXT_ASSET_H
+#define LYRA_LIBRARY_ENGINE_ASSETS_TEXT_ASSET_H
 
 #include <Lyra/Common/UUID.h>
 #include <Lyra/Common/String.h>
@@ -28,4 +28,4 @@ namespace lyra
 
 } // namespace lyra
 
-#endif // LYRA_LIBRARY_ENGINE_TEXT_ASSET_H
+#endif // LYRA_LIBRARY_ENGINE_ASSETS_TEXT_ASSET_H

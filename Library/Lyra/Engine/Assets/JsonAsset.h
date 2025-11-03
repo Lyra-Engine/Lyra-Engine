@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef LYRA_LIBRARY_ENGINE_JSON_ASSET_H
-#define LYRA_LIBRARY_ENGINE_JSON_ASSET_H
+#ifndef LYRA_LIBRARY_ENGINE_ASSETS_JSON_ASSET_H
+#define LYRA_LIBRARY_ENGINE_ASSETS_JSON_ASSET_H
 
 #include <Lyra/Vendor/JSON.h>
 #include <Lyra/Common/UUID.h>
@@ -28,4 +28,4 @@ namespace lyra
 
 } // namespace lyra
 
-#endif // LYRA_LIBRARY_ENGINE_JSON_ASSET_H
+#endif // LYRA_LIBRARY_ENGINE_ASSETS_JSON_ASSET_H

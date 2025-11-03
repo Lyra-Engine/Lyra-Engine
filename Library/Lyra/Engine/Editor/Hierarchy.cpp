@@ -1,9 +1,9 @@
 #include <Lyra/Vendor/IMGUI.h>
 #include <Lyra/Common/Logger.h>
-#include <Lyra/Editor/AppIcons.h>
-#include <Lyra/Editor/AppColors.h>
-#include <Lyra/Editor/Hierarchy.h>
-#include <Lyra/Editor/LayoutManager.h>
+#include <Lyra/Engine/Editor/AppIcons.h>
+#include <Lyra/Engine/Editor/AppColors.h>
+#include <Lyra/Engine/Editor/Hierarchy.h>
+#include <Lyra/Engine/System/LayoutManager.h>
 
 #define LYRA_HIERARCHY_WINDOW_NAME (LYRA_ICON_HIERARCHY " Hierarchy")
 

@@ -1,5 +1,5 @@
-#include <Lyra/Engine/TomlAsset.h>
-#include <Lyra/Engine/GenericAsset.h>
+#include <Lyra/Engine/Assets/TomlAsset.h>
+#include <Lyra/Engine/Assets/GenericAsset.h>
 
 using namespace lyra;
 

@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef LYRA_LIBRARY_EDITOR_GAME_VIEW_H
-#define LYRA_LIBRARY_EDITOR_GAME_VIEW_H
+#ifndef LYRA_LIBRARY_ENGINE_EDITOR_GAME_VIEW_H
+#define LYRA_LIBRARY_ENGINE_EDITOR_GAME_VIEW_H
 
 #include <Lyra/AppKit/AppTypes.h>
 
@@ -20,4 +20,4 @@ namespace lyra
     };
 } // namespace lyra
 
-#endif // LYRA_LIBRARY_EDITOR_GAME_VIEW_H
+#endif // LYRA_LIBRARY_ENGINE_EDITOR_GAME_VIEW_H

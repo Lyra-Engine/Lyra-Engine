@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef LYRA_LIBRARY_ENGINE_TEXTURE_ASSET_H
-#define LYRA_LIBRARY_ENGINE_TEXTURE_ASSET_H
+#ifndef LYRA_LIBRARY_ENGINE_ASSETS_TEXTURE_ASSET_H
+#define LYRA_LIBRARY_ENGINE_ASSETS_TEXTURE_ASSET_H
 
 #include <Lyra/Common/UUID.h>
 #include <Lyra/Common/Stdint.h>
@@ -40,4 +40,4 @@ namespace lyra
 
 } // namespace lyra
 
-#endif // LYRA_LIBRARY_ENGINE_TEXTURE_H
+#endif // LYRA_LIBRARY_ENGINE_ASSETS_TEXTURE_H

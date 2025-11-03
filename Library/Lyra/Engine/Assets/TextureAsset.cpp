@@ -1,6 +1,6 @@
 #include <Lyra/Common/Plugin.h>
 #include <Lyra/Common/Macros.h>
-#include <Lyra/Engine/TextureAsset.h>
+#include <Lyra/Engine/Assets/TextureAsset.h>
 
 using namespace lyra;
 

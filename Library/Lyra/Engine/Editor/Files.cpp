@@ -1,10 +1,10 @@
 #include <Lyra/Vendor/IMGUI.h>
 #include <Lyra/Common/Path.h>
 #include <Lyra/Common/Logger.h>
-#include <Lyra/Editor/AppIcons.h>
-#include <Lyra/Editor/AppColors.h>
-#include <Lyra/Editor/LayoutManager.h>
-#include <Lyra/Editor/Files.h>
+#include <Lyra/Engine/Editor/AppIcons.h>
+#include <Lyra/Engine/Editor/AppColors.h>
+#include <Lyra/Engine/Editor/Files.h>
+#include <Lyra/Engine/System/LayoutManager.h>
 
 #define LYRA_FILES_WINDOW_NAME (LYRA_ICON_FOLDER " Files")
 
