@@ -213,8 +213,8 @@ void FileManager::draw_icon_grid(CString icon, CString text, float icon_scale) c
         ImGui::Button(icon, ImVec2(icon_size, icon_size));
         ImGui::SetWindowFontScale(1.0f);
 
-        const int width = ImGui::CalcTextSize(text).x;
-        const int start = icon_size > width ? (icon_size - width) / 2 : 0;
+        const float width = ImGui::CalcTextSize(text).x;
+        const float start = icon_size > width ? (icon_size - width) / 2 : 0;
 
         // filename text under icon
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + start);

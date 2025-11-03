@@ -1,11 +1,9 @@
+#include <Lyra/Vendor/IMGUI.h>
 #include <Lyra/Common/Logger.h>
 #include <Lyra/Editor/AppIcons.h>
 #include <Lyra/Editor/AppColors.h>
 #include <Lyra/Editor/LayoutManager.h>
 #include <Lyra/Editor/ConsoleManager.h>
-
-#include <imgui.h>
-#include <imgui_internal.h>
 
 #define LYRA_CONSOLE_WINDOW_NAME (LYRA_ICON_CONSOLE " Console")
 
@@ -97,14 +95,17 @@ void ConsoleManager::show_logs() const
         // clang-format on
     };
 
+    // show filtered console logs
     ImGui::BeginChild("Console Log", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
     {
         auto& sink = get_console_sink()->get_console();
         sink.for_each([&](const ConsoleLog& log) {
             if (log_level <= static_cast<int>(log.verbosity))
                 if (filter_text.empty() || log.payload.find(filter_text) != String::npos) {
-                    set_text_color(log.verbosity);
-                    ImGui::Text("%s", log.payload.c_str());
+                    if (!log.payload.empty()) {
+                        set_text_color(log.verbosity);
+                        ImGui::Text("%s", log.payload.c_str());
+                    }
                 }
         });
         if (sink.modified()) {

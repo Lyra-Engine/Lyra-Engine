@@ -139,6 +139,7 @@ find_package(imgui REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(libassert REQUIRED)
 find_package(magic_enum REQUIRED)
+find_package(Boost REQUIRED COMPONENTS circular_buffer)
 
 # directly exposed to user (with include headers)
 target_link_libraries(lyra-engine PUBLIC
@@ -161,6 +162,7 @@ target_link_libraries(lyra-engine PUBLIC
     $<BUILD_INTERFACE:toml::toml>
 
     # misc libraries
+    $<BUILD_INTERFACE:Boost::circular_buffer>
     $<BUILD_INTERFACE:magic_enum::magic_enum>
 )
 

@@ -18,4 +18,9 @@
 #define LYRA_ICON_FILE_SAVE  "\uf0c7"
 #define LYRA_ICON_FILE_OPEN  "\uf07c"
 
+#define LYRA_ICON_ERROR      "\uea87"
+#define LYRA_ICON_WARN       "\uea6c"
+#define LYRA_ICON_INFO       "\uea74"
+#define LYRA_ICON_DEBUG      "\uead8"
+
 #endif // LYRA_LIBRARY_EDITOR_ICONS_H

@@ -4,8 +4,8 @@
   "dependencies": [
     "cxxopts",
     {
-        "name": "d3d12-memory-allocator",
-        "platform": "windows"
+      "name": "d3d12-memory-allocator",
+      "platform": "windows"
     },
     "doctest",
     "entt",
@@ -21,10 +21,11 @@
     "shader-slang",
     "spdlog",
     "stb",
+    "tinygltf",
     "tomlplusplus",
     "volk",
     "vulkan-headers",
     "vulkan-memory-allocator",
-    "tinygltf"
+    "boost-circular-buffer"
   ]
 }

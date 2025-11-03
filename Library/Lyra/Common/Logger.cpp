@@ -3,15 +3,16 @@
 using namespace lyra;
 
 Console::Console(size_t capacity)
-    : capacity(capacity), start(0), count(0)
 {
-    logs.resize(capacity);
+    resize(capacity);
 }
 
 void Console::clear()
 {
-    start = 0;
-    count = 0;
+    for (auto& count : counts)
+        count = 0;
+
+    logs.clear();
 
     changed = true;
 }
@@ -19,28 +20,23 @@ void Console::clear()
 void Console::resize(size_t new_capacity)
 {
     logs.resize(new_capacity);
-    capacity = new_capacity;
-    start    = start % capacity;
-    count    = std::min(count, capacity);
-
     changed = true;
 }
 
 void Console::append(LogLevel level, LogView component, String&& payload)
 {
-    size_t current = (start + count) % capacity;
-
-    auto& log     = logs.at(current);
+    ConsoleLog log;
     log.verbosity = level;
     log.component = component;
     log.payload   = std::move(payload);
-
-    if (++count > capacity) {
-        count = capacity;
-        start = (start + 1) % capacity;
-    }
-
+    logs.push_back(log);
+    counts.at(level)++;
     changed = true;
+}
+
+size_t Console::count(spdlog::level_t level) const
+{
+    return counts.at(level);
 }
 
 auto lyra::get_stdout_sink() -> Ref<spdlog::sinks::stdout_color_sink_mt>

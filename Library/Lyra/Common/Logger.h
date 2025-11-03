@@ -37,22 +37,27 @@ namespace lyra
         void resize(size_t new_capacity);
         void append(LogLevel level, LogView component, String&& payload);
 
-        void reset() { changed = false; }
         bool modified() const { return changed; }
+
+        // only clear "changed" flag
+        void reset() { changed = false; }
+
+        size_t count(spdlog::level_t level) const;
 
         template <typename F>
         void for_each(F&& f) const
         {
-            for (size_t i = 0; i < count; i++)
-                f(logs.at((start + i) % capacity));
+            for (auto& log : logs)
+                f(log);
         }
 
     private:
-        Vector<ConsoleLog> logs;
-        size_t             capacity = 0;
-        size_t             start    = 0;
-        size_t             count    = 0;
-        bool               changed  = false;
+        using Logs   = RingBuffer<ConsoleLog>;
+        using Counts = Array<size_t, spdlog::level::n_levels>;
+
+        Logs   logs;
+        Counts counts;
+        bool   changed = false;
     };
 
     template <typename Mutex>

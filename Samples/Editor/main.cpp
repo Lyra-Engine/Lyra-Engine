@@ -9,20 +9,9 @@ static void imgui_update(Blackboard& blackboard)
         if (ImGui::BeginMenu("Project")) {
             if (ImGui::MenuItem("Create")) {
             }
-            if (ImGui::MenuItem("Open", "Ctrl+O")) {
+            if (ImGui::MenuItem("Load", "Ctrl+O")) {
             }
             if (ImGui::MenuItem("Save", "Ctrl+S")) {
-            }
-            ImGui::EndMenu();
-        }
-        if (ImGui::BeginMenu("File")) {
-            if (ImGui::MenuItem("Create")) {
-            }
-            if (ImGui::MenuItem("Open", "Ctrl+O")) {
-            }
-            if (ImGui::MenuItem("Save", "Ctrl+S")) {
-            }
-            if (ImGui::MenuItem("Save as..")) {
             }
             ImGui::EndMenu();
         }
@@ -31,7 +20,7 @@ static void imgui_update(Blackboard& blackboard)
 
     lyra::execute_once([&]() {
         auto& layout = blackboard.get<LayoutInfo>();
-        ImGui::DockBuilderDockWindow("Dear ImGui Demo", layout.main);
+        ImGui::DockBuilderDockWindow("ImGui Demo Window", layout.main);
         ImGui::DockBuilderDockWindow("Scene", layout.main);
         ImGui::DockBuilderDockWindow("Hierarchy", layout.left);
         ImGui::DockBuilderDockWindow("Inspector", layout.right);
