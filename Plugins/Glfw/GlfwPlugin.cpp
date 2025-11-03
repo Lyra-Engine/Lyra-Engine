@@ -22,7 +22,7 @@
 #include <Lyra/Common/Plugin.h>
 #include <Lyra/Window/WSIAPI.h>
 #include <Lyra/Window/WSITypes.h>
-#include <Lyra/Render/RHITypes.h>
+#include <Lyra/Render/RHI/RHITypes.h>
 
 using namespace lyra;
 

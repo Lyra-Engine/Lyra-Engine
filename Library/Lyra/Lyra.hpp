@@ -24,19 +24,19 @@
 #include <Lyra/Window/WSITypes.h>
 
 // RHI (Render Hardware Interface)
-#include <Lyra/Render/RHIAPI.h>
-#include <Lyra/Render/RHIEnums.h>
-#include <Lyra/Render/RHIDescs.h>
-#include <Lyra/Render/RHITypes.h>
-#include <Lyra/Render/RHIInits.h>
+#include <Lyra/Render/RHI/RHIAPI.h>
+#include <Lyra/Render/RHI/RHIEnums.h>
+#include <Lyra/Render/RHI/RHIDescs.h>
+#include <Lyra/Render/RHI/RHITypes.h>
+#include <Lyra/Render/RHI/RHIInits.h>
 
 // RPI (Render Pass Interface)
-#include <Lyra/RPIKit/FrameGraph.h>
-#include <Lyra/RPIKit/FrameGraphPass.h>
-#include <Lyra/RPIKit/FrameGraphEnums.h>
-#include <Lyra/RPIKit/FrameGraphContext.h>
-#include <Lyra/RPIKit/FrameGraphBuilder.h>
-#include <Lyra/RPIKit/FrameGraphResource.h>
+#include <Lyra/Render/RPI/FrameGraph.h>
+#include <Lyra/Render/RPI/FrameGraphPass.h>
+#include <Lyra/Render/RPI/FrameGraphEnums.h>
+#include <Lyra/Render/RPI/FrameGraphContext.h>
+#include <Lyra/Render/RPI/FrameGraphBuilder.h>
+#include <Lyra/Render/RPI/FrameGraphResource.h>
 
 // SLC (Shader Language Compiler)
 #include <Lyra/Shader/SLCAPI.h>
@@ -64,19 +64,21 @@
 #include <Lyra/AppKit/AppTypes.h>
 
 // Engine files
-#include <Lyra/Engine/TextAsset.h>
-#include <Lyra/Engine/JsonAsset.h>
-#include <Lyra/Engine/TomlAsset.h>
-#include <Lyra/Engine/TextureAsset.h>
-
-// Editor files
-#include <Lyra/Editor/AppIcons.h>
-#include <Lyra/Editor/AppColors.h>
-#include <Lyra/Editor/GUIManager.h>
-#include <Lyra/Editor/FileManager.h>
-#include <Lyra/Editor/AssetManager.h>
-#include <Lyra/Editor/ThemeManager.h>
-#include <Lyra/Editor/LayoutManager.h>
-#include <Lyra/Editor/ConsoleManager.h>
+#include <Lyra/Engine/System/AssetManager.h>
+#include <Lyra/Engine/System/ThemeManager.h>
+#include <Lyra/Engine/System/LayoutManager.h>
+#include <Lyra/Engine/System/ImGuiManager.h>
+#include <Lyra/Engine/Assets/TextAsset.h>
+#include <Lyra/Engine/Assets/JsonAsset.h>
+#include <Lyra/Engine/Assets/TomlAsset.h>
+#include <Lyra/Engine/Assets/TextureAsset.h>
+#include <Lyra/Engine/Editor/AppIcons.h>
+#include <Lyra/Engine/Editor/AppColors.h>
+#include <Lyra/Engine/Editor/Files.h>
+#include <Lyra/Engine/Editor/Console.h>
+#include <Lyra/Engine/Editor/Hierarchy.h>
+#include <Lyra/Engine/Editor/GameView.h>
+#include <Lyra/Engine/Editor/SceneView.h>
+#include <Lyra/Engine/Editor/Inspector.h>
 
 #endif // LYRA_LIBRARY_HPP

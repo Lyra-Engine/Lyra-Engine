@@ -23,8 +23,8 @@
 #include <Lyra/Common/Slotmap.h>
 #include <Lyra/Common/Container.h>
 #include <Lyra/Common/Compatibility.h>
-#include <Lyra/Render/RHIDescs.h>
-#include <Lyra/Render/RHIAPI.h>
+#include <Lyra/Render/RHI/RHIAPI.h>
+#include <Lyra/Render/RHI/RHIDescs.h>
 
 using namespace lyra;
 

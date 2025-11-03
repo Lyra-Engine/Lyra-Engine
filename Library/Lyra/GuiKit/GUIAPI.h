@@ -3,8 +3,8 @@
 #ifndef LYRA_LIBRARY_GUI_API_H
 #define LYRA_LIBRARY_GUI_API_H
 
-#include <Lyra/Render/RHITypes.h>
 #include <Lyra/Shader/SLCTypes.h>
+#include <Lyra/Render/RHI/RHITypes.h>
 
 namespace lyra
 {

@@ -8,9 +8,9 @@
 #include <Lyra/Common/Container.h>
 #include <Lyra/Common/Blackboard.h>
 #include <Lyra/Window/WSITypes.h>
-#include <Lyra/Render/RHITypes.h>
 #include <Lyra/Shader/SLCTypes.h>
 #include <Lyra/AppKit/AppEnums.h>
+#include <Lyra/Render/RHI/RHITypes.h>
 
 namespace lyra
 {

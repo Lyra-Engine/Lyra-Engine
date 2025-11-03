@@ -28,10 +28,10 @@ namespace lyra
         String   payload   = "";
     };
 
-    struct Console
+    struct ConsoleSink
     {
     public:
-        explicit Console(size_t capacity = 2048);
+        explicit ConsoleSink(size_t capacity = 2048);
 
         void clear();
         void resize(size_t new_capacity);
@@ -69,9 +69,9 @@ namespace lyra
             // do nothing
         }
 
-        auto get_console() -> Console& { return console; }
+        auto get_console() -> ConsoleSink& { return console; }
 
-        auto get_console() const -> const Console& { return console; }
+        auto get_console() const -> const ConsoleSink& { return console; }
 
     protected:
         void sink_it_(const spdlog::details::log_msg& msg) override
@@ -91,7 +91,7 @@ namespace lyra
         }
 
     private:
-        Console console;
+        ConsoleSink console;
     };
 
     using console_sink_mt = console_sink<std::mutex>;

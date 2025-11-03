@@ -2,12 +2,12 @@
 
 using namespace lyra;
 
-Console::Console(size_t capacity)
+ConsoleSink::ConsoleSink(size_t capacity)
 {
     resize(capacity);
 }
 
-void Console::clear()
+void ConsoleSink::clear()
 {
     for (auto& count : counts)
         count = 0;
@@ -17,13 +17,13 @@ void Console::clear()
     changed = true;
 }
 
-void Console::resize(size_t new_capacity)
+void ConsoleSink::resize(size_t new_capacity)
 {
     logs.resize(new_capacity);
     changed = true;
 }
 
-void Console::append(LogLevel level, LogView component, String&& payload)
+void ConsoleSink::append(LogLevel level, LogView component, String&& payload)
 {
     ConsoleLog log;
     log.verbosity = level;
@@ -34,7 +34,7 @@ void Console::append(LogLevel level, LogView component, String&& payload)
     changed = true;
 }
 
-size_t Console::count(spdlog::level_t level) const
+size_t ConsoleSink::count(spdlog::level_t level) const
 {
     return counts.at(level);
 }

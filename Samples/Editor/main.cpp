@@ -20,23 +20,10 @@ static void imgui_update(Blackboard& blackboard)
 
     lyra::execute_once([&]() {
         auto& layout = blackboard.get<LayoutInfo>();
-        ImGui::DockBuilderDockWindow("ImGui Demo Window", layout.main);
-        ImGui::DockBuilderDockWindow("Scene", layout.main);
-        ImGui::DockBuilderDockWindow("Hierarchy", layout.left);
-        ImGui::DockBuilderDockWindow("Inspector", layout.right);
+        ImGui::DockBuilderDockWindow("Dear ImGui Demo", layout.main);
     });
 
     ImGui::ShowDemoWindow();
-
-    ImGui::Begin("Scene");
-    ImGui::End();
-
-    ImGui::Begin("Hierarchy");
-    ImGui::Text("Hi, World!");
-    ImGui::End();
-
-    ImGui::Begin("Inspector");
-    ImGui::End();
 }
 
 static void imgui_render(Blackboard& blackboard)
@@ -137,6 +124,7 @@ int main(int argc, const char* argv[])
         desc.workers                 = 4;
         return std::make_unique<AssetManager>(desc);
     });
+    app->bind<AssetManager>(*asset_manager);
 
     // imgui manager
     auto imgui_manager = lyra::execute([&]() {
@@ -147,10 +135,11 @@ int main(int argc, const char* argv[])
         desc.docking   = true;
         desc.viewports = false;
 
-        auto imgui = std::make_unique<GUIManager>(desc);
+        auto imgui = std::make_unique<ImGuiManager>(desc);
         imgui->apply_context(); // imgui context in user application
         return std::move(imgui);
     });
+    app->bind<ImGuiManager>(*imgui_manager);
 
     // layout manager
     auto layout_manager = lyra::execute([&]() {
@@ -162,30 +151,39 @@ int main(int argc, const char* argv[])
         desc.bottom = 0.4f;
         return std::make_unique<LayoutManager>(desc);
     });
-
-    // editor components
-    auto file_manager    = std::make_unique<FileManager>(assets_root);
-    auto theme_manager   = std::make_unique<ThemeManager>();
-    auto console_manager = std::make_unique<ConsoleManager>(4096);
-
-    // bind app bundles
-    app->bind<GUIManager>(*imgui_manager);
-    app->bind<AssetManager>(*asset_manager);
     app->bind<LayoutManager>(*layout_manager);
-    app->bind<ConsoleManager>(*console_manager);
+
+    // theme manager
+    auto theme_manager = std::make_unique<ThemeManager>();
     app->bind<ThemeManager>(*theme_manager);
-    app->bind<FileManager>(*file_manager);
+
+    // editor components (files)
+    auto files = std::make_unique<Files>(assets_root);
+    app->bind<Files>(*files);
+
+    // editor components (console)
+    auto console = std::make_unique<Console>(4096);
+    app->bind<Console>(*console);
+
+    // editor components (inspector)
+    auto inspector = std::make_unique<Inspector>();
+    app->bind<Inspector>(*inspector);
+
+    // editor components (hierarchy)
+    auto hierarchy = std::make_unique<Hierarchy>();
+    app->bind<Hierarchy>(*hierarchy);
+
+    // editor components (scene)
+    auto scene = std::make_unique<SceneView>();
+    app->bind<SceneView>(*scene);
+
+    // editor components (game)
+    auto game = std::make_unique<GameView>();
+    app->bind<GameView>(*game);
 
     // bind additional systems
     app->bind<AppEvent::UPDATE>(imgui_update);
     app->bind<AppEvent::RENDER>(imgui_render);
-
-    spdlog::trace("This is a trace log!");
-    spdlog::debug("This is a debug log!");
-    spdlog::info("This is an info log!");
-    spdlog::warn("This is a warning log!");
-    spdlog::error("This is an error log!");
-    spdlog::critical("This is a critical log!");
 
     // event loop
     app->run();
