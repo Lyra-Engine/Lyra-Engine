@@ -49,6 +49,16 @@ static void* get_context(GUIHandle gui)
     return gui.astype<GUIRenderer>()->context();
 }
 
+uint create_texture(GUIHandle gui, GPUTextureViewHandle view)
+{
+    return gui.astype<GUIRenderer>()->create_texture(view);
+}
+
+void delete_texture(GUIHandle gui, uint texid)
+{
+    return gui.astype<GUIRenderer>()->delete_texture(texid);
+}
+
 static void render_main_viewport(GUIHandle gui, GPUCommandEncoderHandle encoder, GPUTextureViewHandle backbuffer)
 {
     auto cmdbuffer = GPUCommandBuffer(encoder);
@@ -91,6 +101,8 @@ LYRA_EXPORT auto create() -> GUIRenderAPI
     api.new_frame             = new_frame;
     api.end_frame             = end_frame;
     api.get_context           = get_context;
+    api.create_texture        = create_texture;
+    api.delete_texture        = delete_texture;
     api.render_main_viewport  = render_main_viewport;
     api.render_side_viewports = render_side_viewports;
     return api;

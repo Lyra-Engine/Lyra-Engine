@@ -15,6 +15,11 @@ namespace lyra
 {
     using GUIRenderPlugin = Plugin<GUIRenderAPI>;
 
+    struct GUITexture
+    {
+        uint texid;
+    };
+
     struct GUIRenderer
     {
         // implicit conversion
@@ -38,6 +43,17 @@ namespace lyra
         void new_frame() const { GUIRenderer::api()->new_frame(handle); }
 
         void end_frame() const { GUIRenderer::api()->end_frame(handle); }
+
+        auto create_texture(GPUTextureViewHandle texture) const -> GUITexture
+        {
+            uint texid = GUIRenderer::api()->create_texture(handle, texture);
+            return GUITexture{texid};
+        }
+
+        void delete_texture(GUITexture texture) const
+        {
+            return GUIRenderer::api()->delete_texture(handle, texture.texid);
+        }
 
         void render_main_viewport(GPUCommandBuffer cmdbuffer, GPUTextureViewHandle backbuffer) const
         {

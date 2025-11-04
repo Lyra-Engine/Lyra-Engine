@@ -113,6 +113,8 @@ target_sources(lyra-engine PRIVATE
     Lyra/Engine/System/ThemeManager.cpp
     Lyra/Engine/System/LayoutManager.h
     Lyra/Engine/System/LayoutManager.cpp
+    Lyra/Engine/System/FrameManager.h
+    Lyra/Engine/System/FrameManager.cpp
     Lyra/Engine/System/ImGuiManager.h
     Lyra/Engine/System/ImGuiManager.cpp
     Lyra/Engine/Editor/AppIcons.h

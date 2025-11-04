@@ -12,7 +12,7 @@ GUIRenderAPI* GUIRenderer::api()
 OwnedResource<GUIRenderer> GUIRenderer::init(const GUIDescriptor& descriptor)
 {
     if (!GUI_PLUGIN.get())
-	GUI_PLUGIN = std::make_unique<GUIRenderPlugin>("lyra-imgui");
+        GUI_PLUGIN = std::make_unique<GUIRenderPlugin>("lyra-imgui");
 
     OwnedResource<GUIRenderer> gui(new GUIRenderer());
     GUIRenderer::api()->create_gui(gui->handle, descriptor);
