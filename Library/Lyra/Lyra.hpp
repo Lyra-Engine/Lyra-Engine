@@ -60,8 +60,10 @@
 #include <Lyra/Assets/AMSTypes.h>
 
 // APP (Application)
-#include <Lyra/AppKit/AppEnums.h>
 #include <Lyra/AppKit/AppTypes.h>
+#include <Lyra/AppKit/AppEnums.h>
+#include <Lyra/AppKit/AppIcons.h>
+#include <Lyra/AppKit/AppColors.h>
 
 // Engine files
 #include <Lyra/Engine/System/AssetManager.h>
@@ -72,12 +74,9 @@
 #include <Lyra/Engine/Assets/JsonAsset.h>
 #include <Lyra/Engine/Assets/TomlAsset.h>
 #include <Lyra/Engine/Assets/TextureAsset.h>
-#include <Lyra/Engine/Editor/AppIcons.h>
-#include <Lyra/Engine/Editor/AppColors.h>
 #include <Lyra/Engine/Editor/Files.h>
 #include <Lyra/Engine/Editor/Console.h>
 #include <Lyra/Engine/Editor/Hierarchy.h>
-#include <Lyra/Engine/Editor/GameView.h>
 #include <Lyra/Engine/Editor/SceneView.h>
 #include <Lyra/Engine/Editor/Inspector.h>
 

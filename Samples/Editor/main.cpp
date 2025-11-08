@@ -3,6 +3,14 @@
 
 using namespace lyra;
 
+static void render_scene(Blackboard& blackboard, GPUCommandBuffer command)
+{
+    // apply the default view transition
+    if (auto view = blackboard.try_get<SceneView*>()) {
+        (*view)->render_default(command);
+    }
+}
+
 static void imgui_update(Blackboard& blackboard)
 {
     if (ImGui::BeginMainMenuBar()) {
@@ -46,7 +54,10 @@ static void imgui_render(Blackboard& blackboard)
     command.wait(backbuffer.available, GPUBarrierSync::PIXEL_SHADING);
     command.signal(backbuffer.complete, GPUBarrierSync::RENDER_TARGET);
 
-    // command recording
+    // render scene command encoding
+    render_scene(blackboard, command);
+
+    // render UI command recording
     command.resource_barrier(state_transition(backbuffer.texture, undefined_state(), color_attachment_state()));
     imgui->render_main_viewport(command, backbuffer.view);
     command.resource_barrier(state_transition(backbuffer.texture, color_attachment_state(), present_src_state()));
@@ -157,13 +168,13 @@ int main(int argc, const char* argv[])
     auto theme_manager = std::make_unique<ThemeManager>();
     app->bind<ThemeManager>(*theme_manager);
 
-    // editor components (files)
-    auto files = std::make_unique<Files>(assets_root);
-    app->bind<Files>(*files);
-
     // editor components (console)
     auto console = std::make_unique<Console>(4096);
     app->bind<Console>(*console);
+
+    // editor components (files)
+    auto files = std::make_unique<Files>(assets_root);
+    app->bind<Files>(*files);
 
     // editor components (inspector)
     auto inspector = std::make_unique<Inspector>();
@@ -176,10 +187,6 @@ int main(int argc, const char* argv[])
     // editor components (scene)
     auto scene = std::make_unique<SceneView>();
     app->bind<SceneView>(*scene);
-
-    // editor components (game)
-    auto game = std::make_unique<GameView>();
-    app->bind<GameView>(*game);
 
     // bind additional systems
     app->bind<AppEvent::UPDATE>(imgui_update);

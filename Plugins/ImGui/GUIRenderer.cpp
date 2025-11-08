@@ -859,11 +859,11 @@ void GUIRenderer::end_render_pass(GPUCommandBuffer cmdbuffer) const
     imgui_end_render_pass(cmdbuffer);
 }
 
-uint GUIRenderer::create_texture(GPUTextureViewHandle view)
+uint GUIRenderer::create_texture(GPUTextureHandle texture, GPUTextureViewHandle view)
 {
     GUITexture texinfo{};
-    texinfo.view = view;
-    texinfo.texture.handle.reset();
+    texinfo.view.handle    = view;
+    texinfo.texture.handle = texture;
     return renderer_data->textures.add(texinfo);
 }
 

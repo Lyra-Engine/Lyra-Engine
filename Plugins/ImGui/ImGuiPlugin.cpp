@@ -49,9 +49,9 @@ static void* get_context(GUIHandle gui)
     return gui.astype<GUIRenderer>()->context();
 }
 
-uint create_texture(GUIHandle gui, GPUTextureViewHandle view)
+uint create_texture(GUIHandle gui, GPUTextureHandle texture, GPUTextureViewHandle view)
 {
-    return gui.astype<GUIRenderer>()->create_texture(view);
+    return gui.astype<GUIRenderer>()->create_texture(texture, view);
 }
 
 void delete_texture(GUIHandle gui, uint texid)

@@ -20,6 +20,7 @@ namespace lyra
     {
         RHIBackend backend;
         RHIFlags   flags;
+        uint       frames = 3;
     };
 
     struct AppCompilerDescriptor
@@ -39,11 +40,20 @@ namespace lyra
         AppDescriptor& with_window_extent(uint width, uint height);
         AppDescriptor& with_graphics_backend(RHIBackend backend);
         AppDescriptor& with_graphics_validation(bool debug = true, bool validation = true);
+        AppDescriptor& with_frames_in_flight(uint frames_in_flight);
 
     private:
         AppWindowDescriptor   wsi;
         AppGraphicsDescriptor rhi;
         AppCompilerDescriptor slc;
+    };
+
+    struct Backbuffer
+    {
+        GPUTextureHandle     texture;
+        GPUTextureViewHandle texview;
+        GPUTextureFormat     format;
+        GPUExtent2D          extent;
     };
 
     struct Application
@@ -94,6 +104,10 @@ namespace lyra
 
         auto& get_blackboard() { return blackboard; }
         auto& get_blackboard() const { return blackboard; }
+
+        auto& get_window_descriptor() const { return descriptor.wsi; }
+        auto& get_graphics_descriptor() const { return descriptor.rhi; }
+        auto& get_compiler_descriptor() const { return descriptor.slc; }
 
     private:
         void init();

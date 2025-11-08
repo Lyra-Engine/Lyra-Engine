@@ -38,7 +38,7 @@ namespace lyra
 
         void* (*get_context)(GUIHandle gui);
 
-        uint (*create_texture)(GUIHandle gui, GPUTextureViewHandle view);
+        uint (*create_texture)(GUIHandle gui, GPUTextureHandle texture, GPUTextureViewHandle view);
         void (*delete_texture)(GUIHandle gui, uint texid);
 
         void (*render_main_viewport)(GUIHandle gui, GPUCommandEncoderHandle cmdbuffer, GPUTextureViewHandle backbuffer);

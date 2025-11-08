@@ -1,7 +1,7 @@
 #include <Lyra/Vendor/IMGUI.h>
 #include <Lyra/Common/Logger.h>
-#include <Lyra/Engine/Editor/AppIcons.h>
-#include <Lyra/Engine/Editor/AppColors.h>
+#include <Lyra/AppKit/AppIcons.h>
+#include <Lyra/AppKit/AppColors.h>
 #include <Lyra/Engine/Editor/Console.h>
 #include <Lyra/Engine/System/LayoutManager.h>
 

@@ -3,7 +3,9 @@
 #ifndef LYRA_LIBRARY_ENGINE_EDITOR_SCENE_VIEW_H
 #define LYRA_LIBRARY_ENGINE_EDITOR_SCENE_VIEW_H
 
+#include <Lyra/Vendor/IMGUI.h>
 #include <Lyra/AppKit/AppTypes.h>
+#include <Lyra/Engine/Helper/Canvas.h>
 
 namespace lyra
 {
@@ -16,7 +18,15 @@ namespace lyra
 
         void update(Blackboard& blackboard);
 
+        void render_default(GPUCommandBuffer command);
+
+        auto get_backbuffer() -> Backbuffer
+        {
+            return canvas.get_backbuffer();
+        }
+
     private:
+        ImGuiCanvas canvas;
     };
 } // namespace lyra
 

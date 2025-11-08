@@ -97,6 +97,9 @@ target_sources(lyra-engine PRIVATE
     # appkit sources
     Lyra/AppKit/AppTypes.h
     Lyra/AppKit/AppTypes.cpp
+    Lyra/AppKit/AppEnums.h
+    Lyra/AppKit/AppIcons.h
+    Lyra/AppKit/AppColors.h
 
     # engine sources
     Lyra/Engine/Assets/TextAsset.h
@@ -113,12 +116,8 @@ target_sources(lyra-engine PRIVATE
     Lyra/Engine/System/ThemeManager.cpp
     Lyra/Engine/System/LayoutManager.h
     Lyra/Engine/System/LayoutManager.cpp
-    Lyra/Engine/System/FrameManager.h
-    Lyra/Engine/System/FrameManager.cpp
     Lyra/Engine/System/ImGuiManager.h
     Lyra/Engine/System/ImGuiManager.cpp
-    Lyra/Engine/Editor/AppIcons.h
-    Lyra/Engine/Editor/AppColors.h
     Lyra/Engine/Editor/Files.h
     Lyra/Engine/Editor/Files.cpp
     Lyra/Engine/Editor/Console.h
@@ -129,8 +128,8 @@ target_sources(lyra-engine PRIVATE
     Lyra/Engine/Editor/Inspector.cpp
     Lyra/Engine/Editor/SceneView.h
     Lyra/Engine/Editor/SceneView.cpp
-    Lyra/Engine/Editor/GameView.h
-    Lyra/Engine/Editor/GameView.cpp
+    Lyra/Engine/Helper/Canvas.h
+    Lyra/Engine/Helper/Canvas.cpp
 )
 
 # link dependencies

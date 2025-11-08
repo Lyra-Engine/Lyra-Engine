@@ -116,7 +116,7 @@ public:
     void new_frame();
     void end_frame();
 
-    uint create_texture(GPUTextureViewHandle view);
+    uint create_texture(GPUTextureHandle texture, GPUTextureViewHandle view);
     void delete_texture(uint texid);
 
     void begin_render_pass(GPUCommandBuffer cmdbuffer, GPUTextureViewHandle backbuffer) const;
