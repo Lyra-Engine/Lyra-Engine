@@ -277,11 +277,11 @@ namespace lyra
 
         FORCE_INLINE bool valid() const { return handle.valid(); }
 
-        void insert_debug_marker(CString marker_label);
+        void insert_debug_marker(CString marker_label) const;
 
-        void push_debug_group(CString group_label);
+        void push_debug_group(CString group_label) const;
 
-        void pop_debug_group();
+        void pop_debug_group() const;
 
         void wait(const GPUFence& fence, GPUBarrierSyncFlags sync) const;
 

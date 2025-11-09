@@ -86,12 +86,12 @@ bool api::create_instance(const RHIDescriptor& desc)
     create_info.flags                   = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
 
     // prepare debug info
-    VkDebugUtilsMessengerCreateInfoEXT debugInfo;
+    VkDebugUtilsMessengerCreateInfoEXT debug_info;
     if (desc.flags.contains(RHIFlag::VALIDATION)) {
         create_info.enabledLayerCount   = static_cast<uint>(validation_layers.size());
         create_info.ppEnabledLayerNames = validation_layers.data();
-        fill_vulkan_debug_messenger_create_info(debugInfo);
-        create_info.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugInfo;
+        fill_vulkan_debug_messenger_create_info(debug_info);
+        create_info.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debug_info;
     } else {
         create_info.enabledLayerCount = 0;
         create_info.pNext             = nullptr;

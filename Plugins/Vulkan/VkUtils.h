@@ -14,6 +14,7 @@
 #define VK_USE_PLATFORM_METAL_EXT
 #endif
 
+#define VK_EXT_debug_utils
 #include <volk.h>
 #include <vk_mem_alloc.h>
 #include <sstream>
@@ -644,6 +645,9 @@ namespace api
 // vulkan command buffer recording
 namespace cmd
 {
+    void insert_debug_marker(GPUCommandEncoderHandle cmdbuffer, CString marker_label);
+    void push_debug_group(GPUCommandEncoderHandle cmdbuffer, CString group_label);
+    void pop_debug_group(GPUCommandEncoderHandle cmdbuffer);
     void wait_fence(GPUCommandEncoderHandle cmdbuffer, GPUFenceHandle fence, GPUBarrierSyncFlags sync);
     void signal_fence(GPUCommandEncoderHandle cmdbuffer, GPUFenceHandle fence, GPUBarrierSyncFlags sync);
     void begin_render_pass(GPUCommandEncoderHandle cmdbuffer, const GPURenderPassDescriptor& descriptor);

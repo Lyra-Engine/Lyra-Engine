@@ -93,6 +93,9 @@ namespace lyra
         bool (*create_command_bundle)(GPUCommandEncoderHandle& cmdbuffer, const GPUCommandBundleDescriptor& descriptor);
         bool (*submit_command_buffer)(GPUCommandEncoderHandle cmdbuffer);
 
+        void (*cmd_insert_debug_marker)(GPUCommandEncoderHandle cmdbuffer, CString marker_label);
+        void (*cmd_push_debug_group)(GPUCommandEncoderHandle cmdbuffer, CString group_label);
+        void (*cmd_pop_debug_group)(GPUCommandEncoderHandle cmdbuffer);
         void (*cmd_wait_fence)(GPUCommandEncoderHandle cmdbuffer, GPUFenceHandle fence, GPUBarrierSyncFlags sync);
         void (*cmd_signal_fence)(GPUCommandEncoderHandle cmdbuffer, GPUFenceHandle fence, GPUBarrierSyncFlags sync);
         void (*cmd_begin_render_pass)(GPUCommandEncoderHandle cmdbuffer, const GPURenderPassDescriptor& descriptor);

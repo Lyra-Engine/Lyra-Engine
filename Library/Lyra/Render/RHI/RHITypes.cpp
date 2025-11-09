@@ -462,6 +462,21 @@ void GPURayTracingPipeline::destroy()
 #pragma endregion GPURayTracingPipeline
 
 #pragma region GPUCommandEncoder
+void GPUCommandEncoder::insert_debug_marker(CString marker_label) const
+{
+    RHI::api()->cmd_insert_debug_marker(handle, marker_label);
+}
+
+void GPUCommandEncoder::push_debug_group(CString group_label) const
+{
+    RHI::api()->cmd_push_debug_group(handle, group_label);
+}
+
+void GPUCommandEncoder::pop_debug_group() const
+{
+    RHI::api()->cmd_pop_debug_group(handle);
+}
+
 void GPUCommandEncoder::wait(const GPUFence& fence, GPUBarrierSyncFlags sync) const
 {
     RHI::api()->cmd_wait_fence(handle, fence.handle, sync);

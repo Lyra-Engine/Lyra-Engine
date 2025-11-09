@@ -763,6 +763,9 @@ namespace api
 // d3d12 command buffer recording
 namespace cmd
 {
+    void insert_debug_marker(GPUCommandEncoderHandle cmdbuffer, CString marker_label);
+    void push_debug_group(GPUCommandEncoderHandle cmdbuffer, CString group_label);
+    void pop_debug_group(GPUCommandEncoderHandle cmdbuffer);
     void wait_fence(GPUCommandEncoderHandle cmdbuffer, GPUFenceHandle fence, GPUBarrierSyncFlags sync);
     void signal_fence(GPUCommandEncoderHandle cmdbuffer, GPUFenceHandle fence, GPUBarrierSyncFlags sync);
     void begin_render_pass(GPUCommandEncoderHandle cmdbuffer, const GPURenderPassDescriptor& descriptor);

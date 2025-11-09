@@ -1,13 +1,16 @@
 #include <cxxopts.hpp>
 #include <Lyra/Lyra.hpp>
+#include "renderer.h"
 
 using namespace lyra;
 
 static void render_scene(Blackboard& blackboard, GPUCommandBuffer command)
 {
-    // apply the default view transition
+    // apply a toy demo renderer
     if (auto view = blackboard.try_get<SceneView*>()) {
-        (*view)->render_default(command);
+        auto device   = blackboard.get<GPUDevice>();
+        auto renderer = blackboard.get<SampleCubeRenderer*>();
+        renderer->render((*view)->get_backbuffer(), device, command);
     }
 }
 
@@ -26,12 +29,12 @@ static void imgui_update(Blackboard& blackboard)
         ImGui::EndMainMenuBar();
     }
 
-    lyra::execute_once([&]() {
-        auto& layout = blackboard.get<LayoutInfo>();
-        ImGui::DockBuilderDockWindow("Dear ImGui Demo", layout.main);
-    });
-
-    ImGui::ShowDemoWindow();
+    // lyra::execute_once([&]() {
+    //     auto& layout = blackboard.get<LayoutInfo>();
+    //     ImGui::DockBuilderDockWindow("Dear ImGui Demo", layout.main);
+    // });
+    //
+    // ImGui::ShowDemoWindow();
 }
 
 static void imgui_render(Blackboard& blackboard)
@@ -187,6 +190,10 @@ int main(int argc, const char* argv[])
     // editor components (scene)
     auto scene = std::make_unique<SceneView>();
     app->bind<SceneView>(*scene);
+
+    // renderer (temporary solution)
+    auto renderer = std::make_unique<SampleCubeRenderer>();
+    app->bind<SampleCubeRenderer>(*renderer);
 
     // bind additional systems
     app->bind<AppEvent::UPDATE>(imgui_update);

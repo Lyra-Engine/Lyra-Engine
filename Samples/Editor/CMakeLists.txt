@@ -1,6 +1,9 @@
 lyra_sample(editor)
 find_package(cxxopts REQUIRED)
-target_sources(lyra-editor PRIVATE main.cpp)
+target_sources(lyra-editor PRIVATE main.cpp
+    renderer.h
+    renderer.cpp
+)
 
 # add custom target to run sample executable
 add_custom_target(

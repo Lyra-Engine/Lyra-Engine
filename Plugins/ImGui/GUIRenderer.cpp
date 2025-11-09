@@ -321,6 +321,8 @@ static void imgui_render(GPUCommandBuffer cmdbuffer, GPUTextureViewHandle backbu
     int fb_height = static_cast<int>(draw_data->DisplaySize.y * draw_data->FramebufferScale.y);
     if (fb_width <= 0 || fb_height <= 0) return;
 
+    cmdbuffer.push_debug_group("ImGui");
+
     // refresh index/vertex buffers
     imgui_create_vertex_buffers(pipeline_data, renderer_data, draw_data);
 
@@ -374,6 +376,7 @@ static void imgui_render(GPUCommandBuffer cmdbuffer, GPUTextureViewHandle backbu
 
     // reset scissor rect for future commands
     cmdbuffer.set_scissor_rect(0, 0, fb_width, fb_height);
+    cmdbuffer.pop_debug_group();
 }
 
 static void imgui_create_window_context(GUIPlatformData* platform_data, WindowHandle window, ImGuiContext* context)
