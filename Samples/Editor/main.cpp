@@ -1,59 +1,43 @@
 #include <cxxopts.hpp>
 #include <Lyra/Lyra.hpp>
+#include "renderer.h"
 
 using namespace lyra;
 
-void imgui_update(Blackboard& blackboard)
+static void render_scene(Blackboard& blackboard, GPUCommandBuffer command)
 {
-    auto& layout = blackboard.get<LayoutInfo>();
+    // apply a toy demo renderer
+    if (auto view = blackboard.try_get<SceneView*>()) {
+        auto device   = blackboard.get<GPUDevice>();
+        auto renderer = blackboard.get<SampleCubeRenderer*>();
+        renderer->render((*view)->get_backbuffer(), device, command);
+    }
+}
 
-    ImGuiIO& io  = ImGui::GetIO();
-    float    fps = io.Framerate;
-
+static void imgui_update(Blackboard& blackboard)
+{
     if (ImGui::BeginMainMenuBar()) {
-        if (ImGui::BeginMenu("File")) {
+        if (ImGui::BeginMenu("Project")) {
             if (ImGui::MenuItem("Create")) {
             }
-            if (ImGui::MenuItem("Open", "Ctrl+O")) {
+            if (ImGui::MenuItem("Load", "Ctrl+O")) {
             }
             if (ImGui::MenuItem("Save", "Ctrl+S")) {
-            }
-            if (ImGui::MenuItem("Save as..")) {
             }
             ImGui::EndMenu();
         }
         ImGui::EndMainMenuBar();
     }
 
-    ImGui::DockBuilderDockWindow("Dear ImGui Demo", layout.main);
-    ImGui::ShowDemoWindow();
-
-    ImGui::DockBuilderDockWindow("Dear ImGui Debug Log", layout.bottom);
-    ImGui::ShowDebugLogWindow();
-
-    ImGui::DockBuilderDockWindow("Scene", layout.main);
-    ImGui::Begin("Scene");
-    ImGui::End();
-
-    ImGui::DockBuilderDockWindow("Hierarchy", layout.left);
-    ImGui::Begin("Hierarchy");
-    ImGui::Text("Hi, World!");
-    ImGui::End();
-
-    ImGui::DockBuilderDockWindow("Inspector", layout.right);
-    ImGui::Begin("Inspector");
-    ImGui::End();
-
-    ImGui::DockBuilderDockWindow("Console", layout.bottom);
-    ImGui::Begin("Console");
-    ImGui::SetWindowFontScale(2.0f);
-    ImGui::Text("\uea84 \uf09b \ue65b Hello World \ue8a9 \ue200 \ue201 \ue202 \ue404");
-    ImGui::SetWindowFontScale(1.0f);
-    ImGui::Text("FPS: %.3f", fps);
-    ImGui::End();
+    // lyra::execute_once([&]() {
+    //     auto& layout = blackboard.get<LayoutInfo>();
+    //     ImGui::DockBuilderDockWindow("Dear ImGui Demo", layout.main);
+    // });
+    //
+    // ImGui::ShowDemoWindow();
 }
 
-void imgui_render(Blackboard& blackboard)
+static void imgui_render(Blackboard& blackboard)
 {
     auto device  = blackboard.get<GPUDevice>();
     auto surface = blackboard.get<GPUSurface>();
@@ -73,7 +57,10 @@ void imgui_render(Blackboard& blackboard)
     command.wait(backbuffer.available, GPUBarrierSync::PIXEL_SHADING);
     command.signal(backbuffer.complete, GPUBarrierSync::RENDER_TARGET);
 
-    // command recording
+    // render scene command encoding
+    render_scene(blackboard, command);
+
+    // render UI command recording
     command.resource_barrier(state_transition(backbuffer.texture, undefined_state(), color_attachment_state()));
     imgui->render_main_viewport(command, backbuffer.view);
     command.resource_barrier(state_transition(backbuffer.texture, color_attachment_state(), present_src_state()));
@@ -87,11 +74,37 @@ void imgui_render(Blackboard& blackboard)
 
 int main(int argc, const char* argv[])
 {
-    // common paths (TODO: need to think about what the project structure should look like)
-    auto root           = git_root();
-    auto assets_root    = root; // / "Assets";
-    auto metadata_root  = root; // / "Metadata";
-    auto generated_root = root; // / "Generated";
+    // clang-format off
+    cxxopts::Options options("Lyra::Editor", "Lyra engine editor program.");
+    options.add_options()
+        ("p,project", "project root directory", cxxopts::value<std::filesystem::path>()->default_value("./"))
+        ("h,help", "print usage")
+    ;
+    // clang-format on
+
+    // parse arguments
+    auto args = options.parse(argc, argv);
+    if (args.count("help")) {
+        spdlog::error("{}", options.help());
+        exit(0);
+    }
+
+    // common paths
+    auto root = args["project"].as<Path>();
+    if (!fs::exists(root))
+        std::filesystem::create_directory(root);
+
+    auto assets_root = root / "Assets";
+    if (!fs::exists(assets_root))
+        fs::create_directory(assets_root);
+
+    auto metadata_root = root / "Metadata";
+    if (!fs::exists(metadata_root))
+        fs::create_directory(metadata_root);
+
+    auto generated_root = root / "Generated";
+    if (!fs::exists(generated_root))
+        fs::create_directory(generated_root);
 
     // application
     auto app = lyra::execute([&]() {
@@ -107,8 +120,8 @@ int main(int argc, const char* argv[])
     // file loader
     auto file_loader = lyra::execute([&]() {
         auto loader = std::make_unique<FileLoader>(FSLoader::NATIVE);
-        loader->mount("/", generated_root, 1);
-        loader->mount("/", metadata_root, 0);
+        loader->mount("/", generated_root, 2);
+        loader->mount("/", metadata_root, 1);
         loader->mount("/", assets_root, 0);
         return loader;
     });
@@ -125,6 +138,7 @@ int main(int argc, const char* argv[])
         desc.workers                 = 4;
         return std::make_unique<AssetManager>(desc);
     });
+    app->bind<AssetManager>(*asset_manager);
 
     // imgui manager
     auto imgui_manager = lyra::execute([&]() {
@@ -133,9 +147,13 @@ int main(int argc, const char* argv[])
         desc.surface   = app->get_blackboard().get<GPUSurface>();
         desc.compiler  = app->get_blackboard().get<Compiler>();
         desc.docking   = true;
-        desc.viewports = true;
-        return std::make_unique<GUIManager>(desc);
+        desc.viewports = false;
+
+        auto imgui = std::make_unique<ImGuiManager>(desc);
+        imgui->apply_context(); // imgui context in user application
+        return std::move(imgui);
     });
+    app->bind<ImGuiManager>(*imgui_manager);
 
     // layout manager
     auto layout_manager = lyra::execute([&]() {
@@ -144,17 +162,38 @@ int main(int argc, const char* argv[])
         desc.left   = 0.2f;
         desc.right  = 0.3f;
         desc.top    = 0.2f;
-        desc.bottom = 0.2f;
+        desc.bottom = 0.4f;
         return std::make_unique<LayoutManager>(desc);
     });
-
-    // imgui context in user application
-    imgui_manager->apply_context();
-
-    // bind app bundles
-    app->bind<GUIManager>(*imgui_manager);
-    app->bind<AssetManager>(*asset_manager);
     app->bind<LayoutManager>(*layout_manager);
+
+    // theme manager
+    auto theme_manager = std::make_unique<ThemeManager>();
+    app->bind<ThemeManager>(*theme_manager);
+
+    // editor components (console)
+    auto console = std::make_unique<Console>(4096);
+    app->bind<Console>(*console);
+
+    // editor components (files)
+    auto files = std::make_unique<Files>(assets_root);
+    app->bind<Files>(*files);
+
+    // editor components (inspector)
+    auto inspector = std::make_unique<Inspector>();
+    app->bind<Inspector>(*inspector);
+
+    // editor components (hierarchy)
+    auto hierarchy = std::make_unique<Hierarchy>();
+    app->bind<Hierarchy>(*hierarchy);
+
+    // editor components (scene)
+    auto scene = std::make_unique<SceneView>();
+    app->bind<SceneView>(*scene);
+
+    // renderer (temporary solution)
+    auto renderer = std::make_unique<SampleCubeRenderer>();
+    app->bind<SampleCubeRenderer>(*renderer);
 
     // bind additional systems
     app->bind<AppEvent::UPDATE>(imgui_update);

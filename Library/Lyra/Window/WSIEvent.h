@@ -3,11 +3,19 @@
 #ifndef LYRA_LIBRARY_WINDOW_EVENT_H
 #define LYRA_LIBRARY_WINDOW_EVENT_H
 
+#include <Lyra/Common/String.h>
 #include <Lyra/Common/Container.h>
 #include <Lyra/Window/WSIEnums.h>
 
 namespace lyra
 {
+    // file drop event
+    struct FileDropEvent
+    {
+        uint     count;
+        CString* files;
+    };
+
     // character typed event
     struct KeyTypingEvent
     {
@@ -73,6 +81,7 @@ namespace lyra
     {
         enum struct Type : uint
         {
+            FILE_DROP,
             KEY_TYPING,
             KEY_BUTTON,
             MOUSE_MOVE,
@@ -86,6 +95,7 @@ namespace lyra
 
         union
         {
+            FileDropEvent     file_drop;
             KeyTypingEvent    key_typing;
             KeyButtonEvent    key_button;
             MouseMoveEvent    mouse_move;

@@ -14,6 +14,7 @@ LYRA_EXPORT auto prepare() -> void
 
 LYRA_EXPORT auto cleanup() -> void
 {
+    // do nothing
 }
 
 LYRA_EXPORT auto create() -> AssetHandlerAPI

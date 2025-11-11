@@ -1,4 +1,17 @@
 lyra_sample(editor)
-find_package(stb REQUIRED)
 find_package(cxxopts REQUIRED)
-target_sources(lyra-editor PRIVATE main.cpp)
+target_sources(lyra-editor PRIVATE main.cpp
+    renderer.h
+    renderer.cpp
+)
+
+# add custom target to run sample executable
+add_custom_target(
+  editor
+  COMMAND $<TARGET_FILE:lyra-editor> --project ${CMAKE_BINARY_DIR}
+  COMMENT "Run Lyra::Editor"
+  DEPENDS lyra-editor
+  VERBATIM)
+
+# move to Targets folder
+set_target_properties(editor PROPERTIES FOLDER "Targets")

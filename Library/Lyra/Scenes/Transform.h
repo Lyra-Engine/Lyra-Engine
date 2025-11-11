@@ -3,30 +3,30 @@
 #ifndef LYRA_LIBRARY_SCENES_TRANSFORM_H
 #define LYRA_LIBRARY_SCENES_TRANSFORM_H
 
-#include <Lyra/Common/GLM.h>
+#include <Lyra/Vendor/GLM.h>
 
-namespace lyra::scn
+namespace lyra
 {
 
     struct Transform
     {
-        glm::vec3 scale    = glm::vec3(1.0f);
-        glm::vec3 position = glm::vec3(0.0f);
-        glm::quat rotation = glm::quat();
+        Vector3    scale    = Vector3(1.0f);
+        Vector3    position = Vector3(0.0f);
+        Quaternion rotation = Quaternion();
     };
 
     struct WorldTransform
     {
-        glm::mat4 xform = glm::mat4();
+        Matrix4x4 xform = Matrix4x4();
 
         bool dirty = false;
     };
 
     struct CameraTransform
     {
-        glm::mat4 projection;
+        Matrix4x4 projection;
     };
 
-} // namespace lyra::scn
+} // namespace lyra
 
 #endif // LYRA_LIBRARY_SCENES_TRANSFORM_H

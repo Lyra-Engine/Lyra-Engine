@@ -1,11 +1,10 @@
 // library headers
-#include <Lyra/Common/GLM.h>
 #include <Lyra/Common/Plugin.h>
 #include <Lyra/Common/Assert.h>
 #include <Lyra/Common/Pointer.h>
 #include <Lyra/Common/Function.h>
-#include <Lyra/Render/RHIInits.h>
-#include <Lyra/Render/RHITypes.h>
+#include <Lyra/Render/RHI/RHIInits.h>
+#include <Lyra/Render/RHI/RHITypes.h>
 
 // local headers
 #include "GUIRenderer.h"
@@ -16,16 +15,16 @@ CMRC_DECLARE(imgui);
 
 using namespace lyra;
 
-static Logger logger = init_stderr_logger("ImGui", LogLevel::trace);
+static Logger logger = create_logger("ImGui", LogLevel::trace);
+
+Logger get_logger()
+{
+    return logger;
+}
 
 namespace ImGui
 {
     extern ImGuiIO& GetIO(ImGuiContext*);
-}
-
-static Logger get_logger()
-{
-    return logger;
 }
 
 static GUIRendererData* imgui_make_renderer(uint frame_count)
@@ -48,7 +47,7 @@ static GPUBuffer imgui_create_buffer(uint size, GPUBufferUsageFlags usages)
     });
 }
 
-static GPUBuffer imgui_prepare_buffer(GPUBuffer buffer, GUIPipelineData* pipeline_data, uint size, GPUBufferUsageFlags usages)
+static GPUBuffer imgui_prepare_buffer(GPUBuffer buffer, GUIRendererData* renderer_data, uint size, GPUBufferUsageFlags usages)
 {
     // check if buffer is valid
     if (!buffer.handle.valid())
@@ -56,7 +55,7 @@ static GPUBuffer imgui_prepare_buffer(GPUBuffer buffer, GUIPipelineData* pipelin
 
     // check if buffer is big enough
     if (buffer.size < size) {
-        pipeline_data->garbage_buffers.push_back(GUIGarbageBuffer{buffer, 0});
+        renderer_data->garbage_buffers.push_back(GUIGarbageBuffer{buffer, 0});
         return imgui_create_buffer(size, usages);
     }
 
@@ -75,14 +74,14 @@ static void imgui_create_vertex_buffers(GUIPipelineData* pipeline_data, GUIRende
     // create/resize index buffer on the fly
     ibuffer = imgui_prepare_buffer(
         ibuffer,
-        pipeline_data,
+        renderer_data,
         draw_data->TotalIdxCount * sizeof(ImDrawIdx),
         GPUBufferUsage::INDEX | GPUBufferUsage::MAP_WRITE);
 
     // create/resize vertex buffer on the fly
     vbuffer = imgui_prepare_buffer(
         vbuffer,
-        pipeline_data,
+        renderer_data,
         draw_data->TotalVtxCount * sizeof(ImDrawVert),
         GPUBufferUsage::VERTEX | GPUBufferUsage::MAP_WRITE);
 
@@ -103,17 +102,17 @@ static void imgui_create_vertex_buffers(GUIPipelineData* pipeline_data, GUIRende
     vbuffer.unmap();
 }
 
-static void imgui_reset_texture_descriptors(GUIPipelineData* pipeline_data)
+static void imgui_reset_texture_descriptors(GUIRendererData* renderer_data)
 {
-    for (auto& texinfo : pipeline_data->textures.data)
+    for (auto& texinfo : renderer_data->textures.data)
         texinfo.bindgroup.handle.reset();
 }
 
-static GPUBindGroup imgui_create_texture_descriptor(GUIPipelineData* pipeline_data, uint texid)
+static GPUBindGroup imgui_create_texture_descriptor(GUIPipelineData* pipeline_data, GUIRendererData* renderer_data, uint texid)
 {
     auto& device = RHI::get_current_device();
 
-    auto& texinfo = pipeline_data->textures.at(texid);
+    auto& texinfo = renderer_data->textures.at(texid);
     if (texinfo.bindgroup.valid())
         return texinfo.bindgroup;
 
@@ -127,7 +126,7 @@ static GPUBindGroup imgui_create_texture_descriptor(GUIPipelineData* pipeline_da
     entries.at(1).binding = 1;
     entries.at(1).index   = 0;
     entries.at(1).type    = GPUBindingResourceType::SAMPLER;
-    entries.at(1).sampler = pipeline_data->sampler;
+    entries.at(1).sampler = renderer_data->sampler;
 
     texinfo.bindgroup = execute([&]() {
         GPUBindGroupDescriptor desc{};
@@ -138,7 +137,7 @@ static GPUBindGroup imgui_create_texture_descriptor(GUIPipelineData* pipeline_da
     return texinfo.bindgroup;
 }
 
-static void imgui_create_texture(GUIPipelineData* pipeline_data, ImTextureData* tex)
+static void imgui_create_texture(GUIPipelineData* pipeline_data, GUIRendererData* renderer_data, ImTextureData* tex)
 {
     auto& device = RHI::get_current_device();
 
@@ -162,11 +161,11 @@ static void imgui_create_texture(GUIPipelineData* pipeline_data, ImTextureData* 
     texinfo.texture = texture;
     texinfo.view    = texture.create_view();
 
-    auto texid = pipeline_data->textures.add(texinfo);
+    auto texid = renderer_data->textures.add(texinfo);
     tex->SetTexID(texid);
 }
 
-static void imgui_update_texture(GPUCommandBuffer cmdbuffer, GUIPipelineData* pipeline_data, ImTextureData* tex)
+static void imgui_update_texture(GPUCommandBuffer cmdbuffer, GUIRendererData* renderer_data, ImTextureData* tex)
 {
     uint alignment = RHI::get_current_adapter().properties.texture_row_pitch_alignment;
     uint row_pitch = (tex->GetPitch() + alignment - 1) & ~(alignment - 1);
@@ -184,7 +183,7 @@ static void imgui_update_texture(GPUCommandBuffer cmdbuffer, GUIPipelineData* pi
     staging.unmap();
 
     auto  texid   = tex->GetTexID();
-    auto& texture = pipeline_data->textures.at(static_cast<uint>(texid));
+    auto& texture = renderer_data->textures.at(static_cast<uint>(texid));
 
     GPUTexelCopyBufferInfo source{};
     source.buffer         = staging;
@@ -209,44 +208,47 @@ static void imgui_update_texture(GPUCommandBuffer cmdbuffer, GUIPipelineData* pi
     cmdbuffer.resource_barrier(state_transition(texture.texture, copy_dst_state(), shader_resource_state(GPUBarrierSync::PIXEL_SHADING)));
 
     // deferred deletion of the staging buffer, because this buffer is still used before the command buffer completes.
-    pipeline_data->garbage_buffers.push_back(GUIGarbageBuffer{staging, 0});
+    renderer_data->garbage_buffers.push_back(GUIGarbageBuffer{staging, 0});
 
     // update the texture status back to OK (required by ImGui)
     tex->SetStatus(ImTextureStatus_OK);
 }
 
-static void imgui_delete_texture(GUIPipelineData* pipeline_data, ImTextureData* tex)
+static void imgui_delete_texture(GUIPipelineData* pipeline_data, GUIRendererData* renderer_data, ImTextureID texid)
 {
-    auto texid = tex->GetTexID();
-
     // deferred deletion of texture, because the current texture/view might still be used in some frames in flight
-    auto& texinfo = pipeline_data->textures.at(static_cast<uint>(texid));
+    auto& texinfo = renderer_data->textures.at(static_cast<uint>(texid));
     if (texinfo.valid()) {
-        pipeline_data->textures.remove(static_cast<uint>(texid));
-        pipeline_data->garbage_textures.push_back(GUIGarbageTexture{texinfo, (uint)tex->UnusedFrames});
+        renderer_data->textures.remove(static_cast<uint>(texid));
+        renderer_data->garbage_textures.push_back(GUIGarbageTexture{texinfo, pipeline_data->frame_count});
     }
+}
+
+static void imgui_delete_texture(GUIPipelineData* pipeline_data, GUIRendererData* renderer_data, ImTextureData* tex)
+{
+    imgui_delete_texture(pipeline_data, renderer_data, tex->GetTexID());
 
     // reset texture id
     tex->SetTexID(ImTextureID_Invalid);
     tex->SetStatus(ImTextureStatus_Destroyed);
 }
 
-static void imgui_process_texture(GPUCommandBuffer cmdbuffer, GUIPipelineData* pipeline_data, ImTextureData* tex)
+static void imgui_process_texture(GPUCommandBuffer cmdbuffer, GUIPipelineData* pipeline_data, GUIRendererData* renderer_data, ImTextureData* tex)
 {
     // nothing to do
     if (tex->Status == ImTextureStatus_OK) return;
 
     // create texture if necessary
     if (tex->Status == ImTextureStatus_WantCreate)
-        imgui_create_texture(pipeline_data, tex);
+        imgui_create_texture(pipeline_data, renderer_data, tex);
 
     // update texture if necessary
     if (tex->Status == ImTextureStatus_WantCreate || tex->Status == ImTextureStatus_WantUpdates)
-        imgui_update_texture(cmdbuffer, pipeline_data, tex);
+        imgui_update_texture(cmdbuffer, renderer_data, tex);
 
     // delete texture if necessary
     if (tex->Status == ImTextureStatus_WantDestroy)
-        imgui_delete_texture(pipeline_data, tex);
+        imgui_delete_texture(pipeline_data, renderer_data, tex);
 }
 
 static void imgui_prepare(GPUCommandBuffer cmdbuffer, GUIPipelineData* pipeline_data, GUIRendererData* renderer_data, ImDrawData* draw_data)
@@ -256,7 +258,7 @@ static void imgui_prepare(GPUCommandBuffer cmdbuffer, GUIPipelineData* pipeline_
     if (draw_data->Textures != nullptr)
         for (ImTextureData* tex : *draw_data->Textures)
             if (tex->Status != ImTextureStatus_OK)
-                imgui_process_texture(cmdbuffer, pipeline_data, tex);
+                imgui_process_texture(cmdbuffer, pipeline_data, renderer_data, tex);
 }
 
 static void imgui_setup_render_state(GPUCommandBuffer cmdbuffer, GUIPipelineData* pipeline_data, GUIRendererData* renderer_data, ImDrawData* draw_data, int width, int height)
@@ -319,6 +321,8 @@ static void imgui_render(GPUCommandBuffer cmdbuffer, GPUTextureViewHandle backbu
     int fb_height = static_cast<int>(draw_data->DisplaySize.y * draw_data->FramebufferScale.y);
     if (fb_width <= 0 || fb_height <= 0) return;
 
+    cmdbuffer.push_debug_group("ImGui");
+
     // refresh index/vertex buffers
     imgui_create_vertex_buffers(pipeline_data, renderer_data, draw_data);
 
@@ -355,7 +359,7 @@ static void imgui_render(GPUCommandBuffer cmdbuffer, GPUTextureViewHandle backbu
 
             // bind texture
             uint texid   = static_cast<uint>(draw_cmd.GetTexID());
-            auto texinfo = imgui_create_texture_descriptor(pipeline_data, texid);
+            auto texinfo = imgui_create_texture_descriptor(pipeline_data, renderer_data, texid);
             cmdbuffer.set_bind_group(0, texinfo);
 
             // draw
@@ -372,6 +376,7 @@ static void imgui_render(GPUCommandBuffer cmdbuffer, GPUTextureViewHandle backbu
 
     // reset scissor rect for future commands
     cmdbuffer.set_scissor_rect(0, 0, fb_width, fb_height);
+    cmdbuffer.pop_debug_group();
 }
 
 static void imgui_create_window_context(GUIPlatformData* platform_data, WindowHandle window, ImGuiContext* context)
@@ -716,7 +721,7 @@ void GUIRenderer::reset()
     uint frame_count = pipeline_data->frame_count;
 
     // reclaim unused buffers
-    auto& garbage_buffers = pipeline_data->garbage_buffers;
+    auto& garbage_buffers = renderer_data->garbage_buffers;
     for (auto it = garbage_buffers.begin(); it != garbage_buffers.end();) {
         auto& garbage = *it;
         if (garbage.should_remove(frame_count)) {
@@ -728,7 +733,7 @@ void GUIRenderer::reset()
     }
 
     // reclaim unused textures
-    auto& garbage_textures = pipeline_data->garbage_textures;
+    auto& garbage_textures = renderer_data->garbage_textures;
     for (auto it = garbage_textures.begin(); it != garbage_textures.end();) {
         auto& garbage = *it;
         if (garbage.should_remove(frame_count)) {
@@ -747,7 +752,7 @@ void GUIRenderer::reset()
     update_monitor_state();
 
     // clear existing bind groups
-    imgui_reset_texture_descriptors(pipeline_data.get());
+    imgui_reset_texture_descriptors(renderer_data.get());
 }
 
 void GUIRenderer::prepare(GPUCommandBuffer cmdbuffer)
@@ -855,6 +860,19 @@ void GUIRenderer::begin_render_pass(GPUCommandBuffer cmdbuffer, GPUTextureViewHa
 void GUIRenderer::end_render_pass(GPUCommandBuffer cmdbuffer) const
 {
     imgui_end_render_pass(cmdbuffer);
+}
+
+uint GUIRenderer::create_texture(GPUTextureHandle texture, GPUTextureViewHandle view)
+{
+    GUITexture texinfo{};
+    texinfo.view.handle    = view;
+    texinfo.texture.handle = texture;
+    return renderer_data->textures.add(texinfo);
+}
+
+void GUIRenderer::delete_texture(uint texid)
+{
+    imgui_delete_texture(pipeline_data.get(), renderer_data.get(), (ImTextureID)texid);
 }
 
 ImGuiContext* GUIRenderer::context() const
@@ -1046,8 +1064,19 @@ void GUIRenderer::init_pipeline_data(const GUIDescriptor& descriptor)
         return device.create_render_pipeline(desc);
     });
 
+    // initialize renderer backend data
+    io.BackendRendererUserData = pipeline_data.get();
+    io.BackendRendererName     = "lyra-renderer";
+}
+
+void GUIRenderer::init_renderer_data(const GUIDescriptor& descriptor)
+{
+    auto& device = RHI::get_current_device();
+
+    renderer_data.reset(imgui_make_renderer(pipeline_data->frame_count));
+
     // sampler
-    pipeline_data->sampler = execute([&]() {
+    renderer_data->sampler = execute([&]() {
         GPUSamplerDescriptor desc{};
         desc.label          = "imgui_sampler";
         desc.address_mode_u = GPUAddressMode::CLAMP_TO_EDGE;
@@ -1062,15 +1091,6 @@ void GUIRenderer::init_pipeline_data(const GUIDescriptor& descriptor)
         desc.max_anisotropy = 1u;
         return device.create_sampler(desc);
     });
-
-    // initialize renderer backend data
-    io.BackendRendererUserData = pipeline_data.get();
-    io.BackendRendererName     = "lyra-renderer";
-}
-
-void GUIRenderer::init_renderer_data(const GUIDescriptor& descriptor)
-{
-    renderer_data.reset(imgui_make_renderer(pipeline_data->frame_count));
 }
 
 void GUIRenderer::init_viewport_data(const GUIDescriptor& descriptor)
@@ -1130,7 +1150,7 @@ void GUIRenderer::init_dummy_texture()
     GUITexture texinfo{};
     texinfo.texture.handle.reset();
     texinfo.view.handle.reset();
-    pipeline_data->textures.add(texinfo);
+    renderer_data->textures.add(texinfo);
 }
 
 void GUIRenderer::init_imgui_font(CString filename, float font_size)
@@ -1150,7 +1170,7 @@ void GUIRenderer::init_imgui_font(CString filename, float font_size)
     icon_cfg.MergeMode            = true;        // merge icons with regular font
     icon_cfg.PixelSnapH           = true;        // optional, can help with pixel alignment
     icon_cfg.GlyphRanges          = icon_ranges; // icons only
-    icon_cfg.GlyphMinAdvanceX     = font_size;   // make icons at least as wide as font_size
+    icon_cfg.GlyphOffset.y        = 3.0f;        // make icons align with text
 
     // font source
     auto file = cmrc::imgui::get_filesystem().open(filename);
@@ -1166,7 +1186,7 @@ void GUIRenderer::init_imgui_font(CString filename, float font_size)
     io.Fonts->AddFontFromMemoryTTF(
         (void*)file.begin(),
         static_cast<int>(file.size()),
-        font_size * 1.5f,
+        font_size * 2.0f,
         &icon_cfg);
 
     io.Fonts->Build();

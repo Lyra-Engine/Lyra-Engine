@@ -67,6 +67,27 @@ void D3D12CommandBuffer::end()
     ThrowIfFailed(command_buffer->Close());
 }
 
+void cmd::insert_debug_marker(GPUCommandEncoderHandle cmdbuffer, CString marker_label)
+{
+    auto  rhi = get_rhi();
+    auto& cmd = rhi->current_frame().command(cmdbuffer);
+    cmd.command_buffer->SetMarker(0, marker_label, sizeof(marker_label));
+}
+
+void cmd::push_debug_group(GPUCommandEncoderHandle cmdbuffer, CString group_label)
+{
+    auto  rhi = get_rhi();
+    auto& cmd = rhi->current_frame().command(cmdbuffer);
+    cmd.command_buffer->BeginEvent(0, group_label, sizeof(group_label));
+}
+
+void cmd::pop_debug_group(GPUCommandEncoderHandle cmdbuffer)
+{
+    auto  rhi = get_rhi();
+    auto& cmd = rhi->current_frame().command(cmdbuffer);
+    cmd.command_buffer->EndEvent();
+}
+
 void cmd::wait_fence(GPUCommandEncoderHandle cmdbuffer, GPUFenceHandle fence, GPUBarrierSyncFlags sync)
 {
     auto  rhi = get_rhi();

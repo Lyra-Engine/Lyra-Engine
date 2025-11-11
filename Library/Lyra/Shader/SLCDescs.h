@@ -5,9 +5,9 @@
 
 #include <Lyra/Common/Logger.h>
 #include <Lyra/Common/Container.h>
-#include <Lyra/Render/RHIEnums.h>
 #include <Lyra/Shader/SLCEnums.h>
 #include <Lyra/Shader/SLCUtils.h>
+#include <Lyra/Render/RHI/RHIEnums.h>
 
 namespace lyra
 {

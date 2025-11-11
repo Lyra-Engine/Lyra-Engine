@@ -4,7 +4,7 @@
 
 using namespace lyra;
 
-static Logger logger = init_stderr_logger("PakFS", LogLevel::trace);
+static Logger logger = create_logger("PakFS", LogLevel::trace);
 
 Logger get_logger()
 {

@@ -6,17 +6,18 @@
 // imgui header(s)
 #include <imgui.h>
 
-#include <Lyra/Common/GLM.h>
+#include <Lyra/Vendor/GLM.h>
 #include <Lyra/Common/Stdint.h>
 #include <Lyra/Common/Slotmap.h>
 #include <Lyra/Window/WSIAPI.h>
 #include <Lyra/Window/WSITypes.h>
-#include <Lyra/Render/RHIAPI.h>
-#include <Lyra/Render/RHIAPI.h>
 #include <Lyra/Shader/SLCAPI.h>
 #include <Lyra/GuiKit/GUIAPI.h>
+#include <Lyra/Render/RHI/RHIAPI.h>
 
 using namespace lyra;
+
+Logger get_logger();
 
 template <typename T>
 struct GUIGarbage
@@ -86,18 +87,18 @@ struct GUIPipelineData
     Vector<GPUBindGroupLayoutHandle> blayouts;
     GPUShaderModule                  vshader;
     GPUShaderModule                  fshader;
-    GPUSampler                       sampler;
-    GUITextureManager                textures;
-    GUIGarbageBuffers                garbage_buffers;
-    GUIGarbageTextures               garbage_textures;
     uint                             frame_count = 3;
     uint                             frame_index = 0;
 };
 
 struct GUIRendererData
 {
-    Vector<GPUBuffer> vbuffers;
-    Vector<GPUBuffer> ibuffers;
+    Vector<GPUBuffer>  vbuffers;
+    Vector<GPUBuffer>  ibuffers;
+    GPUSampler         sampler;
+    GUITextureManager  textures;
+    GUIGarbageBuffers  garbage_buffers;
+    GUIGarbageTextures garbage_textures;
 };
 
 struct GUIRenderer
@@ -114,6 +115,9 @@ public:
     void destroy();
     void new_frame();
     void end_frame();
+
+    uint create_texture(GPUTextureHandle texture, GPUTextureViewHandle view);
+    void delete_texture(uint texid);
 
     void begin_render_pass(GPUCommandBuffer cmdbuffer, GPUTextureViewHandle backbuffer) const;
     void end_render_pass(GPUCommandBuffer cmdbuffer) const;

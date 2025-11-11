@@ -14,6 +14,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <initializer_list>
+#include <boost/circular_buffer.hpp>
 
 namespace lyra
 {
@@ -49,6 +50,9 @@ namespace lyra
 
     template <typename... T>
     using InitList = std::initializer_list<T...>;
+
+    template <typename Elem>
+    using RingBuffer = boost::circular_buffer<Elem>;
 
 } // end of namespace lyra
 

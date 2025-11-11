@@ -157,7 +157,7 @@ void FilePacker::write(FSPath vpath, const Path& path) const
     // sanity check
     std::ifstream ifs(path, std::ios::in | std::ios::binary);
     if (!ifs.good()) {
-        engine::logger()->error("File {} does not exist!", path.string());
+        spdlog::error("File {} does not exist!", path.string());
         return;
     }
 

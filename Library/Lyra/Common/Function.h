@@ -16,6 +16,16 @@ namespace lyra
         return std::forward<F>(fn)();
     }
 
+    template <typename F>
+    void execute_once(F&& fn)
+    {
+        static bool init = true;
+        if (init) {
+            init = false;
+            std::forward<F>(fn)();
+        }
+    }
+
     template <typename... Args>
     using Function = std::function<Args...>;
 

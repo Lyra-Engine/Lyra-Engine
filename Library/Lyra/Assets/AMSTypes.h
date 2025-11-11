@@ -55,7 +55,7 @@ namespace lyra
         {
             auto it = processors.find(AssetType::uuid);
             if (it == processors.end()) {
-                engine::logger()->error("AssetType ({}) has not been registered!", to_string(it->second));
+                spdlog::error("AssetType ({}) has not been registered!", to_string(it->second));
                 return;
             }
 

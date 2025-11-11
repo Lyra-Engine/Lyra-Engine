@@ -3,11 +3,11 @@
 #ifndef LYRA_LIBRARY_AMS_API_H
 #define LYRA_LIBRARY_AMS_API_H
 
+#include <Lyra/Vendor/JSON.h>
 #include <Lyra/Common/UUID.h>
 #include <Lyra/Common/String.h>
 #include <Lyra/Common/Stdint.h>
 #include <Lyra/Common/Handle.h>
-#include <Lyra/Common/JSON.h>
 #include <Lyra/FileIO/FSAPI.h>
 #include <Lyra/Assets/AMSUtils.h>
 

@@ -18,4 +18,8 @@
 #undef DEBUG
 #endif
 
+#ifdef __APPLE__
+#undef DEBUG
+#endif
+
 #endif // LYRA_LIBRARY_COMMON_COMPATIBILITY_H

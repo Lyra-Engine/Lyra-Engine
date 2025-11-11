@@ -1,7 +1,6 @@
 // global module headers
 #include <Lyra/Common/String.h>
 #include <Lyra/Common/Plugin.h>
-#include <Lyra/Render/RHIAPI.h>
 #include <Lyra/Window/WSIAPI.h>
 
 #include "VkUtils.h"
@@ -395,6 +394,7 @@ LYRA_EXPORT auto prepare() -> void
 
 LYRA_EXPORT auto cleanup() -> void
 {
+    // do nothing
 }
 
 LYRA_EXPORT auto create() -> RenderAPI
@@ -454,6 +454,9 @@ LYRA_EXPORT auto create() -> RenderAPI
     api.get_tlas_sizes                   = api::get_tlas_sizes;
     api.acquire_next_frame               = api::acquire_next_frame;
     api.present_curr_frame               = api::present_curr_frame;
+    api.cmd_insert_debug_marker          = cmd::insert_debug_marker;
+    api.cmd_push_debug_group             = cmd::push_debug_group;
+    api.cmd_pop_debug_group              = cmd::pop_debug_group;
     api.cmd_wait_fence                   = cmd::wait_fence;
     api.cmd_signal_fence                 = cmd::signal_fence;
     api.cmd_begin_render_pass            = cmd::begin_render_pass;

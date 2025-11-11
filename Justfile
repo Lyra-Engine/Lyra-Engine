@@ -13,7 +13,7 @@ build preset:
     cmake --build --preset {{preset}}
 
 test preset:
-    cmake --build --preset {{preset}} --target regression
+    cmake --build --preset {{preset}} --target testkit
 
 run preset target:
     cmake --build --preset {{preset}} --target {{target}}

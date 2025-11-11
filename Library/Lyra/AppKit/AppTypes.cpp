@@ -51,12 +51,19 @@ AppDescriptor& AppDescriptor::with_graphics_validation(bool debug, bool validati
     rhi.flags.set(RHIFlag::VALIDATION, validation);
     return *this;
 }
+
+AppDescriptor& AppDescriptor::with_frames_in_flight(uint frames_in_flight)
+{
+    rhi.frames = frames_in_flight;
+    return *this;
+}
 #pragma endregion AppDescriptor
 
 #pragma region Application
 Application::Application(const AppDescriptor& descriptor)
     : descriptor(descriptor)
 {
+    init_logger();
     init_window();
     init_graphics();
     init_compiler();
@@ -80,6 +87,11 @@ Application::~Application()
     slc.reset();
     rhi.reset();
     wsi.reset();
+}
+
+void Application::init_logger()
+{
+    create_default_logger();
 }
 
 void Application::init_window()
@@ -118,6 +130,7 @@ void Application::init_graphics()
         desc.label        = "main_surface";
         desc.window       = *wsi;
         desc.present_mode = GPUPresentMode::Fifo;
+        desc.frames       = descriptor.rhi.frames;
         return rhi->request_surface(desc);
     });
 }

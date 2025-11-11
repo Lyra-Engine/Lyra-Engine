@@ -20,7 +20,7 @@
 
 namespace fs = std::filesystem;
 
-static Logger logger = init_stderr_logger("PhysFS", LogLevel::trace);
+static Logger logger = create_logger("PhysFS", LogLevel::trace);
 
 static inline Logger get_logger() { return logger; }
 

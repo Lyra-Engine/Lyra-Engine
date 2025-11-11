@@ -269,21 +269,21 @@ bool api::create_device(const GPUDeviceDescriptor& desc)
 
     // logger
     if (!device_extensions.empty()) {
-        logger->info("Create VkDevice with extensions:");
+        logger->debug("Create VkDevice with extensions:");
         for (const auto& extension : device_extensions) {
-            logger->info("- {}", extension);
+            logger->trace("- {}", extension);
         }
     }
     if (!debugger_extensions.empty()) {
-        logger->info("Create VkDevice with debug extensions:");
+        logger->debug("Create VkDevice with debug extensions:");
         for (const auto& extension : debugger_extensions) {
-            logger->info("- {}", extension);
+            logger->debug("- {}", extension);
         }
     }
     if (!validation_layers.empty()) {
-        logger->info("Create VkDevice with validation layers:");
+        logger->debug("Create VkDevice with validation layers:");
         for (const auto& layer : validation_layers) {
-            logger->info("- {}", layer);
+            logger->debug("- {}", layer);
         }
     }
 

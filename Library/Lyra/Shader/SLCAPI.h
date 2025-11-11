@@ -5,11 +5,11 @@
 
 #include <Lyra/Common/Stdint.h>
 #include <Lyra/Common/String.h>
-#include <Lyra/Render/RHIDescs.h>
 #include <Lyra/Shader/SLCEnums.h>
 #include <Lyra/Shader/SLCUtils.h>
 #include <Lyra/Shader/SLCDescs.h>
 #include <Lyra/Shader/SLCTypes.h>
+#include <Lyra/Render/RHI/RHIDescs.h>
 
 namespace lyra
 {

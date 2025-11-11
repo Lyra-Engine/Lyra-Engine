@@ -15,6 +15,11 @@ namespace lyra
 {
     using GUIRenderPlugin = Plugin<GUIRenderAPI>;
 
+    struct GUITexture
+    {
+        uint texid = 0;
+    };
+
     struct GUIRenderer
     {
         // implicit conversion
@@ -38,6 +43,26 @@ namespace lyra
         void new_frame() const { GUIRenderer::api()->new_frame(handle); }
 
         void end_frame() const { GUIRenderer::api()->end_frame(handle); }
+
+        // GUIRenderer will be responsible for managing GPUTexture / GPUTextureView deletion upon delete_image
+        // ownership of GPUTextureHandle and GPUTextureViewHandle will be taken over
+        auto create_texture(GPUTextureHandle texture, GPUTextureViewHandle texview) const -> GUITexture
+        {
+            uint texid = GUIRenderer::api()->create_texture(handle, texture, texview);
+            return GUITexture{texid};
+        }
+
+        // GUIRenderer will be responsible for managing GPUTextureView deletion upon delete_texture
+        auto create_texture(GPUTextureViewHandle texview) const -> GUITexture
+        {
+            uint texid = GUIRenderer::api()->create_texture(handle, GPUTextureHandle(), texview);
+            return GUITexture{texid};
+        }
+
+        void delete_texture(GUITexture texture) const
+        {
+            return GUIRenderer::api()->delete_texture(handle, texture.texid);
+        }
 
         void render_main_viewport(GPUCommandBuffer cmdbuffer, GPUTextureViewHandle backbuffer) const
         {

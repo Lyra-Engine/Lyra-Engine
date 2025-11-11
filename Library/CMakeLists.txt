@@ -3,18 +3,24 @@ lyra_shared(engine)
 
 # library sources
 target_sources(lyra-engine PRIVATE
+    # vendor sources
+    Lyra/Vendor/GLM.h
+    Lyra/Vendor/ECS.h
+    Lyra/Vendor/JSON.h
+    Lyra/Vendor/TOML.h
+    Lyra/Vendor/IMGUI.h
+
     # common sources
     Lyra/Common/Assert.h
     Lyra/Common/BitFlags.h
     Lyra/Common/Blackboard.h
     Lyra/Common/Compatibility.h
     Lyra/Common/Container.h
-    Lyra/Common/ECS.h
     Lyra/Common/Enums.h
     Lyra/Common/Function.h
-    Lyra/Common/GLM.h
     Lyra/Common/Hash.h
     Lyra/Common/Logger.h
+    Lyra/Common/Logger.cpp
     Lyra/Common/Msgbox.h
     Lyra/Common/Msgbox.cpp
     Lyra/Common/Path.h
@@ -45,31 +51,29 @@ target_sources(lyra-engine PRIVATE
     Lyra/Shader/SLCUtils.h
 
     # render sources
-    Lyra/Render/RHIAPI.h
-    Lyra/Render/RHIDescs.h
-    Lyra/Render/RHIEnums.h
-    Lyra/Render/RHIError.h
-    Lyra/Render/RHIHash.h
-    Lyra/Render/RHIInits.cpp
-    Lyra/Render/RHIInits.h
-    Lyra/Render/RHITypes.cpp
-    Lyra/Render/RHITypes.h
-    Lyra/Render/RHIUtils.h
-
-    # rpikit sources
-    Lyra/RPIKit/FrameGraph.h
-    Lyra/RPIKit/FrameGraph.cpp
-    Lyra/RPIKit/FrameGraphAllocator.h
-    Lyra/RPIKit/FrameGraphAllocator.cpp
-    Lyra/RPIKit/FrameGraphBuffer.h
-    Lyra/RPIKit/FrameGraphBuilder.h
-    Lyra/RPIKit/FrameGraphBuilder.cpp
-    Lyra/RPIKit/FrameGraphEnums.h
-    Lyra/RPIKit/FrameGraphPass.h
-    Lyra/RPIKit/FrameGraphResource.h
-    Lyra/RPIKit/FrameGraphTexture.h
-    Lyra/RPIKit/FrameGraphTexture.cpp
-    Lyra/RPIKit/FrameGraphTraits.h
+    Lyra/Render/RHI/RHIAPI.h
+    Lyra/Render/RHI/RHIDescs.h
+    Lyra/Render/RHI/RHIEnums.h
+    Lyra/Render/RHI/RHIError.h
+    Lyra/Render/RHI/RHIHash.h
+    Lyra/Render/RHI/RHIInits.cpp
+    Lyra/Render/RHI/RHIInits.h
+    Lyra/Render/RHI/RHITypes.cpp
+    Lyra/Render/RHI/RHITypes.h
+    Lyra/Render/RHI/RHIUtils.h
+    Lyra/Render/RPI/FrameGraph.h
+    Lyra/Render/RPI/FrameGraph.cpp
+    Lyra/Render/RPI/FrameGraphAllocator.h
+    Lyra/Render/RPI/FrameGraphAllocator.cpp
+    Lyra/Render/RPI/FrameGraphBuffer.h
+    Lyra/Render/RPI/FrameGraphBuilder.h
+    Lyra/Render/RPI/FrameGraphBuilder.cpp
+    Lyra/Render/RPI/FrameGraphEnums.h
+    Lyra/Render/RPI/FrameGraphPass.h
+    Lyra/Render/RPI/FrameGraphResource.h
+    Lyra/Render/RPI/FrameGraphTexture.h
+    Lyra/Render/RPI/FrameGraphTexture.cpp
+    Lyra/Render/RPI/FrameGraphTraits.h
 
     # guikit sources
     Lyra/GuiKit/GUIAPI.h
@@ -90,28 +94,42 @@ target_sources(lyra-engine PRIVATE
     Lyra/Assets/AMSTypes.cpp
     Lyra/Assets/AMSUtils.h
 
-    # builtin assets sources
-    Lyra/Assets/Builtin/TextAsset.h
-    Lyra/Assets/Builtin/TextAsset.cpp
-    Lyra/Assets/Builtin/JsonAsset.h
-    Lyra/Assets/Builtin/JsonAsset.cpp
-    Lyra/Assets/Builtin/TomlAsset.h
-    Lyra/Assets/Builtin/TomlAsset.cpp
-    Lyra/Assets/Builtin/TextureAsset.h
-    Lyra/Assets/Builtin/TextureAsset.cpp
-    Lyra/Assets/Builtin/GenericAsset.h
-
     # appkit sources
     Lyra/AppKit/AppTypes.h
     Lyra/AppKit/AppTypes.cpp
+    Lyra/AppKit/AppEnums.h
+    Lyra/AppKit/AppIcons.h
+    Lyra/AppKit/AppColors.h
 
-    # builtin app managers
-    Lyra/AppKit/Builtin/GUIManager.h
-    Lyra/AppKit/Builtin/GUIManager.cpp
-    Lyra/AppKit/Builtin/AssetManager.h
-    Lyra/AppKit/Builtin/AssetManager.cpp
-    Lyra/AppKit/Builtin/LayoutManager.h
-    Lyra/AppKit/Builtin/LayoutManager.cpp
+    # engine sources
+    Lyra/Engine/Assets/TextAsset.h
+    Lyra/Engine/Assets/TextAsset.cpp
+    Lyra/Engine/Assets/JsonAsset.h
+    Lyra/Engine/Assets/JsonAsset.cpp
+    Lyra/Engine/Assets/TomlAsset.h
+    Lyra/Engine/Assets/TomlAsset.cpp
+    Lyra/Engine/Assets/TextureAsset.h
+    Lyra/Engine/Assets/TextureAsset.cpp
+    Lyra/Engine/Assets/GenericAsset.h
+    Lyra/Engine/System/AssetManager.cpp
+    Lyra/Engine/System/ThemeManager.h
+    Lyra/Engine/System/ThemeManager.cpp
+    Lyra/Engine/System/LayoutManager.h
+    Lyra/Engine/System/LayoutManager.cpp
+    Lyra/Engine/System/ImGuiManager.h
+    Lyra/Engine/System/ImGuiManager.cpp
+    Lyra/Engine/Editor/Files.h
+    Lyra/Engine/Editor/Files.cpp
+    Lyra/Engine/Editor/Console.h
+    Lyra/Engine/Editor/Console.cpp
+    Lyra/Engine/Editor/Hierarchy.h
+    Lyra/Engine/Editor/Hierarchy.cpp
+    Lyra/Engine/Editor/Inspector.h
+    Lyra/Engine/Editor/Inspector.cpp
+    Lyra/Engine/Editor/SceneView.h
+    Lyra/Engine/Editor/SceneView.cpp
+    Lyra/Engine/Helper/Canvas.h
+    Lyra/Engine/Helper/Canvas.cpp
 )
 
 # link dependencies
@@ -125,6 +143,7 @@ find_package(imgui REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(libassert REQUIRED)
 find_package(magic_enum REQUIRED)
+find_package(Boost REQUIRED COMPONENTS circular_buffer)
 
 # directly exposed to user (with include headers)
 target_link_libraries(lyra-engine PUBLIC
@@ -147,11 +166,12 @@ target_link_libraries(lyra-engine PUBLIC
     $<BUILD_INTERFACE:toml::toml>
 
     # misc libraries
+    $<BUILD_INTERFACE:Boost::circular_buffer>
     $<BUILD_INTERFACE:magic_enum::magic_enum>
 )
 
 # not directly exposed to user
-target_link_libraries(lyra-engine PRIVATE boxer::boxer)
+target_link_libraries(lyra-engine PRIVATE boxer::boxer fmt::fmt-header-only)
 
 # include directories
 # cmake install target requires relative path.

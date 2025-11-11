@@ -38,19 +38,19 @@ bool api::create_instance(const RHIDescriptor& desc)
 
     // logger
     if (!instance_extensions.empty()) {
-        logger->info("Create VkInstance with extensions:");
+        logger->debug("Create VkInstance with extensions:");
         for (const auto& extension : instance_extensions)
-            logger->info("- {}", extension);
+            logger->debug("- {}", extension);
     }
     if (!debugger_extensions.empty()) {
-        logger->info("Create VkInstance with debug extensions:");
+        logger->debug("Create VkInstance with debug extensions:");
         for (const auto& extension : debugger_extensions)
-            logger->info("- {}", extension);
+            logger->debug("- {}", extension);
     }
     if (!validation_layers.empty()) {
-        logger->info("Create VkInstance with validation layers:");
+        logger->debug("Create VkInstance with validation layers:");
         for (const auto& layer : validation_layers)
-            logger->info("- {}", layer);
+            logger->debug("- {}", layer);
     }
 
     // check availability of extensions
@@ -86,12 +86,12 @@ bool api::create_instance(const RHIDescriptor& desc)
     create_info.flags                   = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
 
     // prepare debug info
-    VkDebugUtilsMessengerCreateInfoEXT debugInfo;
+    VkDebugUtilsMessengerCreateInfoEXT debug_info;
     if (desc.flags.contains(RHIFlag::VALIDATION)) {
         create_info.enabledLayerCount   = static_cast<uint>(validation_layers.size());
         create_info.ppEnabledLayerNames = validation_layers.data();
-        fill_vulkan_debug_messenger_create_info(debugInfo);
-        create_info.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugInfo;
+        fill_vulkan_debug_messenger_create_info(debug_info);
+        create_info.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debug_info;
     } else {
         create_info.enabledLayerCount = 0;
         create_info.pNext             = nullptr;

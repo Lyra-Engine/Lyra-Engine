@@ -8,7 +8,7 @@
 #include <string>
 #include <string_view>
 
-#if APPLE
+#if __APPLE__
 // to allow compilation on MacOS
 size_t strnlen_s(const char* s, size_t maxlen);
 #endif
@@ -40,6 +40,12 @@ namespace lyra
         std::vector<wchar_t> buf(str.size());
         std::use_facet<std::ctype<wchar_t>>(std::locale()).widen(str.data(), str.data() + str.size(), buf.data());
         return std::wstring(buf.data(), buf.size());
+    }
+
+    // identitity conversion: string to string
+    inline std::string to_string(const std::string& str)
+    {
+        return str;
     }
 
     // convert wstring to string
