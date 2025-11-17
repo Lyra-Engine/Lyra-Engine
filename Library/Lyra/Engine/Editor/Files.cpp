@@ -34,17 +34,20 @@ void Files::update(Blackboard& blackboard)
         ImGui::DockBuilderDockWindow(LYRA_FILES_WINDOW_NAME, layout.bottom);
     });
 
+    imgui::disable_window_menu_button();
     ImGui::Begin(LYRA_FILES_WINDOW_NAME);
-    show_breadcrumb();
-    ImGui::Separator();
-    ImGui::BeginChild("##FileBrowser");
     {
-        show_dir_files();
-        show_context_menu();
-        show_new_file_dialog();
-        show_new_folder_dialog();
+        show_breadcrumb();
+        ImGui::Separator();
+        ImGui::BeginChild("##FileBrowser");
+        {
+            show_dir_files();
+            show_context_menu();
+            show_new_file_dialog();
+            show_new_folder_dialog();
+        }
+        ImGui::EndChild();
     }
-    ImGui::EndChild();
     ImGui::End();
 }
 

@@ -847,12 +847,12 @@ T& fetch_resource(D3D12ResourceManager<T>& manager, Handle handle)
     }
 
     // check resource range
-    if (handle.value >= manager.data.size()) {
+    if (!manager.range_check(handle.value)) {
         get_logger()->error("Resource handle {} with value={} access out of range!", Handle::type_name(), handle.value);
         exit(1);
     }
 
-    T& resource = manager.data.at(handle.value);
+    T& resource = manager.at(handle.value);
     if (!resource.valid()) {
         get_logger()->error("Resource handle {} with value={} has invalid object!", Handle::type_name(), handle.value);
         exit(1);

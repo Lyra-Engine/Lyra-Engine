@@ -1,4 +1,4 @@
-#include <Lyra/Engine/Helper/Canvas.h>
+#include <Lyra/Engine/Common/Canvas.h>
 
 using namespace lyra;
 

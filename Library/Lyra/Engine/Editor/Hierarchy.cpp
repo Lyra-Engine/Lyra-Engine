@@ -26,6 +26,10 @@ void Hierarchy::update(Blackboard& blackboard)
         ImGui::DockBuilderDockWindow(LYRA_HIERARCHY_WINDOW_NAME, layout.left);
     });
 
+    imgui::disable_window_menu_button();
     ImGui::Begin(LYRA_HIERARCHY_WINDOW_NAME);
+    {
+        // more to come
+    }
     ImGui::End();
 }

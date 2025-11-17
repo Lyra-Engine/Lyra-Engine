@@ -5,7 +5,7 @@
 
 #include <Lyra/Vendor/IMGUI.h>
 #include <Lyra/AppKit/AppTypes.h>
-#include <Lyra/Engine/Helper/Canvas.h>
+#include <Lyra/Engine/Common/Canvas.h>
 
 namespace lyra
 {

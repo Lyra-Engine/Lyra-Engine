@@ -20,46 +20,100 @@ namespace lyra
     {
     };
 
-    template <typename T, typename Deleter, typename I = uint32_t, typename = std::enable_if<has_valid<T>::value, bool>>
+    template <typename T, typename deleter_type, typename index_type = std::uint32_t>
+    struct Slotmap;
+
+    template <typename T, bool IsConst>
+    struct SlotmapIterator
+    {
+        using iterator_category = std::forward_iterator_tag;
+        using difference_type   = std::ptrdiff_t;
+        using value_type        = T;
+        using pointer           = std::conditional_t<IsConst, const T*, T*>;
+        using reference         = std::conditional_t<IsConst, const T&, T&>;
+
+        SlotmapIterator(pointer ptr, size_t index, size_t size) : m_ptr(ptr), m_index(index), m_size(size)
+        {
+            while (m_index < m_size && !m_ptr[m_index].valid())
+                m_index++;
+        }
+
+        reference operator*() const { return m_ptr[m_index]; }
+        pointer   operator->() { return &m_ptr[m_index]; }
+
+        SlotmapIterator& operator++()
+        {
+            m_index++;
+            while (m_index < m_size && !m_ptr[m_index].valid())
+                m_index++;
+            return *this;
+        }
+
+        SlotmapIterator operator++(int)
+        {
+            SlotmapIterator tmp = *this;
+            ++(*this);
+            return tmp;
+        }
+
+        friend bool operator==(const SlotmapIterator& a, const SlotmapIterator& b) { return a.m_index == b.m_index; };
+        friend bool operator!=(const SlotmapIterator& a, const SlotmapIterator& b) { return a.m_index != b.m_index; };
+
+    private:
+        pointer m_ptr;
+        size_t  m_index;
+        size_t  m_size;
+    };
+
+    template <typename T, typename deleter_type, typename index_type>
     struct Slotmap
     {
-        std::vector<T> data = {};
-        std::vector<I> free = {};
-        I              rear = 0;
+    private:
+        std::vector<T>          data = {};
+        std::vector<index_type> free = {};
+        index_type              rear = 0;
 
-        virtual ~Slotmap()
-        {
-            clear();
-        }
+    public:
+        using iterator       = SlotmapIterator<T, false>;
+        using const_iterator = SlotmapIterator<T, true>;
+
+        virtual ~Slotmap() { clear(); }
 
         void clear()
         {
             for (auto& item : data)
                 if (item.valid())
-                    Deleter()(item);
+                    deleter_type()(item);
         }
 
-        auto add(const T& value) -> I
+        auto add(const T& value) -> index_type
         {
-            I index = get_next_index();
+            index_type index = get_next_index();
 
             data.at(index) = value;
             return index;
         }
 
-        void remove(I index)
+        void remove(index_type index)
         {
             assert(index < data.size());
-            Deleter()(data.at(index));
+            deleter_type()(data.at(index));
             free.push_back(index);
         }
 
-        auto at(I index) -> T& { return data.at(index); }
+        auto at(index_type index) -> T& { return data.at(index); }
+        auto at(index_type index) const -> const T& { return data.at(index); }
 
-        auto at(I index) const -> const T& { return data.at(index); }
+        auto begin() -> iterator { return iterator(data.data(), 0, data.size()); }
+        auto end() -> iterator { return iterator(data.data(), data.size(), data.size()); }
+
+        auto cbegin() -> const_iterator const { return const_iterator(data.data(), 0, data.size()); }
+        auto cend() -> const_iterator const { return const_iterator(data.data(), data.size(), data.size()); }
+
+        bool range_check(index_type index) const { return index < data.size(); }
 
     private:
-        auto get_next_index() -> I
+        auto get_next_index() -> index_type
         {
             // fallback: increase the data array
             if (free.empty()) {
@@ -71,7 +125,7 @@ namespace lyra
             }
 
             // find from free list
-            I index = free.back();
+            index_type index = free.back();
             free.pop_back();
             return index;
         }
@@ -82,7 +136,7 @@ namespace lyra
             size_t tgt_size = old_size * 2 + 1;
             size_t new_size = tgt_size > 2048 ? 2048 : tgt_size;
             data.resize(new_size);
-            rear = static_cast<I>(old_size);
+            rear = static_cast<index_type>(old_size);
         }
     };
 

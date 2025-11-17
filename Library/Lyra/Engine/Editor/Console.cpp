@@ -29,9 +29,12 @@ void Console::update(Blackboard& blackboard)
         ImGui::DockBuilderDockWindow(LYRA_CONSOLE_WINDOW_NAME, layout.bottom);
     });
 
+    imgui::disable_window_menu_button();
     ImGui::Begin(LYRA_CONSOLE_WINDOW_NAME);
-    show_bar();
-    show_logs();
+    {
+        show_bar();
+        show_logs();
+    }
     ImGui::End();
 }
 

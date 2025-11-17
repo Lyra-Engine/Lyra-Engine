@@ -104,7 +104,7 @@ static void imgui_create_vertex_buffers(GUIPipelineData* pipeline_data, GUIRende
 
 static void imgui_reset_texture_descriptors(GUIRendererData* renderer_data)
 {
-    for (auto& texinfo : renderer_data->textures.data)
+    for (auto& texinfo : renderer_data->textures)
         texinfo.bindgroup.handle.reset();
 }
 

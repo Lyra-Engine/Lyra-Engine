@@ -18,7 +18,7 @@ static void imgui_update(Blackboard& blackboard)
 {
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("Project")) {
-            if (ImGui::MenuItem("Create")) {
+            if (ImGui::MenuItem("New")) {
             }
             if (ImGui::MenuItem("Load", "Ctrl+O")) {
             }

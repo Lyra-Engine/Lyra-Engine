@@ -63,62 +63,62 @@ void api::delete_device()
         frame.destroy();
 
     // clean up remaining swapchains
-    for (auto& swapchain : rhi->swapchains.data)
+    for (auto& swapchain : rhi->swapchains)
         if (swapchain.valid())
             swapchain.destroy();
 
     // clean up remaining blases
-    for (auto& blas : rhi->blases.data)
+    for (auto& blas : rhi->blases)
         if (blas.valid())
             blas.destroy();
 
     // clean up remaining tlases
-    for (auto& tlas : rhi->tlases.data)
+    for (auto& tlas : rhi->tlases)
         if (tlas.valid())
             tlas.destroy();
 
     // clean up remaining fences
-    for (auto& fence : rhi->fences.data)
+    for (auto& fence : rhi->fences)
         if (fence.valid())
             fence.destroy();
 
     // clean up remaining buffers
-    for (auto& buffer : rhi->buffers.data)
+    for (auto& buffer : rhi->buffers)
         if (buffer.valid())
             buffer.destroy();
 
     // clean up remaining texture views
-    for (auto& view : rhi->views.data)
+    for (auto& view : rhi->views)
         if (view.valid())
             view.destroy();
 
     // clean up remaining textures
-    for (auto& texture : rhi->textures.data)
+    for (auto& texture : rhi->textures)
         if (texture.valid())
             texture.destroy();
 
     // clean up remaining samplers
-    for (auto& sampler : rhi->samplers.data)
+    for (auto& sampler : rhi->samplers)
         if (sampler.valid())
             sampler.destroy();
 
     // clean up remaining shaders
-    for (auto& shader : rhi->shaders.data)
+    for (auto& shader : rhi->shaders)
         if (shader.valid())
             shader.destroy();
 
     // clean up remaining bind group layouts
-    for (auto& layout : rhi->bind_group_layouts.data)
+    for (auto& layout : rhi->bind_group_layouts)
         if (layout.valid())
             layout.destroy();
 
     // clean up remaining pipeline layouts
-    for (auto& layout : rhi->pipeline_layouts.data)
+    for (auto& layout : rhi->pipeline_layouts)
         if (layout.valid())
             layout.destroy();
 
     // clean up remaining pipelines
-    for (auto& pipeline : rhi->pipelines.data)
+    for (auto& pipeline : rhi->pipelines)
         if (pipeline.valid())
             pipeline.destroy();
 

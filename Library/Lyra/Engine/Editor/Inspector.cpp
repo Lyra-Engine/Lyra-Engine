@@ -26,6 +26,10 @@ void Inspector::update(Blackboard& blackboard)
         ImGui::DockBuilderDockWindow(LYRA_INSPECTOR_WINDOW_NAME, layout.right);
     });
 
+    imgui::disable_window_menu_button();
     ImGui::Begin(LYRA_INSPECTOR_WINDOW_NAME);
+    {
+        // more to come
+    }
     ImGui::End();
 }

@@ -33,12 +33,10 @@ void SceneView::update(Blackboard& blackboard)
         ImGui::DockBuilderDockWindow(LYRA_SCENE_WINDOW_NAME, layout.main);
     });
 
+    imgui::disable_window_menu_button();
     ImGui::Begin(LYRA_SCENE_WINDOW_NAME);
     {
-        // update canvas
         canvas.update(blackboard);
-
-        // show current frame
         canvas.display();
     }
     ImGui::End();
